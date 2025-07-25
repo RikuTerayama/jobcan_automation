@@ -53,6 +53,25 @@ playwright install chromium
 
 ## 使用方法
 
+### 🎯 推奨使用方法（URL直接指定）
+
+1. **Jobcanにログイン**
+   - ブラウザでJobcanにログイン
+   - 出勤簿ページに移動: `https://ssl.jobcan.jp/employee/attendance`
+
+2. **URLをコピー**
+   - ブラウザのアドレスバーからURLをコピー
+
+3. **ツールを実行**
+   ```bash
+   jobcan_bot.exe sample_attendance.xlsx --url "コピーしたURL"
+   ```
+
+**メリット:**
+- ログイン情報を入力する必要がない
+- セッションが切れている場合の自動検出
+- より安全で簡単
+
 ### CLI版
 ```bash
 # 基本的な使用方法
@@ -63,6 +82,9 @@ jobcan_bot.exe sample_attendance.xlsx --email your-email@example.com --password 
 
 # ヘッドレスモードで実行
 jobcan_bot.exe sample_attendance.xlsx --headless
+
+# Jobcanログイン後のURLを直接使用（推奨）
+jobcan_bot.exe sample_attendance.xlsx --url "https://ssl.jobcan.jp/employee/attendance"
 ```
 
 ### GUI版
