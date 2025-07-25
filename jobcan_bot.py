@@ -116,6 +116,25 @@ class JobcanBot:
             print(f"{Fore.RED}✗ ログイン中にエラーが発生しました: {e}{Style.RESET_ALL}")
             return False
     
+    def navigate_to_url(self, url: str) -> bool:
+        """指定されたURLに直接移動（ログイン済み状態を想定）"""
+        try:
+            print(f"{Fore.BLUE}指定されたURLに移動中: {url}{Style.RESET_ALL}")
+            self.page.goto(url)
+            self.page.wait_for_load_state("networkidle")
+            
+            # ログイン状態をチェック
+            if "sign_in" in self.page.url or "login" in self.page.url:
+                print(f"{Fore.RED}✗ ログインが必要です。URLが正しいか確認してください{Style.RESET_ALL}")
+                return False
+            
+            print(f"{Fore.GREEN}✓ URLに正常に移動しました{Style.RESET_ALL}")
+            return True
+            
+        except Exception as e:
+            print(f"{Fore.RED}✗ URLへの移動に失敗しました: {e}{Style.RESET_ALL}")
+            return False
+    
     def navigate_to_attendance(self):
         """出勤簿ページに移動"""
         try:
@@ -393,6 +412,7 @@ def main():
     parser.add_argument("--password", help="Jobcanのパスワード")
     parser.add_argument("--headless", action="store_true", help="ヘッドレスモードで実行")
     parser.add_argument("--save-credentials", action="store_true", help="ログイン情報を保存")
+    parser.add_argument("--url", help="Jobcanログイン後のURL（ログイン済み状態で使用）")
     
     args = parser.parse_args()
     
@@ -407,17 +427,25 @@ def main():
         # ブラウザを起動
         bot.start_browser()
         
-        # ログイン情報の処理
-        if args.email and args.password:
-            if args.save_credentials:
-                bot.save_credentials(args.email, args.password)
-            login_success = bot.login(args.email, args.password)
+        # URLが指定されている場合は直接移動
+        if args.url:
+            if bot.navigate_to_url(args.url):
+                print(f"{Fore.GREEN}✓ 指定されたURLに正常に移動しました{Style.RESET_ALL}")
+            else:
+                print(f"{Fore.RED}✗ URLへの移動に失敗しました{Style.RESET_ALL}")
+                sys.exit(1)
         else:
-            login_success = bot.login()
-        
-        if not login_success:
-            print(f"{Fore.RED}✗ ログインに失敗しました。メールアドレスとパスワードを確認してください。{Style.RESET_ALL}")
-            sys.exit(1)
+            # 通常のログイン処理
+            if args.email and args.password:
+                if args.save_credentials:
+                    bot.save_credentials(args.email, args.password)
+                login_success = bot.login(args.email, args.password)
+            else:
+                login_success = bot.login()
+            
+            if not login_success:
+                print(f"{Fore.RED}✗ ログインに失敗しました。メールアドレスとパスワードを確認してください。{Style.RESET_ALL}")
+                sys.exit(1)
         
         # 出勤簿ページに移動
         bot.navigate_to_attendance()
