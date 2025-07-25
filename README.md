@@ -5,11 +5,11 @@ Excelファイルに記載された日付・始業時刻・終業時刻をJobcan
 ## 🚀 ダウンロード
 
 ### 最新リリース
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/YOUR_USERNAME/jobcan-automation)](https://github.com/YOUR_USERNAME/jobcan-automation/releases/latest)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/YOUR_USERNAME/jobcan_automation)](https://github.com/YOUR_USERNAME/jobcan_automation/releases/latest)
 
 **Windows版（推奨）:**
-- [jobcan_bot.exe (CLI版)](https://github.com/YOUR_USERNAME/jobcan-automation/releases/latest/download/jobcan_bot.exe)
-- [jobcan_gui.exe (GUI版)](https://github.com/YOUR_USERNAME/jobcan-automation/releases/latest/download/jobcan_gui.exe)
+- [jobcan_bot.exe (CLI版)](https://github.com/YOUR_USERNAME/jobcan_automation/releases/latest/download/jobcan_bot.exe)
+- [jobcan_gui.exe (GUI版)](https://github.com/YOUR_USERNAME/jobcan_automation/releases/latest/download/jobcan_gui.exe)
 
 > **注意**: `YOUR_USERNAME` を実際のGitHubユーザー名に置き換えてください
 
@@ -36,7 +36,7 @@ Excelファイルに記載された日付・始業時刻・終業時刻をJobcan
 ## インストール
 
 ### 方法1: 実行ファイル版（推奨）
-1. [リリースページ](https://github.com/YOUR_USERNAME/jobcan-automation/releases/latest)からファイルをダウンロード
+1. [リリースページ](https://github.com/YOUR_USERNAME/jobcan_automation/releases/latest)からファイルをダウンロード
 2. 任意のフォルダに解凍
 3. `jobcan_bot.exe` または `jobcan_gui.exe` を実行
 
@@ -176,7 +176,7 @@ pyinstaller --onefile jobcan_bot.py
 
 ## サポート
 
-問題が発生した場合は、以下の情報を含めて[Issues](https://github.com/YOUR_USERNAME/jobcan-automation/issues)に投稿してください：
+問題が発生した場合は、以下の情報を含めて[Issues](https://github.com/YOUR_USERNAME/jobcan_automation/issues)に投稿してください：
 - エラーメッセージ
 - 使用しているExcelファイルの形式
 - Jobcanのバージョン（確認可能な場合）
