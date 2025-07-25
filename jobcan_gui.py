@@ -23,9 +23,10 @@ class JobcanWorker(QThread):
     finished_signal = pyqtSignal(list)
     error_signal = pyqtSignal(str)
     
-    def __init__(self, excel_file, email=None, password=None, headless=True):
+    def __init__(self, excel_file, url=None, email=None, password=None, headless=True):
         super().__init__()
         self.excel_file = excel_file
+        self.url = url
         self.email = email
         self.password = password
         self.headless = headless
@@ -36,15 +37,25 @@ class JobcanWorker(QThread):
             bot = JobcanBot(headless=self.headless)
             bot.start_browser()
             
-            self.progress_signal.emit("ログイン中...")
-            if self.email and self.password:
-                login_success = bot.login(self.email, self.password)
+            # URLが指定されている場合は直接移動
+            if self.url:
+                self.progress_signal.emit("指定されたURLに移動中...")
+                if bot.navigate_to_url(self.url):
+                    self.progress_signal.emit("URLに正常に移動しました")
+                else:
+                    self.error_signal.emit("URLへの移動に失敗しました")
+                    return
             else:
-                login_success = bot.login()
-            
-            if not login_success:
-                self.error_signal.emit("ログインに失敗しました")
-                return
+                # 通常のログイン処理
+                self.progress_signal.emit("ログイン中...")
+                if self.email and self.password:
+                    login_success = bot.login(self.email, self.password)
+                else:
+                    login_success = bot.login()
+                
+                if not login_success:
+                    self.error_signal.emit("ログインに失敗しました")
+                    return
             
             self.progress_signal.emit("出勤簿ページに移動中...")
             bot.navigate_to_attendance()
@@ -103,22 +114,29 @@ class JobcanGUI(QMainWindow):
         layout.addWidget(file_group)
         
         # ログイン情報セクション
-        login_group = QGroupBox("ログイン情報")
+        login_group = QGroupBox("ログイン方法")
         login_layout = QGridLayout()
         
-        login_layout.addWidget(QLabel("メールアドレス:"), 0, 0)
+        # URL直接指定（推奨）
+        login_layout.addWidget(QLabel("Jobcan URL（推奨）:"), 0, 0)
+        self.url_edit = QLineEdit()
+        self.url_edit.setPlaceholderText("https://ssl.jobcan.jp/employee/attendance")
+        login_layout.addWidget(self.url_edit, 0, 1)
+        
+        # または従来のログイン情報
+        login_layout.addWidget(QLabel("または メールアドレス:"), 1, 0)
         self.email_edit = QLineEdit()
         self.email_edit.setPlaceholderText("your-email@example.com")
-        login_layout.addWidget(self.email_edit, 0, 1)
+        login_layout.addWidget(self.email_edit, 1, 1)
         
-        login_layout.addWidget(QLabel("パスワード:"), 1, 0)
+        login_layout.addWidget(QLabel("パスワード:"), 2, 0)
         self.password_edit = QLineEdit()
         self.password_edit.setEchoMode(QLineEdit.Password)
         self.password_edit.setPlaceholderText("パスワードを入力")
-        login_layout.addWidget(self.password_edit, 1, 1)
+        login_layout.addWidget(self.password_edit, 2, 1)
         
         self.save_credentials_check = QCheckBox("ログイン情報を保存")
-        login_layout.addWidget(self.save_credentials_check, 2, 1)
+        login_layout.addWidget(self.save_credentials_check, 3, 1)
         
         login_group.setLayout(login_layout)
         layout.addWidget(login_group)
@@ -186,6 +204,7 @@ class JobcanGUI(QMainWindow):
         # ワーカースレッドを開始
         self.worker = JobcanWorker(
             excel_file=self.file_path_edit.text(),
+            url=self.url_edit.text() if self.url_edit.text() else None,
             email=self.email_edit.text() if self.email_edit.text() else None,
             password=self.password_edit.text() if self.password_edit.text() else None,
             headless=self.headless_check.isChecked()
