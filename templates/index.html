@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jobcan勤怠申請Webアプリ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="file"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input[type="text"]:focus,
+        .form-group input[type="file"]:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .instructions {
+            background: #f8f9fa;
+            border-left: 4px solid #4facfe;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .instructions h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .instructions ol {
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .status.processing {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            color: #1976d2;
+        }
+
+        .status.success {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            color: #2e7d32;
+        }
+
+        .status.error {
+            background: #ffebee;
+            border: 1px solid #f44336;
+            color: #c62828;
+        }
+
+        .results {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .results h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .result-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            border-left: 4px solid;
+        }
+
+        .result-item.success {
+            background: #e8f5e8;
+            border-left-color: #4caf50;
+        }
+
+        .result-item.error {
+            background: #ffebee;
+            border-left-color: #f44336;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4facfe;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .file-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .error-message {
+            color: #f44336;
+            font-size: 0.9em;
+            margin-top: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Jobcan勤怠申請Webアプリ</h1>
+            <p>ExcelファイルとJobcanのURLで勤怠を自動入力</p>
+        </div>
+
+        <div class="content">
+            <div class="instructions">
+                <h3>📋 使用方法</h3>
+                <ol>
+                    <li><strong>Jobcanにログイン</strong> - ブラウザでJobcanにログインしてください</li>
+                    <li><strong>出勤簿ページに移動</strong> - 出勤簿ページのURLをコピーしてください</li>
+                    <li><strong>Excelファイルを準備</strong> - A列:日付、B列:始業時刻、C列:終業時刻の形式で作成</li>
+                    <li><strong>ファイルとURLをアップロード</strong> - 下記フォームに入力して送信</li>
+                </ol>
+            </div>
+
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="jobcan_url">🔗 Jobcan出勤簿URL</label>
+                    <input type="text" id="jobcan_url" name="jobcan_url" 
+                           placeholder="https://ssl.jobcan.jp/employee/attendance/xxxxxx" required>
+                    <div class="error-message" id="url-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="file">📊 勤怠データExcelファイル</label>
+                    <input type="file" id="file" name="file" accept=".xlsx,.xls" required>
+                    <div class="error-message" id="file-error"></div>
+                    <div class="file-info" id="file-info">
+                        <strong>選択されたファイル:</strong> <span id="file-name"></span><br>
+                        <strong>ファイルサイズ:</strong> <span id="file-size"></span>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn" id="submitBtn">
+                    🚀 勤怠データを自動入力
+                </button>
+            </form>
+
+            <div class="status" id="status">
+                <div id="status-content"></div>
+            </div>
+
+            <div class="results" id="results">
+                <h3>📊 処理結果</h3>
+                <div id="results-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+        let statusCheckInterval = null;
+
+        // ファイル選択時の処理
+        document.getElementById('file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const fileInfo = document.getElementById('file-info');
+            const fileName = document.getElementById('file-name');
+            const fileSize = document.getElementById('file-size');
+
+            if (file) {
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+                fileInfo.classList.add('show');
+            } else {
+                fileInfo.classList.remove('show');
+            }
+        });
+
+        // ファイルサイズのフォーマット
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // フォーム送信処理
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const submitBtn = document.getElementById('submitBtn');
+            const status = document.getElementById('status');
+            const statusContent = document.getElementById('status-content');
+            const results = document.getElementById('results');
+
+            // ボタンを無効化
+            submitBtn.disabled = true;
+            submitBtn.textContent = '🔄 処理中...';
+
+            // ステータス表示
+            status.className = 'status processing';
+            status.style.display = 'block';
+            statusContent.innerHTML = '<div class="spinner"></div>ファイルをアップロード中...';
+            results.style.display = 'none';
+
+            // エラーメッセージをクリア
+            document.getElementById('url-error').style.display = 'none';
+            document.getElementById('file-error').style.display = 'none';
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                currentSessionId = data.session_id;
+                statusContent.innerHTML = `
+                    <div class="spinner"></div>
+                    処理を開始しました...<br>
+                    <small>データ件数: ${data.data_count}件</small>
+                `;
+                
+                // ステータスチェックを開始
+                startStatusCheck();
+            })
+            .catch(error => {
+                status.className = 'status error';
+                statusContent.textContent = 'エラー: ' + error.message;
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 勤怠データを自動入力';
+            });
+        });
+
+        // ステータスチェック
+        function startStatusCheck() {
+            if (statusCheckInterval) {
+                clearInterval(statusCheckInterval);
+            }
+            
+            statusCheckInterval = setInterval(() => {
+                if (!currentSessionId) return;
+                
+                fetch(`/status/${currentSessionId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            throw new Error(data.error);
+                        }
+                        
+                        if (data.complete) {
+                            clearInterval(statusCheckInterval);
+                            showResults(data.results);
+                        }
+                    })
+                    .catch(error => {
+                        clearInterval(statusCheckInterval);
+                        const status = document.getElementById('status');
+                        const statusContent = document.getElementById('status-content');
+                        status.className = 'status error';
+                        statusContent.textContent = 'エラー: ' + error.message;
+                        
+                        const submitBtn = document.getElementById('submitBtn');
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = '🚀 勤怠データを自動入力';
+                    });
+            }, 2000); // 2秒ごとにチェック
+        }
+
+        // 結果表示
+        function showResults(results) {
+            const status = document.getElementById('status');
+            const statusContent = document.getElementById('status-content');
+            const resultsDiv = document.getElementById('results');
+            const resultsContent = document.getElementById('results-content');
+            const submitBtn = document.getElementById('submitBtn');
+
+            // ステータス更新
+            if (results.error_count === 0) {
+                status.className = 'status success';
+                statusContent.innerHTML = `
+                    ✅ 処理が完了しました！<br>
+                    <small>成功: ${results.success_count}件</small>
+                `;
+            } else {
+                status.className = 'status error';
+                statusContent.innerHTML = `
+                    ⚠️ 処理が完了しました（一部エラーあり）<br>
+                    <small>成功: ${results.success_count}件 / 失敗: ${results.error_count}件</small>
+                `;
+            }
+
+            // 結果詳細表示
+            let resultsHtml = `
+                <div style="margin-bottom: 15px;">
+                    <strong>成功:</strong> ${results.success_count}件 | 
+                    <strong>失敗:</strong> ${results.error_count}件 | 
+                    <strong>合計:</strong> ${results.success_count + results.error_count}件
+                </div>
+            `;
+
+            results.details.forEach(detail => {
+                const statusClass = detail.status === 'success' ? 'success' : 'error';
+                const statusIcon = detail.status === 'success' ? '✅' : '❌';
+                const errorText = detail.error ? `<br><small>エラー: ${detail.error}</small>` : '';
+                
+                resultsHtml += `
+                    <div class="result-item ${statusClass}">
+                        ${statusIcon} ${detail.date}: ${detail.start_time} - ${detail.end_time}
+                        ${errorText}
+                    </div>
+                `;
+            });
+
+            resultsContent.innerHTML = resultsHtml;
+            resultsDiv.style.display = 'block';
+
+            // ボタンを有効化
+            submitBtn.disabled = false;
+            submitBtn.textContent = '🚀 勤怠データを自動入力';
+        }
+
+        // URLバリデーション
+        document.getElementById('jobcan_url').addEventListener('blur', function() {
+            const url = this.value.trim();
+            const errorDiv = document.getElementById('url-error');
+            
+            if (url && !url.includes('jobcan.jp')) {
+                errorDiv.textContent = '有効なJobcanのURLを入力してください';
+                errorDiv.style.display = 'block';
+            } else {
+                errorDiv.style.display = 'none';
+            }
+        });
+
+        // ファイルバリデーション
+        document.getElementById('file').addEventListener('change', function() {
+            const file = this.files[0];
+            const errorDiv = document.getElementById('file-error');
+            
+            if (file) {
+                const allowedTypes = ['.xlsx', '.xls'];
+                const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+                
+                if (!allowedTypes.includes(fileExtension)) {
+                    errorDiv.textContent = 'Excelファイル（.xlsx, .xls）を選択してください';
+                    errorDiv.style.display = 'block';
+                } else {
+                    errorDiv.style.display = 'none';
+                }
+            }
+        });
+    </script>
+</body>
+</html> 
