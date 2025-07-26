@@ -1,101 +1,72 @@
-# Jobcan勤怠打刻自動申請ツール
+# Jobcan勤怠申請Webアプリケーション
 
-Excelファイルに記載された日付・始業時刻・終業時刻をJobcanに自動入力するPythonスクリプトです。
+Flask + Playwrightで構築された勤怠自動入力Webサービスです。
 
-## 🚀 ダウンロード
+## 🚀 機能
 
-### 最新リリース
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/YOUR_USERNAME/jobcan_automation)](https://github.com/YOUR_USERNAME/jobcan_automation/releases/latest)
+- **Webブラウザからアクセス** - 直感的なWebインターフェース
+- **Excelファイルアップロード** - 勤怠データを簡単にアップロード
+- **URL直接指定** - Jobcanログイン後のURLを貼り付けるだけ
+- **リアルタイム進捗表示** - 処理状況をリアルタイムで確認
+- **詳細結果表示** - 成功/失敗の詳細な結果を表示
 
-**Windows版（推奨）:**
-- [jobcan_bot.exe (CLI版)](https://github.com/YOUR_USERNAME/jobcan_automation/releases/latest/download/jobcan_bot.exe)
-- [jobcan_gui.exe (GUI版)](https://github.com/YOUR_USERNAME/jobcan_automation/releases/latest/download/jobcan_gui.exe)
+## 📋 使用方法
 
-> **注意**: `YOUR_USERNAME` を実際のGitHubユーザー名に置き換えてください
+### 1. 準備
+1. **Jobcanにログイン** - ブラウザでJobcanにログイン
+2. **出勤簿ページに移動** - 出勤簿ページのURLをコピー
+3. **Excelファイルを準備** - A列:日付、B列:始業時刻、C列:終業時刻
 
-### 必要なファイル
-- `jobcan_bot.exe` または `jobcan_gui.exe` - メイン実行ファイル
-- `sample_data.py` - サンプルデータ作成スクリプト
-- `sample_attendance.xlsx` - サンプルExcelファイル
-- `README.md` - このファイル
-
-## 機能
-
-- Excelファイルから勤怠データを読み込み
-- Jobcanへの自動ログイン
-- 勤怠打刻の自動入力
-- ログイン情報の暗号化保存
-- 処理結果の詳細表示
-- GUI版とCLI版の両方を提供
-
-## 必要な環境
-
-- Windows 10/11
-- Python 3.8以上（ソースコードから実行する場合のみ）
-
-## インストール
-
-### 方法1: 実行ファイル版（推奨）
-1. [リリースページ](https://github.com/YOUR_USERNAME/jobcan_automation/releases/latest)からファイルをダウンロード
-2. 任意のフォルダに解凍
-3. `jobcan_bot.exe` または `jobcan_gui.exe` を実行
-
-### 方法2: ソースコード版
-1. 依存関係をインストール:
+### 2. Webアプリの起動
 ```bash
-pip install -r requirements.txt
-```
+# 依存関係をインストール
+pip install -r requirements_web.txt
 
-2. Playwrightのブラウザをインストール:
-```bash
+# Playwrightブラウザをインストール
 playwright install chromium
+
+# Webアプリを起動
+python web_app.py
 ```
 
-## 使用方法
+### 3. ブラウザでアクセス
+- http://localhost:5000 にアクセス
+- JobcanのURLとExcelファイルを入力
+- 「勤怠データを自動入力」ボタンをクリック
 
-### 🎯 推奨使用方法（URL直接指定）
+## 📁 ファイル構成
 
-1. **Jobcanにログイン**
-   - ブラウザでJobcanにログイン
-   - 出勤簿ページに移動: `https://ssl.jobcan.jp/employee/attendance`
-
-2. **URLをコピー**
-   - ブラウザのアドレスバーからURLをコピー
-
-3. **ツールを実行**
-   ```bash
-   jobcan_bot.exe sample_attendance.xlsx --url "コピーしたURL"
-   ```
-
-**メリット:**
-- ログイン情報を入力する必要がない
-- セッションが切れている場合の自動検出
-- より安全で簡単
-
-### CLI版
-```bash
-# 基本的な使用方法
-jobcan_bot.exe sample_attendance.xlsx
-
-# 初回ログイン（認証情報を保存）
-jobcan_bot.exe sample_attendance.xlsx --email your-email@example.com --password your-password --save-credentials
-
-# ヘッドレスモードで実行
-jobcan_bot.exe sample_attendance.xlsx --headless
-
-# Jobcanログイン後のURLを直接使用（推奨）
-jobcan_bot.exe sample_attendance.xlsx --url "https://ssl.jobcan.jp/employee/attendance"
+```
+jobcan_automation/
+├── web_app.py              # Flask Webアプリケーション
+├── templates/
+│   └── index.html          # メインHTMLテンプレート
+├── uploads/                # アップロードファイル保存先
+├── requirements_web.txt    # Webアプリ用依存関係
+├── sample_attendance.xlsx  # サンプルExcelファイル
+└── README_WEB.md          # このファイル
 ```
 
-### GUI版
-1. `jobcan_gui.exe` をダブルクリック
-2. Excelファイルを選択
-3. ログイン情報を入力（初回のみ）
-4. 「勤怠データを自動入力」ボタンをクリック
+## 🔧 技術仕様
 
-## Excelファイル形式
+### バックエンド
+- **Flask 3.0.0** - Webフレームワーク
+- **Playwright 1.40.0** - ブラウザ自動化
+- **Pandas 2.2.0+** - Excelファイル処理
+- **OpenPyXL 3.1.2** - Excelファイル読み込み
 
-Excelファイルは以下の形式で作成してください：
+### フロントエンド
+- **HTML5** - マークアップ
+- **CSS3** - スタイリング（グラデーション、アニメーション）
+- **JavaScript** - 非同期処理、リアルタイム更新
+
+### セキュリティ
+- **ファイルアップロード制限** - Excelファイルのみ許可
+- **ファイルサイズ制限** - 16MB以下
+- **セッション管理** - 処理状況の追跡
+- **一時ファイル削除** - 処理完了後の自動削除
+
+## 📊 Excelファイル形式
 
 | A列（日付） | B列（始業時刻） | C列（終業時刻） |
 |------------|----------------|----------------|
@@ -103,112 +74,135 @@ Excelファイルは以下の形式で作成してください：
 | 2025/01/16 | 09:00          | 18:00          |
 | 2025/01/17 | 09:45          | 18:45          |
 
-### サンプルファイルの作成
+## 🔄 処理フロー
+
+1. **ファイルアップロード** - Excelファイルをサーバーにアップロード
+2. **データ読み込み** - PandasでExcelデータを解析
+3. **バックグラウンド処理** - Playwrightでブラウザ自動操作
+4. **リアルタイム更新** - 処理状況を2秒ごとに確認
+5. **結果表示** - 成功/失敗の詳細結果を表示
+
+## ⚙️ 設定
+
+### 環境変数
 ```bash
-python sample_data.py
+# セッションキー（本番環境では変更してください）
+export FLASK_SECRET_KEY="your-secret-key"
+
+# アップロードフォルダ
+export UPLOAD_FOLDER="uploads"
+
+# 最大ファイルサイズ（バイト）
+export MAX_CONTENT_LENGTH=16777216
 ```
 
-## セキュリティ
+### サーバー設定
+```python
+# 開発環境
+app.run(debug=True, host='0.0.0.0', port=5000)
 
-- ログイン情報は`cryptography`ライブラリを使用して暗号化されます
-- 暗号化キーは`key.key`ファイルに保存されます
-- 暗号化された認証情報は`credentials.enc`ファイルに保存されます
-- **重要**: これらのファイルはGitHubにアップロードされません
-
-## ファイル構成
-
-```
-jobcan_automation/
-├── jobcan_bot.py          # メインスクリプト（CLI版）
-├── jobcan_gui.py          # GUI版スクリプト
-├── config.py              # 設定ファイル
-├── sample_data.py         # サンプルデータ作成スクリプト
-├── build_exe.py           # 実行ファイル作成スクリプト
-├── requirements.txt       # 依存関係
-├── requirements_gui.txt   # GUI版依存関係
-├── setup.bat             # セットアップスクリプト
-├── README.md             # このファイル
-├── .gitignore            # Git除外設定
-├── .github/workflows/    # GitHub Actions
-│   └── build.yml
-├── credentials.enc       # 暗号化された認証情報（自動生成）
-└── key.key               # 暗号化キー（自動生成）
+# 本番環境
+app.run(host='0.0.0.0', port=5000)
 ```
 
-## 処理フロー
+## 🚀 デプロイ
 
-1. **ログイン**: Jobcanにログイン（保存された認証情報または新規入力）
-2. **出勤簿アクセス**: 出勤簿ページに移動
-3. **日付選択**: Excelの各行の日付を選択
-4. **打刻修正**: 打刻修正ボタンをクリック
-5. **時刻入力**: 始業時刻と終業時刻を順次入力
-6. **結果表示**: 処理結果をターミナルに表示
-
-## エラーハンドリング
-
-- ログイン失敗時の再試行
-- ページ要素が見つからない場合の代替セレクター使用
-- 処理失敗時の詳細エラー表示
-- キーボード割り込み（Ctrl+C）での安全な終了
-
-## 注意事項
-
-- 初回実行時はブラウザが表示されるため、手動での操作は避けてください
-- 大量のデータを処理する場合は、適切な間隔を設けてください
-- 本ツールは個人利用を想定しています
-- 勤怠システムの利用規約を確認してからご利用ください
-
-## トラブルシューティング
-
-### ログインに失敗する場合
-- メールアドレスとパスワードが正しいか確認
-- 2段階認証が有効な場合は無効にするか、アプリパスワードを使用
-
-### ページ要素が見つからない場合
-- JobcanのUIが変更された可能性があります
-- `config.py`のセレクター設定を更新してください
-
-### ブラウザが起動しない場合
-- Playwrightが正しくインストールされているか確認
-- `playwright install chromium`を実行してください
-
-### 実行ファイルが動作しない場合
-- Windows Defenderやアンチウイルスソフトがブロックしている可能性があります
-- ソースコード版を試してください
-
-## 開発者向け
-
-### ローカルビルド
+### ローカル実行
 ```bash
-# 実行ファイルを作成
-python build_exe.py
-
-# または手動でPyInstallerを使用
-pip install pyinstaller
-pyinstaller --onefile jobcan_bot.py
+python web_app.py
 ```
 
-### GitHub Actions
-- タグをプッシュすると自動的にリリースが作成されます
-- `v1.0.0` のような形式でタグを作成してください
+### Docker実行
+```dockerfile
+FROM python:3.9-slim
 
-## ライセンス
+WORKDIR /app
+COPY requirements_web.txt .
+RUN pip install -r requirements_web.txt
 
-このプロジェクトは個人利用を目的としています。
+RUN playwright install chromium
 
-## サポート
+COPY . .
+EXPOSE 5000
 
-問題が発生した場合は、以下の情報を含めて[Issues](https://github.com/YOUR_USERNAME/jobcan_automation/issues)に投稿してください：
+CMD ["python", "web_app.py"]
+```
+
+### クラウドデプロイ
+- **Heroku** - `Procfile`でWebプロセスを定義
+- **AWS** - EC2またはECSでデプロイ
+- **Google Cloud** - App EngineまたはCompute Engine
+- **Azure** - App ServiceまたはContainer Instances
+
+## 🔍 トラブルシューティング
+
+### よくある問題
+
+1. **Playwrightブラウザが起動しない**
+   ```bash
+   playwright install chromium
+   ```
+
+2. **Excelファイルが読み込めない**
+   - ファイル形式を確認（.xlsx, .xls）
+   - ファイルサイズを確認（16MB以下）
+
+3. **JobcanのURLにアクセスできない**
+   - ログイン状態を確認
+   - URLの形式を確認
+
+4. **処理が途中で止まる**
+   - ネットワーク接続を確認
+   - Jobcanのセッション切れを確認
+
+### ログ確認
+```bash
+# Flaskのログを確認
+python web_app.py
+
+# ブラウザのログを確認（ヘッドレスモードを無効化）
+# web_app.pyのheadless=TrueをFalseに変更
+```
+
+## 📈 パフォーマンス
+
+### 最適化ポイント
+- **バックグラウンド処理** - 非同期でブラウザ操作
+- **ファイル削除** - 処理完了後の自動削除
+- **セッション管理** - 効率的な状態管理
+- **エラーハンドリング** - 適切なエラー処理
+
+### 推奨環境
+- **CPU**: 2コア以上
+- **メモリ**: 4GB以上
+- **ストレージ**: 1GB以上の空き容量
+- **ネットワーク**: 安定したインターネット接続
+
+## 🔒 セキュリティ注意事項
+
+1. **本番環境での使用**
+   - セッションキーを変更
+   - HTTPS通信を有効化
+   - ファイアウォール設定
+
+2. **ファイル管理**
+   - アップロードファイルの自動削除
+   - ファイル形式の厳密なチェック
+   - ファイルサイズの制限
+
+3. **アクセス制御**
+   - 必要に応じて認証機能を追加
+   - IPアドレス制限の検討
+   - レート制限の実装
+
+## 📞 サポート
+
+問題が発生した場合は、以下の情報を含めてご連絡ください：
 - エラーメッセージ
 - 使用しているExcelファイルの形式
-- Jobcanのバージョン（確認可能な場合）
-- 実行環境（Windows 10/11、Python版/実行ファイル版）
+- JobcanのURL（機密情報は除く）
+- 実行環境（OS、Pythonバージョン）
 
-## 更新履歴
+## 📄 ライセンス
 
-### v1.0.0
-- 初回リリース
-- CLI版とGUI版の両方を提供
-- 自動ログイン機能
-- 暗号化された認証情報保存
-- サンプルデータ作成機能 
+このプロジェクトは個人利用を目的としています。 
