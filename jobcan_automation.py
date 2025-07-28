@@ -25,15 +25,19 @@ class JobcanAutomation:
             print("🌐 Playwrightを初期化中...")
             self.playwright = sync_playwright().start()
             
-            # Railway環境用のブラウザ起動オプションを設定
+            # Railway環境用のブラウザ起動オプションを設定（最小限）
             browser_args = [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
                 '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--no-first-run',
-                '--no-zygote',
                 '--disable-gpu',
+                '--no-first-run',
+                '--disable-extensions',
+                '--disable-plugins',
+                '--disable-web-security',
+                '--allow-running-insecure-content',
+                '--disable-features=VizDisplayCompositor',
+                '--single-process',
                 '--disable-background-timer-throttling',
                 '--disable-backgrounding-occluded-windows',
                 '--disable-renderer-backgrounding',
@@ -45,70 +49,65 @@ class JobcanAutomation:
                 '--disable-translate',
                 '--hide-scrollbars',
                 '--mute-audio',
-                '--no-first-run',
                 '--safebrowsing-disable-auto-update',
                 '--disable-client-side-phishing-detection',
                 '--disable-component-update',
-                '--disable-domain-reliability',
-                '--disable-features=TranslateUI',
-                '--disable-ipc-flooding-protection',
-                '--disable-web-security',
-                '--allow-running-insecure-content',
-                '--disable-features=VizDisplayCompositor',
-                '--single-process',
-                '--disable-extensions',
-                '--disable-plugins',
-                '--disable-background-networking',
-                '--disable-default-apps',
-                '--disable-sync',
-                '--disable-translate',
-                '--hide-scrollbars',
-                '--mute-audio',
-                '--no-first-run',
-                '--safebrowsing-disable-auto-update',
-                '--disable-client-side-phishing-detection',
-                '--disable-component-update',
-                '--disable-domain-reliability',
-                '--disable-features=TranslateUI',
-                '--disable-ipc-flooding-protection'
+                '--disable-domain-reliability'
             ]
             
             print("🌐 Chromiumブラウザを起動中...")
             
-            # Railway環境でのブラウザ起動（より安全な方法）
+            # Railway環境でのブラウザ起動（段階的アプローチ）
+            browser_launched = False
+            
+            # 方法1: 最小限の設定で起動
             try:
+                print("🔄 方法1: 最小限の設定でブラウザを起動中...")
                 self.browser = self.playwright.chromium.launch(
-                    headless=True,  # Railway環境では必ずヘッドレスモード
-                    args=browser_args
+                    headless=True,
+                    args=['--no-sandbox', '--disable-dev-shm-usage']
                 )
-            except Exception as browser_error:
-                print(f"⚠️ 通常のブラウザ起動に失敗: {browser_error}")
-                print("🔄 代替方法でブラウザを起動中...")
+                browser_launched = True
+                print("✅ 方法1でブラウザ起動成功")
+            except Exception as e1:
+                print(f"❌ 方法1でブラウザ起動失敗: {e1}")
                 
-                # 代替方法：より基本的な設定で起動
+                # 方法2: デフォルト設定で起動
                 try:
+                    print("🔄 方法2: デフォルト設定でブラウザを起動中...")
                     self.browser = self.playwright.chromium.launch(
-                        headless=True,
-                        args=['--no-sandbox', '--disable-dev-shm-usage']
+                        headless=True
                     )
-                except Exception as fallback_error:
-                    print(f"⚠️ 代替方法でもブラウザ起動に失敗: {fallback_error}")
-                    print("🔄 最小限の設定でブラウザを起動中...")
+                    browser_launched = True
+                    print("✅ 方法2でブラウザ起動成功")
+                except Exception as e2:
+                    print(f"❌ 方法2でブラウザ起動失敗: {e2}")
                     
-                    # 最小限の設定で起動
+                    # 方法3: Firefoxを使用（Railway環境で利用可能な場合）
                     try:
-                        self.browser = self.playwright.chromium.launch(
-                            headless=True,
-                            args=['--no-sandbox']
-                        )
-                    except Exception as minimal_error:
-                        print(f"❌ 最小限の設定でもブラウザ起動に失敗: {minimal_error}")
-                        print("🔄 最後の手段として、デフォルト設定でブラウザを起動中...")
-                        
-                        # 最後の手段：デフォルト設定で起動
-                        self.browser = self.playwright.chromium.launch(
+                        print("🔄 方法3: Firefoxでブラウザを起動中...")
+                        self.browser = self.playwright.firefox.launch(
                             headless=True
                         )
+                        browser_launched = True
+                        print("✅ 方法3でブラウザ起動成功")
+                    except Exception as e3:
+                        print(f"❌ 方法3でブラウザ起動失敗: {e3}")
+                        
+                        # 方法4: WebKitを使用
+                        try:
+                            print("🔄 方法4: WebKitでブラウザを起動中...")
+                            self.browser = self.playwright.webkit.launch(
+                                headless=True
+                            )
+                            browser_launched = True
+                            print("✅ 方法4でブラウザ起動成功")
+                        except Exception as e4:
+                            print(f"❌ 方法4でブラウザ起動失敗: {e4}")
+                            raise Exception("すべてのブラウザ起動方法が失敗しました")
+            
+            if not browser_launched:
+                raise Exception("ブラウザの起動に失敗しました")
             
             print("📄 新しいページを作成中...")
             self.page = self.browser.new_page()
