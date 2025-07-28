@@ -117,6 +117,17 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         add_job_log(job_id, f"🔧 現在のディレクトリ: {os.getcwd()}")
         add_job_log(job_id, f"🔧 利用可能なメモリ: {psutil.virtual_memory().available // (1024**3)} GB")
         add_job_log(job_id, f"🔧 CPU使用率: {psutil.cpu_percent()}%")
+        add_job_log(job_id, f"🔧 総メモリ: {psutil.virtual_memory().total // (1024**3)} GB")
+        add_job_log(job_id, f"🔧 メモリ使用率: {psutil.virtual_memory().percent}%")
+        
+        # Playwrightの利用可能性をチェック
+        try:
+            from playwright.sync_api import sync_playwright
+            add_job_log(job_id, "✅ Playwrightモジュールが利用可能です")
+        except ImportError as e:
+            add_job_log(job_id, f"❌ Playwrightモジュールのインポートに失敗: {e}")
+            jobs[job_id]['status'] = 'error'
+            return False
         
         # 自動化インスタンスを作成
         add_job_log(job_id, "🤖 自動化インスタンスを作成中...")
@@ -136,6 +147,17 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 add_job_log(job_id, "✅ ブラウザの起動が完了しました")
             except Exception as browser_start_error:
                 add_job_log(job_id, f"❌ ブラウザの起動に失敗: {browser_start_error}")
+                add_job_log(job_id, f"🔧 エラーの詳細: {type(browser_start_error).__name__}")
+                add_job_log(job_id, f"🔧 エラーメッセージ: {str(browser_start_error)}")
+                
+                # Railway環境での追加情報をログに出力
+                try:
+                    import subprocess
+                    result = subprocess.run(['which', 'chromium'], capture_output=True, text=True)
+                    add_job_log(job_id, f"🔧 Chromiumの場所: {result.stdout.strip() if result.stdout else '見つかりません'}")
+                except Exception as e:
+                    add_job_log(job_id, f"🔧 Chromiumの場所確認でエラー: {e}")
+                
                 jobs[job_id]['status'] = 'error'
                 return False
             
@@ -205,6 +227,14 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             
         except Exception as process_error:
             add_job_log(job_id, f"❌ 処理中にエラーが発生: {process_error}")
+            add_job_log(job_id, f"🔧 エラーの詳細: {type(process_error).__name__}")
+            add_job_log(job_id, f"🔧 エラーメッセージ: {str(process_error)}")
+            
+            # エラーの詳細情報をログに出力
+            import traceback
+            error_traceback = traceback.format_exc()
+            add_job_log(job_id, f"🔧 エラートレースバック: {error_traceback}")
+            
             jobs[job_id]['status'] = 'error'
             return False
         finally:
@@ -215,10 +245,20 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 add_job_log(job_id, "✅ ブラウザを正常に閉じました")
             except Exception as close_error:
                 add_job_log(job_id, f"⚠️ ブラウザの終了でエラー: {close_error}")
+                add_job_log(job_id, f"🔧 終了エラーの詳細: {type(close_error).__name__}")
+                add_job_log(job_id, f"🔧 終了エラーメッセージ: {str(close_error)}")
             
     except Exception as e:
         error_msg = f"❌ 予期しないエラーが発生しました: {e}"
         add_job_log(job_id, error_msg)
+        add_job_log(job_id, f"🔧 予期しないエラーの詳細: {type(e).__name__}")
+        add_job_log(job_id, f"🔧 予期しないエラーメッセージ: {str(e)}")
+        
+        # 予期しないエラーの詳細情報をログに出力
+        import traceback
+        error_traceback = traceback.format_exc()
+        add_job_log(job_id, f"🔧 予期しないエラートレースバック: {error_traceback}")
+        
         jobs[job_id]['status'] = 'error'
         return False
 
