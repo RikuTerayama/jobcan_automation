@@ -57,7 +57,20 @@ class JobcanAutomation:
                 '--disable-features=VizDisplayCompositor',
                 '--single-process',
                 '--disable-extensions',
-                '--disable-plugins'
+                '--disable-plugins',
+                '--disable-background-networking',
+                '--disable-default-apps',
+                '--disable-sync',
+                '--disable-translate',
+                '--hide-scrollbars',
+                '--mute-audio',
+                '--no-first-run',
+                '--safebrowsing-disable-auto-update',
+                '--disable-client-side-phishing-detection',
+                '--disable-component-update',
+                '--disable-domain-reliability',
+                '--disable-features=TranslateUI',
+                '--disable-ipc-flooding-protection'
             ]
             
             print("🌐 Chromiumブラウザを起動中...")
@@ -73,10 +86,20 @@ class JobcanAutomation:
                 print("🔄 代替方法でブラウザを起動中...")
                 
                 # 代替方法：より基本的な設定で起動
-                self.browser = self.playwright.chromium.launch(
-                    headless=True,
-                    args=['--no-sandbox', '--disable-dev-shm-usage']
-                )
+                try:
+                    self.browser = self.playwright.chromium.launch(
+                        headless=True,
+                        args=['--no-sandbox', '--disable-dev-shm-usage']
+                    )
+                except Exception as fallback_error:
+                    print(f"⚠️ 代替方法でもブラウザ起動に失敗: {fallback_error}")
+                    print("🔄 最小限の設定でブラウザを起動中...")
+                    
+                    # 最小限の設定で起動
+                    self.browser = self.playwright.chromium.launch(
+                        headless=True,
+                        args=['--no-sandbox']
+                    )
             
             print("📄 新しいページを作成中...")
             self.page = self.browser.new_page()
