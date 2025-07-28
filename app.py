@@ -19,6 +19,12 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
 # アップロードフォルダが存在しない場合は作成
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+# アプリケーション起動時のログ
+print("🚀 Jobcan自動化アプリケーションを初期化中...")
+print(f"🔧 環境変数 PORT: {os.environ.get('PORT', '5000')}")
+print(f"🔧 環境変数 RAILWAY_ENVIRONMENT: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
+print("✅ アプリケーションの初期化が完了しました")
+
 # グローバル変数
 jobs = {}
 
@@ -529,6 +535,7 @@ if __name__ == '__main__':
         
         # アプリケーションが正常に起動したことを確認
         print(f"✅ アプリケーションが正常に起動しました")
+        print(f"✅ ヘルスチェックエンドポイント: http://localhost:{port}/health")
         
         app.run(host='0.0.0.0', port=port, debug=debug_mode)
     except Exception as e:
