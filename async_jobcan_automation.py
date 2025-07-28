@@ -498,12 +498,14 @@ class AsyncJobcanAutomation:
                 button_count = await self.page.evaluate("() => document.querySelectorAll('button').length")
                 table_count = await self.page.evaluate("() => document.querySelectorAll('table').length")
                 td_count = await self.page.evaluate("() => document.querySelectorAll('td').length")
+                a_count = await self.page.evaluate("() => document.querySelectorAll('a').length")
                 
                 print(f"フォーム数: {form_count}")
                 print(f"入力フィールド数: {input_count}")
                 print(f"ボタン数: {button_count}")
                 print(f"テーブル数: {table_count}")
                 print(f"TD要素数: {td_count}")
+                print(f"リンク数: {a_count}")
                 
                 # 日付関連の要素を確認
                 print("日付関連の要素を確認中...")
@@ -535,9 +537,71 @@ class AsyncJobcanAutomation:
                 else:
                     print("日付要素が見つかりませんでした")
                 
+                # 打刻関連のボタンを確認
+                print("打刻関連のボタンを確認中...")
+                stamp_buttons = await self.page.evaluate("""
+                    () => {
+                        const buttons = document.querySelectorAll('button');
+                        const results = [];
+                        for (let i = 0; i < buttons.length; i++) {
+                            const button = buttons[i];
+                            const text = button.textContent || '';
+                            if (text.includes('打刻') || text.includes('修正') || text.includes('編集')) {
+                                results.push({
+                                    index: i,
+                                    text: text.trim(),
+                                    type: button.type || '',
+                                    id: button.id || '',
+                                    className: button.className || '',
+                                    visible: button.offsetWidth > 0 && button.offsetHeight > 0
+                                });
+                            }
+                        }
+                        return results;
+                    }
+                """)
+                
+                if stamp_buttons:
+                    print("打刻関連ボタンを発見:")
+                    for i, button_info in enumerate(stamp_buttons):
+                        print(f"  stamp_button[{i}]: {button_info}")
+                else:
+                    print("打刻関連ボタンが見つかりませんでした")
+                
+                # 時刻入力フィールドを確認
+                print("時刻入力フィールドを確認中...")
+                time_inputs = await self.page.evaluate("""
+                    () => {
+                        const inputs = document.querySelectorAll('input');
+                        const results = [];
+                        for (let i = 0; i < inputs.length; i++) {
+                            const input = inputs[i];
+                            if (input.type === 'time' || input.type === 'text') {
+                                results.push({
+                                    index: i,
+                                    type: input.type || '',
+                                    name: input.name || '',
+                                    id: input.id || '',
+                                    placeholder: input.placeholder || '',
+                                    value: input.value || '',
+                                    visible: input.offsetWidth > 0 && input.offsetHeight > 0
+                                });
+                            }
+                        }
+                        return results;
+                    }
+                """)
+                
+                if time_inputs:
+                    print("時刻入力フィールドを発見:")
+                    for i, input_info in enumerate(time_inputs):
+                        print(f"  time_input[{i}]: {input_info}")
+                else:
+                    print("時刻入力フィールドが見つかりませんでした")
+                
                 # 入力フィールドの詳細を確認
                 if input_count > 0:
-                    print("入力フィールドの詳細:")
+                    print("全入力フィールドの詳細:")
                     inputs_info = await self.page.evaluate("""
                         () => {
                             const inputs = document.querySelectorAll('input');
@@ -563,7 +627,7 @@ class AsyncJobcanAutomation:
                 
                 # ボタンの詳細を確認
                 if button_count > 0:
-                    print("ボタンの詳細:")
+                    print("全ボタンの詳細:")
                     buttons_info = await self.page.evaluate("""
                         () => {
                             const buttons = document.querySelectorAll('button');
@@ -779,7 +843,7 @@ class AsyncJobcanAutomation:
     async def input_start_time(self, start_time: str):
         """始業時刻を入力して打刻"""
         try:
-            print(f"始業時刻 {start_time} を入力中...")
+            print(f"⏰ 始業時刻 {start_time} を入力中...")
             
             # 始業時刻入力フィールドを探す（Jobcanの実際のUIに基づく）
             start_time_selectors = [
@@ -795,40 +859,54 @@ class AsyncJobcanAutomation:
                 'input[name="begin_time"]'
             ]
             
+            print(f"🔍 始業時刻入力フィールドを検索中...")
             start_input = None
-            for selector in start_time_selectors:
+            for i, selector in enumerate(start_time_selectors):
                 try:
-                    if await self.page.locator(selector).count() > 0:
-                        print(f"始業時刻入力フィールドを発見: {selector}")
+                    count = await self.page.locator(selector).count()
+                    print(f"🔍 セレクター {i+1}/{len(start_time_selectors)}: {selector} → {count}個発見")
+                    if count > 0:
+                        print(f"✅ 始業時刻入力フィールドを発見: {selector}")
                         start_input = self.page.locator(selector).first
                         break
                 except Exception as e:
-                    print(f"セレクター {selector} でエラー: {e}")
+                    print(f"❌ セレクター {selector} でエラー: {e}")
                     continue
             
             if not start_input:
-                print("始業時刻入力フィールドが見つかりませんでした")
+                print("❌ 始業時刻入力フィールドが見つかりませんでした")
                 return False
             
             # 始業時刻を入力
+            print(f"📝 始業時刻 {start_time} を入力中...")
             await start_input.click()
             await asyncio.sleep(1)
             await start_input.fill(start_time)
             await asyncio.sleep(1)
             
-            # 始業時刻の打刻ボタンをクリック
-            await self.click_start_stamp_button()
+            # 入力後の値を確認
+            input_value = await start_input.input_value()
+            print(f"📝 入力後の値: {input_value}")
             
-            return True
+            # 始業時刻の打刻ボタンをクリック
+            print(f"🔘 始業時刻の打刻ボタンをクリック中...")
+            stamp_success = await self.click_start_stamp_button()
+            
+            if stamp_success:
+                print(f"✅ 始業時刻 {start_time} の入力と打刻が完了しました")
+            else:
+                print(f"❌ 始業時刻 {start_time} の打刻に失敗しました")
+            
+            return stamp_success
             
         except Exception as e:
-            print(f"始業時刻入力でエラー: {e}")
-            raise
+            print(f"❌ 始業時刻入力でエラー: {e}")
+            return False
 
     async def click_start_stamp_button(self):
         """始業時刻の打刻ボタンをクリック"""
         try:
-            print("始業時刻の打刻ボタンをクリック中...")
+            print("🔘 始業時刻の打刻ボタンをクリック中...")
             
             # 始業時刻の打刻ボタンを探す
             start_stamp_selectors = [
@@ -842,25 +920,33 @@ class AsyncJobcanAutomation:
                 '[class*="submit"]'
             ]
             
-            for selector in start_stamp_selectors:
+            print(f"🔍 始業時刻打刻ボタンを検索中...")
+            for i, selector in enumerate(start_stamp_selectors):
                 try:
-                    if await self.page.locator(selector).count() > 0:
-                        print(f"始業時刻打刻ボタンを発見: {selector}")
+                    count = await self.page.locator(selector).count()
+                    print(f"🔍 セレクター {i+1}/{len(start_stamp_selectors)}: {selector} → {count}個発見")
+                    if count > 0:
+                        print(f"✅ 始業時刻打刻ボタンを発見: {selector}")
                         await self.page.click(selector)
                         await asyncio.sleep(2)
                         
                         # 打刻完了メッセージを確認
-                        await self.check_stamp_completion_message("始業")
+                        print(f"📋 打刻完了メッセージを確認中...")
+                        completion_success = await self.check_stamp_completion_message("始業")
+                        if completion_success:
+                            print(f"✅ 始業時刻の打刻が完了しました")
+                        else:
+                            print(f"⚠️ 始業時刻の打刻完了メッセージが確認できませんでした")
                         return True
                 except Exception as e:
-                    print(f"セレクター {selector} でエラー: {e}")
+                    print(f"❌ セレクター {selector} でエラー: {e}")
                     continue
             
-            print("始業時刻の打刻ボタンが見つかりませんでした")
+            print("❌ 始業時刻の打刻ボタンが見つかりませんでした")
             return False
             
         except Exception as e:
-            print(f"始業時刻打刻ボタンのクリックでエラー: {e}")
+            print(f"❌ 始業時刻打刻ボタンのクリックでエラー: {e}")
             return False
 
     async def input_end_time(self, end_time: str):
@@ -989,7 +1075,7 @@ class AsyncJobcanAutomation:
     async def check_stamp_completion_message(self, stamp_type: str):
         """打刻完了メッセージを確認"""
         try:
-            print(f"{stamp_type}打刻完了メッセージを確認中...")
+            print(f"📋 {stamp_type}打刻完了メッセージを確認中...")
             
             # 完了メッセージのセレクター
             completion_selectors = [
@@ -1003,20 +1089,24 @@ class AsyncJobcanAutomation:
                 '[class*="message"]'
             ]
             
-            for selector in completion_selectors:
+            print(f"🔍 完了メッセージを検索中...")
+            for i, selector in enumerate(completion_selectors):
                 try:
-                    if await self.page.locator(selector).count() > 0:
+                    count = await self.page.locator(selector).count()
+                    print(f"🔍 セレクター {i+1}/{len(completion_selectors)}: {selector} → {count}個発見")
+                    if count > 0:
                         message = await self.page.locator(selector).first.text_content()
-                        print(f"{stamp_type}打刻完了メッセージ: {message}")
+                        print(f"✅ {stamp_type}打刻完了メッセージ: {message}")
                         return True
-                except:
+                except Exception as e:
+                    print(f"❌ セレクター {selector} でエラー: {e}")
                     continue
             
-            print(f"{stamp_type}打刻完了メッセージは確認できませんでした")
+            print(f"⚠️ {stamp_type}打刻完了メッセージは確認できませんでした")
             return False
             
         except Exception as e:
-            print(f"打刻完了メッセージ確認でエラー: {e}")
+            print(f"❌ 打刻完了メッセージ確認でエラー: {e}")
             return False
 
     async def return_to_attendance_page(self):
