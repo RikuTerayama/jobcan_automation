@@ -43,6 +43,9 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 processing_status = {}
 status_queue = queue.Queue()
 
+# ジョブ管理用のグローバル変数
+jobs = {}
+
 # グローバル変数でログを管理
 job_logs = {}
 job_diagnosis = {}
@@ -1977,6 +1980,13 @@ async def async_process_jobcan_automation(job_id: str, email: str, password: str
         add_job_log(job_id, f"エラー: {error_msg}")
         jobs[job_id]['status'] = 'error'
         jobs[job_id]['message'] = error_msg
+
+def process_jobcan_automation(job_id: str, email: str, password: str, file_path: str):
+    """Jobcan自動化処理を実行"""
+    # スレッドプールで非同期処理を実行
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(run_async_automation, job_id, email, password, file_path)
+        future.result()  # 完了まで待機
 
 @app.route('/')
 def index():
