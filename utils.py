@@ -58,6 +58,10 @@ def ensure_playwright_browser():
     except Exception as e:
         print(f"❌ Playwrightブラウザの確保でエラー: {e}")
         print("⚠️ Railway環境での制限により、ブラウザのインストールをスキップします")
+        
+    # Railway環境では、ブラウザのインストールをスキップして続行
+    print("🔄 Railway環境のため、ブラウザのインストールをスキップして続行します")
+    return True
 
 
 def load_excel_data(file_path: str) -> List[Dict[str, str]]:
