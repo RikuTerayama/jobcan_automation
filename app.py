@@ -1676,6 +1676,24 @@ class AsyncJobcanAutomation:
             print(f"ログインアクションでエラー: {e}")
             return False
 
+    async def login_to_jobcan_alternative(self, email: str, password: str) -> bool:
+        """Jobcanにログイン（代替方法）"""
+        try:
+            print("=== 代替ログイン方法を試行 ===")
+            
+            # 異なるURLを試行
+            print("代替URLでログイン試行: https://ssl.jobcan.jp/employee")
+            await self.page.goto("https://ssl.jobcan.jp/employee")
+            await asyncio.sleep(2)
+            await self.page.wait_for_load_state("networkidle")
+            
+            # ログイン処理を再試行
+            return await self.perform_login_action(email, password)
+            
+        except Exception as e:
+            print(f"代替ログイン方法でエラー: {e}")
+            return False
+
     async def navigate_to_attendance(self):
         """勤怠ページに移動"""
         try:
@@ -1848,41 +1866,45 @@ class AsyncJobcanAutomation:
 def run_async_automation(job_id: str, email: str, password: str, file_path: str):
     """非同期自動化処理を実行"""
     try:
-        # スレッドプールで非同期処理を実行
-        with ThreadPoolExecutor(max_workers=1) as executor:
-            future = executor.submit(async_process_jobcan_automation, job_id, email, password, file_path)
-            future.result()  # 完了まで待機
+        # 新しいイベントループを作成
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        
+        # 非同期処理を実行
+        result = loop.run_until_complete(
+            async_process_jobcan_automation(job_id, email, password, file_path)
+        )
+        
+        loop.close()
+        return result
+        
     except Exception as e:
         error_msg = f"非同期処理でエラーが発生しました: {e}"
         add_job_log(job_id, f"エラー: {error_msg}")
-        processing_status[job_id]['status'] = 'error'
-        processing_status[job_id]['message'] = error_msg
+        jobs[job_id]['status'] = 'error'
+        jobs[job_id]['message'] = error_msg
 
 async def async_process_jobcan_automation(job_id: str, email: str, password: str, file_path: str):
     """Jobcan自動化処理を非同期で実行"""
     try:
         add_job_log(job_id, "Jobcan自動化処理を開始")
-        processing_status[job_id] = {"status": "starting", "message": "処理を開始しています..."}
-        
-        # 自動化クラスを初期化
-        print("自動化クラスを初期化中...")
-        automation = AsyncJobcanAutomation()
+        jobs[job_id]['status'] = 'starting'
+        jobs[job_id]['message'] = 'ブラウザを起動中...'
         
         # ブラウザを起動
-        print("ブラウザ起動を開始...")
-        await automation.start_browser()
+        automation = AsyncJobcanAutomation()
         add_job_log(job_id, "Playwrightブラウザを起動中...")
         
         if not await automation.start_browser():
             error_msg = "ブラウザの起動に失敗しました"
             add_job_log(job_id, f"エラー: {error_msg}")
-            processing_status[job_id]['status'] = 'error'
-            processing_status[job_id]['message'] = error_msg
+            jobs[job_id]['status'] = 'error'
+            jobs[job_id]['message'] = error_msg
             return
         
         add_job_log(job_id, "ブラウザ起動完了")
-        processing_status[job_id]['status'] = 'browser_started'
-        processing_status[job_id]['message'] = 'Jobcanにログイン中...'
+        jobs[job_id]['status'] = 'browser_started'
+        jobs[job_id]['message'] = 'Jobcanにログイン中...'
         
         # Jobcanにログイン
         add_job_log(job_id, f"Jobcanログイン試行: {email}")
@@ -1895,32 +1917,32 @@ async def async_process_jobcan_automation(job_id: str, email: str, password: str
             diagnosis_data = automation.get_diagnosis_data()
             
             add_job_diagnosis(job_id, diagnosis_data)
-            processing_status[job_id]['failure_reasons'] = failure_reasons
+            jobs[job_id]['failure_reasons'] = failure_reasons
             
             error_msg = "ログインに失敗しました。メールアドレスとパスワードを確認してください"
             add_job_log(job_id, f"エラー: {error_msg}")
-            processing_status[job_id]['status'] = 'error'
-            processing_status[job_id]['message'] = error_msg
+            jobs[job_id]['status'] = 'error'
+            jobs[job_id]['message'] = error_msg
             await automation.close()
             return
         
         add_job_log(job_id, "ログイン成功")
-        processing_status[job_id]['status'] = 'login_success'
-        processing_status[job_id]['message'] = '勤怠ページに移動中...'
+        jobs[job_id]['status'] = 'login_success'
+        jobs[job_id]['message'] = '勤怠ページに移動中...'
         
         # 勤怠ページに移動
         add_job_log(job_id, "勤怠ページに移動中...")
         if not await automation.navigate_to_attendance():
             error_msg = "勤怠ページへの移動に失敗しました"
             add_job_log(job_id, f"エラー: {error_msg}")
-            processing_status[job_id]['status'] = 'error'
-            processing_status[job_id]['message'] = error_msg
+            jobs[job_id]['status'] = 'error'
+            jobs[job_id]['message'] = error_msg
             await automation.close()
             return
         
         add_job_log(job_id, "勤怠ページ読み込み完了")
-        processing_status[job_id]['status'] = 'attendance_loaded'
-        processing_status[job_id]['message'] = 'Excelデータを読み込み中...'
+        jobs[job_id]['status'] = 'attendance_loaded'
+        jobs[job_id]['message'] = 'Excelデータを読み込み中...'
         
         # Excelファイルを読み込み
         add_job_log(job_id, f"Excelファイル読み込み: {file_path}")
@@ -1930,22 +1952,22 @@ async def async_process_jobcan_automation(job_id: str, email: str, password: str
         except Exception as e:
             error_msg = f"Excelファイルの読み込みに失敗しました: {e}"
             add_job_log(job_id, f"エラー: {error_msg}")
-            processing_status[job_id]['status'] = 'error'
-            processing_status[job_id]['message'] = error_msg
+            jobs[job_id]['status'] = 'error'
+            jobs[job_id]['message'] = error_msg
             await automation.close()
             return
         
-        processing_status[job_id]['status'] = 'data_loaded'
-        processing_status[job_id]['message'] = '勤怠データを処理中...'
+        jobs[job_id]['status'] = 'data_loaded'
+        jobs[job_id]['message'] = '勤怠データを処理中...'
         
         # 勤怠データを処理
         add_job_log(job_id, "勤怠データ処理開始")
         results = await automation.process_attendance_data(df)
         
         add_job_log(job_id, f"処理完了: {len(results)}件のデータを処理")
-        processing_status[job_id]['status'] = 'completed'
-        processing_status[job_id]['message'] = f'処理が完了しました。{len(results)}件のデータを入力しました。'
-        processing_status[job_id]['results'] = results
+        jobs[job_id]['status'] = 'completed'
+        jobs[job_id]['message'] = f'処理が完了しました。{len(results)}件のデータを入力しました。'
+        jobs[job_id]['results'] = results
         
         await automation.close()
         add_job_log(job_id, "ブラウザを閉じました")
@@ -1953,8 +1975,8 @@ async def async_process_jobcan_automation(job_id: str, email: str, password: str
     except Exception as e:
         error_msg = f"予期しないエラーが発生しました: {e}"
         add_job_log(job_id, f"エラー: {error_msg}")
-        processing_status[job_id]['status'] = 'error'
-        processing_status[job_id]['message'] = error_msg
+        jobs[job_id]['status'] = 'error'
+        jobs[job_id]['message'] = error_msg
 
 @app.route('/')
 def index():
