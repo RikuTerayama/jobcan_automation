@@ -47,23 +47,43 @@ def allowed_file(filename):
 def ensure_playwright_browser():
     """Playwrightブラウザがインストールされているか確認し、必要に応じてインストール"""
     try:
+        print("Playwrightブラウザの確認を開始...")
+        
+        # システム依存関係をインストール
+        print("システム依存関係をインストール中...")
+        subprocess.run([
+            "playwright", "install-deps"
+        ], check=True, capture_output=True)
+        
         # Playwrightブラウザのインストールを試行
+        print("Playwrightブラウザをインストール中...")
         subprocess.run([
             sys.executable, "-m", "playwright", "install", "--force", "chromium"
         ], check=True, capture_output=True)
+        
         print("Playwrightブラウザが正常にインストールされました")
+        return True
+        
     except subprocess.CalledProcessError as e:
         print(f"Playwrightブラウザのインストールに失敗しました: {e}")
-        raise Exception("Playwrightブラウザのインストールに失敗しました")
+        print(f"エラー出力: {e.stderr.decode() if e.stderr else 'なし'}")
+        raise Exception(f"Playwrightブラウザのインストールに失敗しました: {e}")
+    except Exception as e:
+        print(f"予期しないエラー: {e}")
+        raise Exception(f"Playwrightブラウザの確認中にエラーが発生しました: {e}")
 
 def load_excel_data(file_path: str) -> List[Dict[str, str]]:
     """Excelファイルから勤怠データを読み込み"""
     try:
+        print(f"Excelファイルを読み込み中: {file_path}")
         df = pd.read_excel(file_path, header=0)
         
         # 列名を確認
         if len(df.columns) < 3:
             raise ValueError("Excelファイルには少なくとも3列（日付、始業時刻、終業時刻）が必要です")
+        
+        print(f"Excelファイルの列数: {len(df.columns)}")
+        print(f"Excelファイルの行数: {len(df)}")
         
         # データを整形
         data = []
@@ -97,9 +117,11 @@ def load_excel_data(file_path: str) -> List[Dict[str, str]]:
                 'end_time': end_time_str
             })
         
+        print(f"処理されたデータ数: {len(data)}")
         return data
         
     except Exception as e:
+        print(f"Excelファイルの読み込みエラー: {e}")
         raise ValueError(f"Excelファイルの読み込みに失敗しました: {e}")
 
 class JobcanAutomation:
@@ -114,9 +136,12 @@ class JobcanAutomation:
     def start_browser(self):
         """ブラウザを起動"""
         try:
+            print("ブラウザ起動を開始...")
+            
             # Playwrightブラウザの確認
             ensure_playwright_browser()
             
+            print("Playwrightを初期化中...")
             self.playwright = sync_playwright().start()
             
             # Railway環境用の設定
@@ -134,71 +159,111 @@ class JobcanAutomation:
                 '--disable-backgrounding-occluded-windows',
                 '--disable-renderer-backgrounding',
                 '--single-process',
-                '--no-zygote'
+                '--no-zygote',
+                '--disable-setuid-sandbox',
+                '--disable-background-networking',
+                '--disable-default-apps',
+                '--disable-sync',
+                '--disable-translate',
+                '--hide-scrollbars',
+                '--mute-audio',
+                '--no-first-run',
+                '--safebrowsing-disable-auto-update',
+                '--disable-client-side-phishing-detection',
+                '--disable-component-update',
+                '--disable-domain-reliability',
+                '--disable-features=TranslateUI',
+                '--disable-ipc-flooding-protection'
             ]
             
+            print("Chromiumブラウザを起動中...")
             self.browser = self.playwright.chromium.launch(
                 headless=self.headless,
                 args=browser_args
             )
+            
+            print("新しいページを作成中...")
             self.page = self.browser.new_page()
+            
             self.status_queue.put({"status": "browser_started", "message": "ブラウザを起動しました"})
+            print("ブラウザ起動完了")
             
         except Exception as e:
-            self.status_queue.put({"status": "error", "message": f"ブラウザの起動に失敗しました: {e}"})
+            error_msg = f"ブラウザの起動に失敗しました: {e}"
+            print(error_msg)
+            self.status_queue.put({"status": "error", "message": error_msg})
             raise
         
     def login_to_jobcan(self, email: str, password: str) -> bool:
         """Jobcanにログイン"""
         try:
+            print(f"Jobcanログインを開始: {email}")
             self.status_queue.put({"status": "logging_in", "message": "Jobcanにログイン中..."})
             
             # Jobcanログインページに移動
+            print("Jobcanログインページに移動中...")
             self.page.goto("https://ssl.jobcan.jp/employee")
             self.page.wait_for_load_state("networkidle")
             
+            print("現在のURL:", self.page.url)
+            
             # メールアドレスを入力
+            print("メールアドレスを入力中...")
             email_input = self.page.locator('input[name="email"]')
             if email_input.count() == 0:
                 email_input = self.page.locator('input[name="staff_code"]')
             
             if email_input.count() > 0:
                 email_input.fill(email)
+                print("メールアドレス入力完了")
             else:
                 raise Exception("メールアドレス入力フィールドが見つかりません")
             
             # パスワードを入力
+            print("パスワードを入力中...")
             password_input = self.page.locator('input[name="password"]')
             if password_input.count() > 0:
                 password_input.fill(password)
+                print("パスワード入力完了")
             else:
                 raise Exception("パスワード入力フィールドが見つかりません")
             
             # ログインボタンをクリック
+            print("ログインボタンをクリック中...")
             login_button = self.page.locator('input[type="submit"], button[type="submit"]')
             if login_button.count() > 0:
                 login_button.click()
+                print("ログインボタンクリック完了")
             else:
                 raise Exception("ログインボタンが見つかりません")
             
             # ログイン後のページ読み込みを待機
+            print("ログイン後のページ読み込みを待機中...")
             self.page.wait_for_load_state("networkidle")
+            
+            print("ログイン後のURL:", self.page.url)
             
             # ログイン成功の確認
             if "sign_in" in self.page.url or "login" in self.page.url:
-                self.status_queue.put({"status": "error", "message": "ログインに失敗しました。メールアドレスとパスワードを確認してください"})
+                error_msg = "ログインに失敗しました。メールアドレスとパスワードを確認してください"
+                print(error_msg)
+                self.status_queue.put({"status": "error", "message": error_msg})
                 return False
             
+            print("ログイン成功")
             self.status_queue.put({"status": "login_success", "message": "Jobcanにログインしました"})
             return True
             
         except Exception as e:
-            self.status_queue.put({"status": "error", "message": f"ログイン中にエラーが発生しました: {e}"})
+            error_msg = f"ログイン中にエラーが発生しました: {e}"
+            print(error_msg)
+            self.status_queue.put({"status": "error", "message": error_msg})
             return False
     
     def navigate_to_attendance(self):
         """出勤簿ページに移動"""
         try:
+            print("出勤簿ページに移動中...")
             self.status_queue.put({"status": "navigating", "message": "出勤簿ページに移動中..."})
             
             # 出勤簿へのリンクを探す（複数のパターンを試す）
@@ -214,16 +279,20 @@ class JobcanAutomation:
             for selector in attendance_selectors:
                 try:
                     if self.page.locator(selector).count() > 0:
+                        print(f"出勤簿リンクを発見: {selector}")
                         self.page.click(selector)
                         break
                 except:
                     continue
             
             self.page.wait_for_load_state("networkidle")
+            print("出勤簿ページ移動完了")
             self.status_queue.put({"status": "attendance_loaded", "message": "出勤簿ページに移動しました"})
             
         except Exception as e:
-            self.status_queue.put({"status": "error", "message": f"出勤簿ページへの移動に失敗しました: {e}"})
+            error_msg = f"出勤簿ページへの移動に失敗しました: {e}"
+            print(error_msg)
+            self.status_queue.put({"status": "error", "message": error_msg})
             raise
     
     def select_date(self, date_str: str):
@@ -232,6 +301,7 @@ class JobcanAutomation:
             date_obj = datetime.strptime(date_str, "%Y/%m/%d")
             formatted_date = date_obj.strftime("%Y-%m-%d")
             
+            print(f"日付を選択中: {date_str}")
             self.status_queue.put({"status": "processing", "message": f"日付 {date_str} を選択中..."})
             
             # 日付セレクターを探す（複数のパターンを試す）
@@ -249,21 +319,26 @@ class JobcanAutomation:
             for selector in date_selectors:
                 try:
                     if self.page.locator(selector).count() > 0:
+                        print(f"日付セレクターを発見: {selector}")
                         self.page.click(selector)
                         break
                 except:
                     continue
             
             self.page.wait_for_load_state("networkidle")
+            print(f"日付選択完了: {date_str}")
             self.status_queue.put({"status": "date_selected", "message": f"日付 {date_str} を選択しました"})
             
         except Exception as e:
-            self.status_queue.put({"status": "error", "message": f"日付選択に失敗しました: {e}"})
+            error_msg = f"日付選択に失敗しました: {e}"
+            print(error_msg)
+            self.status_queue.put({"status": "error", "message": error_msg})
             raise
     
     def click_stamp_correction(self):
         """打刻修正ボタンをクリック"""
         try:
+            print("打刻修正ボタンをクリック中...")
             self.status_queue.put({"status": "processing", "message": "打刻修正ボタンをクリック中..."})
             
             # 打刻修正ボタンを探す（複数のパターンを試す）
@@ -280,21 +355,26 @@ class JobcanAutomation:
             for selector in correction_selectors:
                 try:
                     if self.page.locator(selector).count() > 0:
+                        print(f"打刻修正ボタンを発見: {selector}")
                         self.page.click(selector)
                         break
                 except:
                     continue
             
             self.page.wait_for_load_state("networkidle")
+            print("打刻修正ボタンクリック完了")
             self.status_queue.put({"status": "correction_clicked", "message": "打刻修正ボタンをクリックしました"})
             
         except Exception as e:
-            self.status_queue.put({"status": "error", "message": f"打刻修正ボタンのクリックに失敗しました: {e}"})
+            error_msg = f"打刻修正ボタンのクリックに失敗しました: {e}"
+            print(error_msg)
+            self.status_queue.put({"status": "error", "message": error_msg})
             raise
     
     def input_time(self, time_type: str, time_str: str):
         """時刻を入力して打刻"""
         try:
+            print(f"{time_type}時刻を入力中: {time_str}")
             self.status_queue.put({"status": "processing", "message": f"{time_type}時刻 {time_str} を入力中..."})
             
             # 時刻入力フィールドを探す
@@ -312,6 +392,7 @@ class JobcanAutomation:
                 try:
                     if self.page.locator(selector).count() > 0:
                         time_input = self.page.locator(selector).first
+                        print(f"時刻入力フィールドを発見: {selector}")
                         break
                 except:
                     continue
@@ -321,6 +402,7 @@ class JobcanAutomation:
             
             # 時刻を入力
             time_input.fill(time_str)
+            print(f"{time_type}時刻入力完了: {time_str}")
             
             # 打刻ボタンをクリック
             stamp_selectors = [
@@ -335,16 +417,20 @@ class JobcanAutomation:
             for selector in stamp_selectors:
                 try:
                     if self.page.locator(selector).count() > 0:
+                        print(f"打刻ボタンを発見: {selector}")
                         self.page.click(selector)
                         break
                 except:
                     continue
             
             self.page.wait_for_load_state("networkidle")
+            print(f"{time_type}時刻打刻完了: {time_str}")
             self.status_queue.put({"status": "time_inputted", "message": f"{time_type}時刻 {time_str} を入力しました"})
             
         except Exception as e:
-            self.status_queue.put({"status": "error", "message": f"{time_type}時刻の入力に失敗しました: {e}"})
+            error_msg = f"{time_type}時刻の入力に失敗しました: {e}"
+            print(error_msg)
+            self.status_queue.put({"status": "error", "message": error_msg})
             raise
     
     def process_attendance_data(self, data: List[Dict[str, str]]) -> List[Dict[str, str]]:
@@ -357,6 +443,7 @@ class JobcanAutomation:
                 start_time = row['start_time']
                 end_time = row['end_time']
                 
+                print(f"{date} の勤怠データを処理中... ({i+1}/{len(data)})")
                 self.status_queue.put({"status": "processing", "message": f"{date} の勤怠データを処理中... ({i+1}/{len(data)})"})
                 
                 # 日付を選択
@@ -381,10 +468,13 @@ class JobcanAutomation:
                     'status': 'success'
                 })
                 
+                print(f"{date} の勤怠データを正常に処理しました")
                 self.status_queue.put({"status": "success", "message": f"{date} の勤怠データを正常に処理しました"})
                 
             except Exception as e:
-                self.status_queue.put({"status": "error", "message": f"{date} の勤怠データ処理に失敗しました: {e}"})
+                error_msg = f"{date} の勤怠データ処理に失敗しました: {e}"
+                print(error_msg)
+                self.status_queue.put({"status": "error", "message": error_msg})
                 processed_data.append({
                     'date': date,
                     'start_time': start_time,
@@ -401,39 +491,48 @@ class JobcanAutomation:
             self.browser.close()
         if hasattr(self, 'playwright'):
             self.playwright.stop()
+        print("ブラウザを閉じました")
         self.status_queue.put({"status": "completed", "message": "ブラウザを閉じました"})
 
 def process_jobcan_automation(job_id: str, email: str, password: str, file_path: str):
     """バックグラウンドでJobcan自動化処理を実行"""
     try:
+        print(f"処理開始: {job_id}")
         processing_status[job_id] = {"status": "starting", "message": "処理を開始しています..."}
         
         # 自動化クラスを初期化
+        print("自動化クラスを初期化中...")
         automation = JobcanAutomation(headless=True)
         
         # ブラウザを起動
+        print("ブラウザ起動を開始...")
         automation.start_browser()
         processing_status[job_id] = {"status": "browser_started", "message": "ブラウザを起動しました"}
         
         # Jobcanにログイン
+        print("Jobcanログインを開始...")
         if not automation.login_to_jobcan(email, password):
             processing_status[job_id] = {"status": "error", "message": "ログインに失敗しました"}
             return
         
         # 出勤簿ページに移動
+        print("出勤簿ページに移動中...")
         automation.navigate_to_attendance()
         
         # Excelデータを読み込み
+        print("Excelデータを読み込み中...")
         attendance_data = load_excel_data(file_path)
         processing_status[job_id] = {"status": "data_loaded", "message": f"{len(attendance_data)}件の勤怠データを読み込みました"}
         
         # 勤怠データを処理
+        print("勤怠データを処理中...")
         processed_data = automation.process_attendance_data(attendance_data)
         
         # 結果を集計
         success_count = sum(1 for r in processed_data if r['status'] == 'success')
         error_count = len(processed_data) - success_count
         
+        print(f"処理完了 - 成功: {success_count}件, 失敗: {error_count}件")
         processing_status[job_id] = {
             "status": "completed",
             "message": f"処理完了 - 成功: {success_count}件, 失敗: {error_count}件",
@@ -447,7 +546,9 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         os.remove(file_path)
         
     except Exception as e:
-        processing_status[job_id] = {"status": "error", "message": f"予期しないエラーが発生しました: {e}"}
+        error_msg = f"予期しないエラーが発生しました: {e}"
+        print(error_msg)
+        processing_status[job_id] = {"status": "error", "message": error_msg}
         # 一時ファイルを削除
         if os.path.exists(file_path):
             os.remove(file_path)
@@ -461,9 +562,13 @@ def index():
 def upload_file():
     """ファイルアップロードと処理開始"""
     try:
+        print("ファイルアップロード処理を開始...")
+        
         # フォームデータの取得
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
+        
+        print(f"メールアドレス: {email}")
         
         # 必須項目の確認
         if not email:
@@ -483,13 +588,19 @@ def upload_file():
         if not allowed_file(file.filename):
             return jsonify({'error': 'Excelファイル（.xlsx, .xls）のみアップロード可能です'}), 400
         
+        print(f"アップロードされたファイル: {file.filename}")
+        
         # ファイルを一時保存
         filename = secure_filename(file.filename)
         temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}")
         file.save(temp_path)
         
+        print(f"一時ファイル保存完了: {temp_path}")
+        
         # 処理IDを生成
         job_id = f"job_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        
+        print(f"処理ID生成: {job_id}")
         
         # バックグラウンドで処理を開始
         thread = threading.Thread(
@@ -499,6 +610,8 @@ def upload_file():
         thread.daemon = True
         thread.start()
         
+        print("バックグラウンド処理を開始しました")
+        
         return jsonify({
             'success': True,
             'job_id': job_id,
@@ -506,7 +619,9 @@ def upload_file():
         })
         
     except Exception as e:
-        return jsonify({'error': f'エラーが発生しました: {e}'}), 500
+        error_msg = f'エラーが発生しました: {e}'
+        print(error_msg)
+        return jsonify({'error': error_msg}), 500
 
 @app.route('/status/<job_id>')
 def get_status(job_id):
