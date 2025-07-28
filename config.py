@@ -1,76 +1,63 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Jobcan自動申請ツールの設定ファイル
-"""
+import os
 
-# JobcanのURL設定
-JABCAN_URLS = {
-    "login": "https://id.jobcan.jp/users/sign_in",
-    "dashboard": "https://ssl.jobcan.jp/employee",
-    "attendance": "https://ssl.jobcan.jp/employee/attendance"
+# Flask設定
+SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
+UPLOAD_FOLDER = 'uploads'
+MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
+
+# Jobcan設定
+JOBCAN_LOGIN_URL = "https://id.jobcan.jp/users/sign_in?app_key=atd"
+JOBCAN_EMPLOYEE_URL = "https://ssl.jobcan.jp/employee"
+
+# Playwright設定
+BROWSER_ARGS = [
+    '--no-sandbox',
+    '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
+    '--disable-accelerated-2d-canvas',
+    '--no-first-run',
+    '--no-zygote',
+    '--disable-gpu',
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
+    '--disable-renderer-backgrounding',
+    '--disable-features=TranslateUI',
+    '--disable-ipc-flooding-protection',
+    '--disable-background-networking',
+    '--disable-default-apps',
+    '--disable-sync',
+    '--disable-translate',
+    '--hide-scrollbars',
+    '--mute-audio',
+    '--no-first-run',
+    '--safebrowsing-disable-auto-update',
+    '--disable-client-side-phishing-detection',
+    '--disable-component-update',
+    '--disable-domain-reliability',
+    '--disable-features=TranslateUI',
+    '--disable-ipc-flooding-protection'
+]
+
+# ユーザーエージェント設定
+USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+
+# HTTPヘッダー設定
+HTTP_HEADERS = {
+    'User-Agent': USER_AGENT,
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+    'Accept-Language': 'ja-JP,ja;q=0.9,en;q=0.8',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1'
 }
 
-# ページ要素のセレクター設定
-SELECTORS = {
-    "login": {
-        "email_input": 'input[name="user[email]"]',
-        "password_input": 'input[name="user[password]"]',
-        "submit_button": 'input[type="submit"]'
-    },
-    "attendance": {
-        "attendance_link": [
-            'a[href*="attendance"]',
-            'a[href*="timecard"]',
-            'a:has-text("出勤簿")',
-            'a:has-text("勤怠")',
-            'a:has-text("Attendance")'
-        ],
-        "date_cell": [
-            '[data-date]',
-            'td[data-date]',
-            'a[href*="date"]'
-        ],
-        "correction_button": [
-            'button:has-text("打刻修正")',
-            'a:has-text("打刻修正")',
-            'input[value*="打刻修正"]',
-            'button:has-text("修正")',
-            'a:has-text("修正")'
-        ],
-        "time_input": [
-            'input[name*="time"]',
-            'input[type="time"]',
-            'input[placeholder*="時刻"]'
-        ],
-        "stamp_button": [
-            'button:has-text("打刻")',
-            'input[value*="打刻"]',
-            'button:has-text("登録")',
-            'input[value*="登録"]'
-        ]
-    }
-}
+# ファイル拡張子設定
+ALLOWED_EXTENSIONS = {'xlsx', 'xls'}
 
-# 待機時間設定（秒）
-WAIT_TIMES = {
-    "page_load": 3,
-    "element_wait": 2,
-    "network_idle": 5
-}
+# ログ設定
+LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
 
-# ファイル設定
-FILES = {
-    "credentials": "credentials.enc",
-    "key": "key.key",
-    "log": "jobcan_bot.log"
-}
-
-# Excel設定
-EXCEL_CONFIG = {
-    "date_column": 0,  # A列
-    "start_time_column": 1,  # B列
-    "end_time_column": 2,  # C列
-    "date_format": "%Y/%m/%d",
-    "time_format": "%H:%M"
-} 
+# 開発環境設定
+DEBUG = os.environ.get('FLASK_ENV') == 'development'
+HOST = '0.0.0.0'
+PORT = int(os.environ.get('PORT', 5000)) 
