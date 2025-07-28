@@ -308,6 +308,259 @@ class JobcanAutomation:
             print(f"CAPTCHA検出中にエラー: {e}")
             return False
 
+    def diagnose_login_page(self):
+        """ログインページの詳細診断"""
+        try:
+            print("=== ログインページ診断開始 ===")
+            
+            # ページの基本情報
+            print(f"現在のURL: {self.page.url}")
+            print(f"ページタイトル: {self.page.title()}")
+            
+            # ページのHTML要素を詳細に分析
+            print("\n=== ページ要素分析 ===")
+            
+            # フォーム要素の詳細
+            forms = self.page.locator('form')
+            print(f"フォーム数: {forms.count()}")
+            
+            for i in range(forms.count()):
+                try:
+                    form = forms.nth(i)
+                    action = form.get_attribute('action') or 'なし'
+                    method = form.get_attribute('method') or 'なし'
+                    id_attr = form.get_attribute('id') or 'なし'
+                    class_attr = form.get_attribute('class') or 'なし'
+                    print(f"  フォーム[{i}]: action='{action}', method='{method}', id='{id_attr}', class='{class_attr}'")
+                except Exception as e:
+                    print(f"  フォーム[{i}]分析エラー: {e}")
+            
+            # 入力フィールドの詳細
+            inputs = self.page.locator('input')
+            print(f"\n入力フィールド数: {inputs.count()}")
+            
+            for i in range(inputs.count()):
+                try:
+                    input_elem = inputs.nth(i)
+                    name = input_elem.get_attribute('name') or 'なし'
+                    type_attr = input_elem.get_attribute('type') or 'なし'
+                    placeholder = input_elem.get_attribute('placeholder') or 'なし'
+                    id_attr = input_elem.get_attribute('id') or 'なし'
+                    class_attr = input_elem.get_attribute('class') or 'なし'
+                    value = input_elem.get_attribute('value') or 'なし'
+                    print(f"  input[{i}]: name='{name}', type='{type_attr}', placeholder='{placeholder}', id='{id_attr}', class='{class_attr}', value='{value}'")
+                except Exception as e:
+                    print(f"  input[{i}]分析エラー: {e}")
+            
+            # ボタン要素の詳細
+            buttons = self.page.locator('button, input[type="submit"]')
+            print(f"\nボタン要素数: {buttons.count()}")
+            
+            for i in range(buttons.count()):
+                try:
+                    button_elem = buttons.nth(i)
+                    text = button_elem.text_content() or 'なし'
+                    type_attr = button_elem.get_attribute('type') or 'なし'
+                    value = button_elem.get_attribute('value') or 'なし'
+                    id_attr = button_elem.get_attribute('id') or 'なし'
+                    class_attr = button_elem.get_attribute('class') or 'なし'
+                    print(f"  button[{i}]: text='{text}', type='{type_attr}', value='{value}', id='{id_attr}', class='{class_attr}'")
+                except Exception as e:
+                    print(f"  button[{i}]分析エラー: {e}")
+            
+            # エラーメッセージの検索
+            print("\n=== エラーメッセージ検索 ===")
+            error_texts = [
+                'ログインに失敗しました',
+                'Login failed',
+                'メールアドレスまたはパスワードが正しくありません',
+                'Invalid email or password',
+                '認証に失敗しました',
+                'Authentication failed',
+                'ログインできませんでした',
+                'Could not login',
+                'エラー',
+                'Error',
+                '失敗',
+                'Failed'
+            ]
+            
+            for error_text in error_texts:
+                try:
+                    if self.page.locator(f'text={error_text}').count() > 0:
+                        print(f"エラーメッセージを発見: '{error_text}'")
+                except:
+                    pass
+            
+            # ページのテキスト内容を確認
+            print("\n=== ページテキスト分析 ===")
+            page_text = self.page.text_content('body')
+            print(f"ページテキスト（最初の1000文字）: {page_text[:1000]}")
+            
+            print("=== ログインページ診断完了 ===")
+            
+        except Exception as e:
+            print(f"診断中にエラー: {e}")
+
+    def try_different_login_methods(self, email: str, password: str):
+        """異なるログイン方法を試行"""
+        print("=== 異なるログイン方法を試行 ===")
+        
+        # 方法1: 直接フォーム送信
+        try:
+            print("方法1: 直接フォーム送信を試行")
+            self.page.evaluate(f"""
+                () => {{
+                    const emailInput = document.querySelector('input[name="email"]') || 
+                                     document.querySelector('input[type="email"]') ||
+                                     document.querySelector('input[name="staff_code"]');
+                    const passwordInput = document.querySelector('input[name="password"]') ||
+                                        document.querySelector('input[type="password"]');
+                    const submitButton = document.querySelector('input[type="submit"]') ||
+                                       document.querySelector('button[type="submit"]');
+                    
+                    if (emailInput && passwordInput && submitButton) {{
+                        emailInput.value = '{email}';
+                        passwordInput.value = '{password}';
+                        submitButton.click();
+                        return true;
+                    }}
+                    return false;
+                }}
+            """)
+            
+            time.sleep(3)
+            if "sign_in" not in self.page.url and "login" not in self.page.url:
+                print("方法1でログイン成功")
+                return True
+        except Exception as e:
+            print(f"方法1でエラー: {e}")
+        
+        # 方法2: 異なるURLを試行
+        try:
+            print("方法2: 異なるURLを試行")
+            self.page.goto("https://ssl.jobcan.jp/employee")
+            time.sleep(2)
+            self.page.wait_for_load_state("networkidle")
+            
+            # ログイン処理を再試行
+            return self.perform_login_action(email, password)
+            
+        except Exception as e:
+            print(f"方法2でエラー: {e}")
+        
+        return False
+
+    def perform_login_action(self, email: str, password: str):
+        """ログインアクションを実行"""
+        try:
+            # メールアドレス入力
+            email_input = self.page.locator('input[name="email"], input[name="staff_code"], input[type="email"]').first
+            email_input.fill(email)
+            
+            # パスワード入力
+            password_input = self.page.locator('input[name="password"], input[type="password"]').first
+            password_input.fill(password)
+            
+            # ログインボタンクリック
+            login_button = self.page.locator('input[type="submit"], button[type="submit"]').first
+            login_button.click()
+            
+            time.sleep(3)
+            self.page.wait_for_load_state("networkidle")
+            
+            return "sign_in" not in self.page.url and "login" not in self.page.url
+            
+        except Exception as e:
+            print(f"ログインアクションでエラー: {e}")
+            return False
+
+    def analyze_login_failure(self):
+        """ログイン失敗の原因を分析"""
+        try:
+            print("=== ログイン失敗原因分析 ===")
+            
+            failure_reasons = []
+            
+            # URLベースの分析
+            current_url = self.page.url
+            if "sign_in" in current_url or "login" in current_url:
+                failure_reasons.append("ログインページに留まっている（認証失敗）")
+            
+            # エラーメッセージの分析
+            error_messages = [
+                ('ログインに失敗しました', '認証情報が正しくありません'),
+                ('メールアドレスまたはパスワードが正しくありません', 'ログイン情報を確認してください'),
+                ('認証に失敗しました', 'アカウントが無効またはロックされている可能性があります'),
+                ('ログインできませんでした', 'システムエラーまたはメンテナンス中の可能性があります'),
+                ('Invalid email or password', '英語版エラー：認証情報が正しくありません'),
+                ('Authentication failed', '英語版エラー：認証に失敗しました')
+            ]
+            
+            for error_text, reason in error_messages:
+                try:
+                    if self.page.locator(f'text={error_text}').count() > 0:
+                        failure_reasons.append(f"エラーメッセージ: {error_text} → {reason}")
+                except:
+                    pass
+            
+            # フォーム要素の分析
+            forms = self.page.locator('form')
+            if forms.count() == 0:
+                failure_reasons.append("ログインフォームが見つかりません")
+            
+            # 入力フィールドの分析
+            email_inputs = self.page.locator('input[name="email"], input[name="staff_code"], input[type="email"]')
+            password_inputs = self.page.locator('input[name="password"], input[type="password"]')
+            
+            if email_inputs.count() == 0:
+                failure_reasons.append("メールアドレス入力フィールドが見つかりません")
+            if password_inputs.count() == 0:
+                failure_reasons.append("パスワード入力フィールドが見つかりません")
+            
+            # CAPTCHAの分析
+            if self.check_for_captcha():
+                failure_reasons.append("CAPTCHAが表示されています（手動ログインが必要）")
+            
+            # ページの状態分析
+            page_title = self.page.title()
+            if "エラー" in page_title or "Error" in page_title:
+                failure_reasons.append("ページタイトルにエラーが含まれています")
+            
+            # 解決策の提案
+            print("\n=== 推奨解決策 ===")
+            if not failure_reasons:
+                print("原因が特定できませんでした。以下を確認してください：")
+                print("1. メールアドレスとパスワードが正しいか")
+                print("2. Jobcanアカウントが有効か")
+                print("3. ネットワーク接続が安定しているか")
+                print("4. Jobcanサービスが正常に動作しているか")
+            else:
+                for reason in failure_reasons:
+                    print(f"• {reason}")
+                
+                print("\n=== 解決策 ===")
+                if "認証情報が正しくありません" in str(failure_reasons):
+                    print("1. メールアドレスとパスワードを再確認")
+                    print("2. 大文字小文字を確認")
+                    print("3. スペースや特殊文字が含まれていないか確認")
+                
+                if "CAPTCHA" in str(failure_reasons):
+                    print("1. 手動でJobcanにログイン")
+                    print("2. セキュリティ設定を確認")
+                    print("3. 別のブラウザでログインを試行")
+                
+                if "フォームが見つかりません" in str(failure_reasons):
+                    print("1. Jobcanのログインページが変更されている可能性")
+                    print("2. システムメンテナンス中の可能性")
+                    print("3. ネットワーク接続を確認")
+            
+            return failure_reasons
+            
+        except Exception as e:
+            print(f"失敗原因分析中にエラー: {e}")
+            return ["分析中にエラーが発生しました"]
+
     def login_to_jobcan(self, email: str, password: str) -> bool:
         """Jobcanにログイン"""
         try:
@@ -329,6 +582,9 @@ class JobcanAutomation:
             # ページが完全に読み込まれるまで待機
             time.sleep(random.uniform(2, 4))
             
+            # 詳細診断を実行
+            self.diagnose_login_page()
+            
             # CAPTCHAの検出
             if self.check_for_captcha():
                 error_msg = "CAPTCHAが検出されました。手動でのログインが必要です。"
@@ -339,23 +595,6 @@ class JobcanAutomation:
             # JavaScriptが有効かチェック
             js_enabled = self.page.evaluate("() => typeof window !== 'undefined'")
             print(f"JavaScript有効: {js_enabled}")
-            
-            # ページのHTMLを確認（デバッグ用）
-            page_content = self.page.content()
-            print("ページタイトル:", self.page.title())
-            
-            # フォーム要素の確認
-            forms = self.page.locator('form')
-            print(f"ページ内のフォーム数: {forms.count()}")
-            
-            for i in range(forms.count()):
-                try:
-                    form = forms.nth(i)
-                    action = form.get_attribute('action') or 'なし'
-                    method = form.get_attribute('method') or 'なし'
-                    print(f"  フォーム[{i}]: action='{action}', method='{method}'")
-                except:
-                    pass
             
             # メールアドレス入力フィールドを探す（複数のパターンを試す）
             print("メールアドレス入力フィールドを探しています...")
@@ -387,20 +626,8 @@ class JobcanAutomation:
                     continue
             
             if not email_input:
-                # ページのHTMLを出力してデバッグ
-                print("利用可能なinput要素:")
-                inputs = self.page.locator('input')
-                for i in range(inputs.count()):
-                    input_elem = inputs.nth(i)
-                    try:
-                        name = input_elem.get_attribute('name') or 'なし'
-                        type_attr = input_elem.get_attribute('type') or 'なし'
-                        placeholder = input_elem.get_attribute('placeholder') or 'なし'
-                        id_attr = input_elem.get_attribute('id') or 'なし'
-                        print(f"  input[{i}]: name='{name}', type='{type_attr}', placeholder='{placeholder}', id='{id_attr}'")
-                    except:
-                        pass
-                raise Exception("メールアドレス入力フィールドが見つかりません")
+                print("メールアドレス入力フィールドが見つからないため、異なるログイン方法を試行")
+                return self.try_different_login_methods(email, password)
             
             # メールアドレスを人間らしく入力
             print("メールアドレスを入力中...")
@@ -439,7 +666,8 @@ class JobcanAutomation:
                     continue
             
             if not password_input:
-                raise Exception("パスワード入力フィールドが見つかりません")
+                print("パスワード入力フィールドが見つからないため、異なるログイン方法を試行")
+                return self.try_different_login_methods(email, password)
             
             # パスワードを人間らしく入力
             print("パスワードを入力中...")
@@ -489,19 +717,8 @@ class JobcanAutomation:
                     continue
             
             if not login_button:
-                # 利用可能なボタンを出力してデバッグ
-                print("利用可能なボタン要素:")
-                buttons = self.page.locator('button, input[type="submit"]')
-                for i in range(buttons.count()):
-                    button_elem = buttons.nth(i)
-                    try:
-                        text = button_elem.text_content() or 'なし'
-                        type_attr = button_elem.get_attribute('type') or 'なし'
-                        value = button_elem.get_attribute('value') or 'なし'
-                        print(f"  button[{i}]: text='{text}', type='{type_attr}', value='{value}'")
-                    except:
-                        pass
-                raise Exception("ログインボタンが見つかりません")
+                print("ログインボタンが見つからないため、異なるログイン方法を試行")
+                return self.try_different_login_methods(email, password)
             
             # ログインボタンを人間らしくクリック
             print("ログインボタンをクリック中...")
@@ -518,10 +735,9 @@ class JobcanAutomation:
             print("ログイン後のURL:", self.page.url)
             print("ログイン後のページタイトル:", self.page.title())
             
-            # ページの内容を確認
-            print("ログイン後のページ内容を確認中...")
-            page_text = self.page.text_content('body')
-            print(f"ページテキスト（最初の500文字）: {page_text[:500]}")
+            # ログイン後の診断
+            print("=== ログイン後診断 ===")
+            self.diagnose_login_page()
             
             # ログイン成功の確認（複数の方法でチェック）
             login_success = True
@@ -591,7 +807,17 @@ class JobcanAutomation:
             
             if not login_success or not success_found:
                 print("通常のログイン方法が失敗したため、代替方法を試行")
-                return self.login_to_jobcan_alternative(email, password)
+                alternative_result = self.login_to_jobcan_alternative(email, password)
+                
+                if not alternative_result:
+                    # 失敗原因を分析
+                    failure_reasons = self.analyze_login_failure()
+                    error_msg = f"ログインに失敗しました。詳細な診断情報を確認してください。\n原因: {', '.join(failure_reasons)}"
+                    print(error_msg)
+                    self.status_queue.put({"status": "error", "message": error_msg})
+                    return False
+                
+                return alternative_result
             
             print("ログイン成功")
             self.status_queue.put({"status": "login_success", "message": "Jobcanにログインしました"})
