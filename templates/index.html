@@ -3,21 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jobcan勤怠申請Webアプリ</title>
+    <title>Jobcan勤怠自動申請ツール</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 20px;
         }
-
+        
         .container {
             max-width: 800px;
             margin: 0 auto;
@@ -26,496 +21,553 @@
             box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             overflow: hidden;
         }
-
+        
         .header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 30px;
             text-align: center;
         }
-
+        
         .header h1 {
+            margin: 0;
             font-size: 2.5em;
-            margin-bottom: 10px;
+            font-weight: 300;
         }
-
+        
         .header p {
-            font-size: 1.1em;
+            margin: 10px 0 0 0;
             opacity: 0.9;
+            font-size: 1.1em;
         }
-
+        
         .content {
             padding: 40px;
         }
-
+        
         .form-group {
             margin-bottom: 25px;
         }
-
+        
         .form-group label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
             color: #333;
+            font-size: 1.1em;
         }
-
+        
         .form-group input[type="email"],
-        .form-group input[type="password"] {
+        .form-group input[type="password"],
+        .form-group input[type="file"] {
             width: 100%;
-            padding: 12px 15px;
+            padding: 15px;
             border: 2px solid #e1e5e9;
             border-radius: 8px;
             font-size: 16px;
-            transition: border-color 0.3s ease;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
         }
-
+        
         .form-group input[type="email"]:focus,
         .form-group input[type="password"]:focus {
+            border-color: #667eea;
             outline: none;
-            border-color: #667eea;
-        }
-
-        .file-upload {
-            position: relative;
-            display: inline-block;
-            width: 100%;
-        }
-
-        .file-upload input[type="file"] {
-            position: absolute;
-            opacity: 0;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-        }
-
-        .file-upload-label {
-            display: block;
-            padding: 15px;
-            border: 2px dashed #e1e5e9;
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: #f8f9fa;
-        }
-
-        .file-upload-label:hover {
-            border-color: #667eea;
-            background: #f0f2ff;
-        }
-
-        .file-upload input[type="file"]:focus + .file-upload-label {
-            border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
-
+        
         .submit-btn {
-            width: 100%;
-            padding: 15px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            padding: 15px 30px;
             border: none;
             border-radius: 8px;
-            font-size: 18px;
+            font-size: 1.1em;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s ease;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 20px;
         }
-
+        
         .submit-btn:hover {
             transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
         }
-
+        
         .submit-btn:disabled {
             opacity: 0.6;
             cursor: not-allowed;
             transform: none;
         }
-
-        .status-container {
-            margin-top: 30px;
-            padding: 20px;
-            border-radius: 8px;
-            display: none;
-        }
-
-        .status-success {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
-
-        .status-error {
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-
-        .status-info {
-            background: #d1ecf1;
-            border: 1px solid #bee5eb;
-            color: #0c5460;
-        }
-
-        .status-processing {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            color: #856404;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 6px;
-            background: #e1e5e9;
-            border-radius: 3px;
-            overflow: hidden;
-            margin-top: 10px;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-
-        .results {
-            margin-top: 20px;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .result-item {
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        .result-success {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .result-error {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .instructions {
+        
+        .info-section {
             background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            border-left: 4px solid #667eea;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 30px;
         }
-
-        .instructions h3 {
+        
+        .info-section h3 {
+            margin: 0 0 15px 0;
             color: #333;
-            margin-bottom: 15px;
+            font-size: 1.3em;
         }
-
-        .instructions ol {
+        
+        .info-section ul {
+            margin: 0;
             padding-left: 20px;
-        }
-
-        .instructions li {
-            margin-bottom: 8px;
             color: #666;
+            line-height: 1.6;
         }
-
-        .example {
-            background: #e9ecef;
-            padding: 15px;
-            border-radius: 5px;
-            margin-top: 10px;
-            font-family: monospace;
-            font-size: 14px;
-        }
-
+        
         .security-notice {
             background: #fff3cd;
             border: 1px solid #ffeaa7;
-            color: #856404;
-            padding: 15px;
             border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .security-notice h4 {
+            margin: 0 0 10px 0;
+            color: #856404;
+        }
+        
+        .security-notice p {
+            margin: 0;
+            color: #856404;
+            line-height: 1.5;
+        }
+        
+        /* プログレスポップアップ */
+        .progress-popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .progress-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        
+        .progress-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .progress-header h3 {
+            margin: 0;
+            color: #333;
+            font-size: 1.5em;
+        }
+        
+        .progress-status {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .progress-status h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 1.1em;
+        }
+        
+        .progress-status p {
+            margin: 0;
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        .progress-log {
+            background: #2d3748;
+            color: #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
             margin-bottom: 20px;
         }
-
-        .security-notice h4 {
-            margin-bottom: 10px;
-            color: #856404;
+        
+        .progress-actions {
+            text-align: center;
         }
-
-        @media (max-width: 768px) {
-            .container {
-                margin: 10px;
-                border-radius: 10px;
-            }
-
-            .content {
-                padding: 20px;
-            }
-
-            .header h1 {
-                font-size: 2em;
-            }
+        
+        .progress-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 0 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .progress-btn:hover {
+            background: #5a67d8;
+        }
+        
+        .progress-btn.secondary {
+            background: #718096;
+        }
+        
+        .progress-btn.secondary:hover {
+            background: #4a5568;
+        }
+        
+        .error-details {
+            background: #fed7d7;
+            border: 1px solid #feb2b2;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .error-details h5 {
+            margin: 0 0 10px 0;
+            color: #c53030;
+        }
+        
+        .error-details ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #c53030;
+        }
+        
+        .diagnosis-section {
+            background: #e6fffa;
+            border: 1px solid #81e6d9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .diagnosis-section h5 {
+            margin: 0 0 10px 0;
+            color: #234e52;
+        }
+        
+        .diagnosis-section pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 0.8em;
+            margin: 10px 0 0 0;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .status-success {
+            border-left-color: #48bb78;
+        }
+        
+        .status-error {
+            border-left-color: #f56565;
+        }
+        
+        .status-warning {
+            border-left-color: #ed8936;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>Jobcan勤怠申請Webアプリ</h1>
-            <p>ログイン情報とExcelファイルを入力して、勤怠データを自動入力</p>
+            <h1>Jobcan勤怠自動申請ツール</h1>
+            <p>Excelファイルをアップロードして、Jobcanの勤怠データを自動で入力します</p>
         </div>
-
+        
         <div class="content">
-            <div class="security-notice">
-                <h4>🔒 セキュリティについて</h4>
-                <p>入力されたログイン情報は一時的にメモリに保存され、処理完了後に自動的に削除されます。サーバーには保存されません。</p>
-            </div>
-
-            <div class="instructions">
-                <h3>📋 使用方法</h3>
-                <ol>
-                    <li><strong>Jobcanのログイン情報を入力</strong> - メールアドレスとパスワード</li>
-                    <li><strong>Excelファイルを準備</strong> - A列:日付、B列:始業時刻、C列:終業時刻の形式で作成</li>
-                    <li><strong>ファイルをアップロード</strong> - 下記フォームに入力して送信</li>
-                    <li><strong>自動処理</strong> - システムが自動的にJobcanにログインして勤怠データを入力</li>
-                </ol>
-                <div class="example">
-                    <strong>Excelファイル形式例:</strong><br>
-                    A列: 2025/07/01 | B列: 09:30 | C列: 18:30<br>
-                    A列: 2025/07/02 | B列: 09:00 | C列: 18:00
-                </div>
-            </div>
-
             <form id="uploadForm" enctype="multipart/form-data">
                 <div class="form-group">
-                    <label for="email">メールアドレス *</label>
-                    <input type="email" id="email" name="email" 
-                           placeholder="your.email@example.com" required>
+                    <label for="email">メールアドレス</label>
+                    <input type="email" id="email" name="email" required placeholder="your.email@example.com">
                 </div>
-
+                
                 <div class="form-group">
-                    <label for="password">パスワード *</label>
-                    <input type="password" id="password" name="password" 
-                           placeholder="パスワードを入力" required>
+                    <label for="password">パスワード</label>
+                    <input type="password" id="password" name="password" required placeholder="パスワードを入力">
                 </div>
-
+                
                 <div class="form-group">
-                    <label for="excel_file">Excelファイル *</label>
-                    <div class="file-upload">
-                        <input type="file" id="excel_file" name="file" 
-                               accept=".xlsx,.xls" required>
-                        <label for="excel_file" class="file-upload-label">
-                            📁 ファイルを選択してください (.xlsx, .xls)
-                        </label>
-                    </div>
+                    <label for="file">Excelファイル</label>
+                    <input type="file" id="file" name="file" accept=".xlsx,.xls" required>
                 </div>
-
+                
                 <button type="submit" class="submit-btn" id="submitBtn">
-                    🚀 勤怠データを自動入力
+                    勤怠データを自動入力
                 </button>
             </form>
-
-            <div id="statusContainer" class="status-container">
-                <div id="statusMessage"></div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
-                </div>
-                <div id="results" class="results"></div>
+            
+            <div class="info-section">
+                <h3>使用方法</h3>
+                <ul>
+                    <li>Jobcanのログイン情報（メールアドレスとパスワード）を入力</li>
+                    <li>勤怠データが含まれたExcelファイルをアップロード</li>
+                    <li>Excelファイルの形式：A列=日付、B列=開始時刻、C列=終了時刻（1行目はヘッダー）</li>
+                    <li>自動でJobcanにログインし、勤怠データを入力します</li>
+                </ul>
+            </div>
+            
+            <div class="security-notice">
+                <h4>セキュリティについて</h4>
+                <p>入力されたログイン情報は一時的にメモリに保存され、処理完了後に自動的に削除されます。サーバーには保存されません。</p>
             </div>
         </div>
     </div>
-
+    
+    <!-- プログレスポップアップ -->
+    <div class="progress-popup" id="progressPopup">
+        <div class="progress-content">
+            <div class="progress-header">
+                <h3>処理状況</h3>
+            </div>
+            
+            <div class="progress-status" id="progressStatus">
+                <h4><span class="loading-spinner"></span>処理中...</h4>
+                <p id="progressMessage">初期化中...</p>
+            </div>
+            
+            <div class="progress-log" id="progressLog">
+                <!-- ログメッセージがここに表示されます -->
+            </div>
+            
+            <div class="error-details" id="errorDetails" style="display: none;">
+                <h5>エラー詳細</h5>
+                <div id="errorContent"></div>
+            </div>
+            
+            <div class="diagnosis-section" id="diagnosisSection" style="display: none;">
+                <h5>診断情報</h5>
+                <div id="diagnosisContent"></div>
+            </div>
+            
+            <div class="progress-actions">
+                <button class="progress-btn" id="closeBtn" onclick="closeProgressPopup()">閉じる</button>
+                <button class="progress-btn secondary" id="retryBtn" onclick="retryProcess()" style="display: none;">再試行</button>
+            </div>
+        </div>
+    </div>
+    
     <script>
         let currentJobId = null;
-        let statusCheckInterval = null;
-
-        // ファイル選択時の表示更新
-        document.getElementById('excel_file').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            const label = document.querySelector('.file-upload-label');
-            if (file) {
-                label.textContent = `📁 選択済み: ${file.name}`;
-                label.style.borderColor = '#667eea';
-                label.style.background = '#f0f2ff';
-            } else {
-                label.textContent = '📁 ファイルを選択してください (.xlsx, .xls)';
-                label.style.borderColor = '#e1e5e9';
-                label.style.background = '#f8f9fa';
-            }
-        });
-
-        // フォーム送信処理
-        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+        
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const file = document.getElementById('file').files[0];
+            
+            if (!email || !password || !file) {
+                alert('すべての項目を入力してください。');
+                return;
+            }
+            
             const formData = new FormData();
-            const fileInput = document.getElementById('excel_file');
-            const emailInput = document.getElementById('email');
-            const passwordInput = document.getElementById('password');
+            formData.append('email', email);
+            formData.append('password', password);
+            formData.append('file', file);
             
-            // 必須項目の確認
-            if (!emailInput.value.trim()) {
-                showStatus('メールアドレスを入力してください', 'error');
-                return;
-            }
+            // プログレスポップアップを表示
+            showProgressPopup();
             
-            if (!passwordInput.value.trim()) {
-                showStatus('パスワードを入力してください', 'error');
-                return;
-            }
-            
-            if (fileInput.files.length === 0) {
-                showStatus('ファイルを選択してください', 'error');
-                return;
-            }
-            
-            // フォームデータを追加
-            formData.append('email', emailInput.value.trim());
-            formData.append('password', passwordInput.value.trim());
-            formData.append('file', fileInput.files[0]);
-            
-            // 送信ボタンを無効化
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.disabled = true;
-            submitBtn.textContent = '⏳ 処理中...';
-            
-            // ステータス表示を初期化
-            showStatus('処理を開始しています...', 'info');
-            
-            fetch('/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    currentJobId = data.job_id;
-                    showStatus(data.message, 'info');
-                    startStatusCheck();
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentJobId = result.job_id;
+                    updateProgressStatus('success', '処理が開始されました', 'Jobcanへのログインとデータ処理を開始しています...');
+                    startProgressPolling();
                 } else {
-                    showStatus(data.error, 'error');
-                    resetForm();
+                    updateProgressStatus('error', 'エラーが発生しました', result.message);
+                    showErrorDetails(result.message);
                 }
-            })
-            .catch(error => {
-                showStatus('エラーが発生しました: ' + error.message, 'error');
-                resetForm();
-            });
+                
+            } catch (error) {
+                updateProgressStatus('error', 'ネットワークエラー', 'サーバーとの通信中にエラーが発生しました。');
+                console.error('Error:', error);
+            }
         });
-
-        function startStatusCheck() {
-            if (statusCheckInterval) {
-                clearInterval(statusCheckInterval);
+        
+        function showProgressPopup() {
+            document.getElementById('progressPopup').style.display = 'block';
+            document.getElementById('progressStatus').className = 'progress-status';
+            document.getElementById('progressMessage').textContent = '初期化中...';
+            document.getElementById('progressLog').textContent = '';
+            document.getElementById('errorDetails').style.display = 'none';
+            document.getElementById('diagnosisSection').style.display = 'none';
+            document.getElementById('retryBtn').style.display = 'none';
+        }
+        
+        function closeProgressPopup() {
+            document.getElementById('progressPopup').style.display = 'none';
+        }
+        
+        function updateProgressStatus(type, title, message) {
+            const statusDiv = document.getElementById('progressStatus');
+            const titleElement = statusDiv.querySelector('h4');
+            const messageElement = document.getElementById('progressMessage');
+            
+            // クラスをリセット
+            statusDiv.className = 'progress-status';
+            
+            // タイプに応じてクラスを追加
+            if (type === 'success') {
+                statusDiv.classList.add('status-success');
+                titleElement.innerHTML = '✅ ' + title;
+            } else if (type === 'error') {
+                statusDiv.classList.add('status-error');
+                titleElement.innerHTML = '❌ ' + title;
+            } else if (type === 'warning') {
+                statusDiv.classList.add('status-warning');
+                titleElement.innerHTML = '⚠️ ' + title;
+            } else {
+                titleElement.innerHTML = '<span class="loading-spinner"></span>' + title;
             }
             
-            statusCheckInterval = setInterval(() => {
-                if (!currentJobId) return;
-                
-                fetch(`/status/${currentJobId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.error) {
-                            showStatus(data.error, 'error');
-                            stopStatusCheck();
-                            resetForm();
-                            return;
-                        }
-                        
-                        updateStatus(data);
-                        
-                        if (data.status === 'completed' || data.status === 'error') {
-                            stopStatusCheck();
-                            if (data.status === 'completed') {
-                                resetForm();
-                            }
-                        }
-                    })
-                    .catch(error => {
-                        showStatus('ステータス取得エラー: ' + error.message, 'error');
-                        stopStatusCheck();
-                        resetForm();
-                    });
-            }, 2000);
+            messageElement.textContent = message;
         }
-
-        function stopStatusCheck() {
-            if (statusCheckInterval) {
-                clearInterval(statusCheckInterval);
-                statusCheckInterval = null;
-            }
+        
+        function addProgressLog(message) {
+            const logDiv = document.getElementById('progressLog');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.textContent += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
         }
-
-        function updateStatus(data) {
-            let statusClass = 'info';
-            let message = data.message;
+        
+        function showErrorDetails(errorMessage) {
+            const errorDiv = document.getElementById('errorDetails');
+            const errorContent = document.getElementById('errorContent');
             
-            switch (data.status) {
-                case 'starting':
-                case 'browser_started':
-                case 'logging_in':
-                case 'login_success':
-                case 'navigating':
-                case 'attendance_loaded':
-                case 'data_loaded':
-                case 'processing':
-                    statusClass = 'info';
-                    break;
-                case 'completed':
-                    statusClass = 'success';
-                    if (data.results) {
-                        showResults(data.results);
+            errorContent.innerHTML = `
+                <p><strong>エラーメッセージ:</strong></p>
+                <p>${errorMessage}</p>
+                <p><strong>考えられる原因:</strong></p>
+                <ul>
+                    <li>メールアドレスまたはパスワードが正しくありません</li>
+                    <li>Jobcanアカウントが無効またはロックされています</li>
+                    <li>ネットワーク接続に問題があります</li>
+                    <li>Jobcanサービスがメンテナンス中です</li>
+                    <li>CAPTCHAが表示されているため手動ログインが必要です</li>
+                </ul>
+                <p><strong>解決策:</strong></p>
+                <ul>
+                    <li>ログイン情報を再確認してください</li>
+                    <li>手動でJobcanにログインしてアカウント状態を確認してください</li>
+                    <li>別のブラウザでログインを試行してください</li>
+                    <li>しばらく時間をおいてから再試行してください</li>
+                </ul>
+            `;
+            
+            errorDiv.style.display = 'block';
+            document.getElementById('retryBtn').style.display = 'inline-block';
+        }
+        
+        function showDiagnosisInfo(diagnosisData) {
+            const diagnosisDiv = document.getElementById('diagnosisSection');
+            const diagnosisContent = document.getElementById('diagnosisContent');
+            
+            let diagnosisHtml = '<h6>ページ診断結果:</h6>';
+            diagnosisHtml += '<pre>' + JSON.stringify(diagnosisData, null, 2) + '</pre>';
+            
+            diagnosisContent.innerHTML = diagnosisHtml;
+            diagnosisDiv.style.display = 'block';
+        }
+        
+        function startProgressPolling() {
+            if (!currentJobId) return;
+            
+            const pollInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/status/${currentJobId}`);
+                    const result = await response.json();
+                    
+                    if (result.status === 'completed') {
+                        updateProgressStatus('success', '処理完了', '勤怠データの入力が完了しました。');
+                        addProgressLog('✅ 処理が正常に完了しました');
+                        clearInterval(pollInterval);
+                        document.getElementById('retryBtn').style.display = 'none';
+                    } else if (result.status === 'error') {
+                        updateProgressStatus('error', 'エラーが発生しました', result.message);
+                        addProgressLog('❌ エラー: ' + result.message);
+                        
+                        if (result.diagnosis) {
+                            showDiagnosisInfo(result.diagnosis);
+                        }
+                        
+                        if (result.failure_reasons) {
+                            showErrorDetails(result.message + '\n\n原因: ' + result.failure_reasons.join(', '));
+                        }
+                        
+                        clearInterval(pollInterval);
+                    } else {
+                        // 進行中
+                        updateProgressStatus('processing', result.status, result.message);
+                        addProgressLog(result.message);
+                        
+                        if (result.logs) {
+                            result.logs.forEach(log => addProgressLog(log));
+                        }
                     }
-                    break;
-                case 'error':
-                    statusClass = 'error';
-                    break;
-            }
-            
-            showStatus(message, statusClass);
-        }
-
-        function showStatus(message, type) {
-            const container = document.getElementById('statusContainer');
-            const messageDiv = document.getElementById('statusMessage');
-            
-            container.style.display = 'block';
-            container.className = `status-container status-${type}`;
-            messageDiv.textContent = message;
-        }
-
-        function showResults(results) {
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = '<h4>📊 処理結果:</h4>';
-            
-            results.forEach(result => {
-                const item = document.createElement('div');
-                item.className = `result-item result-${result.status}`;
-                
-                if (result.status === 'success') {
-                    item.textContent = `✅ ${result.date}: ${result.start_time} - ${result.end_time}`;
-                } else {
-                    item.textContent = `❌ ${result.date}: エラー - ${result.error || 'Unknown'}`;
+                    
+                } catch (error) {
+                    console.error('Polling error:', error);
+                    addProgressLog('⚠️ ステータス確認中にエラーが発生しました');
                 }
-                
-                resultsDiv.appendChild(item);
-            });
+            }, 2000); // 2秒ごとにポーリング
         }
-
-        function resetForm() {
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.disabled = false;
-            submitBtn.textContent = '🚀 勤怠データを自動入力';
-            
-            document.getElementById('uploadForm').reset();
-            document.querySelector('.file-upload-label').textContent = '📁 ファイルを選択してください (.xlsx, .xls)';
-            document.querySelector('.file-upload-label').style.borderColor = '#e1e5e9';
-            document.querySelector('.file-upload-label').style.background = '#f8f9fa';
+        
+        function retryProcess() {
+            closeProgressPopup();
+            // フォームを再送信
+            document.getElementById('uploadForm').dispatchEvent(new Event('submit'));
         }
     </script>
 </body>
