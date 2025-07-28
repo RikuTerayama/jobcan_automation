@@ -232,9 +232,9 @@ class JobcanAutomation:
             print(f"代替ログイン方法を試行: {email}")
             self.status_queue.put({"status": "logging_in", "message": "代替ログイン方法を試行中..."})
             
-            # 直接ログインページにアクセス
+            # 直接ログインページにアクセス（正しいURLを使用）
             print("直接ログインページにアクセス中...")
-            self.page.goto("https://ssl.jobcan.jp/employee/login")
+            self.page.goto("https://id.jobcan.jp/users/sign_in?app_key=atd")
             self.page.wait_for_load_state("networkidle")
             
             print("現在のURL:", self.page.url)
@@ -265,7 +265,7 @@ class JobcanAutomation:
             print("ログイン後のURL:", self.page.url)
             
             # ログイン成功の確認
-            if "login" in self.page.url or "sign_in" in self.page.url:
+            if "sign_in" in self.page.url or "login" in self.page.url:
                 print("代替ログイン方法でも失敗")
                 return False
             
@@ -282,9 +282,9 @@ class JobcanAutomation:
             print(f"Jobcanログインを開始: {email}")
             self.status_queue.put({"status": "logging_in", "message": "Jobcanにログイン中..."})
             
-            # Jobcanログインページに移動
+            # Jobcanログインページに移動（正しいURLを使用）
             print("Jobcanログインページに移動中...")
-            self.page.goto("https://ssl.jobcan.jp/employee")
+            self.page.goto("https://id.jobcan.jp/users/sign_in?app_key=atd")
             self.page.wait_for_load_state("networkidle")
             
             print("現在のURL:", self.page.url)
