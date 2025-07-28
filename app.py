@@ -124,6 +124,17 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         add_job_log(job_id, f"🔧 RAILWAY_ENVIRONMENT: {os.environ.get('RAILWAY_ENVIRONMENT', '未設定')}")
         add_job_log(job_id, f"🔧 PORT: {os.environ.get('PORT', '未設定')}")
         add_job_log(job_id, f"🔧 NODE_ENV: {os.environ.get('NODE_ENV', '未設定')}")
+        add_job_log(job_id, f"🔧 PYTHONPATH: {os.environ.get('PYTHONPATH', '未設定')}")
+        add_job_log(job_id, f"🔧 PATH: {os.environ.get('PATH', '未設定')[:200]}...")
+        
+        # システム情報の詳細確認
+        try:
+            import platform
+            add_job_log(job_id, f"🔧 OS: {platform.system()} {platform.release()}")
+            add_job_log(job_id, f"🔧 アーキテクチャ: {platform.machine()}")
+            add_job_log(job_id, f"🔧 Python実行パス: {sys.executable}")
+        except Exception as e:
+            add_job_log(job_id, f"⚠️ システム情報の取得でエラー: {e}")
         
         # Playwrightの利用可能性をチェック
         try:
@@ -141,7 +152,9 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 '/usr/bin/chromium-browser',
                 '/usr/bin/google-chrome',
                 '/usr/bin/chromium',
-                '/usr/bin/firefox'
+                '/usr/bin/firefox',
+                '/usr/bin/chrome',
+                '/snap/bin/chromium'
             ]
             
             for browser_path in browsers_to_check:
@@ -155,6 +168,18 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     add_job_log(job_id, f"⚠️ ブラウザチェックでエラー: {browser_check_error}")
         except Exception as e:
             add_job_log(job_id, f"⚠️ システムブラウザのチェックでエラー: {e}")
+        
+        # Playwrightのインストール状況をチェック
+        try:
+            import subprocess
+            result = subprocess.run([sys.executable, '-m', 'playwright', '--version'], 
+                                  capture_output=True, text=True)
+            if result.returncode == 0:
+                add_job_log(job_id, f"✅ Playwrightバージョン: {result.stdout.strip()}")
+            else:
+                add_job_log(job_id, f"❌ Playwrightのバージョン確認に失敗: {result.stderr}")
+        except Exception as e:
+            add_job_log(job_id, f"⚠️ Playwrightのバージョン確認でエラー: {e}")
         
         # 自動化インスタンスを作成
         add_job_log(job_id, "🤖 自動化インスタンスを作成中...")
@@ -180,10 +205,15 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 # Railway環境での追加情報をログに出力
                 try:
                     import subprocess
-                    browsers_to_check = ['chromium', 'chromium-browser', 'google-chrome', 'firefox']
+                    browsers_to_check = ['chromium', 'chromium-browser', 'google-chrome', 'firefox', 'chrome']
                     for browser in browsers_to_check:
                         result = subprocess.run(['which', browser], capture_output=True, text=True)
                         add_job_log(job_id, f"🔧 {browser}の場所: {result.stdout.strip() if result.stdout else '見つかりません'}")
+                    
+                    # Playwrightのブラウザインストール状況をチェック
+                    result = subprocess.run([sys.executable, '-m', 'playwright', 'install', '--dry-run'], 
+                                          capture_output=True, text=True)
+                    add_job_log(job_id, f"🔧 Playwrightブラウザインストール状況: {result.stdout.strip() if result.stdout else result.stderr}")
                 except Exception as e:
                     add_job_log(job_id, f"🔧 ブラウザの場所確認でエラー: {e}")
                 
