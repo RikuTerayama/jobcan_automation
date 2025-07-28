@@ -567,47 +567,95 @@ class JobcanAutomation:
             
             # メールアドレス入力フィールドを探す（複数のパターンを試す）
             print("メールアドレス入力フィールドを探しています...")
-            email_selectors = [
-                'input[name="email"]',
-                'input[name="staff_code"]',
-                'input[name="login_id"]',
-                'input[name="user_id"]',
-                'input[type="email"]',
-                'input[placeholder*="メール"]',
-                'input[placeholder*="email"]',
-                'input[placeholder*="Email"]',
-                'input[id*="email"]',
-                'input[id*="login"]',
-                'input[id*="user"]',
-                'input[name="username"]',
-                'input[name="account"]',
-                # より包括的なセレクター
-                'input[type="text"]:not([type="password"])',
-                'input:not([type="password"]):not([type="submit"]):not([type="button"])',
-                'form input:first-of-type',
-                'input[autocomplete="email"]',
-                'input[autocomplete="username"]',
-                'input[autocomplete="off"]:not([type="password"])',
-                # 位置ベースのセレクター
-                'form input:nth-of-type(1)',
-                'input:not([type="password"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"])',
-                # 動的要素対応
-                'input[type="text"]',
-                'input[type="email"]',
-                'input:not([type="password"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="hidden"])'
-            ]
             
-            email_input = None
-            for selector in email_selectors:
-                try:
-                    email_locator = self.page.locator(selector)
-                    if self.page.locator(selector).count() > 0:
-                        email_input = self.page.locator(selector).first
-                        print(f"メールアドレス入力フィールドを発見: {selector}")
-                        break
-                except Exception as e:
-                    print(f"セレクター {selector} でエラー: {e}")
-                    continue
+            # JavaScriptを使用した直接的な要素検索
+            print("JavaScriptを使用した要素検索を実行...")
+            try:
+                # JavaScriptでinput要素を直接検索
+                email_input_info = self.page.evaluate("""
+                    () => {
+                        const inputs = document.querySelectorAll('input');
+                        const results = [];
+                        for (let i = 0; i < inputs.length; i++) {
+                            const input = inputs[i];
+                            const type = input.type || '';
+                            const name = input.name || '';
+                            const id = input.id || '';
+                            const placeholder = input.placeholder || '';
+                            
+                            // パスワード、submit、button、checkbox、radio以外の要素を探す
+                            if (type !== 'password' && type !== 'submit' && type !== 'button' && type !== 'checkbox' && type !== 'radio' && type !== 'hidden') {
+                                results.push({
+                                    index: i,
+                                    type: type,
+                                    name: name,
+                                    id: id,
+                                    placeholder: placeholder,
+                                    className: input.className || '',
+                                    value: input.value || ''
+                                });
+                            }
+                        }
+                        return results;
+                    }
+                """)
+                
+                print(f"JavaScript検索結果: {email_input_info}")
+                
+                if email_input_info and len(email_input_info) > 0:
+                    # 最初の要素を選択
+                    first_input = email_input_info[0]
+                    print(f"JavaScriptでメールアドレス入力フィールドを発見: {first_input}")
+                    
+                    # 対応する要素を取得
+                    email_input = self.page.locator('input').nth(first_input['index'])
+                    
+            except Exception as e:
+                print(f"JavaScript検索でエラー: {e}")
+            
+            # 従来のセレクターベースの検索（フォールバック）
+            if not email_input:
+                print("従来のセレクターベースの検索を実行...")
+                email_selectors = [
+                    'input[name="email"]',
+                    'input[name="staff_code"]',
+                    'input[name="login_id"]',
+                    'input[name="user_id"]',
+                    'input[type="email"]',
+                    'input[placeholder*="メール"]',
+                    'input[placeholder*="email"]',
+                    'input[placeholder*="Email"]',
+                    'input[id*="email"]',
+                    'input[id*="login"]',
+                    'input[id*="user"]',
+                    'input[name="username"]',
+                    'input[name="account"]',
+                    # より包括的なセレクター
+                    'input[type="text"]:not([type="password"])',
+                    'input:not([type="password"]):not([type="submit"]):not([type="button"])',
+                    'form input:first-of-type',
+                    'input[autocomplete="email"]',
+                    'input[autocomplete="username"]',
+                    'input[autocomplete="off"]:not([type="password"])',
+                    # 位置ベースのセレクター
+                    'form input:nth-of-type(1)',
+                    'input:not([type="password"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"])',
+                    # 動的要素対応
+                    'input[type="text"]',
+                    'input[type="email"]',
+                    'input:not([type="password"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="hidden"])'
+                ]
+                
+                for selector in email_selectors:
+                    try:
+                        email_locator = self.page.locator(selector)
+                        if self.page.locator(selector).count() > 0:
+                            email_input = self.page.locator(selector).first
+                            print(f"セレクターでメールアドレス入力フィールドを発見: {selector}")
+                            break
+                    except Exception as e:
+                        print(f"セレクター {selector} でエラー: {e}")
+                        continue
             
             if not email_input:
                 print("メールアドレス入力フィールドが見つからないため、異なるログイン方法を試行")
@@ -1187,7 +1235,13 @@ class AsyncJobcanAutomation:
                     'text_length': len(await self.page.text_content('body')),
                     'js_enabled': await self.page.evaluate("() => typeof window !== 'undefined'"),
                     'ready_state': await self.page.evaluate("() => document.readyState"),
-                    'viewport_size': await self.page.evaluate("() => ({width: window.innerWidth, height: window.innerHeight})")
+                    'viewport_size': await self.page.evaluate("() => ({width: window.innerWidth, height: window.innerHeight})"),
+                    'body_children_count': await self.page.evaluate("() => document.body.children.length"),
+                    'form_count': await self.page.evaluate("() => document.forms.length"),
+                    'input_count': await self.page.evaluate("() => document.querySelectorAll('input').length"),
+                    'password_input_count': await self.page.evaluate("() => document.querySelectorAll('input[type=\"password\"]').length"),
+                    'text_input_count': await self.page.evaluate("() => document.querySelectorAll('input[type=\"text\"]').length"),
+                    'email_input_count': await self.page.evaluate("() => document.querySelectorAll('input[type=\"email\"]').length")
                 }
             }
             
@@ -1446,15 +1500,20 @@ class AsyncJobcanAutomation:
             
             # Jobcanログインページに移動（正しいURLを使用）
             print("Jobcanログインページに移動中...")
-            await self.page.goto("https://id.jobcan.jp/users/sign_in?app_key=atd")
             
-            # ページが完全に読み込まれるまで待機
-            await self.page.wait_for_load_state("networkidle")
+            # ページに移動
+            response = await self.page.goto("https://id.jobcan.jp/users/sign_in?app_key=atd", wait_until="networkidle")
+            print(f"ページレスポンス: {response.status if response else 'N/A'}")
+            
+            # 複数の待機状態を確認
+            print("ページ読み込み状態を確認中...")
             await self.page.wait_for_load_state("domcontentloaded")
+            await self.page.wait_for_load_state("networkidle")
             
             # 追加の待機時間
-            await asyncio.sleep(3)
+            await asyncio.sleep(5)
             
+            # ページの状態を詳細に確認
             print("現在のURL:", self.page.url)
             print("ページタイトル:", await self.page.title())
             
@@ -1466,12 +1525,28 @@ class AsyncJobcanAutomation:
             js_enabled = await self.page.evaluate("() => typeof window !== 'undefined'")
             print(f"JavaScript有効: {js_enabled}")
             
+            # DOMの準備状態を確認
+            ready_state = await self.page.evaluate("() => document.readyState")
+            print(f"DOM準備状態: {ready_state}")
+            
+            # ページ内の要素数を確認
+            body_elements = await self.page.evaluate("() => document.body.children.length")
+            print(f"body内の要素数: {body_elements}")
+            
+            # フォーム要素の存在を確認
+            form_count = await self.page.evaluate("() => document.forms.length")
+            print(f"フォーム数: {form_count}")
+            
+            # input要素の存在を確認
+            input_count = await self.page.evaluate("() => document.querySelectorAll('input').length")
+            print(f"input要素数: {input_count}")
+            
             # 人間らしい待機時間
             import random
             import time
             
             # ページが完全に読み込まれるまで待機
-            await asyncio.sleep(random.uniform(2, 4))
+            await asyncio.sleep(random.uniform(3, 5))
             
             # 詳細診断を実行
             await self.diagnose_login_page()
@@ -1484,145 +1559,98 @@ class AsyncJobcanAutomation:
             
             # メールアドレス入力フィールドを探す（複数のパターンを試す）
             print("メールアドレス入力フィールドを探しています...")
-            email_selectors = [
-                'input[name="email"]',
-                'input[name="staff_code"]',
-                'input[name="login_id"]',
-                'input[name="user_id"]',
-                'input[type="email"]',
-                'input[placeholder*="メール"]',
-                'input[placeholder*="email"]',
-                'input[placeholder*="Email"]',
-                'input[id*="email"]',
-                'input[id*="login"]',
-                'input[id*="user"]',
-                'input[name="username"]',
-                'input[name="account"]',
-                # より包括的なセレクター
-                'input[type="text"]:not([type="password"])',
-                'input:not([type="password"]):not([type="submit"]):not([type="button"])',
-                'form input:first-of-type',
-                'input[autocomplete="email"]',
-                'input[autocomplete="username"]',
-                'input[autocomplete="off"]:not([type="password"])',
-                # 位置ベースのセレクター
-                'form input:nth-of-type(1)',
-                'input:not([type="password"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"])',
-                # 動的要素対応
-                'input[type="text"]',
-                'input[type="email"]',
-                'input:not([type="password"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="hidden"])'
-            ]
             
-            email_input = None
-            for selector in email_selectors:
-                try:
-                    email_locator = self.page.locator(selector)
-                    if await email_locator.count() > 0:
-                        email_input = email_locator.first
-                        print(f"メールアドレス入力フィールドを発見: {selector}")
-                        break
-                except Exception as e:
-                    print(f"セレクター {selector} でエラー: {e}")
-                    continue
-            
-            # 最後の手段：すべてのinput要素から最初のテキスト入力フィールドを探す
-            if not email_input:
-                print("標準セレクターで見つからないため、代替方法を試行")
-                try:
-                    # すべてのinput要素を取得
-                    all_inputs = self.page.locator('input')
-                    input_count = await all_inputs.count()
-                    print(f"ページ内のinput要素数: {input_count}")
-                    
-                    # 最初のテキスト入力フィールドを探す
-                    for i in range(input_count):
-                        input_elem = all_inputs.nth(i)
-                        type_attr = await input_elem.get_attribute('type') or ''
-                        
-                        # パスワード、submit、button、checkbox、radio以外の要素を探す
-                        if type_attr not in ['password', 'submit', 'button', 'checkbox', 'radio', 'hidden']:
-                            email_input = input_elem
-                            print(f"代替方法でメールアドレス入力フィールドを発見: input[{i}] (type='{type_attr}')")
-                            break
-                except Exception as e:
-                    print(f"代替方法でエラー: {e}")
-            
-            # さらに直接的なアプローチ：位置ベースの検索
-            if not email_input:
-                print("位置ベースの検索を試行")
-                try:
-                    # フォーム内の最初の入力フィールドを探す
-                    form_inputs = self.page.locator('form input')
-                    form_input_count = await form_inputs.count()
-                    print(f"フォーム内のinput要素数: {form_input_count}")
-                    
-                    if form_input_count > 0:
-                        # 最初の要素を取得
-                        email_input = form_inputs.first
-                        type_attr = await email_input.get_attribute('type') or ''
-                        print(f"位置ベースでメールアドレス入力フィールドを発見: type='{type_attr}'")
-                except Exception as e:
-                    print(f"位置ベース検索でエラー: {e}")
-            
-            # 最終手段：すべてのinput要素の最初のものを使用
-            if not email_input:
-                print("最終手段：すべてのinput要素の最初のものを使用")
-                try:
-                    all_inputs = self.page.locator('input')
-                    if await all_inputs.count() > 0:
-                        email_input = all_inputs.first
-                        type_attr = await email_input.get_attribute('type') or ''
-                        print(f"最終手段でメールアドレス入力フィールドを発見: type='{type_attr}'")
-                except Exception as e:
-                    print(f"最終手段でエラー: {e}")
-            
-            # さらに強力な方法：XPathを使用
-            if not email_input:
-                print("XPathを使用した検索を試行")
-                try:
-                    # XPathでinput要素を検索
-                    xpath_selectors = [
-                        "//input[@type='text']",
-                        "//input[@type='email']",
-                        "//input[not(@type='password') and not(@type='submit') and not(@type='button')]",
-                        "//form//input[1]",
-                        "//input[1]"
-                    ]
-                    
-                    for xpath in xpath_selectors:
-                        try:
-                            xpath_locator = self.page.locator(f"xpath={xpath}")
-                            if await xpath_locator.count() > 0:
-                                email_input = xpath_locator.first
-                                print(f"XPathでメールアドレス入力フィールドを発見: {xpath}")
-                                break
-                        except Exception as e:
-                            print(f"XPath {xpath} でエラー: {e}")
-                            continue
-                except Exception as e:
-                    print(f"XPath検索でエラー: {e}")
-            
-            if not email_input:
-                print("メールアドレス入力フィールドが見つからないため、ページの詳細を確認")
-                # ページ内のすべてのinput要素を確認
-                all_inputs = self.page.locator('input')
-                input_count = await all_inputs.count()
-                print(f"ページ内のinput要素数: {input_count}")
+            # JavaScriptを使用した直接的な要素検索
+            print("JavaScriptを使用した要素検索を実行...")
+            try:
+                # JavaScriptでinput要素を直接検索
+                email_input_info = await self.page.evaluate("""
+                    () => {
+                        const inputs = document.querySelectorAll('input');
+                        const results = [];
+                        for (let i = 0; i < inputs.length; i++) {
+                            const input = inputs[i];
+                            const type = input.type || '';
+                            const name = input.name || '';
+                            const id = input.id || '';
+                            const placeholder = input.placeholder || '';
+                            
+                            // パスワード、submit、button、checkbox、radio以外の要素を探す
+                            if (type !== 'password' && type !== 'submit' && type !== 'button' && type !== 'checkbox' && type !== 'radio' && type !== 'hidden') {
+                                results.push({
+                                    index: i,
+                                    type: type,
+                                    name: name,
+                                    id: id,
+                                    placeholder: placeholder,
+                                    className: input.className || '',
+                                    value: input.value || ''
+                                });
+                            }
+                        }
+                        return results;
+                    }
+                """)
                 
-                for i in range(input_count):
+                print(f"JavaScript検索結果: {email_input_info}")
+                
+                if email_input_info and len(email_input_info) > 0:
+                    # 最初の要素を選択
+                    first_input = email_input_info[0]
+                    print(f"JavaScriptでメールアドレス入力フィールドを発見: {first_input}")
+                    
+                    # 対応する要素を取得
+                    email_input = self.page.locator('input').nth(first_input['index'])
+                    
+            except Exception as e:
+                print(f"JavaScript検索でエラー: {e}")
+            
+            # 従来のセレクターベースの検索（フォールバック）
+            if not email_input:
+                print("従来のセレクターベースの検索を実行...")
+                email_selectors = [
+                    'input[name="email"]',
+                    'input[name="staff_code"]',
+                    'input[name="login_id"]',
+                    'input[name="user_id"]',
+                    'input[type="email"]',
+                    'input[placeholder*="メール"]',
+                    'input[placeholder*="email"]',
+                    'input[placeholder*="Email"]',
+                    'input[id*="email"]',
+                    'input[id*="login"]',
+                    'input[id*="user"]',
+                    'input[name="username"]',
+                    'input[name="account"]',
+                    # より包括的なセレクター
+                    'input[type="text"]:not([type="password"])',
+                    'input:not([type="password"]):not([type="submit"]):not([type="button"])',
+                    'form input:first-of-type',
+                    'input[autocomplete="email"]',
+                    'input[autocomplete="username"]',
+                    'input[autocomplete="off"]:not([type="password"])',
+                    # 位置ベースのセレクター
+                    'form input:nth-of-type(1)',
+                    'input:not([type="password"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"])',
+                    # 動的要素対応
+                    'input[type="text"]',
+                    'input[type="email"]',
+                    'input:not([type="password"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="hidden"])'
+                ]
+                
+                for selector in email_selectors:
                     try:
-                        input_elem = all_inputs.nth(i)
-                        name = await input_elem.get_attribute('name') or 'なし'
-                        type_attr = await input_elem.get_attribute('type') or 'なし'
-                        placeholder = await input_elem.get_attribute('placeholder') or 'なし'
-                        id_attr = await input_elem.get_attribute('id') or 'なし'
-                        class_attr = await input_elem.get_attribute('class') or 'なし'
-                        print(f"  input[{i}]: name='{name}', type='{type_attr}', placeholder='{placeholder}', id='{id_attr}', class='{class_attr}'")
+                        email_locator = self.page.locator(selector)
+                        if await email_locator.count() > 0:
+                            email_input = email_locator.first
+                            print(f"セレクターでメールアドレス入力フィールドを発見: {selector}")
+                            break
                     except Exception as e:
-                        print(f"  input[{i}]分析エラー: {e}")
-                
-                print("異なるログイン方法を試行")
+                        print(f"セレクター {selector} でエラー: {e}")
+                        continue
+            
+            if not email_input:
+                print("メールアドレス入力フィールドが見つからないため、異なるログイン方法を試行")
                 return await self.try_different_login_methods(email, password)
             
             # メールアドレスを人間らしく入力
@@ -1640,122 +1668,82 @@ class AsyncJobcanAutomation:
             
             # パスワード入力フィールドを探す（複数のパターンを試す）
             print("パスワード入力フィールドを探しています...")
-            password_selectors = [
-                'input[name="password"]',
-                'input[type="password"]',
-                'input[placeholder*="パスワード"]',
-                'input[placeholder*="password"]',
-                'input[placeholder*="Password"]',
-                'input[id*="password"]',
-                'input[id*="pass"]',
-                # より包括的なセレクター
-                'input[type="password"]',
-                'input[autocomplete="current-password"]',
-                'input[autocomplete="new-password"]',
-                'input[autocomplete="off"][type="password"]',
-                # 位置ベースのセレクター
-                'form input:nth-of-type(2)',
-                'input[type="password"]:first-of-type',
-                'input[type="password"]'
-            ]
             
-            password_input = None
-            for selector in password_selectors:
-                try:
-                    password_locator = self.page.locator(selector)
-                    if await password_locator.count() > 0:
-                        password_input = password_locator.first
-                        print(f"パスワード入力フィールドを発見: {selector}")
-                        break
-                except Exception as e:
-                    print(f"パスワードセレクター {selector} でエラー: {e}")
-                    continue
-            
-            # 最後の手段：すべてのpassword要素から最初のものを探す
-            if not password_input:
-                print("標準セレクターでパスワードが見つからないため、代替方法を試行")
-                try:
-                    # すべてのpassword要素を取得
-                    all_password_inputs = self.page.locator('input[type="password"]')
-                    password_count = await all_password_inputs.count()
-                    print(f"ページ内のpassword要素数: {password_count}")
-                    
-                    if password_count > 0:
-                        password_input = all_password_inputs.first
-                        print(f"代替方法でパスワード入力フィールドを発見: 最初のpassword要素")
-                except Exception as e:
-                    print(f"代替方法でエラー: {e}")
-            
-            # さらに直接的なアプローチ：位置ベースの検索
-            if not password_input:
-                print("位置ベースのパスワード検索を試行")
-                try:
-                    # フォーム内のpassword要素を探す
-                    form_password_inputs = self.page.locator('form input[type="password"]')
-                    form_password_count = await form_password_inputs.count()
-                    print(f"フォーム内のpassword要素数: {form_password_count}")
-                    
-                    if form_password_count > 0:
-                        password_input = form_password_inputs.first
-                        print(f"位置ベースでパスワード入力フィールドを発見")
-                except Exception as e:
-                    print(f"位置ベースパスワード検索でエラー: {e}")
-            
-            # 最終手段：すべてのpassword要素の最初のものを使用
-            if not password_input:
-                print("最終手段：すべてのpassword要素の最初のものを使用")
-                try:
-                    all_password_inputs = self.page.locator('input[type="password"]')
-                    if await all_password_inputs.count() > 0:
-                        password_input = all_password_inputs.first
-                        print(f"最終手段でパスワード入力フィールドを発見")
-                except Exception as e:
-                    print(f"最終手段でエラー: {e}")
-            
-            # さらに強力な方法：XPathを使用
-            if not password_input:
-                print("XPathを使用したパスワード検索を試行")
-                try:
-                    # XPathでpassword要素を検索
-                    password_xpath_selectors = [
-                        "//input[@type='password']",
-                        "//form//input[@type='password']",
-                        "//input[@type='password'][1]",
-                        "//form//input[2]",
-                        "//input[2]"
-                    ]
-                    
-                    for xpath in password_xpath_selectors:
-                        try:
-                            xpath_locator = self.page.locator(f"xpath={xpath}")
-                            if await xpath_locator.count() > 0:
-                                password_input = xpath_locator.first
-                                print(f"XPathでパスワード入力フィールドを発見: {xpath}")
-                                break
-                        except Exception as e:
-                            print(f"パスワードXPath {xpath} でエラー: {e}")
-                            continue
-                except Exception as e:
-                    print(f"パスワードXPath検索でエラー: {e}")
-            
-            if not password_input:
-                print("パスワード入力フィールドが見つからないため、ページの詳細を確認")
-                # ページ内のすべてのpassword要素を確認
-                all_password_inputs = self.page.locator('input[type="password"]')
-                password_count = await all_password_inputs.count()
-                print(f"ページ内のpassword要素数: {password_count}")
+            # JavaScriptを使用した直接的なパスワード要素検索
+            print("JavaScriptを使用したパスワード要素検索を実行...")
+            try:
+                # JavaScriptでpassword要素を直接検索
+                password_input_info = await self.page.evaluate("""
+                    () => {
+                        const inputs = document.querySelectorAll('input[type="password"]');
+                        const results = [];
+                        for (let i = 0; i < inputs.length; i++) {
+                            const input = inputs[i];
+                            const name = input.name || '';
+                            const id = input.id || '';
+                            const placeholder = input.placeholder || '';
+                            
+                            results.push({
+                                index: i,
+                                name: name,
+                                id: id,
+                                placeholder: placeholder,
+                                className: input.className || '',
+                                value: input.value || ''
+                            });
+                        }
+                        return results;
+                    }
+                """)
                 
-                for i in range(password_count):
+                print(f"パスワードJavaScript検索結果: {password_input_info}")
+                
+                if password_input_info and len(password_input_info) > 0:
+                    # 最初の要素を選択
+                    first_password = password_input_info[0]
+                    print(f"JavaScriptでパスワード入力フィールドを発見: {first_password}")
+                    
+                    # 対応する要素を取得
+                    password_input = self.page.locator('input[type="password"]').nth(first_password['index'])
+                    
+            except Exception as e:
+                print(f"パスワードJavaScript検索でエラー: {e}")
+            
+            # 従来のセレクターベースの検索（フォールバック）
+            if not password_input:
+                print("従来のセレクターベースのパスワード検索を実行...")
+                password_selectors = [
+                    'input[name="password"]',
+                    'input[type="password"]',
+                    'input[placeholder*="パスワード"]',
+                    'input[placeholder*="password"]',
+                    'input[placeholder*="Password"]',
+                    'input[id*="password"]',
+                    'input[id*="pass"]',
+                    # より包括的なセレクター
+                    'input[type="password"]',
+                    'input[autocomplete="current-password"]',
+                    'input[autocomplete="new-password"]',
+                    'input[autocomplete="off"][type="password"]',
+                    # 位置ベースのセレクター
+                    'form input:nth-of-type(2)',
+                    'input[type="password"]:first-of-type',
+                    'input[type="password"]'
+                ]
+                
+                for selector in password_selectors:
                     try:
-                        password_elem = all_password_inputs.nth(i)
-                        name = await password_elem.get_attribute('name') or 'なし'
-                        id_attr = await password_elem.get_attribute('id') or 'なし'
-                        class_attr = await password_elem.get_attribute('class') or 'なし'
-                        print(f"  password[{i}]: name='{name}', id='{id_attr}', class='{class_attr}'")
+                        password_locator = self.page.locator(selector)
+                        if await password_locator.count() > 0:
+                            password_input = password_locator.first
+                            print(f"セレクターでパスワード入力フィールドを発見: {selector}")
+                            break
                     except Exception as e:
-                        print(f"  password[{i}]分析エラー: {e}")
-                
-                print("異なるログイン方法を試行")
+                        print(f"パスワードセレクター {selector} でエラー: {e}")
+                        continue
+            
+            if not password_input:
+                print("パスワード入力フィールドが見つからないため、異なるログイン方法を試行")
                 return await self.try_different_login_methods(email, password)
             
             # パスワードを人間らしく入力
