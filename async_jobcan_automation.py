@@ -322,17 +322,28 @@ class AsyncJobcanAutomation:
             print(f"データフレームの最初の5行:")
             print(df.head())
             
+            # ヘッダー行をスキップするかチェック
+            print(f"\n=== データ処理の詳細 ===")
+            print(f"総行数: {len(df)}")
+            
             processed_count = 0
             success_count = 0
             error_count = 0
             
             for index, row in df.iterrows():
                 try:
+                    print(f"\n=== 行 {index} の処理開始 ===")
+                    print(f"行の内容: {row.tolist()}")
+                    
+                    # ヘッダー行のチェック
+                    if index == 0:
+                        print(f"⚠️ 行 {index}: ヘッダー行をスキップ")
+                        continue
+                    
                     date = row.iloc[0]  # A列：日付
                     start_time = row.iloc[1]  # B列：始業時刻
                     end_time = row.iloc[2]  # C列：終業時刻
                     
-                    print(f"\n=== 行 {index} の処理開始 ===")
                     print(f"生データ: 日付={date} ({type(date)}), 始業={start_time} ({type(start_time)}), 終業={end_time} ({type(end_time)})")
                     
                     # データの妥当性チェック
@@ -349,6 +360,7 @@ class AsyncJobcanAutomation:
                             date_obj = pd.to_datetime(date)
                         
                         date_str = date_obj.strftime("%Y/%m/%d")
+                        print(f"✅ 日付変換成功: {date} → {date_str}")
                     except Exception as e:
                         print(f"❌ 行 {index}: 日付の変換でエラー: {e}")
                         error_count += 1
@@ -365,6 +377,8 @@ class AsyncJobcanAutomation:
                             end_time_str = end_time
                         else:
                             end_time_str = end_time.strftime("%H:%M")
+                        
+                        print(f"✅ 時刻変換成功: 始業={start_time} → {start_time_str}, 終業={end_time} → {end_time_str}")
                     except Exception as e:
                         print(f"❌ 行 {index}: 時刻の変換でエラー: {e}")
                         error_count += 1
@@ -373,6 +387,7 @@ class AsyncJobcanAutomation:
                     print(f"変換後データ: 日付={date_str}, 始業={start_time_str}, 終業={end_time_str}")
                     
                     # 実際の勤怠入力処理を実行
+                    print(f"🔄 勤怠入力処理を開始: {date_str}")
                     success = await self.input_attendance_for_date(date_str, start_time_str, end_time_str)
                     
                     if success:
@@ -383,6 +398,7 @@ class AsyncJobcanAutomation:
                         print(f"❌ 行 {index} の処理が失敗しました")
                     
                     processed_count += 1
+                    print(f"⏳ 次の行まで待機中...")
                     await asyncio.sleep(2)  # 処理間隔
                     
                 except Exception as e:
@@ -404,13 +420,16 @@ class AsyncJobcanAutomation:
     async def input_attendance_for_date(self, date_str: str, start_time: str, end_time: str):
         """指定された日付の勤怠を入力"""
         try:
-            print(f"日付 {date_str} の勤怠入力を開始...")
+            print(f"🔄 日付 {date_str} の勤怠入力を開始...")
             
             # 現在のページの状態を確認
+            print(f"📊 現在のページ状態を確認中...")
             await self.debug_page_state("勤怠入力開始前")
             
             # 1. 日付を選択
+            print(f"📅 ステップ1: 日付 {date_str} を選択中...")
             date_success = await self.select_date(date_str)
+            print(f"📅 日付選択結果: {'✅ 成功' if date_success else '❌ 失敗'}")
             await self.debug_page_state("日付選択後")
             
             if not date_success:
@@ -418,7 +437,9 @@ class AsyncJobcanAutomation:
                 return False
             
             # 2. 打刻修正ボタンをクリック
+            print(f"🔧 ステップ2: 打刻修正ボタンをクリック中...")
             correction_success = await self.click_stamp_correction()
+            print(f"🔧 打刻修正結果: {'✅ 成功' if correction_success else '❌ 失敗'}")
             await self.debug_page_state("打刻修正ボタンクリック後")
             
             if not correction_success:
@@ -426,15 +447,21 @@ class AsyncJobcanAutomation:
                 return False
             
             # 3. 始業時刻を入力して打刻
+            print(f"⏰ ステップ3: 始業時刻 {start_time} を入力中...")
             start_success = await self.input_start_time(start_time)
+            print(f"⏰ 始業時刻入力結果: {'✅ 成功' if start_success else '❌ 失敗'}")
             await self.debug_page_state("始業時刻入力後")
             
             # 4. 終業時刻を入力して打刻
+            print(f"⏰ ステップ4: 終業時刻 {end_time} を入力中...")
             end_success = await self.input_end_time(end_time)
+            print(f"⏰ 終業時刻入力結果: {'✅ 成功' if end_success else '❌ 失敗'}")
             await self.debug_page_state("終業時刻入力後")
             
             # 5. 出勤簿ページに戻る
+            print(f"🏠 ステップ5: 出勤簿ページに戻る中...")
             return_success = await self.return_to_attendance_page()
+            print(f"🏠 ページ戻り結果: {'✅ 成功' if return_success else '❌ 失敗'}")
             await self.debug_page_state("出勤簿ページ戻り後")
             
             # 6. 処理結果をログに出力
@@ -443,15 +470,17 @@ class AsyncJobcanAutomation:
                 print(f"✅ {date_str}の勤怠を登録しました（始業{start_time}／終業{end_time}）")
             else:
                 print(f"❌ {date_str}の勤怠登録に失敗しました（始業{start_time}／終業{end_time}）")
+                print(f"   - 日付選択: {'✅' if date_success else '❌'}")
+                print(f"   - 打刻修正: {'✅' if correction_success else '❌'}")
                 print(f"   - 始業時刻入力: {'✅' if start_success else '❌'}")
                 print(f"   - 終業時刻入力: {'✅' if end_success else '❌'}")
                 print(f"   - ページ戻り: {'✅' if return_success else '❌'}")
             
-            print(f"日付 {date_str} の勤怠入力が完了しました")
+            print(f"📋 日付 {date_str} の勤怠入力が完了しました")
             return overall_success
             
         except Exception as e:
-            print(f"日付 {date_str} の勤怠入力でエラー: {e}")
+            print(f"❌ 日付 {date_str} の勤怠入力でエラー: {e}")
             await self.debug_page_state("エラー発生時")
             return False
 
@@ -568,7 +597,7 @@ class AsyncJobcanAutomation:
     async def select_date(self, date_str: str):
         """指定された日付を選択"""
         try:
-            print(f"日付 {date_str} を選択中...")
+            print(f"📅 日付 {date_str} を選択中...")
             
             # 日付文字列を解析
             date_obj = datetime.strptime(date_str, "%Y/%m/%d")
@@ -582,7 +611,7 @@ class AsyncJobcanAutomation:
             
             # Jobcanの実際の日付形式に変換（例：07/01(火)）
             jobcan_date_format = f"{month:02d}/{day:02d}({weekday})"
-            print(f"Jobcan日付形式: {jobcan_date_format}")
+            print(f"📅 Jobcan日付形式: {jobcan_date_format}")
             
             # 日付セレクターを探す（Jobcanの実際の形式に基づく）
             date_selectors = [
@@ -598,18 +627,22 @@ class AsyncJobcanAutomation:
                 f'a[href*="{year}-{month:02d}-{day:02d}"]'
             ]
             
-            for selector in date_selectors:
+            print(f"🔍 日付セレクターを検索中...")
+            for i, selector in enumerate(date_selectors):
                 try:
-                    if await self.page.locator(selector).count() > 0:
-                        print(f"日付セレクターを発見: {selector}")
+                    count = await self.page.locator(selector).count()
+                    print(f"🔍 セレクター {i+1}/{len(date_selectors)}: {selector} → {count}個発見")
+                    if count > 0:
+                        print(f"✅ 日付セレクターを発見: {selector}")
                         await self.page.click(selector)
                         await asyncio.sleep(2)
                         return True
                 except Exception as e:
-                    print(f"セレクター {selector} でエラー: {e}")
+                    print(f"❌ セレクター {selector} でエラー: {e}")
                     continue
             
             # 日付が見つからない場合は、カレンダーから探す
+            print(f"🔍 カレンダーから日付を検索中...")
             calendar_success = await self.select_date_from_calendar(date_str)
             if calendar_success:
                 return True
@@ -696,7 +729,7 @@ class AsyncJobcanAutomation:
     async def click_stamp_correction(self):
         """打刻修正ボタンをクリック"""
         try:
-            print("打刻修正ボタンをクリック中...")
+            print("🔧 打刻修正ボタンをクリック中...")
             
             # 打刻修正ボタンを探す（Jobcanの実際のUIに基づく）
             correction_selectors = [
@@ -714,22 +747,26 @@ class AsyncJobcanAutomation:
                 'a[href*="edit"]'
             ]
             
-            for selector in correction_selectors:
+            print(f"🔍 打刻修正ボタンを検索中...")
+            for i, selector in enumerate(correction_selectors):
                 try:
-                    if await self.page.locator(selector).count() > 0:
-                        print(f"打刻修正ボタンを発見: {selector}")
+                    count = await self.page.locator(selector).count()
+                    print(f"🔍 セレクター {i+1}/{len(correction_selectors)}: {selector} → {count}個発見")
+                    if count > 0:
+                        print(f"✅ 打刻修正ボタンを発見: {selector}")
                         await self.page.click(selector)
                         await asyncio.sleep(3)
                         
                         # URLが打刻修正ページに変わったか確認
                         current_url = self.page.url
+                        print(f"🔗 現在のURL: {current_url}")
                         if "modify" in current_url or "edit" in current_url:
                             print(f"✅ 打刻修正ページに遷移しました: {current_url}")
                             return True
                         else:
                             print(f"⚠️ 打刻修正ページへの遷移を確認できません: {current_url}")
                 except Exception as e:
-                    print(f"セレクター {selector} でエラー: {e}")
+                    print(f"❌ セレクター {selector} でエラー: {e}")
                     continue
             
             print("❌ 打刻修正ボタンが見つかりませんでした")
