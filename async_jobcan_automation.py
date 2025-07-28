@@ -415,10 +415,44 @@ class AsyncJobcanAutomation:
                 form_count = await self.page.evaluate("() => document.forms.length")
                 input_count = await self.page.evaluate("() => document.querySelectorAll('input').length")
                 button_count = await self.page.evaluate("() => document.querySelectorAll('button').length")
+                table_count = await self.page.evaluate("() => document.querySelectorAll('table').length")
+                td_count = await self.page.evaluate("() => document.querySelectorAll('td').length")
                 
                 print(f"フォーム数: {form_count}")
                 print(f"入力フィールド数: {input_count}")
                 print(f"ボタン数: {button_count}")
+                print(f"テーブル数: {table_count}")
+                print(f"TD要素数: {td_count}")
+                
+                # 日付関連の要素を確認
+                print("日付関連の要素を確認中...")
+                date_elements = await self.page.evaluate("""
+                    () => {
+                        const tds = document.querySelectorAll('td');
+                        const results = [];
+                        for (let i = 0; i < tds.length; i++) {
+                            const td = tds[i];
+                            const text = td.textContent || '';
+                            if (text.match(/\\d{2}\\/\\d{2}/) || text.match(/\\d{2}\\/\\d{2}\\([月火水木金土日]\\)/)) {
+                                results.push({
+                                    index: i,
+                                    text: text.trim(),
+                                    className: td.className || '',
+                                    id: td.id || '',
+                                    visible: td.offsetWidth > 0 && td.offsetHeight > 0
+                                });
+                            }
+                        }
+                        return results;
+                    }
+                """)
+                
+                if date_elements:
+                    print("日付要素を発見:")
+                    for i, date_info in enumerate(date_elements):
+                        print(f"  date[{i}]: {date_info}")
+                else:
+                    print("日付要素が見つかりませんでした")
                 
                 # 入力フィールドの詳細を確認
                 if input_count > 0:
@@ -490,14 +524,20 @@ class AsyncJobcanAutomation:
             month = date_obj.month
             day = date_obj.day
             
-            # Jobcanの日付形式に変換（例：2025年07月01日）
-            jobcan_date_format = f"{year}年{month:02d}月{day:02d}日"
+            # 曜日を取得（日本語）
+            weekday_jp = ['月', '火', '水', '木', '金', '土', '日']
+            weekday = weekday_jp[date_obj.weekday()]
+            
+            # Jobcanの実際の日付形式に変換（例：07/01(火)）
+            jobcan_date_format = f"{month:02d}/{day:02d}({weekday})"
             print(f"Jobcan日付形式: {jobcan_date_format}")
             
             # 日付セレクターを探す（Jobcanの実際の形式に基づく）
             date_selectors = [
                 f'td:has-text("{jobcan_date_format}")',
                 f'a:has-text("{jobcan_date_format}")',
+                f'td:has-text("{month:02d}/{day:02d}")',
+                f'a:has-text("{month:02d}/{day:02d}")',
                 f'[data-date="{date_str}"]',
                 f'[data-date="{year}-{month:02d}-{day:02d}"]',
                 f'td[data-date="{date_str}"]',
@@ -529,6 +569,20 @@ class AsyncJobcanAutomation:
         try:
             print(f"カレンダーから日付 {date_str} を選択中...")
             
+            # 日付文字列から日付オブジェクトを作成
+            date_obj = datetime.strptime(date_str, "%Y/%m/%d")
+            year = date_obj.year
+            month = date_obj.month
+            day = date_obj.day
+            
+            # 曜日を取得（日本語）
+            weekday_jp = ['月', '火', '水', '木', '金', '土', '日']
+            weekday = weekday_jp[date_obj.weekday()]
+            
+            # Jobcanの実際の日付形式
+            jobcan_date_format = f"{month:02d}/{day:02d}({weekday})"
+            jobcan_date_simple = f"{month:02d}/{day:02d}"
+            
             # カレンダーのセレクターを探す
             calendar_selectors = [
                 '.calendar',
@@ -536,7 +590,9 @@ class AsyncJobcanAutomation:
                 '[class*="calendar"]',
                 '[class*="datepicker"]',
                 'table[class*="calendar"]',
-                'div[class*="calendar"]'
+                'div[class*="calendar"]',
+                'table',
+                'tbody'
             ]
             
             for selector in calendar_selectors:
@@ -544,29 +600,33 @@ class AsyncJobcanAutomation:
                     if await self.page.locator(selector).count() > 0:
                         print(f"カレンダーを発見: {selector}")
                         
-                        # 日付文字列から日付オブジェクトを作成
-                        date_obj = datetime.strptime(date_str, "%Y/%m/%d")
-                        day = date_obj.day
-                        
-                        # カレンダー内で日付を探す
+                        # カレンダー内で日付を探す（複数の形式に対応）
                         day_selectors = [
+                            f'td:has-text("{jobcan_date_format}")',
+                            f'a:has-text("{jobcan_date_format}")',
+                            f'td:has-text("{jobcan_date_simple}")',
+                            f'a:has-text("{jobcan_date_simple}")',
                             f'td:has-text("{day}")',
                             f'a:has-text("{day}")',
                             f'[data-day="{day}"]',
-                            f'[data-date*="{day}"]'
+                            f'[data-date*="{day}"]',
+                            f'[data-date="{date_str}"]',
+                            f'[data-date="{year}-{month:02d}-{day:02d}"]'
                         ]
                         
                         for day_selector in day_selectors:
                             try:
                                 if await self.page.locator(day_selector).count() > 0:
-                                    print(f"日付 {day} を発見: {day_selector}")
+                                    print(f"日付 {jobcan_date_format} を発見: {day_selector}")
                                     await self.page.click(day_selector)
-                                    await asyncio.sleep(1)
+                                    await asyncio.sleep(2)
                                     return
-                            except:
+                            except Exception as e:
+                                print(f"日付セレクター {day_selector} でエラー: {e}")
                                 continue
                         break
-                except:
+                except Exception as e:
+                    print(f"カレンダーセレクター {selector} でエラー: {e}")
                     continue
             
             print(f"日付 {date_str} が見つかりませんでした")
