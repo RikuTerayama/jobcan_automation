@@ -98,7 +98,30 @@ class JobcanAutomation:
                                     print("✅ 方法6でブラウザ起動成功")
                                 except Exception as e6:
                                     print(f"❌ 方法6でブラウザ起動失敗: {e6}")
-                                    raise Exception("すべてのブラウザ起動方法が失敗しました")
+                                    
+                                    # 方法7: 完全に最小限の設定でChromium起動
+                                    try:
+                                        print("🔄 方法7: 完全に最小限の設定でChromiumを起動中...")
+                                        self.browser = self.playwright.chromium.launch(
+                                            headless=True,
+                                            args=['--no-sandbox']
+                                        )
+                                        browser_launched = True
+                                        print("✅ 方法7でブラウザ起動成功")
+                                    except Exception as e7:
+                                        print(f"❌ 方法7でブラウザ起動失敗: {e7}")
+                                        
+                                        # 方法8: 最後の手段として、エラーを無視して続行
+                                        print("🔄 方法8: エラーを無視してブラウザ起動を試行中...")
+                                        try:
+                                            self.browser = self.playwright.chromium.launch(
+                                                headless=True
+                                            )
+                                            browser_launched = True
+                                            print("✅ 方法8でブラウザ起動成功")
+                                        except Exception as e8:
+                                            print(f"❌ 方法8でブラウザ起動失敗: {e8}")
+                                            raise Exception("すべてのブラウザ起動方法が失敗しました")
             
             if not browser_launched:
                 raise Exception("ブラウザの起動に失敗しました")
