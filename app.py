@@ -144,23 +144,20 @@ class JobcanAutomation:
             print("Playwrightを初期化中...")
             self.playwright = sync_playwright().start()
             
-            # Railway環境用の設定
+            # より人間らしいブラウザ設定
             browser_args = [
                 '--no-sandbox',
                 '--disable-dev-shm-usage',
-                '--disable-gpu',
+                '--disable-blink-features=AutomationControlled',
                 '--disable-web-security',
                 '--disable-features=VizDisplayCompositor',
                 '--disable-extensions',
                 '--disable-plugins',
-                '--disable-images',
-                '--disable-javascript',
                 '--disable-background-timer-throttling',
                 '--disable-backgrounding-occluded-windows',
                 '--disable-renderer-backgrounding',
-                '--single-process',
-                '--no-zygote',
-                '--disable-setuid-sandbox',
+                '--disable-features=TranslateUI',
+                '--disable-ipc-flooding-protection',
                 '--disable-background-networking',
                 '--disable-default-apps',
                 '--disable-sync',
@@ -174,12 +171,6 @@ class JobcanAutomation:
                 '--disable-domain-reliability',
                 '--disable-features=TranslateUI',
                 '--disable-ipc-flooding-protection',
-                '--disable-blink-features=AutomationControlled',
-                '--disable-web-security',
-                '--disable-features=VizDisplayCompositor',
-                '--disable-dev-shm-usage',
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
                 '--disable-background-timer-throttling',
                 '--disable-backgrounding-occluded-windows',
                 '--disable-renderer-backgrounding',
@@ -209,13 +200,31 @@ class JobcanAutomation:
             print("新しいページを作成中...")
             self.page = self.browser.new_page()
             
-            # ユーザーエージェントを設定
+            # より人間らしいユーザーエージェントを設定
             self.page.set_extra_http_headers({
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+                'Accept-Language': 'ja-JP,ja;q=0.9,en;q=0.8',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1'
             })
             
             # JavaScriptを有効化（ログインに必要）
             print("JavaScriptを有効化")
+            
+            # ボット検出を回避するための設定
+            self.page.add_init_script("""
+                Object.defineProperty(navigator, 'webdriver', {
+                    get: () => undefined,
+                });
+                Object.defineProperty(navigator, 'plugins', {
+                    get: () => [1, 2, 3, 4, 5],
+                });
+                Object.defineProperty(navigator, 'languages', {
+                    get: () => ['ja-JP', 'ja', 'en'],
+                });
+            """)
             
             self.status_queue.put({"status": "browser_started", "message": "ブラウザを起動しました"})
             print("ブラウザ起動完了")
@@ -276,6 +285,29 @@ class JobcanAutomation:
             print(f"代替ログイン方法でエラー: {e}")
             return False
 
+    def check_for_captcha(self):
+        """CAPTCHAの検出"""
+        try:
+            captcha_selectors = [
+                'iframe[src*="recaptcha"]',
+                'iframe[src*="captcha"]',
+                'div[class*="recaptcha"]',
+                'div[class*="captcha"]',
+                'img[src*="captcha"]',
+                'input[name*="captcha"]',
+                'input[id*="captcha"]'
+            ]
+            
+            for selector in captcha_selectors:
+                if self.page.locator(selector).count() > 0:
+                    print(f"CAPTCHAを検出: {selector}")
+                    return True
+            
+            return False
+        except Exception as e:
+            print(f"CAPTCHA検出中にエラー: {e}")
+            return False
+
     def login_to_jobcan(self, email: str, password: str) -> bool:
         """Jobcanにログイン"""
         try:
@@ -289,6 +321,20 @@ class JobcanAutomation:
             
             print("現在のURL:", self.page.url)
             print("ページタイトル:", self.page.title())
+            
+            # 人間らしい待機時間
+            import random
+            import time
+            
+            # ページが完全に読み込まれるまで待機
+            time.sleep(random.uniform(2, 4))
+            
+            # CAPTCHAの検出
+            if self.check_for_captcha():
+                error_msg = "CAPTCHAが検出されました。手動でのログインが必要です。"
+                print(error_msg)
+                self.status_queue.put({"status": "error", "message": error_msg})
+                return False
             
             # JavaScriptが有効かチェック
             js_enabled = self.page.evaluate("() => typeof window !== 'undefined'")
@@ -356,10 +402,18 @@ class JobcanAutomation:
                         pass
                 raise Exception("メールアドレス入力フィールドが見つかりません")
             
-            # メールアドレスを入力
+            # メールアドレスを人間らしく入力
             print("メールアドレスを入力中...")
-            email_input.fill(email)
+            email_input.click()
+            time.sleep(random.uniform(0.5, 1.5))
+            
+            # 文字を一つずつ入力（人間らしく）
+            for char in email:
+                email_input.type(char)
+                time.sleep(random.uniform(0.05, 0.15))
+            
             print("メールアドレス入力完了")
+            time.sleep(random.uniform(0.5, 1.0))
             
             # パスワード入力フィールドを探す（複数のパターンを試す）
             print("パスワード入力フィールドを探しています...")
@@ -387,10 +441,18 @@ class JobcanAutomation:
             if not password_input:
                 raise Exception("パスワード入力フィールドが見つかりません")
             
-            # パスワードを入力
+            # パスワードを人間らしく入力
             print("パスワードを入力中...")
-            password_input.fill(password)
+            password_input.click()
+            time.sleep(random.uniform(0.5, 1.5))
+            
+            # 文字を一つずつ入力（人間らしく）
+            for char in password:
+                password_input.type(char)
+                time.sleep(random.uniform(0.05, 0.15))
+            
             print("パスワード入力完了")
+            time.sleep(random.uniform(1.0, 2.0))
             
             # 入力後の値を確認
             print(f"入力されたメールアドレス: {email_input.input_value()}")
@@ -441,13 +503,16 @@ class JobcanAutomation:
                         pass
                 raise Exception("ログインボタンが見つかりません")
             
-            # ログインボタンをクリック
+            # ログインボタンを人間らしくクリック
             print("ログインボタンをクリック中...")
+            login_button.hover()  # マウスオーバー
+            time.sleep(random.uniform(0.3, 0.8))
             login_button.click()
             print("ログインボタンクリック完了")
             
             # ログイン後のページ読み込みを待機
             print("ログイン後のページ読み込みを待機中...")
+            time.sleep(random.uniform(3, 5))  # 人間らしい待機時間
             self.page.wait_for_load_state("networkidle")
             
             print("ログイン後のURL:", self.page.url)
