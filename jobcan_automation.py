@@ -887,6 +887,89 @@ class JobcanAutomation:
             print(f"❌ {time_type}時間入力でエラー: {e}")
             return False
     
+    def click_stamp_button(self, time_type: str):
+        """打刻ボタンをクリック"""
+        try:
+            print(f"🔘 {time_type}時間の打刻ボタンをクリック中...")
+            
+            # 打刻ボタンを探す
+            stamp_selectors = [
+                'button:has-text("打刻")',
+                'input[value*="打刻"]',
+                'button:has-text("登録")',
+                'input[value*="登録"]',
+                'button[type="submit"]',
+                'input[type="submit"]',
+                '[class*="stamp"]',
+                '[class*="submit"]'
+            ]
+            
+            print(f"🔍 {time_type}時間打刻ボタンを検索中...")
+            for i, selector in enumerate(stamp_selectors):
+                try:
+                    count = self.page.locator(selector).count()
+                    print(f"🔍 セレクター {i+1}/{len(stamp_selectors)}: {selector} → {count}個発見")
+                    if count > 0:
+                        print(f"✅ {time_type}時間打刻ボタンを発見: {selector}")
+                        self.page.click(selector)
+                        time.sleep(2)
+                        
+                        # 打刻完了メッセージを確認
+                        print(f"📋 打刻完了メッセージを確認中...")
+                        completion_success = self.check_stamp_completion_message(time_type)
+                        if completion_success:
+                            print(f"✅ {time_type}時間の打刻が完了しました")
+                        else:
+                            print(f"⚠️ {time_type}時間の打刻完了メッセージが確認できませんでした")
+                        return True
+                except Exception as e:
+                    print(f"❌ セレクター {selector} でエラー: {e}")
+                    continue
+            
+            print(f"❌ {time_type}時間の打刻ボタンが見つかりませんでした")
+            return False
+            
+        except Exception as e:
+            print(f"❌ {time_type}時間打刻ボタンのクリックでエラー: {e}")
+            return False
+    
+    def check_stamp_completion_message(self, time_type: str):
+        """打刻完了メッセージを確認"""
+        try:
+            print(f"📋 {time_type}打刻完了メッセージを確認中...")
+            
+            # 完了メッセージのセレクター
+            completion_selectors = [
+                'text=打刻が完了しました',
+                'text=登録が完了しました',
+                'text=保存が完了しました',
+                'text=完了しました',
+                'text=正常に処理されました',
+                '[class*="success"]',
+                '[class*="complete"]',
+                '[class*="message"]'
+            ]
+            
+            print(f"🔍 完了メッセージを検索中...")
+            for i, selector in enumerate(completion_selectors):
+                try:
+                    count = self.page.locator(selector).count()
+                    print(f"🔍 セレクター {i+1}/{len(completion_selectors)}: {selector} → {count}個発見")
+                    if count > 0:
+                        message = self.page.locator(selector).first.text_content()
+                        print(f"✅ {time_type}打刻完了メッセージ: {message}")
+                        return True
+                except Exception as e:
+                    print(f"❌ セレクター {selector} でエラー: {e}")
+                    continue
+            
+            print(f"⚠️ {time_type}打刻完了メッセージは確認できませんでした")
+            return False
+            
+        except Exception as e:
+            print(f"❌ 打刻完了メッセージ確認でエラー: {e}")
+            return False
+    
     def process_attendance_data(self, data: List[Dict[str, str]]) -> List[Dict[str, str]]:
         """勤怠データを処理"""
         try:
