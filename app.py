@@ -9,6 +9,8 @@ Railwayデプロイ対応版
 import os
 import json
 import tempfile
+import subprocess
+import sys
 from datetime import datetime
 from typing import List, Dict, Optional
 import pandas as pd
@@ -41,6 +43,18 @@ def allowed_file(filename):
     """アップロードされたファイルの拡張子をチェック"""
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def ensure_playwright_browser():
+    """Playwrightブラウザがインストールされているか確認し、必要に応じてインストール"""
+    try:
+        # Playwrightブラウザのインストールを試行
+        subprocess.run([
+            sys.executable, "-m", "playwright", "install", "--force", "chromium"
+        ], check=True, capture_output=True)
+        print("Playwrightブラウザが正常にインストールされました")
+    except subprocess.CalledProcessError as e:
+        print(f"Playwrightブラウザのインストールに失敗しました: {e}")
+        raise Exception("Playwrightブラウザのインストールに失敗しました")
 
 def load_excel_data(file_path: str) -> List[Dict[str, str]]:
     """Excelファイルから勤怠データを読み込み"""
@@ -99,30 +113,40 @@ class JobcanAutomation:
         
     def start_browser(self):
         """ブラウザを起動"""
-        self.playwright = sync_playwright().start()
-        
-        # Railway環境用の設定
-        browser_args = [
-            '--no-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-gpu',
-            '--disable-web-security',
-            '--disable-features=VizDisplayCompositor',
-            '--disable-extensions',
-            '--disable-plugins',
-            '--disable-images',
-            '--disable-javascript',
-            '--disable-background-timer-throttling',
-            '--disable-backgrounding-occluded-windows',
-            '--disable-renderer-backgrounding'
-        ]
-        
-        self.browser = self.playwright.chromium.launch(
-            headless=self.headless,
-            args=browser_args
-        )
-        self.page = self.browser.new_page()
-        self.status_queue.put({"status": "browser_started", "message": "ブラウザを起動しました"})
+        try:
+            # Playwrightブラウザの確認
+            ensure_playwright_browser()
+            
+            self.playwright = sync_playwright().start()
+            
+            # Railway環境用の設定
+            browser_args = [
+                '--no-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--disable-web-security',
+                '--disable-features=VizDisplayCompositor',
+                '--disable-extensions',
+                '--disable-plugins',
+                '--disable-images',
+                '--disable-javascript',
+                '--disable-background-timer-throttling',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-renderer-backgrounding',
+                '--single-process',
+                '--no-zygote'
+            ]
+            
+            self.browser = self.playwright.chromium.launch(
+                headless=self.headless,
+                args=browser_args
+            )
+            self.page = self.browser.new_page()
+            self.status_queue.put({"status": "browser_started", "message": "ブラウザを起動しました"})
+            
+        except Exception as e:
+            self.status_queue.put({"status": "error", "message": f"ブラウザの起動に失敗しました: {e}"})
+            raise
         
     def login_to_jobcan(self, email: str, password: str) -> bool:
         """Jobcanにログイン"""
