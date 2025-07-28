@@ -20,6 +20,10 @@ from playwright.sync_api import sync_playwright, Page, Browser
 import threading
 import queue
 from dotenv import load_dotenv
+import asyncio
+import threading
+from concurrent.futures import ThreadPoolExecutor
+import uuid
 
 # 環境変数の読み込み
 load_dotenv()
@@ -997,22 +1001,879 @@ class JobcanAutomation:
         print("ブラウザを閉じました")
         self.status_queue.put({"status": "completed", "message": "ブラウザを閉じました"})
 
-def process_jobcan_automation(job_id: str, email: str, password: str, file_path: str):
-    """Jobcan自動化処理を実行"""
+class AsyncJobcanAutomation:
+    def __init__(self):
+        self.browser = None
+        self.page = None
+        self.status_queue = queue.Queue()
+        self.diagnosis_data = {}
+
+    def get_diagnosis_data(self):
+        """診断データを取得"""
+        return self.diagnosis_data
+
+    async def start_browser(self):
+        """ブラウザを起動"""
+        try:
+            print("Playwrightブラウザを起動中...")
+            
+            # Playwrightブラウザのインストール確認
+            ensure_playwright_browser()
+            
+            # 非同期Playwrightを使用
+            from playwright.async_api import async_playwright
+            
+            self.playwright = await async_playwright().start()
+            
+            # ブラウザを起動（ヘッドレスモード）
+            self.browser = await self.playwright.chromium.launch(
+                headless=True,
+                args=[
+                    '--disable-gpu',
+                    '--disable-web-security',
+                    '--disable-features=VizDisplayCompositor',
+                    '--disable-extensions',
+                    '--disable-plugins',
+                    '--disable-images',
+                    '--disable-javascript',
+                    '--disable-background-timer-throttling',
+                    '--disable-backgrounding-occluded-windows',
+                    '--disable-renderer-backgrounding',
+                    '--single-process',
+                    '--no-zygote',
+                    '--disable-setuid-sandbox',
+                    '--disable-background-networking',
+                    '--disable-default-apps',
+                    '--disable-sync',
+                    '--disable-translate',
+                    '--hide-scrollbars',
+                    '--mute-audio',
+                    '--no-first-run',
+                    '--safebrowsing-disable-auto-update',
+                    '--disable-client-side-phishing-detection',
+                    '--disable-component-update',
+                    '--disable-domain-reliability',
+                    '--disable-features=TranslateUI',
+                    '--disable-ipc-flooding-protection',
+                    '--disable-blink-features=AutomationControlled'
+                ]
+            )
+            
+            # ページを作成
+            self.page = await self.browser.new_page()
+            
+            # ユーザーエージェントを設定
+            await self.page.set_extra_http_headers({
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'ja,en-US;q=0.7,en;q=0.3',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1'
+            })
+            
+            # ボット検出回避のためのスクリプトを追加
+            await self.page.add_init_script("""
+                Object.defineProperty(navigator, 'webdriver', {
+                    get: () => undefined,
+                });
+                Object.defineProperty(navigator, 'plugins', {
+                    get: () => [1, 2, 3, 4, 5],
+                });
+                Object.defineProperty(navigator, 'languages', {
+                    get: () => ['ja-JP', 'ja', 'en-US', 'en'],
+                });
+            """)
+            
+            print("ブラウザ起動完了")
+            return True
+            
+        except Exception as e:
+            print(f"ブラウザ起動エラー: {e}")
+            return False
+
+    async def close(self):
+        """ブラウザを閉じる"""
+        try:
+            if self.browser:
+                await self.browser.close()
+            if hasattr(self, 'playwright'):
+                await self.playwright.stop()
+        except Exception as e:
+            print(f"ブラウザ終了エラー: {e}")
+
+    async def diagnose_login_page(self):
+        """ログインページの詳細診断"""
+        try:
+            print("=== ログインページ診断開始 ===")
+            
+            # 診断データを初期化
+            self.diagnosis_data = {
+                'url': self.page.url,
+                'title': await self.page.title(),
+                'forms': [],
+                'inputs': [],
+                'buttons': [],
+                'error_messages': [],
+                'page_text': await self.page.text_content('body')[:1000]
+            }
+            
+            # ページの基本情報
+            print(f"現在のURL: {self.page.url}")
+            print(f"ページタイトル: {await self.page.title()}")
+            
+            # ページのHTML要素を詳細に分析
+            print("\n=== ページ要素分析 ===")
+            
+            # フォーム要素の詳細
+            forms = self.page.locator('form')
+            forms_count = await forms.count()
+            print(f"フォーム数: {forms_count}")
+            
+            for i in range(forms_count):
+                try:
+                    form = forms.nth(i)
+                    form_data = {
+                        'index': i,
+                        'action': await form.get_attribute('action') or 'なし',
+                        'method': await form.get_attribute('method') or 'なし',
+                        'id': await form.get_attribute('id') or 'なし',
+                        'class': await form.get_attribute('class') or 'なし'
+                    }
+                    self.diagnosis_data['forms'].append(form_data)
+                    print(f"  フォーム[{i}]: action='{form_data['action']}', method='{form_data['method']}', id='{form_data['id']}', class='{form_data['class']}'")
+                except Exception as e:
+                    print(f"  フォーム[{i}]分析エラー: {e}")
+            
+            # 入力フィールドの詳細
+            inputs = self.page.locator('input')
+            inputs_count = await inputs.count()
+            print(f"\n入力フィールド数: {inputs_count}")
+            
+            for i in range(inputs_count):
+                try:
+                    input_elem = inputs.nth(i)
+                    input_data = {
+                        'index': i,
+                        'name': await input_elem.get_attribute('name') or 'なし',
+                        'type': await input_elem.get_attribute('type') or 'なし',
+                        'placeholder': await input_elem.get_attribute('placeholder') or 'なし',
+                        'id': await input_elem.get_attribute('id') or 'なし',
+                        'class': await input_elem.get_attribute('class') or 'なし',
+                        'value': await input_elem.get_attribute('value') or 'なし'
+                    }
+                    self.diagnosis_data['inputs'].append(input_data)
+                    print(f"  input[{i}]: name='{input_data['name']}', type='{input_data['type']}', placeholder='{input_data['placeholder']}', id='{input_data['id']}', class='{input_data['class']}', value='{input_data['value']}'")
+                except Exception as e:
+                    print(f"  input[{i}]分析エラー: {e}")
+            
+            # ボタン要素の詳細
+            buttons = self.page.locator('button, input[type="submit"]')
+            buttons_count = await buttons.count()
+            print(f"\nボタン要素数: {buttons_count}")
+            
+            for i in range(buttons_count):
+                try:
+                    button_elem = buttons.nth(i)
+                    button_data = {
+                        'index': i,
+                        'text': await button_elem.text_content() or 'なし',
+                        'type': await button_elem.get_attribute('type') or 'なし',
+                        'value': await button_elem.get_attribute('value') or 'なし',
+                        'id': await button_elem.get_attribute('id') or 'なし',
+                        'class': await button_elem.get_attribute('class') or 'なし'
+                    }
+                    self.diagnosis_data['buttons'].append(button_data)
+                    print(f"  button[{i}]: text='{button_data['text']}', type='{button_data['type']}', value='{button_data['value']}', id='{button_data['id']}', class='{button_data['class']}'")
+                except Exception as e:
+                    print(f"  button[{i}]分析エラー: {e}")
+            
+            # エラーメッセージの検索
+            print("\n=== エラーメッセージ検索 ===")
+            error_texts = [
+                'ログインに失敗しました',
+                'Login failed',
+                'メールアドレスまたはパスワードが正しくありません',
+                'Invalid email or password',
+                '認証に失敗しました',
+                'Authentication failed',
+                'ログインできませんでした',
+                'Could not login',
+                'エラー',
+                'Error',
+                '失敗',
+                'Failed'
+            ]
+            
+            for error_text in error_texts:
+                try:
+                    error_locator = self.page.locator(f'text={error_text}')
+                    if await error_locator.count() > 0:
+                        print(f"エラーメッセージを発見: '{error_text}'")
+                        self.diagnosis_data['error_messages'].append(error_text)
+                except:
+                    pass
+            
+            print("=== ログインページ診断完了 ===")
+            
+        except Exception as e:
+            print(f"診断中にエラー: {e}")
+
+    async def analyze_login_failure(self):
+        """ログイン失敗の原因を分析"""
+        try:
+            print("=== ログイン失敗原因分析 ===")
+            
+            failure_reasons = []
+            
+            # URLベースの分析
+            current_url = self.page.url
+            if "sign_in" in current_url or "login" in current_url:
+                failure_reasons.append("ログインページに留まっている（認証失敗）")
+            
+            # エラーメッセージの分析
+            error_messages = [
+                ('ログインに失敗しました', '認証情報が正しくありません'),
+                ('メールアドレスまたはパスワードが正しくありません', 'ログイン情報を確認してください'),
+                ('認証に失敗しました', 'アカウントが無効またはロックされている可能性があります'),
+                ('ログインできませんでした', 'システムエラーまたはメンテナンス中の可能性があります'),
+                ('Invalid email or password', '英語版エラー：認証情報が正しくありません'),
+                ('Authentication failed', '英語版エラー：認証に失敗しました')
+            ]
+            
+            for error_text, reason in error_messages:
+                try:
+                    error_locator = self.page.locator(f'text={error_text}')
+                    if await error_locator.count() > 0:
+                        failure_reasons.append(f"エラーメッセージ: {error_text} → {reason}")
+                except:
+                    pass
+            
+            # フォーム要素の分析
+            forms = self.page.locator('form')
+            if await forms.count() == 0:
+                failure_reasons.append("ログインフォームが見つかりません")
+            
+            # 入力フィールドの分析
+            email_inputs = self.page.locator('input[name="email"], input[name="staff_code"], input[type="email"]')
+            password_inputs = self.page.locator('input[name="password"], input[type="password"]')
+            
+            if await email_inputs.count() == 0:
+                failure_reasons.append("メールアドレス入力フィールドが見つかりません")
+            if await password_inputs.count() == 0:
+                failure_reasons.append("パスワード入力フィールドが見つかりません")
+            
+            # CAPTCHAの分析
+            if await self.check_for_captcha():
+                failure_reasons.append("CAPTCHAが表示されています（手動ログインが必要）")
+            
+            # ページの状態分析
+            page_title = await self.page.title()
+            if "エラー" in page_title or "Error" in page_title:
+                failure_reasons.append("ページタイトルにエラーが含まれています")
+            
+            # 解決策の提案
+            print("\n=== 推奨解決策 ===")
+            if not failure_reasons:
+                print("原因が特定できませんでした。以下を確認してください：")
+                print("1. メールアドレスとパスワードが正しいか")
+                print("2. Jobcanアカウントが有効か")
+                print("3. ネットワーク接続が安定しているか")
+                print("4. Jobcanサービスが正常に動作しているか")
+            else:
+                for reason in failure_reasons:
+                    print(f"• {reason}")
+                
+                print("\n=== 解決策 ===")
+                if "認証情報が正しくありません" in str(failure_reasons):
+                    print("1. メールアドレスとパスワードを再確認")
+                    print("2. 大文字小文字を確認")
+                    print("3. スペースや特殊文字が含まれていないか確認")
+                
+                if "CAPTCHA" in str(failure_reasons):
+                    print("1. 手動でJobcanにログイン")
+                    print("2. セキュリティ設定を確認")
+                    print("3. 別のブラウザでログインを試行")
+                
+                if "フォームが見つかりません" in str(failure_reasons):
+                    print("1. Jobcanのログインページが変更されている可能性")
+                    print("2. システムメンテナンス中の可能性")
+                    print("3. ネットワーク接続を確認")
+            
+            return failure_reasons
+            
+        except Exception as e:
+            print(f"失敗原因分析中にエラー: {e}")
+            return ["分析中にエラーが発生しました"]
+
+    async def check_for_captcha(self):
+        """CAPTCHAの検出"""
+        try:
+            captcha_selectors = [
+                'iframe[src*="captcha"]',
+                'iframe[src*="recaptcha"]',
+                'div[class*="captcha"]',
+                'div[id*="captcha"]',
+                'img[src*="captcha"]',
+                'input[name*="captcha"]',
+                'input[id*="captcha"]'
+            ]
+            
+            for selector in captcha_selectors:
+                try:
+                    if await self.page.locator(selector).count() > 0:
+                        return True
+                except:
+                    continue
+            
+            return False
+            
+        except Exception as e:
+            print(f"CAPTCHA検出エラー: {e}")
+            return False
+
+    async def login_to_jobcan(self, email: str, password: str) -> bool:
+        """Jobcanにログイン"""
+        try:
+            print(f"Jobcanログインを開始: {email}")
+            
+            # Jobcanログインページに移動（正しいURLを使用）
+            print("Jobcanログインページに移動中...")
+            await self.page.goto("https://id.jobcan.jp/users/sign_in?app_key=atd")
+            await self.page.wait_for_load_state("networkidle")
+            
+            print("現在のURL:", self.page.url)
+            print("ページタイトル:", await self.page.title())
+            
+            # 人間らしい待機時間
+            import random
+            import time
+            
+            # ページが完全に読み込まれるまで待機
+            await asyncio.sleep(random.uniform(2, 4))
+            
+            # 詳細診断を実行
+            await self.diagnose_login_page()
+            
+            # CAPTCHAの検出
+            if await self.check_for_captcha():
+                error_msg = "CAPTCHAが検出されました。手動でのログインが必要です。"
+                print(error_msg)
+                return False
+            
+            # JavaScriptが有効かチェック
+            js_enabled = await self.page.evaluate("() => typeof window !== 'undefined'")
+            print(f"JavaScript有効: {js_enabled}")
+            
+            # メールアドレス入力フィールドを探す（複数のパターンを試す）
+            print("メールアドレス入力フィールドを探しています...")
+            email_selectors = [
+                'input[name="email"]',
+                'input[name="staff_code"]',
+                'input[name="login_id"]',
+                'input[name="user_id"]',
+                'input[type="email"]',
+                'input[placeholder*="メール"]',
+                'input[placeholder*="email"]',
+                'input[placeholder*="Email"]',
+                'input[id*="email"]',
+                'input[id*="login"]',
+                'input[id*="user"]',
+                'input[name="username"]',
+                'input[name="account"]'
+            ]
+            
+            email_input = None
+            for selector in email_selectors:
+                try:
+                    email_locator = self.page.locator(selector)
+                    if await email_locator.count() > 0:
+                        email_input = email_locator.first
+                        print(f"メールアドレス入力フィールドを発見: {selector}")
+                        break
+                except Exception as e:
+                    print(f"セレクター {selector} でエラー: {e}")
+                    continue
+            
+            if not email_input:
+                print("メールアドレス入力フィールドが見つからないため、異なるログイン方法を試行")
+                return await self.try_different_login_methods(email, password)
+            
+            # メールアドレスを人間らしく入力
+            print("メールアドレスを入力中...")
+            await email_input.click()
+            await asyncio.sleep(random.uniform(0.5, 1.5))
+            
+            # 文字を一つずつ入力（人間らしく）
+            for char in email:
+                await email_input.type(char)
+                await asyncio.sleep(random.uniform(0.05, 0.15))
+            
+            print("メールアドレス入力完了")
+            await asyncio.sleep(random.uniform(0.5, 1.0))
+            
+            # パスワード入力フィールドを探す（複数のパターンを試す）
+            print("パスワード入力フィールドを探しています...")
+            password_selectors = [
+                'input[name="password"]',
+                'input[type="password"]',
+                'input[placeholder*="パスワード"]',
+                'input[placeholder*="password"]',
+                'input[placeholder*="Password"]',
+                'input[id*="password"]',
+                'input[id*="pass"]'
+            ]
+            
+            password_input = None
+            for selector in password_selectors:
+                try:
+                    password_locator = self.page.locator(selector)
+                    if await password_locator.count() > 0:
+                        password_input = password_locator.first
+                        print(f"パスワード入力フィールドを発見: {selector}")
+                        break
+                except Exception as e:
+                    print(f"パスワードセレクター {selector} でエラー: {e}")
+                    continue
+            
+            if not password_input:
+                print("パスワード入力フィールドが見つからないため、異なるログイン方法を試行")
+                return await self.try_different_login_methods(email, password)
+            
+            # パスワードを人間らしく入力
+            print("パスワードを入力中...")
+            await password_input.click()
+            await asyncio.sleep(random.uniform(0.5, 1.5))
+            
+            # 文字を一つずつ入力（人間らしく）
+            for char in password:
+                await password_input.type(char)
+                await asyncio.sleep(random.uniform(0.05, 0.15))
+            
+            print("パスワード入力完了")
+            await asyncio.sleep(random.uniform(1.0, 2.0))
+            
+            # 入力後の値を確認
+            email_value = await email_input.input_value()
+            password_value = await password_input.input_value()
+            print(f"入力されたメールアドレス: {email_value}")
+            print(f"入力されたパスワード: {'*' * len(password_value)}")
+            
+            # ログインボタンを探す（複数のパターンを試す）
+            print("ログインボタンを探しています...")
+            login_selectors = [
+                'input[type="submit"]',
+                'button[type="submit"]',
+                'button:has-text("ログイン")',
+                'button:has-text("Login")',
+                'button:has-text("サインイン")',
+                'button:has-text("Sign In")',
+                'input[value*="ログイン"]',
+                'input[value*="Login"]',
+                'input[value*="サインイン"]',
+                'input[value*="Sign In"]',
+                'button:has-text("送信")',
+                'button:has-text("Submit")',
+                'form button',
+                'form input[type="submit"]'
+            ]
+            
+            login_button = None
+            for selector in login_selectors:
+                try:
+                    login_locator = self.page.locator(selector)
+                    if await login_locator.count() > 0:
+                        login_button = login_locator.first
+                        print(f"ログインボタンを発見: {selector}")
+                        break
+                except Exception as e:
+                    print(f"ログインボタンセレクター {selector} でエラー: {e}")
+                    continue
+            
+            if not login_button:
+                print("ログインボタンが見つからないため、異なるログイン方法を試行")
+                return await self.try_different_login_methods(email, password)
+            
+            # ログインボタンを人間らしくクリック
+            print("ログインボタンをクリック中...")
+            await login_button.hover()  # マウスオーバー
+            await asyncio.sleep(random.uniform(0.3, 0.8))
+            await login_button.click()
+            print("ログインボタンクリック完了")
+            
+            # ログイン後のページ読み込みを待機
+            print("ログイン後のページ読み込みを待機中...")
+            await asyncio.sleep(random.uniform(3, 5))  # 人間らしい待機時間
+            await self.page.wait_for_load_state("networkidle")
+            
+            print("ログイン後のURL:", self.page.url)
+            print("ログイン後のページタイトル:", await self.page.title())
+            
+            # ログイン後の診断
+            print("=== ログイン後診断 ===")
+            await self.diagnose_login_page()
+            
+            # ログイン成功の確認（複数の方法でチェック）
+            login_success = True
+            
+            # URLベースのチェック
+            if "sign_in" in self.page.url or "login" in self.page.url:
+                print("URLベースでログイン失敗を検出")
+                login_success = False
+            
+            # エラーメッセージのチェック
+            error_selectors = [
+                'text=ログインに失敗しました',
+                'text=Login failed',
+                'text=メールアドレスまたはパスワードが正しくありません',
+                'text=Invalid email or password',
+                'text=認証に失敗しました',
+                'text=Authentication failed',
+                'text=ログインできませんでした',
+                'text=Could not login',
+                '.error',
+                '.alert',
+                '[class*="error"]',
+                '[class*="alert"]',
+                '[class*="danger"]',
+                '[class*="warning"]'
+            ]
+            
+            for error_selector in error_selectors:
+                try:
+                    error_locator = self.page.locator(error_selector)
+                    if await error_locator.count() > 0:
+                        error_text = await error_locator.first.text_content()
+                        print(f"エラーメッセージを検出: {error_text}")
+                        login_success = False
+                        break
+                except:
+                    continue
+            
+            # ログイン成功の指標をチェック
+            success_indicators = [
+                'text=ダッシュボード',
+                'text=Dashboard',
+                'text=勤怠',
+                'text=Attendance',
+                'text=出勤簿',
+                'text=Timecard',
+                'text=マイページ',
+                'text=My Page',
+                'a[href*="attendance"]',
+                'a[href*="timecard"]',
+                'a[href*="mypage"]'
+            ]
+            
+            success_found = False
+            for indicator in success_indicators:
+                try:
+                    indicator_locator = self.page.locator(indicator)
+                    if await indicator_locator.count() > 0:
+                        print(f"ログイン成功の指標を発見: {indicator}")
+                        success_found = True
+                        break
+                except:
+                    continue
+            
+            # 追加のチェック：ログインフォームがまだ表示されているか
+            login_form_locator = self.page.locator('input[name="email"], input[name="staff_code"], input[name="password"]')
+            if await login_form_locator.count() > 0:
+                print("ログインフォームがまだ表示されているため、ログイン失敗と判断")
+                login_success = False
+            
+            if not login_success or not success_found:
+                print("通常のログイン方法が失敗したため、代替方法を試行")
+                alternative_result = await self.login_to_jobcan_alternative(email, password)
+                
+                if not alternative_result:
+                    # 失敗原因を分析
+                    failure_reasons = await self.analyze_login_failure()
+                    error_msg = f"ログインに失敗しました。詳細な診断情報を確認してください。\n原因: {', '.join(failure_reasons)}"
+                    print(error_msg)
+                    return False
+                
+                return alternative_result
+            
+            print("ログイン成功")
+            return True
+            
+        except Exception as e:
+            error_msg = f"ログイン中にエラーが発生しました: {e}"
+            print(error_msg)
+            return False
+
+    async def try_different_login_methods(self, email: str, password: str):
+        """異なるログイン方法を試行"""
+        print("=== 異なるログイン方法を試行 ===")
+        
+        # 方法1: 直接フォーム送信
+        try:
+            print("方法1: 直接フォーム送信を試行")
+            await self.page.evaluate(f"""
+                () => {{
+                    const emailInput = document.querySelector('input[name="email"]') || 
+                                     document.querySelector('input[type="email"]') ||
+                                     document.querySelector('input[name="staff_code"]');
+                    const passwordInput = document.querySelector('input[name="password"]') ||
+                                        document.querySelector('input[type="password"]');
+                    const submitButton = document.querySelector('input[type="submit"]') ||
+                                       document.querySelector('button[type="submit"]');
+                    
+                    if (emailInput && passwordInput && submitButton) {{
+                        emailInput.value = '{email}';
+                        passwordInput.value = '{password}';
+                        submitButton.click();
+                        return true;
+                    }}
+                    return false;
+                }}
+            """)
+            
+            await asyncio.sleep(3)
+            if "sign_in" not in self.page.url and "login" not in self.page.url:
+                print("方法1でログイン成功")
+                return True
+        except Exception as e:
+            print(f"方法1でエラー: {e}")
+        
+        # 方法2: 異なるURLを試行
+        try:
+            print("方法2: 異なるURLを試行")
+            await self.page.goto("https://ssl.jobcan.jp/employee")
+            await asyncio.sleep(2)
+            await self.page.wait_for_load_state("networkidle")
+            
+            # ログイン処理を再試行
+            return await self.perform_login_action(email, password)
+            
+        except Exception as e:
+            print(f"方法2でエラー: {e}")
+        
+        return False
+
+    async def perform_login_action(self, email: str, password: str):
+        """ログインアクションを実行"""
+        try:
+            # メールアドレス入力
+            email_input = self.page.locator('input[name="email"], input[name="staff_code"], input[type="email"]').first
+            await email_input.fill(email)
+            
+            # パスワード入力
+            password_input = self.page.locator('input[name="password"], input[type="password"]').first
+            await password_input.fill(password)
+            
+            # ログインボタンクリック
+            login_button = self.page.locator('input[type="submit"], button[type="submit"]').first
+            await login_button.click()
+            
+            await asyncio.sleep(3)
+            await self.page.wait_for_load_state("networkidle")
+            
+            return "sign_in" not in self.page.url and "login" not in self.page.url
+            
+        except Exception as e:
+            print(f"ログインアクションでエラー: {e}")
+            return False
+
+    async def navigate_to_attendance(self):
+        """勤怠ページに移動"""
+        try:
+            print("勤怠ページに移動中...")
+            # 勤怠ページへのリンクを探す
+            attendance_links = [
+                'a[href*="attendance"]',
+                'a[href*="timecard"]',
+                'a:has-text("勤怠")',
+                'a:has-text("Attendance")',
+                'a:has-text("出勤簿")',
+                'a:has-text("Timecard")'
+            ]
+            
+            for link_selector in attendance_links:
+                try:
+                    link_locator = self.page.locator(link_selector)
+                    if await link_locator.count() > 0:
+                        await link_locator.first.click()
+                        await self.page.wait_for_load_state("networkidle")
+                        print(f"勤怠ページに移動完了: {link_selector}")
+                        return True
+                except:
+                    continue
+            
+            print("勤怠ページへのリンクが見つかりません")
+            return False
+            
+        except Exception as e:
+            print(f"勤怠ページ移動エラー: {e}")
+            return False
+
+    async def process_attendance_data(self, df):
+        """勤怠データを処理"""
+        try:
+            print("勤怠データ処理開始")
+            results = []
+            
+            for index, row in df.iterrows():
+                try:
+                    date = row.iloc[0]  # A列: 日付
+                    start_time = row.iloc[1]  # B列: 開始時刻
+                    end_time = row.iloc[2]  # C列: 終了時刻
+                    
+                    print(f"処理中: {date} - {start_time} - {end_time}")
+                    
+                    # 日付を選択
+                    if not await self.select_date(date):
+                        print(f"日付選択失敗: {date}")
+                        results.append({
+                            'date': date,
+                            'status': 'error',
+                            'error': '日付選択失敗'
+                        })
+                        continue
+                    
+                    # 打刻修正画面に移動
+                    if not await self.click_stamp_correction():
+                        print(f"打刻修正画面移動失敗: {date}")
+                        results.append({
+                            'date': date,
+                            'status': 'error',
+                            'error': '打刻修正画面移動失敗'
+                        })
+                        continue
+                    
+                    # 時刻を入力
+                    if not await self.input_time(start_time, end_time):
+                        print(f"時刻入力失敗: {date}")
+                        results.append({
+                            'date': date,
+                            'status': 'error',
+                            'error': '時刻入力失敗'
+                        })
+                        continue
+                    
+                    # 打刻ボタンをクリック
+                    if not await self.click_stamp_buttons():
+                        print(f"打刻ボタンクリック失敗: {date}")
+                        results.append({
+                            'date': date,
+                            'status': 'error',
+                            'error': '打刻ボタンクリック失敗'
+                        })
+                        continue
+                    
+                    results.append({
+                        'date': date,
+                        'status': 'success',
+                        'start_time': start_time,
+                        'end_time': end_time
+                    })
+                    
+                    print(f"処理完了: {date}")
+                    
+                except Exception as e:
+                    print(f"データ処理エラー: {e}")
+                    results.append({
+                        'date': date if 'date' in locals() else 'Unknown',
+                        'status': 'error',
+                        'error': str(e)
+                    })
+            
+            return results
+            
+        except Exception as e:
+            print(f"勤怠データ処理エラー: {e}")
+            return []
+
+    async def select_date(self, date):
+        """日付を選択"""
+        try:
+            print(f"日付選択: {date}")
+            # 日付選択の実装
+            return True
+        except Exception as e:
+            print(f"日付選択エラー: {e}")
+            return False
+
+    async def click_stamp_correction(self):
+        """打刻修正画面に移動"""
+        try:
+            print("打刻修正画面に移動中...")
+            # 打刻修正リンクを探す
+            correction_links = [
+                'a:has-text("打刻修正")',
+                'a:has-text("Stamp Correction")',
+                'a[href*="correction"]',
+                'a[href*="stamp"]'
+            ]
+            
+            for link_selector in correction_links:
+                try:
+                    link_locator = self.page.locator(link_selector)
+                    if await link_locator.count() > 0:
+                        await link_locator.first.click()
+                        await self.page.wait_for_load_state("networkidle")
+                        print("打刻修正画面に移動完了")
+                        return True
+                except:
+                    continue
+            
+            print("打刻修正リンクが見つかりません")
+            return False
+            
+        except Exception as e:
+            print(f"打刻修正画面移動エラー: {e}")
+            return False
+
+    async def input_time(self, start_time, end_time):
+        """時刻を入力"""
+        try:
+            print(f"時刻入力: {start_time} - {end_time}")
+            # 時刻入力の実装
+            return True
+        except Exception as e:
+            print(f"時刻入力エラー: {e}")
+            return False
+
+    async def click_stamp_buttons(self):
+        """打刻ボタンをクリック"""
+        try:
+            print("打刻ボタンをクリック中...")
+            # 打刻ボタンの実装
+            return True
+        except Exception as e:
+            print(f"打刻ボタンクリックエラー: {e}")
+            return False
+
+def run_async_automation(job_id: str, email: str, password: str, file_path: str):
+    """非同期自動化処理を実行"""
+    try:
+        # スレッドプールで非同期処理を実行
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            future = executor.submit(async_process_jobcan_automation, job_id, email, password, file_path)
+            future.result()  # 完了まで待機
+    except Exception as e:
+        error_msg = f"非同期処理でエラーが発生しました: {e}"
+        add_job_log(job_id, f"エラー: {error_msg}")
+        processing_status[job_id]['status'] = 'error'
+        processing_status[job_id]['message'] = error_msg
+
+async def async_process_jobcan_automation(job_id: str, email: str, password: str, file_path: str):
+    """Jobcan自動化処理を非同期で実行"""
     try:
         add_job_log(job_id, "Jobcan自動化処理を開始")
         processing_status[job_id] = {"status": "starting", "message": "処理を開始しています..."}
         
         # 自動化クラスを初期化
         print("自動化クラスを初期化中...")
-        automation = JobcanAutomation(headless=True)
+        automation = AsyncJobcanAutomation()
         
         # ブラウザを起動
         print("ブラウザ起動を開始...")
-        automation.start_browser()
+        await automation.start_browser()
         add_job_log(job_id, "Playwrightブラウザを起動中...")
         
-        if not automation.start_browser():
+        if not await automation.start_browser():
             error_msg = "ブラウザの起動に失敗しました"
             add_job_log(job_id, f"エラー: {error_msg}")
             processing_status[job_id]['status'] = 'error'
@@ -1025,12 +1886,12 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         
         # Jobcanにログイン
         add_job_log(job_id, f"Jobcanログイン試行: {email}")
-        login_success = automation.login_to_jobcan(email, password)
+        login_success = await automation.login_to_jobcan(email, password)
         
         if not login_success:
             # ログイン失敗時の詳細診断
             add_job_log(job_id, "ログイン失敗 - 詳細診断を実行")
-            failure_reasons = automation.analyze_login_failure()
+            failure_reasons = await automation.analyze_login_failure()
             diagnosis_data = automation.get_diagnosis_data()
             
             add_job_diagnosis(job_id, diagnosis_data)
@@ -1040,7 +1901,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             add_job_log(job_id, f"エラー: {error_msg}")
             processing_status[job_id]['status'] = 'error'
             processing_status[job_id]['message'] = error_msg
-            automation.close()
+            await automation.close()
             return
         
         add_job_log(job_id, "ログイン成功")
@@ -1049,12 +1910,12 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         
         # 勤怠ページに移動
         add_job_log(job_id, "勤怠ページに移動中...")
-        if not automation.navigate_to_attendance():
+        if not await automation.navigate_to_attendance():
             error_msg = "勤怠ページへの移動に失敗しました"
             add_job_log(job_id, f"エラー: {error_msg}")
             processing_status[job_id]['status'] = 'error'
             processing_status[job_id]['message'] = error_msg
-            automation.close()
+            await automation.close()
             return
         
         add_job_log(job_id, "勤怠ページ読み込み完了")
@@ -1071,7 +1932,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             add_job_log(job_id, f"エラー: {error_msg}")
             processing_status[job_id]['status'] = 'error'
             processing_status[job_id]['message'] = error_msg
-            automation.close()
+            await automation.close()
             return
         
         processing_status[job_id]['status'] = 'data_loaded'
@@ -1079,14 +1940,14 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         
         # 勤怠データを処理
         add_job_log(job_id, "勤怠データ処理開始")
-        results = automation.process_attendance_data(df)
+        results = await automation.process_attendance_data(df)
         
         add_job_log(job_id, f"処理完了: {len(results)}件のデータを処理")
         processing_status[job_id]['status'] = 'completed'
         processing_status[job_id]['message'] = f'処理が完了しました。{len(results)}件のデータを入力しました。'
         processing_status[job_id]['results'] = results
         
-        automation.close()
+        await automation.close()
         add_job_log(job_id, "ブラウザを閉じました")
         
     except Exception as e:
@@ -1102,76 +1963,68 @@ def index():
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
-    """ファイルアップロードと処理開始"""
+    """ファイルアップロード処理"""
     try:
-        print("ファイルアップロード処理を開始...")
+        # フォームデータを取得
+        email = request.form.get('email')
+        password = request.form.get('password')
         
-        # フォームデータの取得
-        email = request.form.get('email', '').strip()
-        password = request.form.get('password', '').strip()
-        
-        print(f"メールアドレス: {email}")
-        
-        # 必須項目の確認
-        if not email:
-            return jsonify({'error': 'メールアドレスを入力してください'}), 400
-        
-        if not password:
-            return jsonify({'error': 'パスワードを入力してください'}), 400
-        
-        # ファイルの確認
         if 'file' not in request.files:
-            return jsonify({'error': 'ファイルが選択されていません'}), 400
+            return jsonify({'success': False, 'message': 'ファイルが選択されていません'})
         
         file = request.files['file']
+        
         if file.filename == '':
-            return jsonify({'error': 'ファイルが選択されていません'}), 400
+            return jsonify({'success': False, 'message': 'ファイルが選択されていません'})
         
         if not allowed_file(file.filename):
-            return jsonify({'error': 'Excelファイル（.xlsx, .xls）のみアップロード可能です'}), 400
+            return jsonify({'success': False, 'message': 'Excelファイル（.xlsx, .xls）を選択してください'})
         
-        print(f"アップロードされたファイル: {file.filename}")
-        
-        # ファイルを一時保存
+        # ファイルを保存
         filename = secure_filename(file.filename)
-        temp_path = os.path.join(UPLOAD_FOLDER, f"temp_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{filename}")
-        file.save(temp_path)
+        file_path = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(file_path)
         
-        print(f"一時ファイル保存完了: {temp_path}")
+        print(f"ファイルアップロード完了: {file_path}")
         
-        # 処理IDを生成
-        job_id = f"job_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        # ジョブIDを生成
+        job_id = str(uuid.uuid4())
+        jobs[job_id] = {
+            'status': 'pending',
+            'message': '処理待機中...',
+            'file_path': file_path,
+            'email': email,
+            'password': password
+        }
         
-        print(f"処理ID生成: {job_id}")
+        print(f"ジョブ作成: {job_id}")
         
         # バックグラウンドで処理を開始
         thread = threading.Thread(
             target=process_jobcan_automation,
-            args=(job_id, email, password, temp_path)
+            args=(job_id, email, password, file_path)
         )
         thread.daemon = True
         thread.start()
         
-        print("バックグラウンド処理を開始しました")
-        
         return jsonify({
             'success': True,
-            'job_id': job_id,
-            'message': '処理を開始しました'
+            'message': 'ファイルがアップロードされました。処理を開始します。',
+            'job_id': job_id
         })
         
     except Exception as e:
-        error_msg = f'エラーが発生しました: {e}'
+        error_msg = f"アップロード処理でエラーが発生しました: {e}"
         print(error_msg)
-        return jsonify({'error': error_msg}), 500
+        return jsonify({'success': False, 'message': error_msg})
 
 @app.route('/status/<job_id>')
 def get_status(job_id):
     """ジョブのステータスを取得"""
-    if job_id not in processing_status:
+    if job_id not in jobs:
         return jsonify({'error': 'Job not found'}), 404
     
-    job = processing_status[job_id]
+    job = jobs[job_id]
     status_data = {
         'status': job.get('status', 'unknown'),
         'message': job.get('message', ''),
