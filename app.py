@@ -476,24 +476,15 @@ def get_status(job_id):
 def health_check():
     """ヘルスチェックエンドポイント"""
     try:
-        # 基本的なシステム情報を取得（軽量版）
-        import os
-        
         # 最小限の情報のみを返す
-        health_info = {
+        return jsonify({
             'status': 'healthy',
-            'timestamp': datetime.now().isoformat(),
-            'environment': os.environ.get('RAILWAY_ENVIRONMENT', 'local'),
-            'port': os.environ.get('PORT', '5000'),
-            'uptime': 'running'
-        }
-        
-        return jsonify(health_info)
+            'message': 'Service is running'
+        })
     except Exception as e:
         return jsonify({
             'status': 'error',
-            'error': str(e),
-            'timestamp': datetime.now().isoformat()
+            'error': str(e)
         }), 500
 
 @app.route('/health/detailed')
@@ -534,6 +525,10 @@ if __name__ == '__main__':
         print(f"🔧 ポート: {port}")
         print(f"🔧 デバッグモード: {debug_mode}")
         print(f"🔧 環境: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
+        print(f"🔧 Python バージョン: {os.sys.version}")
+        
+        # アプリケーションが正常に起動したことを確認
+        print(f"✅ アプリケーションが正常に起動しました")
         
         app.run(host='0.0.0.0', port=port, debug=debug_mode)
     except Exception as e:
