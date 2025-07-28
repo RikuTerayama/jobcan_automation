@@ -113,6 +113,11 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             add_job_log(job_id, f"⚠️ Playwrightブラウザの確保でエラー: {browser_error}")
             add_job_log(job_id, "🔄 ブラウザの確保をスキップして続行します")
         
+        # Railway環境での追加情報をログに出力
+        add_job_log(job_id, f"🔧 現在のディレクトリ: {os.getcwd()}")
+        add_job_log(job_id, f"🔧 利用可能なメモリ: {psutil.virtual_memory().available // (1024**3)} GB")
+        add_job_log(job_id, f"🔧 CPU使用率: {psutil.cpu_percent()}%")
+        
         # 自動化インスタンスを作成
         add_job_log(job_id, "🤖 自動化インスタンスを作成中...")
         try:
@@ -152,33 +157,51 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             
             # 勤怠ページに移動
             add_job_log(job_id, "📊 勤怠ページに移動中...")
-            automation.navigate_to_attendance()
-            
-            # Excelファイルを読み込み
-            add_job_log(job_id, "📁 Excelファイルを読み込み中...")
-            data = load_excel_data(file_path)
-            
-            if not data:
-                add_job_log(job_id, "❌ Excelファイルの読み込みに失敗しました")
+            try:
+                automation.navigate_to_attendance()
+                add_job_log(job_id, "✅ 勤怠ページへの移動が完了しました")
+            except Exception as navigation_error:
+                add_job_log(job_id, f"❌ 勤怠ページへの移動に失敗: {navigation_error}")
                 jobs[job_id]['status'] = 'error'
                 return False
             
-            # 進捗情報を更新
-            jobs[job_id]['progress']['total_data'] = len(data)
-            add_job_log(job_id, f"📊 処理対象データ数: {len(data)}")
-            
-            # 勤怠データを処理
-            add_job_log(job_id, "🔄 勤怠データを処理中...")
-            processed_data = automation.process_attendance_data(data)
+            # Excelファイルを読み込み
+            add_job_log(job_id, "📁 Excelファイルを読み込み中...")
+            try:
+                data = load_excel_data(file_path)
+                
+                if not data:
+                    add_job_log(job_id, "❌ Excelファイルの読み込みに失敗しました")
+                    jobs[job_id]['status'] = 'error'
+                    return False
+                
+                # 進捗情報を更新
+                jobs[job_id]['progress']['total_data'] = len(data)
+                add_job_log(job_id, f"📊 処理対象データ数: {len(data)}")
+                
+                # 勤怠データを処理
+                add_job_log(job_id, "🔄 勤怠データを処理中...")
+                processed_data = automation.process_attendance_data(data)
+                
+            except Exception as data_error:
+                add_job_log(job_id, f"❌ データ処理でエラー: {data_error}")
+                jobs[job_id]['status'] = 'error'
+                return False
             
             # 結果を分析
-            success_count = len([d for d in processed_data if d.get('status') == 'success'])
-            error_count = len(processed_data) - success_count
-            
-            add_job_log(job_id, f"✅ 処理が完了しました")
-            add_job_log(job_id, f"📊 成功: {success_count}件, 失敗: {error_count}件")
-            jobs[job_id]['status'] = 'completed'
-            return True
+            try:
+                success_count = len([d for d in processed_data if d.get('status') == 'success'])
+                error_count = len(processed_data) - success_count
+                
+                add_job_log(job_id, f"✅ 処理が完了しました")
+                add_job_log(job_id, f"📊 成功: {success_count}件, 失敗: {error_count}件")
+                jobs[job_id]['status'] = 'completed'
+                return True
+                
+            except Exception as analysis_error:
+                add_job_log(job_id, f"❌ 結果分析でエラー: {analysis_error}")
+                jobs[job_id]['status'] = 'error'
+                return False
             
         except Exception as process_error:
             add_job_log(job_id, f"❌ 処理中にエラーが発生: {process_error}")
