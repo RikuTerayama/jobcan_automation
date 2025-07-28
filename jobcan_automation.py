@@ -30,44 +30,59 @@ class JobcanAutomation:
             # Railway環境でのブラウザ起動（段階的アプローチ）
             browser_launched = False
             
-            # 方法1: 最小限の設定でChromium起動
+            # 方法1: 最小限の設定でChromium起動（Railway環境最適化）
             try:
-                print("🔄 方法1: 最小限の設定でChromiumを起動中...")
+                print("🔄 方法1: Railway環境最適化でChromiumを起動中...")
                 self.browser = self.playwright.chromium.launch(
                     headless=True,
-                    args=['--no-sandbox', '--disable-dev-shm-usage']
+                    args=[
+                        '--no-sandbox',
+                        '--disable-dev-shm-usage',
+                        '--disable-gpu',
+                        '--disable-software-rasterizer',
+                        '--disable-extensions',
+                        '--disable-background-timer-throttling',
+                        '--disable-backgrounding-occluded-windows',
+                        '--disable-renderer-backgrounding',
+                        '--disable-features=TranslateUI',
+                        '--disable-ipc-flooding-protection'
+                    ]
                 )
                 browser_launched = True
                 print("✅ 方法1でブラウザ起動成功")
             except Exception as e1:
                 print(f"❌ 方法1でブラウザ起動失敗: {e1}")
                 
-                # 方法2: デフォルト設定でChromium起動
+                # 方法2: システムのChromiumを使用
                 try:
-                    print("🔄 方法2: デフォルト設定でChromiumを起動中...")
+                    print("🔄 方法2: システムのChromiumを使用中...")
                     self.browser = self.playwright.chromium.launch(
-                        headless=True
+                        headless=True,
+                        executable_path="/usr/bin/chromium-browser",
+                        args=['--no-sandbox', '--disable-dev-shm-usage']
                     )
                     browser_launched = True
                     print("✅ 方法2でブラウザ起動成功")
                 except Exception as e2:
                     print(f"❌ 方法2でブラウザ起動失敗: {e2}")
                     
-                    # 方法3: Firefoxを使用
+                    # 方法3: システムのGoogle Chromeを使用
                     try:
-                        print("🔄 方法3: Firefoxを起動中...")
-                        self.browser = self.playwright.firefox.launch(
-                            headless=True
+                        print("🔄 方法3: システムのGoogle Chromeを使用中...")
+                        self.browser = self.playwright.chromium.launch(
+                            headless=True,
+                            executable_path="/usr/bin/google-chrome",
+                            args=['--no-sandbox', '--disable-dev-shm-usage']
                         )
                         browser_launched = True
                         print("✅ 方法3でブラウザ起動成功")
                     except Exception as e3:
                         print(f"❌ 方法3でブラウザ起動失敗: {e3}")
                         
-                        # 方法4: WebKitを使用
+                        # 方法4: Firefoxを使用
                         try:
-                            print("🔄 方法4: WebKitを起動中...")
-                            self.browser = self.playwright.webkit.launch(
+                            print("🔄 方法4: Firefoxを起動中...")
+                            self.browser = self.playwright.firefox.launch(
                                 headless=True
                             )
                             browser_launched = True
@@ -75,24 +90,22 @@ class JobcanAutomation:
                         except Exception as e4:
                             print(f"❌ 方法4でブラウザ起動失敗: {e4}")
                             
-                            # 方法5: システムのChromiumを使用
+                            # 方法5: WebKitを使用
                             try:
-                                print("🔄 方法5: システムのChromiumを使用中...")
-                                self.browser = self.playwright.chromium.launch(
-                                    headless=True,
-                                    executable_path="/usr/bin/chromium-browser"
+                                print("🔄 方法5: WebKitを起動中...")
+                                self.browser = self.playwright.webkit.launch(
+                                    headless=True
                                 )
                                 browser_launched = True
                                 print("✅ 方法5でブラウザ起動成功")
                             except Exception as e5:
                                 print(f"❌ 方法5でブラウザ起動失敗: {e5}")
                                 
-                                # 方法6: システムのGoogle Chromeを使用
+                                # 方法6: 最小限の設定でChromium起動（フォールバック）
                                 try:
-                                    print("🔄 方法6: システムのGoogle Chromeを使用中...")
+                                    print("🔄 方法6: 最小限の設定でChromiumを起動中...")
                                     self.browser = self.playwright.chromium.launch(
-                                        headless=True,
-                                        executable_path="/usr/bin/google-chrome"
+                                        headless=True
                                     )
                                     browser_launched = True
                                     print("✅ 方法6でブラウザ起動成功")
