@@ -738,50 +738,122 @@ class JobcanAutomation:
     def process_attendance_data(self, data: List[Dict[str, str]]) -> List[Dict[str, str]]:
         """勤怠データを処理"""
         try:
-            print("勤怠データの処理を開始...")
+            print("=== 勤怠データ処理開始 ===")
+            print(f"📊 処理対象データ数: {len(data)}")
             
             processed_data = []
+            success_count = 0
+            error_count = 0
+            
             for i, row in enumerate(data):
                 try:
-                    print(f"データ {i+1}/{len(data)} を処理中...")
+                    print(f"\n=== データ {i+1}/{len(data)} の処理開始 ===")
                     
                     date = row.get('date', '')
                     start_time = row.get('start_time', '')
                     end_time = row.get('end_time', '')
                     
+                    print(f"📋 処理データ: 日付={date}, 開始時間={start_time}, 終了時間={end_time}")
+                    
                     if not date or not start_time or not end_time:
-                        print(f"データ {i+1} に必要な情報が不足しています")
+                        print(f"❌ データ {i+1} に必要な情報が不足しています")
+                        error_count += 1
+                        processed_data.append({
+                            'date': date,
+                            'start_time': start_time,
+                            'end_time': end_time,
+                            'status': 'error',
+                            'error': '必要な情報が不足'
+                        })
                         continue
                     
-                    print(f"日付: {date}, 開始時間: {start_time}, 終了時間: {end_time}")
+                    # 現在のページ状態をデバッグ
+                    print(f"🔍 現在のページ状態を確認中...")
+                    current_url = self.page.url
+                    page_title = self.page.title()
+                    print(f"🔗 現在のURL: {current_url}")
+                    print(f"📄 ページタイトル: {page_title}")
                     
                     # 日付を選択
-                    if not self.select_date(date):
-                        print(f"日付 {date} の選択に失敗しました")
+                    print(f"📅 ステップ1: 日付 {date} を選択中...")
+                    date_success = self.select_date(date)
+                    print(f"📅 日付選択結果: {'✅ 成功' if date_success else '❌ 失敗'}")
+                    
+                    if not date_success:
+                        print(f"❌ 日付 {date} の選択に失敗しました")
+                        error_count += 1
+                        processed_data.append({
+                            'date': date,
+                            'start_time': start_time,
+                            'end_time': end_time,
+                            'status': 'error',
+                            'error': '日付選択に失敗'
+                        })
                         continue
                     
                     # 打刻修正ボタンをクリック
-                    if not self.click_stamp_correction():
-                        print(f"打刻修正ボタンのクリックに失敗しました")
+                    print(f"🔧 ステップ2: 打刻修正ボタンをクリック中...")
+                    correction_success = self.click_stamp_correction()
+                    print(f"🔧 打刻修正結果: {'✅ 成功' if correction_success else '❌ 失敗'}")
+                    
+                    if not correction_success:
+                        print(f"❌ 打刻修正ボタンのクリックに失敗しました")
+                        error_count += 1
+                        processed_data.append({
+                            'date': date,
+                            'start_time': start_time,
+                            'end_time': end_time,
+                            'status': 'error',
+                            'error': '打刻修正ボタンクリックに失敗'
+                        })
                         continue
                     
                     # 開始時間を入力
-                    if not self.input_time("開始", start_time):
-                        print(f"開始時間 {start_time} の入力に失敗しました")
+                    print(f"⏰ ステップ3: 開始時間 {start_time} を入力中...")
+                    start_success = self.input_time("開始", start_time)
+                    print(f"⏰ 開始時間入力結果: {'✅ 成功' if start_success else '❌ 失敗'}")
+                    
+                    if not start_success:
+                        print(f"❌ 開始時間 {start_time} の入力に失敗しました")
+                        error_count += 1
+                        processed_data.append({
+                            'date': date,
+                            'start_time': start_time,
+                            'end_time': end_time,
+                            'status': 'error',
+                            'error': '開始時間入力に失敗'
+                        })
                         continue
                     
                     # 終了時間を入力
-                    if not self.input_time("終了", end_time):
-                        print(f"終了時間 {end_time} の入力に失敗しました")
+                    print(f"⏰ ステップ4: 終了時間 {end_time} を入力中...")
+                    end_success = self.input_time("終了", end_time)
+                    print(f"⏰ 終了時間入力結果: {'✅ 成功' if end_success else '❌ 失敗'}")
+                    
+                    if not end_success:
+                        print(f"❌ 終了時間 {end_time} の入力に失敗しました")
+                        error_count += 1
+                        processed_data.append({
+                            'date': date,
+                            'start_time': start_time,
+                            'end_time': end_time,
+                            'status': 'error',
+                            'error': '終了時間入力に失敗'
+                        })
                         continue
                     
                     # 保存ボタンをクリック
+                    print(f"💾 ステップ5: 保存ボタンをクリック中...")
                     save_selectors = [
                         'button:has-text("保存")',
                         'button:has-text("Save")',
+                        'button:has-text("登録")',
+                        'button:has-text("確定")',
                         'input[type="submit"]',
                         'input[value*="保存"]',
-                        'input[value*="Save"]'
+                        'input[value*="Save"]',
+                        'input[value*="登録"]',
+                        'input[value*="確定"]'
                     ]
                     
                     saved = False
@@ -789,34 +861,61 @@ class JobcanAutomation:
                         try:
                             save_button = self.page.locator(selector)
                             if save_button.count() > 0:
-                                print(f"保存ボタンを発見: {selector}")
+                                print(f"✅ 保存ボタンを発見: {selector}")
                                 save_button.first.click()
                                 time.sleep(2)
                                 self.page.wait_for_load_state("networkidle")
                                 saved = True
                                 break
                         except Exception as e:
-                            print(f"保存セレクター {selector} でエラー: {e}")
+                            print(f"❌ 保存セレクター {selector} でエラー: {e}")
                             continue
                     
                     if not saved:
-                        print("保存ボタンが見つかりません")
+                        print(f"❌ 保存ボタンが見つかりません")
+                        error_count += 1
+                        processed_data.append({
+                            'date': date,
+                            'start_time': start_time,
+                            'end_time': end_time,
+                            'status': 'error',
+                            'error': '保存ボタンが見つからない'
+                        })
                         continue
                     
                     # 勤怠ページに戻る
-                    self.navigate_to_attendance()
+                    print(f"🏠 ステップ6: 勤怠ページに戻る中...")
+                    return_success = self.navigate_to_attendance()
+                    print(f"🏠 ページ戻り結果: {'✅ 成功' if return_success else '❌ 失敗'}")
                     
-                    processed_data.append({
-                        'date': date,
-                        'start_time': start_time,
-                        'end_time': end_time,
-                        'status': 'success'
-                    })
+                    # 処理結果を記録
+                    overall_success = start_success and end_success and saved and return_success
+                    if overall_success:
+                        success_count += 1
+                        print(f"✅ データ {i+1} の処理が成功しました")
+                        processed_data.append({
+                            'date': date,
+                            'start_time': start_time,
+                            'end_time': end_time,
+                            'status': 'success'
+                        })
+                    else:
+                        error_count += 1
+                        print(f"❌ データ {i+1} の処理が失敗しました")
+                        processed_data.append({
+                            'date': date,
+                            'start_time': start_time,
+                            'end_time': end_time,
+                            'status': 'error',
+                            'error': '処理の一部が失敗'
+                        })
                     
-                    print(f"データ {i+1} の処理が完了しました")
+                    print(f"⏳ 次のデータまで待機中...")
+                    time.sleep(2)  # 処理間隔
                     
                 except Exception as e:
-                    print(f"データ {i+1} の処理でエラー: {e}")
+                    print(f"❌ データ {i+1} の処理でエラー: {e}")
+                    error_count += 1
                     processed_data.append({
                         'date': row.get('date', ''),
                         'start_time': row.get('start_time', ''),
@@ -825,11 +924,17 @@ class JobcanAutomation:
                         'error': str(e)
                     })
             
-            print(f"勤怠データの処理が完了しました。成功: {len([d for d in processed_data if d.get('status') == 'success'])}/{len(processed_data)}")
+            print(f"\n=== 処理結果サマリー ===")
+            print(f"📊 処理対象データ数: {len(data)}")
+            print(f"✅ 成功件数: {success_count}")
+            print(f"❌ エラー件数: {error_count}")
+            print(f"📈 成功率: {success_count/len(data)*100:.1f}%" if len(data) > 0 else "処理対象なし")
+            print("=== 勤怠データ処理完了 ===")
+            
             return processed_data
             
         except Exception as e:
-            print(f"勤怠データ処理でエラー: {e}")
+            print(f"❌ 勤怠データ処理でエラー: {e}")
             return []
     
     def close(self):
