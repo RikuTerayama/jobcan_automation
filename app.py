@@ -271,51 +271,43 @@ class JobcanAutomation:
     def login_to_jobcan_alternative(self, email: str, password: str) -> bool:
         """Jobcanにログイン（代替方法）"""
         try:
-            print(f"代替ログイン方法を試行: {email}")
-            self.status_queue.put({"status": "logging_in", "message": "代替ログイン方法を試行中..."})
+            print("=== 代替ログイン方法を試行 ===")
             
-            # 直接ログインページにアクセス（正しいURLを使用）
-            print("直接ログインページにアクセス中...")
-            self.page.goto("https://id.jobcan.jp/users/sign_in?app_key=atd")
+            # 異なるURLを試行
+            print("代替URLでログイン試行: https://ssl.jobcan.jp/employee")
+            self.page.goto("https://ssl.jobcan.jp/employee")
+            time.sleep(2)
             self.page.wait_for_load_state("networkidle")
             
-            print("現在のURL:", self.page.url)
-            print("ページタイトル:", self.page.title())
-            
-            # メールアドレスを入力
-            print("メールアドレスを入力中...")
-            email_input = self.page.locator('input[name="email"], input[name="staff_code"], input[type="email"]').first
-            email_input.fill(email)
-            print("メールアドレス入力完了")
-            
-            # パスワードを入力
-            print("パスワードを入力中...")
-            password_input = self.page.locator('input[name="password"], input[type="password"]').first
-            password_input.fill(password)
-            print("パスワード入力完了")
-            
-            # ログインボタンをクリック
-            print("ログインボタンをクリック中...")
-            login_button = self.page.locator('input[type="submit"], button[type="submit"]').first
-            login_button.click()
-            print("ログインボタンクリック完了")
-            
-            # ログイン後のページ読み込みを待機
-            print("ログイン後のページ読み込みを待機中...")
-            self.page.wait_for_load_state("networkidle")
-            
-            print("ログイン後のURL:", self.page.url)
-            
-            # ログイン成功の確認
-            if "sign_in" in self.page.url or "login" in self.page.url:
-                print("代替ログイン方法でも失敗")
-                return False
-            
-            print("代替ログイン方法で成功")
-            return True
+            # ログイン処理を再試行
+            return self.perform_login_action(email, password)
             
         except Exception as e:
             print(f"代替ログイン方法でエラー: {e}")
+            return False
+
+    def perform_login_action(self, email: str, password: str):
+        """ログインアクションを実行"""
+        try:
+            # メールアドレス入力
+            email_input = self.page.locator('input[name="email"], input[name="staff_code"], input[type="email"]').first
+            email_input.fill(email)
+            
+            # パスワード入力
+            password_input = self.page.locator('input[name="password"], input[type="password"]').first
+            password_input.fill(password)
+            
+            # ログインボタンクリック
+            login_button = self.page.locator('input[type="submit"], button[type="submit"]').first
+            login_button.click()
+            
+            time.sleep(3)
+            self.page.wait_for_load_state("networkidle")
+            
+            return "sign_in" not in self.page.url and "login" not in self.page.url
+            
+        except Exception as e:
+            print(f"ログインアクションでエラー: {e}")
             return False
 
     def check_for_captcha(self):
@@ -502,116 +494,6 @@ class JobcanAutomation:
             print(f"方法2でエラー: {e}")
         
         return False
-
-    def perform_login_action(self, email: str, password: str):
-        """ログインアクションを実行"""
-        try:
-            # メールアドレス入力
-            email_input = self.page.locator('input[name="email"], input[name="staff_code"], input[type="email"]').first
-            email_input.fill(email)
-            
-            # パスワード入力
-            password_input = self.page.locator('input[name="password"], input[type="password"]').first
-            password_input.fill(password)
-            
-            # ログインボタンクリック
-            login_button = self.page.locator('input[type="submit"], button[type="submit"]').first
-            login_button.click()
-            
-            time.sleep(3)
-            self.page.wait_for_load_state("networkidle")
-            
-            return "sign_in" not in self.page.url and "login" not in self.page.url
-            
-        except Exception as e:
-            print(f"ログインアクションでエラー: {e}")
-            return False
-
-    def analyze_login_failure(self):
-        """ログイン失敗の原因を分析"""
-        try:
-            print("=== ログイン失敗原因分析 ===")
-            
-            failure_reasons = []
-            
-            # URLベースの分析
-            current_url = self.page.url
-            if "sign_in" in current_url or "login" in current_url:
-                failure_reasons.append("ログインページに留まっている（認証失敗）")
-            
-            # エラーメッセージの分析
-            error_messages = [
-                ('ログインに失敗しました', '認証情報が正しくありません'),
-                ('メールアドレスまたはパスワードが正しくありません', 'ログイン情報を確認してください'),
-                ('認証に失敗しました', 'アカウントが無効またはロックされている可能性があります'),
-                ('ログインできませんでした', 'システムエラーまたはメンテナンス中の可能性があります'),
-                ('Invalid email or password', '英語版エラー：認証情報が正しくありません'),
-                ('Authentication failed', '英語版エラー：認証に失敗しました')
-            ]
-            
-            for error_text, reason in error_messages:
-                try:
-                    if self.page.locator(f'text={error_text}').count() > 0:
-                        failure_reasons.append(f"エラーメッセージ: {error_text} → {reason}")
-                except:
-                    pass
-            
-            # フォーム要素の分析
-            forms = self.page.locator('form')
-            if forms.count() == 0:
-                failure_reasons.append("ログインフォームが見つかりません")
-            
-            # 入力フィールドの分析
-            email_inputs = self.page.locator('input[name="email"], input[name="staff_code"], input[type="email"]')
-            password_inputs = self.page.locator('input[name="password"], input[type="password"]')
-            
-            if email_inputs.count() == 0:
-                failure_reasons.append("メールアドレス入力フィールドが見つかりません")
-            if password_inputs.count() == 0:
-                failure_reasons.append("パスワード入力フィールドが見つかりません")
-            
-            # CAPTCHAの分析
-            if self.check_for_captcha():
-                failure_reasons.append("CAPTCHAが表示されています（手動ログインが必要）")
-            
-            # ページの状態分析
-            page_title = self.page.title()
-            if "エラー" in page_title or "Error" in page_title:
-                failure_reasons.append("ページタイトルにエラーが含まれています")
-            
-            # 解決策の提案
-            print("\n=== 推奨解決策 ===")
-            if not failure_reasons:
-                print("原因が特定できませんでした。以下を確認してください：")
-                print("1. メールアドレスとパスワードが正しいか")
-                print("2. Jobcanアカウントが有効か")
-                print("3. ネットワーク接続が安定しているか")
-                print("4. Jobcanサービスが正常に動作しているか")
-            else:
-                for reason in failure_reasons:
-                    print(f"• {reason}")
-                
-                print("\n=== 解決策 ===")
-                if "認証情報が正しくありません" in str(failure_reasons):
-                    print("1. メールアドレスとパスワードを再確認")
-                    print("2. 大文字小文字を確認")
-                    print("3. スペースや特殊文字が含まれていないか確認")
-                
-                if "CAPTCHA" in str(failure_reasons):
-                    print("1. 手動でJobcanにログイン")
-                    print("2. セキュリティ設定を確認")
-                    print("3. 別のブラウザでログインを試行")
-                
-                if "フォームが見つかりません" in str(failure_reasons):
-                    print("1. Jobcanのログインページが変更されている可能性")
-                    print("2. システムメンテナンス中の可能性")
-                    print("3. ネットワーク接続を確認")
-            
-            return failure_reasons
-            
-        except Exception as e:
-            print(f"失敗原因分析中にエラー: {e}")
-            return ["分析中にエラーが発生しました"]
 
     def login_to_jobcan(self, email: str, password: str) -> bool:
         """Jobcanにログイン"""
