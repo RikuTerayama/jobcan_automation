@@ -121,7 +121,29 @@ class JobcanAutomation:
                                             print("✅ 方法8でブラウザ起動成功")
                                         except Exception as e8:
                                             print(f"❌ 方法8でブラウザ起動失敗: {e8}")
-                                            raise Exception("すべてのブラウザ起動方法が失敗しました")
+                                            
+                                            # 方法9: 完全に最小限の設定でFirefox起動
+                                            try:
+                                                print("🔄 方法9: 完全に最小限の設定でFirefoxを起動中...")
+                                                self.browser = self.playwright.firefox.launch(
+                                                    headless=True
+                                                )
+                                                browser_launched = True
+                                                print("✅ 方法9でブラウザ起動成功")
+                                            except Exception as e9:
+                                                print(f"❌ 方法9でブラウザ起動失敗: {e9}")
+                                                
+                                                # 方法10: 最後の手段として、WebKitを試行
+                                                try:
+                                                    print("🔄 方法10: WebKitを最後の手段として起動中...")
+                                                    self.browser = self.playwright.webkit.launch(
+                                                        headless=True
+                                                    )
+                                                    browser_launched = True
+                                                    print("✅ 方法10でブラウザ起動成功")
+                                                except Exception as e10:
+                                                    print(f"❌ 方法10でブラウザ起動失敗: {e10}")
+                                                    raise Exception("すべてのブラウザ起動方法が失敗しました")
             
             if not browser_launched:
                 raise Exception("ブラウザの起動に失敗しました")
