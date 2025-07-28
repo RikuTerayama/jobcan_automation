@@ -476,29 +476,67 @@ def get_status(job_id):
 def health_check():
     """ヘルスチェックエンドポイント"""
     try:
-        # 基本的なシステム情報を取得
+        # 基本的なシステム情報を取得（軽量版）
+        import os
+        
+        # 最小限の情報のみを返す
+        health_info = {
+            'status': 'healthy',
+            'timestamp': datetime.now().isoformat(),
+            'environment': os.environ.get('RAILWAY_ENVIRONMENT', 'local'),
+            'port': os.environ.get('PORT', '5000'),
+            'uptime': 'running'
+        }
+        
+        return jsonify(health_info)
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
+@app.route('/health/detailed')
+def detailed_health_check():
+    """詳細ヘルスチェックエンドポイント"""
+    try:
+        # 詳細なシステム情報を取得
         import psutil
         import os
         
         system_info = {
             'status': 'healthy',
+            'timestamp': datetime.now().isoformat(),
             'python_version': os.sys.version,
             'memory_usage': psutil.virtual_memory().percent,
             'cpu_usage': psutil.cpu_percent(),
             'disk_usage': psutil.disk_usage('/').percent,
             'environment': os.environ.get('RAILWAY_ENVIRONMENT', 'local'),
-            'port': os.environ.get('PORT', '5000')
+            'port': os.environ.get('PORT', '5000'),
+            'uptime': 'running'
         }
         
         return jsonify(system_info)
     except Exception as e:
         return jsonify({
             'status': 'error',
-            'error': str(e)
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
         }), 500
 
 if __name__ == '__main__':
-    # 開発環境ではデバッグモードで実行
-    debug_mode = os.environ.get('FLASK_ENV') == 'development'
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=debug_mode) 
+    try:
+        # 開発環境ではデバッグモードで実行
+        debug_mode = os.environ.get('FLASK_ENV') == 'development'
+        port = int(os.environ.get('PORT', 5000))
+        
+        print(f"🚀 アプリケーションを起動中...")
+        print(f"🔧 ポート: {port}")
+        print(f"🔧 デバッグモード: {debug_mode}")
+        print(f"🔧 環境: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
+        
+        app.run(host='0.0.0.0', port=port, debug=debug_mode)
+    except Exception as e:
+        print(f"❌ アプリケーション起動でエラー: {e}")
+        import traceback
+        traceback.print_exc() 
