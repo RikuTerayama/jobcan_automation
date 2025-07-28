@@ -12,7 +12,7 @@ import time
 # カスタムモジュールをインポート
 from jobcan_automation import JobcanAutomation
 from async_jobcan_automation import AsyncJobcanAutomation
-from utils import load_excel_data, allowed_file
+from utils import load_excel_data, allowed_file, ensure_playwright_browser
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
@@ -142,6 +142,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         jobs[job_id]['status'] = 'running'
         
         # Playwrightブラウザを確保
+        from async_jobcan_automation import ensure_playwright_browser
         ensure_playwright_browser()
         
         # 自動化インスタンスを作成
