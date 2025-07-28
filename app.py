@@ -568,54 +568,82 @@ class JobcanAutomation:
             # メールアドレス入力フィールドを探す（複数のパターンを試す）
             print("メールアドレス入力フィールドを探しています...")
             
-            # JavaScriptを使用した直接的な要素検索
-            print("JavaScriptを使用した要素検索を実行...")
+            # まず、iframeがあるかチェック
+            print("iframeの存在を確認...")
             try:
-                # JavaScriptでinput要素を直接検索
-                email_input_info = self.page.evaluate("""
-                    () => {
-                        const inputs = document.querySelectorAll('input');
-                        const results = [];
-                        for (let i = 0; i < inputs.length; i++) {
-                            const input = inputs[i];
-                            const type = input.type || '';
-                            const name = input.name || '';
-                            const id = input.id || '';
-                            const placeholder = input.placeholder || '';
+                iframe_count = self.page.evaluate("() => document.querySelectorAll('iframe').length")
+                print(f"iframe数: {iframe_count}")
+                
+                if iframe_count > 0:
+                    print("iframeが存在するため、iframe内を確認...")
+                    # iframe内の要素を確認
+                    for i in range(iframe_count):
+                        try:
+                            iframe = self.page.frame_locator('iframe').nth(i)
+                            iframe_input_count = iframe.locator('input').count()
+                            print(f"iframe[{i}]内のinput要素数: {iframe_input_count}")
                             
-                            // パスワード、submit、button、checkbox、radio以外の要素を探す
-                            if (type !== 'password' && type !== 'submit' && type !== 'button' && type !== 'checkbox' && type !== 'radio' && type !== 'hidden') {
-                                results.push({
-                                    index: i,
-                                    type: type,
-                                    name: name,
-                                    id: id,
-                                    placeholder: placeholder,
-                                    className: input.className || '',
-                                    value: input.value || ''
-                                });
-                            }
-                        }
-                        return results;
-                    }
-                """)
-                
-                print(f"JavaScript検索結果: {email_input_info}")
-                
-                if email_input_info and len(email_input_info) > 0:
-                    # 最初の要素を選択
-                    first_input = email_input_info[0]
-                    print(f"JavaScriptでメールアドレス入力フィールドを発見: {first_input}")
-                    
-                    # 対応する要素を取得
-                    email_input = self.page.locator('input').nth(first_input['index'])
-                    
+                            if iframe_input_count > 0:
+                                print(f"iframe[{i}]内にinput要素を発見")
+                                # iframe内の最初のinput要素を取得
+                                email_input = iframe.locator('input').first
+                                break
+                        except Exception as e:
+                            print(f"iframe[{i}]確認でエラー: {e}")
+                            continue
             except Exception as e:
-                print(f"JavaScript検索でエラー: {e}")
+                print(f"iframe確認でエラー: {e}")
             
-            # 従来のセレクターベースの検索（フォールバック）
+            # JavaScriptを使用した直接的な要素検索
             if not email_input:
-                print("従来のセレクターベースの検索を実行...")
+                print("JavaScriptを使用した要素検索を実行...")
+                try:
+                    # JavaScriptでinput要素を直接検索
+                    email_input_info = self.page.evaluate("""
+                        () => {
+                            const inputs = document.querySelectorAll('input');
+                            const results = [];
+                            for (let i = 0; i < inputs.length; i++) {
+                                const input = inputs[i];
+                                const type = input.type || '';
+                                const name = input.name || '';
+                                const id = input.id || '';
+                                const placeholder = input.placeholder || '';
+                                
+                                // パスワード、submit、button、checkbox、radio以外の要素を探す
+                                if (type !== 'password' && type !== 'submit' && type !== 'button' && type !== 'checkbox' && type !== 'radio' && type !== 'hidden') {
+                                    results.push({
+                                        index: i,
+                                        type: type,
+                                        name: name,
+                                        id: id,
+                                        placeholder: placeholder,
+                                        className: input.className || '',
+                                        value: input.value || '',
+                                        visible: input.offsetWidth > 0 && input.offsetHeight > 0
+                                    });
+                                }
+                            }
+                            return results;
+                        }
+                    """)
+                    
+                    print(f"JavaScript検索結果: {email_input_info}")
+                    
+                    if email_input_info and len(email_input_info) > 0:
+                        # 最初の要素を選択
+                        first_input = email_input_info[0]
+                        print(f"JavaScriptでメールアドレス入力フィールドを発見: {first_input}")
+                        
+                        # 対応する要素を取得
+                        email_input = self.page.locator('input').nth(first_input['index'])
+                        
+                except Exception as e:
+                    print(f"JavaScript検索でエラー: {e}")
+            
+            # より包括的なセレクターベースの検索
+            if not email_input:
+                print("包括的なセレクターベースの検索を実行...")
                 email_selectors = [
                     'input[name="email"]',
                     'input[name="staff_code"]',
@@ -643,7 +671,11 @@ class JobcanAutomation:
                     # 動的要素対応
                     'input[type="text"]',
                     'input[type="email"]',
-                    'input:not([type="password"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="hidden"])'
+                    'input:not([type="password"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="hidden"])',
+                    # より広範囲のセレクター
+                    'input',
+                    '*[contenteditable="true"]',
+                    'textarea'
                 ]
                 
                 for selector in email_selectors:
@@ -676,36 +708,111 @@ class JobcanAutomation:
             
             # パスワード入力フィールドを探す（複数のパターンを試す）
             print("パスワード入力フィールドを探しています...")
-            password_selectors = [
-                'input[name="password"]',
-                'input[type="password"]',
-                'input[placeholder*="パスワード"]',
-                'input[placeholder*="password"]',
-                'input[placeholder*="Password"]',
-                'input[id*="password"]',
-                'input[id*="pass"]',
-                # より包括的なセレクター
-                'input[type="password"]',
-                'input[autocomplete="current-password"]',
-                'input[autocomplete="new-password"]',
-                'input[autocomplete="off"][type="password"]',
-                # 位置ベースのセレクター
-                'form input:nth-of-type(2)',
-                'input[type="password"]:first-of-type',
-                'input[type="password"]'
-            ]
             
-            password_input = None
-            for selector in password_selectors:
+            # まず、iframeがあるかチェック
+            if not password_input:
+                print("iframe内のパスワード要素を確認...")
                 try:
-                    password_locator = self.page.locator(selector)
-                    if self.page.locator(selector).count() > 0:
-                        password_input = self.page.locator(selector).first
-                        print(f"パスワード入力フィールドを発見: {selector}")
-                        break
+                    iframe_count = self.page.evaluate("() => document.querySelectorAll('iframe').length")
+                    print(f"iframe数: {iframe_count}")
+                    
+                    if iframe_count > 0:
+                        print("iframe内のパスワード要素を確認...")
+                        # iframe内の要素を確認
+                        for i in range(iframe_count):
+                            try:
+                                iframe = self.page.frame_locator('iframe').nth(i)
+                                iframe_password_count = iframe.locator('input[type="password"]').count()
+                                print(f"iframe[{i}]内のpassword要素数: {iframe_password_count}")
+                                
+                                if iframe_password_count > 0:
+                                    print(f"iframe[{i}]内にpassword要素を発見")
+                                    # iframe内の最初のpassword要素を取得
+                                    password_input = iframe.locator('input[type="password"]').first
+                                    break
+                            except Exception as e:
+                                print(f"iframe[{i}]パスワード確認でエラー: {e}")
+                                continue
                 except Exception as e:
-                    print(f"パスワードセレクター {selector} でエラー: {e}")
-                    continue
+                    print(f"iframeパスワード確認でエラー: {e}")
+            
+            # JavaScriptを使用した直接的なパスワード要素検索
+            if not password_input:
+                print("JavaScriptを使用したパスワード要素検索を実行...")
+                try:
+                    # JavaScriptでpassword要素を直接検索
+                    password_input_info = self.page.evaluate("""
+                        () => {
+                            const inputs = document.querySelectorAll('input[type="password"]');
+                            const results = [];
+                            for (let i = 0; i < inputs.length; i++) {
+                                const input = inputs[i];
+                                const name = input.name || '';
+                                const id = input.id || '';
+                                const placeholder = input.placeholder || '';
+                                
+                                results.push({
+                                    index: i,
+                                    name: name,
+                                    id: id,
+                                    placeholder: placeholder,
+                                    className: input.className || '',
+                                    value: input.value || '',
+                                    visible: input.offsetWidth > 0 && input.offsetHeight > 0
+                                });
+                            }
+                            return results;
+                        }
+                    """)
+                    
+                    print(f"パスワードJavaScript検索結果: {password_input_info}")
+                    
+                    if password_input_info and len(password_input_info) > 0:
+                        # 最初の要素を選択
+                        first_password = password_input_info[0]
+                        print(f"JavaScriptでパスワード入力フィールドを発見: {first_password}")
+                        
+                        # 対応する要素を取得
+                        password_input = self.page.locator('input[type="password"]').nth(first_password['index'])
+                        
+                except Exception as e:
+                    print(f"パスワードJavaScript検索でエラー: {e}")
+            
+            # より包括的なセレクターベースのパスワード検索
+            if not password_input:
+                print("包括的なセレクターベースのパスワード検索を実行...")
+                password_selectors = [
+                    'input[name="password"]',
+                    'input[type="password"]',
+                    'input[placeholder*="パスワード"]',
+                    'input[placeholder*="password"]',
+                    'input[placeholder*="Password"]',
+                    'input[id*="password"]',
+                    'input[id*="pass"]',
+                    # より包括的なセレクター
+                    'input[type="password"]',
+                    'input[autocomplete="current-password"]',
+                    'input[autocomplete="new-password"]',
+                    'input[autocomplete="off"][type="password"]',
+                    # 位置ベースのセレクター
+                    'form input:nth-of-type(2)',
+                    'input[type="password"]:first-of-type',
+                    'input[type="password"]',
+                    # より広範囲のセレクター
+                    'input[type="password"]',
+                    'input'
+                ]
+                
+                for selector in password_selectors:
+                    try:
+                        password_locator = self.page.locator(selector)
+                        if self.page.locator(selector).count() > 0:
+                            password_input = password_locator.first
+                            print(f"セレクターでパスワード入力フィールドを発見: {selector}")
+                            break
+                    except Exception as e:
+                        print(f"パスワードセレクター {selector} でエラー: {e}")
+                        continue
             
             if not password_input:
                 print("パスワード入力フィールドが見つからないため、異なるログイン方法を試行")
@@ -1241,7 +1348,10 @@ class AsyncJobcanAutomation:
                     'input_count': await self.page.evaluate("() => document.querySelectorAll('input').length"),
                     'password_input_count': await self.page.evaluate("() => document.querySelectorAll('input[type=\"password\"]').length"),
                     'text_input_count': await self.page.evaluate("() => document.querySelectorAll('input[type=\"text\"]').length"),
-                    'email_input_count': await self.page.evaluate("() => document.querySelectorAll('input[type=\"email\"]').length")
+                    'email_input_count': await self.page.evaluate("() => document.querySelectorAll('input[type=\"email\"]').length"),
+                    'iframe_count': await self.page.evaluate("() => document.querySelectorAll('iframe').length"),
+                    'textarea_count': await self.page.evaluate("() => document.querySelectorAll('textarea').length"),
+                    'contenteditable_count': await self.page.evaluate("() => document.querySelectorAll('[contenteditable=\"true\"]').length")
                 }
             }
             
@@ -1374,6 +1484,80 @@ class AsyncJobcanAutomation:
                 print(f"\n=== ボタン詳細 ===")
                 for i, button_data in enumerate(self.diagnosis_data['buttons']):
                     print(f"  button[{i}]: {button_data}")
+            
+            # 詳細な要素分析
+            print("\n=== 詳細な要素分析 ===")
+            try:
+                # すべてのinput要素の詳細を取得
+                all_inputs_info = await self.page.evaluate("""
+                    () => {
+                        const inputs = document.querySelectorAll('input');
+                        const results = [];
+                        for (let i = 0; i < inputs.length; i++) {
+                            const input = inputs[i];
+                            results.push({
+                                index: i,
+                                type: input.type || '',
+                                name: input.name || '',
+                                id: input.id || '',
+                                placeholder: input.placeholder || '',
+                                className: input.className || '',
+                                value: input.value || '',
+                                visible: input.offsetWidth > 0 && input.offsetHeight > 0,
+                                display: window.getComputedStyle(input).display,
+                                position: window.getComputedStyle(input).position
+                            });
+                        }
+                        return results;
+                    }
+                """)
+                
+                print(f"詳細なinput要素情報: {all_inputs_info}")
+                
+                # フォーム要素の詳細を取得
+                all_forms_info = await self.page.evaluate("""
+                    () => {
+                        const forms = document.querySelectorAll('form');
+                        const results = [];
+                        for (let i = 0; i < forms.length; i++) {
+                            const form = forms[i];
+                            results.push({
+                                index: i,
+                                action: form.action || '',
+                                method: form.method || '',
+                                id: form.id || '',
+                                className: form.className || '',
+                                visible: form.offsetWidth > 0 && form.offsetHeight > 0,
+                                display: window.getComputedStyle(form).display
+                            });
+                        }
+                        return results;
+                    }
+                """)
+                
+                print(f"詳細なform要素情報: {all_forms_info}")
+                
+            except Exception as e:
+                print(f"詳細分析でエラー: {e}")
+            
+            # ページのHTML構造を確認
+            print("\n=== HTML構造確認 ===")
+            try:
+                html_structure = await self.page.evaluate("""
+                    () => {
+                        return {
+                            bodyHTML: document.body.innerHTML.substring(0, 2000),
+                            headHTML: document.head.innerHTML.substring(0, 1000),
+                            title: document.title,
+                            url: window.location.href
+                        };
+                    }
+                """)
+                
+                print(f"HTML構造情報: {html_structure}")
+                
+            except Exception as e:
+                print(f"HTML構造確認でエラー: {e}")
             
         except Exception as e:
             print(f"診断中にエラー: {e}")
@@ -1541,6 +1725,104 @@ class AsyncJobcanAutomation:
             input_count = await self.page.evaluate("() => document.querySelectorAll('input').length")
             print(f"input要素数: {input_count}")
             
+            # 詳細な要素分析
+            print("\n=== 詳細な要素分析 ===")
+            try:
+                # すべてのinput要素の詳細を取得
+                all_inputs_info = await self.page.evaluate("""
+                    () => {
+                        const inputs = document.querySelectorAll('input');
+                        const results = [];
+                        for (let i = 0; i < inputs.length; i++) {
+                            const input = inputs[i];
+                            results.push({
+                                index: i,
+                                type: input.type || '',
+                                name: input.name || '',
+                                id: input.id || '',
+                                placeholder: input.placeholder || '',
+                                className: input.className || '',
+                                value: input.value || '',
+                                visible: input.offsetWidth > 0 && input.offsetHeight > 0,
+                                display: window.getComputedStyle(input).display,
+                                position: window.getComputedStyle(input).position
+                            });
+                        }
+                        return results;
+                    }
+                """)
+                
+                print(f"詳細なinput要素情報: {all_inputs_info}")
+                
+                # フォーム要素の詳細を取得
+                all_forms_info = await self.page.evaluate("""
+                    () => {
+                        const forms = document.querySelectorAll('form');
+                        const results = [];
+                        for (let i = 0; i < forms.length; i++) {
+                            const form = forms[i];
+                            results.push({
+                                index: i,
+                                action: form.action || '',
+                                method: form.method || '',
+                                id: form.id || '',
+                                className: form.className || '',
+                                visible: form.offsetWidth > 0 && form.offsetHeight > 0,
+                                display: window.getComputedStyle(form).display
+                            });
+                        }
+                        return results;
+                    }
+                """)
+                
+                print(f"詳細なform要素情報: {all_forms_info}")
+                
+            except Exception as e:
+                print(f"詳細分析でエラー: {e}")
+            
+            # ページのHTML構造を確認
+            print("\n=== HTML構造確認 ===")
+            try:
+                html_structure = await self.page.evaluate("""
+                    () => {
+                        return {
+                            bodyHTML: document.body.innerHTML.substring(0, 2000),
+                            headHTML: document.head.innerHTML.substring(0, 1000),
+                            title: document.title,
+                            url: window.location.href
+                        };
+                    }
+                """)
+                
+                print(f"HTML構造情報: {html_structure}")
+                
+            except Exception as e:
+                print(f"HTML構造確認でエラー: {e}")
+            
+            # ページの状態を確認
+            page_content = await self.page.content()
+            print(f"ページコンテンツ長: {len(page_content)}")
+            
+            # JavaScriptが有効かチェック
+            js_enabled = await self.page.evaluate("() => typeof window !== 'undefined'")
+            print(f"JavaScript有効: {js_enabled}")
+            
+            # DOMの準備状態を確認
+            ready_state = await self.page.evaluate("() => document.readyState")
+            print(f"DOM準備状態: {ready_state}")
+            
+            # ページ内の要素数を確認
+            body_elements = await self.page.evaluate("() => document.body.children.length")
+            print(f"body内の要素数: {body_elements}")
+            
+            # フォーム要素の存在を確認
+            form_count = await self.page.evaluate("() => document.forms.length")
+            print(f"フォーム数: {form_count}")
+            
+            # input要素の存在を確認
+            input_count = await self.page.evaluate("() => document.querySelectorAll('input').length")
+            print(f"input要素数: {input_count}")
+            
             # 人間らしい待機時間
             import random
             import time
@@ -1560,54 +1842,82 @@ class AsyncJobcanAutomation:
             # メールアドレス入力フィールドを探す（複数のパターンを試す）
             print("メールアドレス入力フィールドを探しています...")
             
-            # JavaScriptを使用した直接的な要素検索
-            print("JavaScriptを使用した要素検索を実行...")
+            # まず、iframeがあるかチェック
+            print("iframeの存在を確認...")
             try:
-                # JavaScriptでinput要素を直接検索
-                email_input_info = await self.page.evaluate("""
-                    () => {
-                        const inputs = document.querySelectorAll('input');
-                        const results = [];
-                        for (let i = 0; i < inputs.length; i++) {
-                            const input = inputs[i];
-                            const type = input.type || '';
-                            const name = input.name || '';
-                            const id = input.id || '';
-                            const placeholder = input.placeholder || '';
+                iframe_count = await self.page.evaluate("() => document.querySelectorAll('iframe').length")
+                print(f"iframe数: {iframe_count}")
+                
+                if iframe_count > 0:
+                    print("iframeが存在するため、iframe内を確認...")
+                    # iframe内の要素を確認
+                    for i in range(iframe_count):
+                        try:
+                            iframe = self.page.frame_locator('iframe').nth(i)
+                            iframe_input_count = await iframe.locator('input').count()
+                            print(f"iframe[{i}]内のinput要素数: {iframe_input_count}")
                             
-                            // パスワード、submit、button、checkbox、radio以外の要素を探す
-                            if (type !== 'password' && type !== 'submit' && type !== 'button' && type !== 'checkbox' && type !== 'radio' && type !== 'hidden') {
-                                results.push({
-                                    index: i,
-                                    type: type,
-                                    name: name,
-                                    id: id,
-                                    placeholder: placeholder,
-                                    className: input.className || '',
-                                    value: input.value || ''
-                                });
-                            }
-                        }
-                        return results;
-                    }
-                """)
-                
-                print(f"JavaScript検索結果: {email_input_info}")
-                
-                if email_input_info and len(email_input_info) > 0:
-                    # 最初の要素を選択
-                    first_input = email_input_info[0]
-                    print(f"JavaScriptでメールアドレス入力フィールドを発見: {first_input}")
-                    
-                    # 対応する要素を取得
-                    email_input = self.page.locator('input').nth(first_input['index'])
-                    
+                            if iframe_input_count > 0:
+                                print(f"iframe[{i}]内にinput要素を発見")
+                                # iframe内の最初のinput要素を取得
+                                email_input = iframe.locator('input').first
+                                break
+                        except Exception as e:
+                            print(f"iframe[{i}]確認でエラー: {e}")
+                            continue
             except Exception as e:
-                print(f"JavaScript検索でエラー: {e}")
+                print(f"iframe確認でエラー: {e}")
             
-            # 従来のセレクターベースの検索（フォールバック）
+            # JavaScriptを使用した直接的な要素検索
             if not email_input:
-                print("従来のセレクターベースの検索を実行...")
+                print("JavaScriptを使用した要素検索を実行...")
+                try:
+                    # JavaScriptでinput要素を直接検索
+                    email_input_info = await self.page.evaluate("""
+                        () => {
+                            const inputs = document.querySelectorAll('input');
+                            const results = [];
+                            for (let i = 0; i < inputs.length; i++) {
+                                const input = inputs[i];
+                                const type = input.type || '';
+                                const name = input.name || '';
+                                const id = input.id || '';
+                                const placeholder = input.placeholder || '';
+                                
+                                // パスワード、submit、button、checkbox、radio以外の要素を探す
+                                if (type !== 'password' && type !== 'submit' && type !== 'button' && type !== 'checkbox' && type !== 'radio' && type !== 'hidden') {
+                                    results.push({
+                                        index: i,
+                                        type: type,
+                                        name: name,
+                                        id: id,
+                                        placeholder: placeholder,
+                                        className: input.className || '',
+                                        value: input.value || '',
+                                        visible: input.offsetWidth > 0 && input.offsetHeight > 0
+                                    });
+                                }
+                            }
+                            return results;
+                        }
+                    """)
+                    
+                    print(f"JavaScript検索結果: {email_input_info}")
+                    
+                    if email_input_info and len(email_input_info) > 0:
+                        # 最初の要素を選択
+                        first_input = email_input_info[0]
+                        print(f"JavaScriptでメールアドレス入力フィールドを発見: {first_input}")
+                        
+                        # 対応する要素を取得
+                        email_input = self.page.locator('input').nth(first_input['index'])
+                        
+                except Exception as e:
+                    print(f"JavaScript検索でエラー: {e}")
+            
+            # より包括的なセレクターベースの検索
+            if not email_input:
+                print("包括的なセレクターベースの検索を実行...")
                 email_selectors = [
                     'input[name="email"]',
                     'input[name="staff_code"]',
@@ -1635,7 +1945,11 @@ class AsyncJobcanAutomation:
                     # 動的要素対応
                     'input[type="text"]',
                     'input[type="email"]',
-                    'input:not([type="password"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="hidden"])'
+                    'input:not([type="password"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="hidden"])',
+                    # より広範囲のセレクター
+                    'input',
+                    '*[contenteditable="true"]',
+                    'textarea'
                 ]
                 
                 for selector in email_selectors:
@@ -1669,49 +1983,78 @@ class AsyncJobcanAutomation:
             # パスワード入力フィールドを探す（複数のパターンを試す）
             print("パスワード入力フィールドを探しています...")
             
-            # JavaScriptを使用した直接的なパスワード要素検索
-            print("JavaScriptを使用したパスワード要素検索を実行...")
-            try:
-                # JavaScriptでpassword要素を直接検索
-                password_input_info = await self.page.evaluate("""
-                    () => {
-                        const inputs = document.querySelectorAll('input[type="password"]');
-                        const results = [];
-                        for (let i = 0; i < inputs.length; i++) {
-                            const input = inputs[i];
-                            const name = input.name || '';
-                            const id = input.id || '';
-                            const placeholder = input.placeholder || '';
-                            
-                            results.push({
-                                index: i,
-                                name: name,
-                                id: id,
-                                placeholder: placeholder,
-                                className: input.className || '',
-                                value: input.value || ''
-                            });
-                        }
-                        return results;
-                    }
-                """)
-                
-                print(f"パスワードJavaScript検索結果: {password_input_info}")
-                
-                if password_input_info and len(password_input_info) > 0:
-                    # 最初の要素を選択
-                    first_password = password_input_info[0]
-                    print(f"JavaScriptでパスワード入力フィールドを発見: {first_password}")
-                    
-                    # 対応する要素を取得
-                    password_input = self.page.locator('input[type="password"]').nth(first_password['index'])
-                    
-            except Exception as e:
-                print(f"パスワードJavaScript検索でエラー: {e}")
-            
-            # 従来のセレクターベースの検索（フォールバック）
+            # まず、iframeがあるかチェック
             if not password_input:
-                print("従来のセレクターベースのパスワード検索を実行...")
+                print("iframe内のパスワード要素を確認...")
+                try:
+                    iframe_count = await self.page.evaluate("() => document.querySelectorAll('iframe').length")
+                    print(f"iframe数: {iframe_count}")
+                    
+                    if iframe_count > 0:
+                        print("iframe内のパスワード要素を確認...")
+                        # iframe内の要素を確認
+                        for i in range(iframe_count):
+                            try:
+                                iframe = self.page.frame_locator('iframe').nth(i)
+                                iframe_password_count = await iframe.locator('input[type="password"]').count()
+                                print(f"iframe[{i}]内のpassword要素数: {iframe_password_count}")
+                                
+                                if iframe_password_count > 0:
+                                    print(f"iframe[{i}]内にpassword要素を発見")
+                                    # iframe内の最初のpassword要素を取得
+                                    password_input = iframe.locator('input[type="password"]').first
+                                    break
+                            except Exception as e:
+                                print(f"iframe[{i}]パスワード確認でエラー: {e}")
+                                continue
+                except Exception as e:
+                    print(f"iframeパスワード確認でエラー: {e}")
+            
+            # JavaScriptを使用した直接的なパスワード要素検索
+            if not password_input:
+                print("JavaScriptを使用したパスワード要素検索を実行...")
+                try:
+                    # JavaScriptでpassword要素を直接検索
+                    password_input_info = await self.page.evaluate("""
+                        () => {
+                            const inputs = document.querySelectorAll('input[type="password"]');
+                            const results = [];
+                            for (let i = 0; i < inputs.length; i++) {
+                                const input = inputs[i];
+                                const name = input.name || '';
+                                const id = input.id || '';
+                                const placeholder = input.placeholder || '';
+                                
+                                results.push({
+                                    index: i,
+                                    name: name,
+                                    id: id,
+                                    placeholder: placeholder,
+                                    className: input.className || '',
+                                    value: input.value || '',
+                                    visible: input.offsetWidth > 0 && input.offsetHeight > 0
+                                });
+                            }
+                            return results;
+                        }
+                    """)
+                    
+                    print(f"パスワードJavaScript検索結果: {password_input_info}")
+                    
+                    if password_input_info and len(password_input_info) > 0:
+                        # 最初の要素を選択
+                        first_password = password_input_info[0]
+                        print(f"JavaScriptでパスワード入力フィールドを発見: {first_password}")
+                        
+                        # 対応する要素を取得
+                        password_input = self.page.locator('input[type="password"]').nth(first_password['index'])
+                        
+                except Exception as e:
+                    print(f"パスワードJavaScript検索でエラー: {e}")
+            
+            # より包括的なセレクターベースのパスワード検索
+            if not password_input:
+                print("包括的なセレクターベースのパスワード検索を実行...")
                 password_selectors = [
                     'input[name="password"]',
                     'input[type="password"]',
@@ -1728,7 +2071,10 @@ class AsyncJobcanAutomation:
                     # 位置ベースのセレクター
                     'form input:nth-of-type(2)',
                     'input[type="password"]:first-of-type',
-                    'input[type="password"]'
+                    'input[type="password"]',
+                    # より広範囲のセレクター
+                    'input[type="password"]',
+                    'input'
                 ]
                 
                 for selector in password_selectors:
