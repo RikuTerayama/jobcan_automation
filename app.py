@@ -210,24 +210,6 @@ class JobcanAutomation:
                 '--disable-component-update',
                 '--disable-domain-reliability',
                 '--disable-features=TranslateUI',
-                '--disable-ipc-flooding-protection',
-                '--disable-background-timer-throttling',
-                '--disable-backgrounding-occluded-windows',
-                '--disable-renderer-backgrounding',
-                '--disable-features=TranslateUI',
-                '--disable-ipc-flooding-protection',
-                '--disable-background-networking',
-                '--disable-default-apps',
-                '--disable-sync',
-                '--disable-translate',
-                '--hide-scrollbars',
-                '--mute-audio',
-                '--no-first-run',
-                '--safebrowsing-disable-auto-update',
-                '--disable-client-side-phishing-detection',
-                '--disable-component-update',
-                '--disable-domain-reliability',
-                '--disable-features=TranslateUI',
                 '--disable-ipc-flooding-protection'
             ]
             
@@ -355,7 +337,14 @@ class JobcanAutomation:
                 'error_messages': [],
                 'page_text': self.page.text_content('body')[:1000],
                 'html_content': self.page.content()[:2000],  # HTMLコンテンツも追加
-                'screenshot_base64': None  # スクリーンショットも追加
+                'screenshot_base64': None,  # スクリーンショットも追加
+                'page_info': {
+                    'content_length': len(self.page.content()),
+                    'text_length': len(self.page.text_content('body')),
+                    'js_enabled': self.page.evaluate("() => typeof window !== 'undefined'"),
+                    'ready_state': self.page.evaluate("() => document.readyState"),
+                    'viewport_size': self.page.evaluate("() => ({width: window.innerWidth, height: window.innerHeight})")
+                }
             }
             
             # スクリーンショットを取得（デバッグ用）
@@ -591,12 +580,27 @@ class JobcanAutomation:
                 'input[id*="login"]',
                 'input[id*="user"]',
                 'input[name="username"]',
-                'input[name="account"]'
+                'input[name="account"]',
+                # より包括的なセレクター
+                'input[type="text"]:not([type="password"])',
+                'input:not([type="password"]):not([type="submit"]):not([type="button"])',
+                'form input:first-of-type',
+                'input[autocomplete="email"]',
+                'input[autocomplete="username"]',
+                'input[autocomplete="off"]:not([type="password"])',
+                # 位置ベースのセレクター
+                'form input:nth-of-type(1)',
+                'input:not([type="password"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"])',
+                # 動的要素対応
+                'input[type="text"]',
+                'input[type="email"]',
+                'input:not([type="password"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="hidden"])'
             ]
             
             email_input = None
             for selector in email_selectors:
                 try:
+                    email_locator = self.page.locator(selector)
                     if self.page.locator(selector).count() > 0:
                         email_input = self.page.locator(selector).first
                         print(f"メールアドレス入力フィールドを発見: {selector}")
@@ -631,12 +635,22 @@ class JobcanAutomation:
                 'input[placeholder*="password"]',
                 'input[placeholder*="Password"]',
                 'input[id*="password"]',
-                'input[id*="pass"]'
+                'input[id*="pass"]',
+                # より包括的なセレクター
+                'input[type="password"]',
+                'input[autocomplete="current-password"]',
+                'input[autocomplete="new-password"]',
+                'input[autocomplete="off"][type="password"]',
+                # 位置ベースのセレクター
+                'form input:nth-of-type(2)',
+                'input[type="password"]:first-of-type',
+                'input[type="password"]'
             ]
             
             password_input = None
             for selector in password_selectors:
                 try:
+                    password_locator = self.page.locator(selector)
                     if self.page.locator(selector).count() > 0:
                         password_input = self.page.locator(selector).first
                         print(f"パスワード入力フィールドを発見: {selector}")
@@ -688,6 +702,7 @@ class JobcanAutomation:
             login_button = None
             for selector in login_selectors:
                 try:
+                    login_locator = self.page.locator(selector)
                     if self.page.locator(selector).count() > 0:
                         login_button = self.page.locator(selector).first
                         print(f"ログインボタンを発見: {selector}")
@@ -747,6 +762,7 @@ class JobcanAutomation:
             
             for error_selector in error_selectors:
                 try:
+                    error_locator = self.page.locator(error_selector)
                     if self.page.locator(error_selector).count() > 0:
                         error_text = self.page.locator(error_selector).first.text_content()
                         print(f"エラーメッセージを検出: {error_text}")
@@ -773,6 +789,7 @@ class JobcanAutomation:
             success_found = False
             for indicator in success_indicators:
                 try:
+                    indicator_locator = self.page.locator(indicator)
                     if self.page.locator(indicator).count() > 0:
                         print(f"ログイン成功の指標を発見: {indicator}")
                         success_found = True
@@ -781,7 +798,8 @@ class JobcanAutomation:
                     continue
             
             # 追加のチェック：ログインフォームがまだ表示されているか
-            if self.page.locator('input[name="email"], input[name="staff_code"], input[name="password"]').count() > 0:
+            login_form_locator = self.page.locator('input[name="email"], input[name="staff_code"], input[name="password"]')
+            if login_form_locator.count() > 0:
                 print("ログインフォームがまだ表示されているため、ログイン失敗と判断")
                 login_success = False
             
@@ -1076,8 +1094,6 @@ class AsyncJobcanAutomation:
                     '--disable-features=VizDisplayCompositor',
                     '--disable-extensions',
                     '--disable-plugins',
-                    '--disable-images',
-                    '--disable-javascript',
                     '--disable-background-timer-throttling',
                     '--disable-backgrounding-occluded-windows',
                     '--disable-renderer-backgrounding',
@@ -1097,7 +1113,13 @@ class AsyncJobcanAutomation:
                     '--disable-domain-reliability',
                     '--disable-features=TranslateUI',
                     '--disable-ipc-flooding-protection',
-                    '--disable-blink-features=AutomationControlled'
+                    '--disable-blink-features=AutomationControlled',
+                    '--enable-javascript',
+                    '--enable-scripts',
+                    '--allow-running-insecure-content',
+                    '--disable-web-security',
+                    '--allow-file-access-from-files',
+                    '--disable-features=VizDisplayCompositor'
                 ]
             )
             
@@ -1159,7 +1181,14 @@ class AsyncJobcanAutomation:
                 'error_messages': [],
                 'page_text': await self.page.text_content('body')[:1000],
                 'html_content': await self.page.content()[:2000],  # HTMLコンテンツも追加
-                'screenshot_base64': None  # スクリーンショットも追加
+                'screenshot_base64': None,  # スクリーンショットも追加
+                'page_info': {
+                    'content_length': len(await self.page.content()),
+                    'text_length': len(await self.page.text_content('body')),
+                    'js_enabled': await self.page.evaluate("() => typeof window !== 'undefined'"),
+                    'ready_state': await self.page.evaluate("() => document.readyState"),
+                    'viewport_size': await self.page.evaluate("() => ({width: window.innerWidth, height: window.innerHeight})")
+                }
             }
             
             # スクリーンショットを取得（デバッグ用）
@@ -1418,10 +1447,24 @@ class AsyncJobcanAutomation:
             # Jobcanログインページに移動（正しいURLを使用）
             print("Jobcanログインページに移動中...")
             await self.page.goto("https://id.jobcan.jp/users/sign_in?app_key=atd")
+            
+            # ページが完全に読み込まれるまで待機
             await self.page.wait_for_load_state("networkidle")
+            await self.page.wait_for_load_state("domcontentloaded")
+            
+            # 追加の待機時間
+            await asyncio.sleep(3)
             
             print("現在のURL:", self.page.url)
             print("ページタイトル:", await self.page.title())
+            
+            # ページの状態を確認
+            page_content = await self.page.content()
+            print(f"ページコンテンツ長: {len(page_content)}")
+            
+            # JavaScriptが有効かチェック
+            js_enabled = await self.page.evaluate("() => typeof window !== 'undefined'")
+            print(f"JavaScript有効: {js_enabled}")
             
             # 人間らしい待機時間
             import random
@@ -1438,10 +1481,6 @@ class AsyncJobcanAutomation:
                 error_msg = "CAPTCHAが検出されました。手動でのログインが必要です。"
                 print(error_msg)
                 return False
-            
-            # JavaScriptが有効かチェック
-            js_enabled = await self.page.evaluate("() => typeof window !== 'undefined'")
-            print(f"JavaScript有効: {js_enabled}")
             
             # メールアドレス入力フィールドを探す（複数のパターンを試す）
             print("メールアドレス入力フィールドを探しています...")
@@ -1468,7 +1507,11 @@ class AsyncJobcanAutomation:
                 'input[autocomplete="off"]:not([type="password"])',
                 # 位置ベースのセレクター
                 'form input:nth-of-type(1)',
-                'input:not([type="password"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"])'
+                'input:not([type="password"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"])',
+                # 動的要素対応
+                'input[type="text"]',
+                'input[type="email"]',
+                'input:not([type="password"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"]):not([type="hidden"])'
             ]
             
             email_input = None
@@ -1533,6 +1576,32 @@ class AsyncJobcanAutomation:
                         print(f"最終手段でメールアドレス入力フィールドを発見: type='{type_attr}'")
                 except Exception as e:
                     print(f"最終手段でエラー: {e}")
+            
+            # さらに強力な方法：XPathを使用
+            if not email_input:
+                print("XPathを使用した検索を試行")
+                try:
+                    # XPathでinput要素を検索
+                    xpath_selectors = [
+                        "//input[@type='text']",
+                        "//input[@type='email']",
+                        "//input[not(@type='password') and not(@type='submit') and not(@type='button')]",
+                        "//form//input[1]",
+                        "//input[1]"
+                    ]
+                    
+                    for xpath in xpath_selectors:
+                        try:
+                            xpath_locator = self.page.locator(f"xpath={xpath}")
+                            if await xpath_locator.count() > 0:
+                                email_input = xpath_locator.first
+                                print(f"XPathでメールアドレス入力フィールドを発見: {xpath}")
+                                break
+                        except Exception as e:
+                            print(f"XPath {xpath} でエラー: {e}")
+                            continue
+                except Exception as e:
+                    print(f"XPath検索でエラー: {e}")
             
             if not email_input:
                 print("メールアドレス入力フィールドが見つからないため、ページの詳細を確認")
@@ -1642,6 +1711,32 @@ class AsyncJobcanAutomation:
                         print(f"最終手段でパスワード入力フィールドを発見")
                 except Exception as e:
                     print(f"最終手段でエラー: {e}")
+            
+            # さらに強力な方法：XPathを使用
+            if not password_input:
+                print("XPathを使用したパスワード検索を試行")
+                try:
+                    # XPathでpassword要素を検索
+                    password_xpath_selectors = [
+                        "//input[@type='password']",
+                        "//form//input[@type='password']",
+                        "//input[@type='password'][1]",
+                        "//form//input[2]",
+                        "//input[2]"
+                    ]
+                    
+                    for xpath in password_xpath_selectors:
+                        try:
+                            xpath_locator = self.page.locator(f"xpath={xpath}")
+                            if await xpath_locator.count() > 0:
+                                password_input = xpath_locator.first
+                                print(f"XPathでパスワード入力フィールドを発見: {xpath}")
+                                break
+                        except Exception as e:
+                            print(f"パスワードXPath {xpath} でエラー: {e}")
+                            continue
+                except Exception as e:
+                    print(f"パスワードXPath検索でエラー: {e}")
             
             if not password_input:
                 print("パスワード入力フィールドが見つからないため、ページの詳細を確認")
