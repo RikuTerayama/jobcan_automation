@@ -97,9 +97,18 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         add_job_log(job_id, "=== Jobcan自動化を開始します ===")
         jobs[job_id]['status'] = 'running'
         
+        # Railway環境の情報をログに出力
+        add_job_log(job_id, f"🔧 実行環境: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
+        add_job_log(job_id, f"🔧 Python バージョン: {os.sys.version}")
+        
         # Playwrightブラウザを確保
         add_job_log(job_id, "🔧 Playwrightブラウザを確保中...")
-        ensure_playwright_browser()
+        try:
+            ensure_playwright_browser()
+            add_job_log(job_id, "✅ Playwrightブラウザの確保が完了しました")
+        except Exception as browser_error:
+            add_job_log(job_id, f"⚠️ Playwrightブラウザの確保でエラー: {browser_error}")
+            add_job_log(job_id, "🔄 ブラウザの確保をスキップして続行します")
         
         # 自動化インスタンスを作成
         add_job_log(job_id, "🤖 自動化インスタンスを作成中...")
@@ -109,6 +118,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             # ブラウザを起動
             add_job_log(job_id, "🌐 ブラウザを起動中...")
             automation.start_browser()
+            add_job_log(job_id, "✅ ブラウザの起動が完了しました")
             
             # Jobcanにログイン
             add_job_log(job_id, "🔐 Jobcanにログイン中...")
@@ -129,6 +139,11 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             add_job_log(job_id, "📁 Excelファイルを読み込み中...")
             data = load_excel_data(file_path)
             
+            if not data:
+                add_job_log(job_id, "❌ Excelファイルの読み込みに失敗しました")
+                jobs[job_id]['status'] = 'error'
+                return False
+            
             # 進捗情報を更新
             jobs[job_id]['progress']['total_data'] = len(data)
             add_job_log(job_id, f"📊 処理対象データ数: {len(data)}")
@@ -146,10 +161,18 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             jobs[job_id]['status'] = 'completed'
             return True
             
+        except Exception as process_error:
+            add_job_log(job_id, f"❌ 処理中にエラーが発生: {process_error}")
+            jobs[job_id]['status'] = 'error'
+            return False
         finally:
             # ブラウザを閉じる
-            add_job_log(job_id, "🔒 ブラウザを閉じています...")
-            automation.close()
+            try:
+                add_job_log(job_id, "🔒 ブラウザを閉じています...")
+                automation.close()
+                add_job_log(job_id, "✅ ブラウザを正常に閉じました")
+            except Exception as close_error:
+                add_job_log(job_id, f"⚠️ ブラウザの終了でエラー: {close_error}")
             
     except Exception as e:
         error_msg = f"❌ 予期しないエラーが発生しました: {e}"
@@ -208,12 +231,23 @@ def upload_file():
         add_job_log(job_id, "アップロード処理を開始")
         
         # バックグラウンドで処理を実行
-        thread = threading.Thread(
-            target=run_automation,
-            args=(job_id, email, password, file_path)
-        )
-        thread.daemon = True
-        thread.start()
+        try:
+            thread = threading.Thread(
+                target=run_automation,
+                args=(job_id, email, password, file_path)
+            )
+            thread.daemon = True
+            thread.start()
+            
+            add_job_log(job_id, "✅ バックグラウンド処理を開始しました")
+            
+        except Exception as e:
+            error_msg = f"❌ バックグラウンド処理の開始に失敗: {e}"
+            add_job_log(job_id, error_msg)
+            return jsonify({
+                'success': False,
+                'error': error_msg
+            })
         
         return jsonify({
             'success': True,
