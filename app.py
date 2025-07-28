@@ -39,6 +39,34 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 processing_status = {}
 status_queue = queue.Queue()
 
+# グローバル変数でログを管理
+job_logs = {}
+job_diagnosis = {}
+
+def add_job_log(job_id: str, message: str):
+    """ジョブのログを追加"""
+    if job_id not in job_logs:
+        job_logs[job_id] = []
+    job_logs[job_id].append({
+        'timestamp': datetime.now().strftime('%H:%M:%S'),
+        'message': message
+    })
+    # ログが多すぎないように制限
+    if len(job_logs[job_id]) > 50:
+        job_logs[job_id] = job_logs[job_id][-30:]
+
+def get_job_logs(job_id: str):
+    """ジョブのログを取得"""
+    return job_logs.get(job_id, [])
+
+def add_job_diagnosis(job_id: str, diagnosis_data: dict):
+    """ジョブの診断データを追加"""
+    job_diagnosis[job_id] = diagnosis_data
+
+def get_job_diagnosis(job_id: str):
+    """ジョブの診断データを取得"""
+    return job_diagnosis.get(job_id, {})
+
 def allowed_file(filename):
     """アップロードされたファイルの拡張子をチェック"""
     return '.' in filename and \
@@ -132,7 +160,12 @@ class JobcanAutomation:
         self.browser: Optional[Browser] = None
         self.page: Optional[Page] = None
         self.status_queue = queue.Queue()
+        self.diagnosis_data = {}
         
+    def get_diagnosis_data(self):
+        """診断データを取得"""
+        return self.diagnosis_data
+
     def start_browser(self):
         """ブラウザを起動"""
         try:
@@ -313,6 +346,17 @@ class JobcanAutomation:
         try:
             print("=== ログインページ診断開始 ===")
             
+            # 診断データを初期化
+            self.diagnosis_data = {
+                'url': self.page.url,
+                'title': self.page.title(),
+                'forms': [],
+                'inputs': [],
+                'buttons': [],
+                'error_messages': [],
+                'page_text': self.page.text_content('body')[:1000]
+            }
+            
             # ページの基本情報
             print(f"現在のURL: {self.page.url}")
             print(f"ページタイトル: {self.page.title()}")
@@ -327,11 +371,15 @@ class JobcanAutomation:
             for i in range(forms.count()):
                 try:
                     form = forms.nth(i)
-                    action = form.get_attribute('action') or 'なし'
-                    method = form.get_attribute('method') or 'なし'
-                    id_attr = form.get_attribute('id') or 'なし'
-                    class_attr = form.get_attribute('class') or 'なし'
-                    print(f"  フォーム[{i}]: action='{action}', method='{method}', id='{id_attr}', class='{class_attr}'")
+                    form_data = {
+                        'index': i,
+                        'action': form.get_attribute('action') or 'なし',
+                        'method': form.get_attribute('method') or 'なし',
+                        'id': form.get_attribute('id') or 'なし',
+                        'class': form.get_attribute('class') or 'なし'
+                    }
+                    self.diagnosis_data['forms'].append(form_data)
+                    print(f"  フォーム[{i}]: action='{form_data['action']}', method='{form_data['method']}', id='{form_data['id']}', class='{form_data['class']}'")
                 except Exception as e:
                     print(f"  フォーム[{i}]分析エラー: {e}")
             
@@ -342,13 +390,17 @@ class JobcanAutomation:
             for i in range(inputs.count()):
                 try:
                     input_elem = inputs.nth(i)
-                    name = input_elem.get_attribute('name') or 'なし'
-                    type_attr = input_elem.get_attribute('type') or 'なし'
-                    placeholder = input_elem.get_attribute('placeholder') or 'なし'
-                    id_attr = input_elem.get_attribute('id') or 'なし'
-                    class_attr = input_elem.get_attribute('class') or 'なし'
-                    value = input_elem.get_attribute('value') or 'なし'
-                    print(f"  input[{i}]: name='{name}', type='{type_attr}', placeholder='{placeholder}', id='{id_attr}', class='{class_attr}', value='{value}'")
+                    input_data = {
+                        'index': i,
+                        'name': input_elem.get_attribute('name') or 'なし',
+                        'type': input_elem.get_attribute('type') or 'なし',
+                        'placeholder': input_elem.get_attribute('placeholder') or 'なし',
+                        'id': input_elem.get_attribute('id') or 'なし',
+                        'class': input_elem.get_attribute('class') or 'なし',
+                        'value': input_elem.get_attribute('value') or 'なし'
+                    }
+                    self.diagnosis_data['inputs'].append(input_data)
+                    print(f"  input[{i}]: name='{input_data['name']}', type='{input_data['type']}', placeholder='{input_data['placeholder']}', id='{input_data['id']}', class='{input_data['class']}', value='{input_data['value']}'")
                 except Exception as e:
                     print(f"  input[{i}]分析エラー: {e}")
             
@@ -359,12 +411,16 @@ class JobcanAutomation:
             for i in range(buttons.count()):
                 try:
                     button_elem = buttons.nth(i)
-                    text = button_elem.text_content() or 'なし'
-                    type_attr = button_elem.get_attribute('type') or 'なし'
-                    value = button_elem.get_attribute('value') or 'なし'
-                    id_attr = button_elem.get_attribute('id') or 'なし'
-                    class_attr = button_elem.get_attribute('class') or 'なし'
-                    print(f"  button[{i}]: text='{text}', type='{type_attr}', value='{value}', id='{id_attr}', class='{class_attr}'")
+                    button_data = {
+                        'index': i,
+                        'text': button_elem.text_content() or 'なし',
+                        'type': button_elem.get_attribute('type') or 'なし',
+                        'value': button_elem.get_attribute('value') or 'なし',
+                        'id': button_elem.get_attribute('id') or 'なし',
+                        'class': button_elem.get_attribute('class') or 'なし'
+                    }
+                    self.diagnosis_data['buttons'].append(button_data)
+                    print(f"  button[{i}]: text='{button_data['text']}', type='{button_data['type']}', value='{button_data['value']}', id='{button_data['id']}', class='{button_data['class']}'")
                 except Exception as e:
                     print(f"  button[{i}]分析エラー: {e}")
             
@@ -389,13 +445,9 @@ class JobcanAutomation:
                 try:
                     if self.page.locator(f'text={error_text}').count() > 0:
                         print(f"エラーメッセージを発見: '{error_text}'")
+                        self.diagnosis_data['error_messages'].append(error_text)
                 except:
                     pass
-            
-            # ページのテキスト内容を確認
-            print("\n=== ページテキスト分析 ===")
-            page_text = self.page.text_content('body')
-            print(f"ページテキスト（最初の1000文字）: {page_text[:1000]}")
             
             print("=== ログインページ診断完了 ===")
             
@@ -1064,10 +1116,9 @@ class JobcanAutomation:
         self.status_queue.put({"status": "completed", "message": "ブラウザを閉じました"})
 
 def process_jobcan_automation(job_id: str, email: str, password: str, file_path: str):
-    """バックグラウンドでJobcan自動化処理を実行"""
+    """Jobcan自動化処理を実行"""
     try:
-        print(f"処理開始: {job_id}")
-        print(f"ログイン情報: email={email}, password={'*' * len(password)}")
+        add_job_log(job_id, "Jobcan自動化処理を開始")
         processing_status[job_id] = {"status": "starting", "message": "処理を開始しています..."}
         
         # 自動化クラスを初期化
@@ -1077,57 +1128,90 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         # ブラウザを起動
         print("ブラウザ起動を開始...")
         automation.start_browser()
-        processing_status[job_id] = {"status": "browser_started", "message": "ブラウザを起動しました"}
+        add_job_log(job_id, "Playwrightブラウザを起動中...")
+        
+        if not automation.start_browser():
+            error_msg = "ブラウザの起動に失敗しました"
+            add_job_log(job_id, f"エラー: {error_msg}")
+            processing_status[job_id]['status'] = 'error'
+            processing_status[job_id]['message'] = error_msg
+            return
+        
+        add_job_log(job_id, "ブラウザ起動完了")
+        processing_status[job_id]['status'] = 'browser_started'
+        processing_status[job_id]['message'] = 'Jobcanにログイン中...'
         
         # Jobcanにログイン
-        print("Jobcanログインを開始...")
-        login_result = automation.login_to_jobcan(email, password)
-        print(f"ログイン結果: {login_result}")
+        add_job_log(job_id, f"Jobcanログイン試行: {email}")
+        login_success = automation.login_to_jobcan(email, password)
         
-        if not login_result:
+        if not login_success:
+            # ログイン失敗時の詳細診断
+            add_job_log(job_id, "ログイン失敗 - 詳細診断を実行")
+            failure_reasons = automation.analyze_login_failure()
+            diagnosis_data = automation.get_diagnosis_data()
+            
+            add_job_diagnosis(job_id, diagnosis_data)
+            processing_status[job_id]['failure_reasons'] = failure_reasons
+            
             error_msg = "ログインに失敗しました。メールアドレスとパスワードを確認してください"
-            print(error_msg)
-            processing_status[job_id] = {"status": "error", "message": error_msg}
+            add_job_log(job_id, f"エラー: {error_msg}")
+            processing_status[job_id]['status'] = 'error'
+            processing_status[job_id]['message'] = error_msg
             automation.close()
             return
         
-        # 出勤簿ページに移動
-        print("出勤簿ページに移動中...")
-        automation.navigate_to_attendance()
+        add_job_log(job_id, "ログイン成功")
+        processing_status[job_id]['status'] = 'login_success'
+        processing_status[job_id]['message'] = '勤怠ページに移動中...'
         
-        # Excelデータを読み込み
-        print("Excelデータを読み込み中...")
-        attendance_data = load_excel_data(file_path)
-        processing_status[job_id] = {"status": "data_loaded", "message": f"{len(attendance_data)}件の勤怠データを読み込みました"}
+        # 勤怠ページに移動
+        add_job_log(job_id, "勤怠ページに移動中...")
+        if not automation.navigate_to_attendance():
+            error_msg = "勤怠ページへの移動に失敗しました"
+            add_job_log(job_id, f"エラー: {error_msg}")
+            processing_status[job_id]['status'] = 'error'
+            processing_status[job_id]['message'] = error_msg
+            automation.close()
+            return
+        
+        add_job_log(job_id, "勤怠ページ読み込み完了")
+        processing_status[job_id]['status'] = 'attendance_loaded'
+        processing_status[job_id]['message'] = 'Excelデータを読み込み中...'
+        
+        # Excelファイルを読み込み
+        add_job_log(job_id, f"Excelファイル読み込み: {file_path}")
+        try:
+            df = pd.read_excel(file_path)
+            add_job_log(job_id, f"Excelデータ読み込み完了: {len(df)}行のデータ")
+        except Exception as e:
+            error_msg = f"Excelファイルの読み込みに失敗しました: {e}"
+            add_job_log(job_id, f"エラー: {error_msg}")
+            processing_status[job_id]['status'] = 'error'
+            processing_status[job_id]['message'] = error_msg
+            automation.close()
+            return
+        
+        processing_status[job_id]['status'] = 'data_loaded'
+        processing_status[job_id]['message'] = '勤怠データを処理中...'
         
         # 勤怠データを処理
-        print("勤怠データを処理中...")
-        processed_data = automation.process_attendance_data(attendance_data)
+        add_job_log(job_id, "勤怠データ処理開始")
+        results = automation.process_attendance_data(df)
         
-        # 結果を集計
-        success_count = sum(1 for r in processed_data if r['status'] == 'success')
-        error_count = len(processed_data) - success_count
+        add_job_log(job_id, f"処理完了: {len(results)}件のデータを処理")
+        processing_status[job_id]['status'] = 'completed'
+        processing_status[job_id]['message'] = f'処理が完了しました。{len(results)}件のデータを入力しました。'
+        processing_status[job_id]['results'] = results
         
-        print(f"処理完了 - 成功: {success_count}件, 失敗: {error_count}件")
-        processing_status[job_id] = {
-            "status": "completed",
-            "message": f"処理完了 - 成功: {success_count}件, 失敗: {error_count}件",
-            "results": processed_data
-        }
-        
-        # ブラウザを閉じる
         automation.close()
-        
-        # 一時ファイルを削除
-        os.remove(file_path)
+        add_job_log(job_id, "ブラウザを閉じました")
         
     except Exception as e:
         error_msg = f"予期しないエラーが発生しました: {e}"
-        print(error_msg)
-        processing_status[job_id] = {"status": "error", "message": error_msg}
-        # 一時ファイルを削除
-        if os.path.exists(file_path):
-            os.remove(file_path)
+        add_job_log(job_id, f"エラー: {error_msg}")
+        processing_status[job_id]['status'] = 'error'
+        processing_status[job_id]['message'] = error_msg
 
 @app.route('/')
 def index():
@@ -1201,11 +1285,23 @@ def upload_file():
 
 @app.route('/status/<job_id>')
 def get_status(job_id):
-    """処理状況を取得"""
-    if job_id in processing_status:
-        return jsonify(processing_status[job_id])
-    else:
-        return jsonify({'error': '処理が見つかりません'}), 404
+    """ジョブのステータスを取得"""
+    if job_id not in processing_status:
+        return jsonify({'error': 'Job not found'}), 404
+    
+    job = processing_status[job_id]
+    status_data = {
+        'status': job.get('status', 'unknown'),
+        'message': job.get('message', ''),
+        'logs': get_job_logs(job_id),
+        'diagnosis': get_job_diagnosis(job_id)
+    }
+    
+    # エラーの場合、失敗原因も含める
+    if job.get('status') == 'error':
+        status_data['failure_reasons'] = job.get('failure_reasons', [])
+    
+    return jsonify(status_data)
 
 @app.route('/health')
 def health_check():
