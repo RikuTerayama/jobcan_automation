@@ -1863,7 +1863,7 @@ class AsyncJobcanAutomation:
                 print(error_msg)
                 return False
             
-            # メールアドレス入力フィールドを探す（複数のパターンを試す）
+            # メールアドレス入力フィールドを探す（実際の要素に基づく検索）
             print("メールアドレス入力フィールドを探しています...")
             
             # まず、iframeがあるかチェック
@@ -1891,6 +1891,67 @@ class AsyncJobcanAutomation:
                             continue
             except Exception as e:
                 print(f"iframe確認でエラー: {e}")
+            
+            # 実際の要素に基づく検索（「メールアドレスまたはスタッフコード」）
+            if not email_input:
+                email_selectors = [
+                    # 実際の要素に基づくセレクター
+                    'input[placeholder*="メールアドレスまたはスタッフコード"]',
+                    'input[placeholder*="メールアドレス"]',
+                    'input[placeholder*="スタッフコード"]',
+                    'input[placeholder*="email"]',
+                    'input[placeholder*="Email"]',
+                    # ラベルベースの検索
+                    'input[id*="email"]',
+                    'input[name*="email"]',
+                    'input[id*="staff"]',
+                    'input[name*="staff"]',
+                    'input[id*="login"]',
+                    'input[name*="login"]',
+                    'input[id*="user"]',
+                    'input[name*="user"]',
+                    # より具体的なセレクター
+                    'input[type="text"]',
+                    'input[type="email"]',
+                    'input:not([type="password"]):not([type="submit"]):not([type="button"])',
+                    # フォーム内の最初の要素
+                    'form input:first-of-type',
+                    'form input:nth-of-type(1)',
+                    # より広範囲のセレクター
+                    'input',
+                    '*[contenteditable="true"]',
+                    'textarea'
+                ]
+                
+                for selector in email_selectors:
+                    try:
+                        email_locator = self.page.locator(selector)
+                        if await email_locator.count() > 0:
+                            # 要素の詳細を確認
+                            for i in range(await email_locator.count()):
+                                element = email_locator.nth(i)
+                                placeholder = await element.get_attribute('placeholder') or ''
+                                input_type = await element.get_attribute('type') or ''
+                                input_name = await element.get_attribute('name') or ''
+                                input_id = await element.get_attribute('id') or ''
+                                
+                                print(f"要素[{i}] - placeholder: '{placeholder}', type: '{input_type}', name: '{input_name}', id: '{input_id}'")
+                                
+                                # メールアドレス関連の要素を優先
+                                if ('メール' in placeholder or 'email' in placeholder.lower() or 
+                                    'staff' in input_name.lower() or 'staff' in input_id.lower() or
+                                    'login' in input_name.lower() or 'login' in input_id.lower() or
+                                    'user' in input_name.lower() or 'user' in input_id.lower() or
+                                    input_type in ['text', 'email']):
+                                    email_input = element
+                                    print(f"メールアドレス入力フィールドを発見: {selector} (index: {i})")
+                                    break
+                            
+                            if email_input:
+                                break
+                    except Exception as e:
+                        print(f"セレクター {selector} でエラー: {e}")
+                        continue
             
             # JavaScriptを使用した直接的な要素検索（より強力なバージョン）
             if not email_input:
@@ -2051,7 +2112,7 @@ class AsyncJobcanAutomation:
             print("メールアドレス入力完了")
             await asyncio.sleep(random.uniform(0.5, 1.0))
             
-            # パスワード入力フィールドを探す（複数のパターンを試す）
+            # パスワード入力フィールドを探す（実際の要素に基づく検索）
             print("パスワード入力フィールドを探しています...")
             
             # まず、iframeがあるかチェック
@@ -2080,6 +2141,58 @@ class AsyncJobcanAutomation:
                                 continue
                 except Exception as e:
                     print(f"iframeパスワード確認でエラー: {e}")
+            
+            # 実際の要素に基づく検索（「パスワード」）
+            if not password_input:
+                password_selectors = [
+                    # 実際の要素に基づくセレクター
+                    'input[placeholder*="パスワード"]',
+                    'input[placeholder*="password"]',
+                    'input[placeholder*="Password"]',
+                    # ラベルベースの検索
+                    'input[id*="password"]',
+                    'input[name*="password"]',
+                    'input[id*="pass"]',
+                    'input[name*="pass"]',
+                    # より具体的なセレクター
+                    'input[type="password"]',
+                    'input[autocomplete="current-password"]',
+                    'input[autocomplete="new-password"]',
+                    # フォーム内のpassword要素
+                    'form input[type="password"]',
+                    'form input:nth-of-type(2)',
+                    # より広範囲のセレクター
+                    'input[type="password"]',
+                    'input'
+                ]
+                
+                for selector in password_selectors:
+                    try:
+                        password_locator = self.page.locator(selector)
+                        if await password_locator.count() > 0:
+                            # 要素の詳細を確認
+                            for i in range(await password_locator.count()):
+                                element = password_locator.nth(i)
+                                placeholder = await element.get_attribute('placeholder') or ''
+                                input_type = await element.get_attribute('type') or ''
+                                input_name = await element.get_attribute('name') or ''
+                                input_id = await element.get_attribute('id') or ''
+                                
+                                print(f"パスワード要素[{i}] - placeholder: '{placeholder}', type: '{input_type}', name: '{input_name}', id: '{input_id}'")
+                                
+                                # パスワード関連の要素を優先
+                                if ('パスワード' in placeholder or 'password' in placeholder.lower() or 
+                                    'pass' in input_name.lower() or 'pass' in input_id.lower() or
+                                    input_type == 'password'):
+                                    password_input = element
+                                    print(f"パスワード入力フィールドを発見: {selector} (index: {i})")
+                                    break
+                            
+                            if password_input:
+                                break
+                    except Exception as e:
+                        print(f"パスワードセレクター {selector} でエラー: {e}")
+                        continue
             
             # JavaScriptを使用した直接的なパスワード要素検索（より強力なバージョン）
             if not password_input:
@@ -2280,16 +2393,36 @@ class AsyncJobcanAutomation:
             print("=== ログイン後診断 ===")
             await self.diagnose_login_page()
             
-            # ログイン成功の確認（複数の方法でチェック）
-            login_success = True
+            # ログイン成功の確認（詳細分析）
+            print("ログイン成功を確認中...")
             
-            # URLベースのチェック
-            if "sign_in" in self.page.url or "login" in self.page.url:
-                print("URLベースでログイン失敗を検出")
-                login_success = False
+            # ページの状態を詳細に確認
+            current_url = self.page.url
+            page_title = await self.page.title()
+            print(f"ログイン後のURL: {current_url}")
+            print(f"ログイン後のページタイトル: {page_title}")
             
-            # エラーメッセージのチェック
+            # ログイン成功の判定
+            login_success_indicators = [
+                "sign_in" not in current_url,
+                "login" not in current_url,
+                "認証" not in page_title,
+                "ログイン" not in page_title,
+                "employee" in current_url or "attendance" in current_url or "dashboard" in current_url
+            ]
+            
+            # エラー要素の検索
+            error_elements = []
             error_selectors = [
+                '.error',
+                '.alert',
+                '.message',
+                '[class*="error"]',
+                '[class*="alert"]',
+                '[class*="message"]',
+                'div[role="alert"]',
+                'p[class*="error"]',
+                'span[class*="error"]',
                 'text=ログインに失敗しました',
                 'text=Login failed',
                 'text=メールアドレスまたはパスワードが正しくありません',
@@ -2297,25 +2430,50 @@ class AsyncJobcanAutomation:
                 'text=認証に失敗しました',
                 'text=Authentication failed',
                 'text=ログインできませんでした',
-                'text=Could not login',
-                '.error',
-                '.alert',
-                '[class*="error"]',
-                '[class*="alert"]',
-                '[class*="danger"]',
-                '[class*="warning"]'
+                'text=Could not login'
             ]
             
-            for error_selector in error_selectors:
+            for selector in error_selectors:
                 try:
-                    error_locator = self.page.locator(error_selector)
+                    error_locator = self.page.locator(selector)
                     if await error_locator.count() > 0:
-                        error_text = await error_locator.first.text_content()
-                        print(f"エラーメッセージを検出: {error_text}")
-                        login_success = False
-                        break
-                except:
-                    continue
+                        for i in range(await error_locator.count()):
+                            error_element = error_locator.nth(i)
+                            error_text = await error_element.text_content()
+                            if error_text and len(error_text.strip()) > 0:
+                                error_elements.append({
+                                    'selector': selector,
+                                    'text': error_text.strip(),
+                                    'index': i
+                                })
+                except Exception as e:
+                    print(f"エラー要素検索でエラー: {e}")
+            
+            print(f"検出されたエラー要素: {error_elements}")
+            
+            # ページのHTML構造を確認（ログイン後）
+            try:
+                login_after_html = await self.page.evaluate("""
+                    () => {
+                        return {
+                            bodyHTML: document.body.innerHTML.substring(0, 2000),
+                            title: document.title,
+                            url: window.location.href,
+                            forms: document.forms.length,
+                            inputs: document.querySelectorAll('input').length,
+                            buttons: document.querySelectorAll('button').length,
+                            links: document.querySelectorAll('a').length
+                        };
+                    }
+                """)
+                
+                print(f"ログイン後のHTML構造: {login_after_html}")
+                
+            except Exception as e:
+                print(f"ログイン後のHTML構造確認でエラー: {e}")
+            
+            # ログイン成功の判定
+            login_success = all(login_success_indicators) and len(error_elements) == 0
             
             # ログイン成功の指標をチェック
             success_indicators = [
@@ -2354,15 +2512,40 @@ class AsyncJobcanAutomation:
                 alternative_result = await self.login_to_jobcan_alternative(email, password)
                 
                 if not alternative_result:
-                    # 失敗原因を分析
-                    failure_reasons = await self.analyze_login_failure()
-                    error_msg = f"ログインに失敗しました。詳細な診断情報を確認してください。\n原因: {', '.join(failure_reasons)}"
+                    # 詳細な失敗原因を分析
+                    failure_reasons = []
+                    
+                    # URLベースの分析
+                    if "sign_in" in current_url or "login" in current_url:
+                        failure_reasons.append("ログインページに留まっている（認証失敗）")
+                    
+                    # エラーメッセージベースの分析
+                    if error_elements:
+                        failure_reasons.append(f"エラーメッセージ: {error_elements[0]['text']}")
+                    
+                    # 要素が見つからない場合の分析
+                    if not email_input:
+                        failure_reasons.append("メールアドレス入力フィールドが見つかりません")
+                    if not password_input:
+                        failure_reasons.append("パスワード入力フィールドが見つかりません")
+                    
+                    # フォームが残っている場合の分析
+                    if await login_form_locator.count() > 0:
+                        failure_reasons.append("ログインフォームが残っている（認証失敗）")
+                    
+                    # デフォルトの失敗原因
+                    if not failure_reasons:
+                        failure_reasons.append("認証に失敗しました")
+                    
+                    error_msg = f"ログインに失敗しました。メールアドレスとパスワードを確認してください 原因: {', '.join(failure_reasons)}"
                     print(error_msg)
+                    self.status_queue.put({"status": "login_failed", "message": error_msg})
                     return False
                 
                 return alternative_result
             
             print("ログイン成功")
+            self.status_queue.put({"status": "login_success", "message": "ログインに成功しました"})
             return True
             
         except Exception as e:
