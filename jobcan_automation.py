@@ -22,10 +22,10 @@ class JobcanAutomation:
     def start_browser(self):
         """ブラウザを起動"""
         try:
-            print("Playwrightを初期化中...")
+            print("🌐 Playwrightを初期化中...")
             self.playwright = sync_playwright().start()
             
-            # ブラウザの起動オプションを設定
+            # Railway環境用のブラウザ起動オプションを設定
             browser_args = [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
@@ -51,16 +51,34 @@ class JobcanAutomation:
                 '--disable-component-update',
                 '--disable-domain-reliability',
                 '--disable-features=TranslateUI',
-                '--disable-ipc-flooding-protection'
+                '--disable-ipc-flooding-protection',
+                '--disable-web-security',
+                '--allow-running-insecure-content',
+                '--disable-features=VizDisplayCompositor',
+                '--single-process',
+                '--disable-extensions',
+                '--disable-plugins'
             ]
             
-            print("Chromiumブラウザを起動中...")
-            self.browser = self.playwright.chromium.launch(
-                headless=self.headless,
-                args=browser_args
-            )
+            print("🌐 Chromiumブラウザを起動中...")
             
-            print("新しいページを作成中...")
+            # Railway環境でのブラウザ起動（より安全な方法）
+            try:
+                self.browser = self.playwright.chromium.launch(
+                    headless=True,  # Railway環境では必ずヘッドレスモード
+                    args=browser_args
+                )
+            except Exception as browser_error:
+                print(f"⚠️ 通常のブラウザ起動に失敗: {browser_error}")
+                print("🔄 代替方法でブラウザを起動中...")
+                
+                # 代替方法：より基本的な設定で起動
+                self.browser = self.playwright.chromium.launch(
+                    headless=True,
+                    args=['--no-sandbox', '--disable-dev-shm-usage']
+                )
+            
+            print("📄 新しいページを作成中...")
             self.page = self.browser.new_page()
             
             # より人間らしいユーザーエージェントを設定
@@ -74,7 +92,7 @@ class JobcanAutomation:
             })
             
             # JavaScriptを有効化（ログインに必要）
-            print("JavaScriptを有効化")
+            print("✅ JavaScriptを有効化")
             
             # ボット検出を回避するための設定
             self.page.add_init_script("""
@@ -89,10 +107,10 @@ class JobcanAutomation:
                 });
             """)
             
-            print("ブラウザ起動完了")
+            print("✅ ブラウザ起動完了")
             
         except Exception as e:
-            error_msg = f"ブラウザの起動に失敗しました: {e}"
+            error_msg = f"❌ ブラウザの起動に失敗しました: {e}"
             print(error_msg)
             raise
     
