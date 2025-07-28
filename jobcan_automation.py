@@ -96,10 +96,19 @@ class JobcanAutomation:
                     print("🔄 最小限の設定でブラウザを起動中...")
                     
                     # 最小限の設定で起動
-                    self.browser = self.playwright.chromium.launch(
-                        headless=True,
-                        args=['--no-sandbox']
-                    )
+                    try:
+                        self.browser = self.playwright.chromium.launch(
+                            headless=True,
+                            args=['--no-sandbox']
+                        )
+                    except Exception as minimal_error:
+                        print(f"❌ 最小限の設定でもブラウザ起動に失敗: {minimal_error}")
+                        print("🔄 最後の手段として、デフォルト設定でブラウザを起動中...")
+                        
+                        # 最後の手段：デフォルト設定で起動
+                        self.browser = self.playwright.chromium.launch(
+                            headless=True
+                        )
             
             print("📄 新しいページを作成中...")
             self.page = self.browser.new_page()
