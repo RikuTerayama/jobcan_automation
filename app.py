@@ -104,32 +104,51 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         # Playwrightブラウザを確保
         add_job_log(job_id, "🔧 Playwrightブラウザを確保中...")
         try:
-            ensure_playwright_browser()
-            add_job_log(job_id, "✅ Playwrightブラウザの確保が完了しました")
+            browser_result = ensure_playwright_browser()
+            if browser_result:
+                add_job_log(job_id, "✅ Playwrightブラウザの確保が完了しました")
+            else:
+                add_job_log(job_id, "⚠️ Playwrightブラウザの確保に問題がありましたが、続行します")
         except Exception as browser_error:
             add_job_log(job_id, f"⚠️ Playwrightブラウザの確保でエラー: {browser_error}")
             add_job_log(job_id, "🔄 ブラウザの確保をスキップして続行します")
         
         # 自動化インスタンスを作成
         add_job_log(job_id, "🤖 自動化インスタンスを作成中...")
-        automation = JobcanAutomation(headless=True)
+        try:
+            automation = JobcanAutomation(headless=True)
+            add_job_log(job_id, "✅ 自動化インスタンスの作成が完了しました")
+        except Exception as automation_error:
+            add_job_log(job_id, f"❌ 自動化インスタンスの作成に失敗: {automation_error}")
+            jobs[job_id]['status'] = 'error'
+            return False
         
         try:
             # ブラウザを起動
             add_job_log(job_id, "🌐 ブラウザを起動中...")
-            automation.start_browser()
-            add_job_log(job_id, "✅ ブラウザの起動が完了しました")
-            
-            # Jobcanにログイン
-            add_job_log(job_id, "🔐 Jobcanにログイン中...")
-            login_success = automation.login_to_jobcan(email, password)
-            
-            if not login_success:
-                add_job_log(job_id, "❌ ログインに失敗しました")
+            try:
+                automation.start_browser()
+                add_job_log(job_id, "✅ ブラウザの起動が完了しました")
+            except Exception as browser_start_error:
+                add_job_log(job_id, f"❌ ブラウザの起動に失敗: {browser_start_error}")
                 jobs[job_id]['status'] = 'error'
                 return False
             
-            add_job_log(job_id, "✅ ログインに成功しました")
+            # Jobcanにログイン
+            add_job_log(job_id, "🔐 Jobcanにログイン中...")
+            try:
+                login_success = automation.login_to_jobcan(email, password)
+                
+                if not login_success:
+                    add_job_log(job_id, "❌ ログインに失敗しました")
+                    jobs[job_id]['status'] = 'error'
+                    return False
+                
+                add_job_log(job_id, "✅ ログインに成功しました")
+            except Exception as login_error:
+                add_job_log(job_id, f"❌ ログイン処理でエラー: {login_error}")
+                jobs[job_id]['status'] = 'error'
+                return False
             
             # 勤怠ページに移動
             add_job_log(job_id, "📊 勤怠ページに移動中...")
@@ -283,8 +302,28 @@ def get_status(job_id):
 
 @app.route('/health')
 def health_check():
-    """ヘルスチェック"""
-    return jsonify({'status': 'healthy'})
+    """ヘルスチェックエンドポイント"""
+    try:
+        # 基本的なシステム情報を取得
+        import psutil
+        import os
+        
+        system_info = {
+            'status': 'healthy',
+            'python_version': os.sys.version,
+            'memory_usage': psutil.virtual_memory().percent,
+            'cpu_usage': psutil.cpu_percent(),
+            'disk_usage': psutil.disk_usage('/').percent,
+            'environment': os.environ.get('RAILWAY_ENVIRONMENT', 'local'),
+            'port': os.environ.get('PORT', '5000')
+        }
+        
+        return jsonify(system_info)
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
 
 if __name__ == '__main__':
     # 開発環境ではデバッグモードで実行
