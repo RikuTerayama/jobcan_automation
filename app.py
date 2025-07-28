@@ -84,10 +84,36 @@ def get_job_diagnosis(job_id: str):
 def run_automation(job_id: str, email: str, password: str, file_path: str):
     """自動化を実行"""
     try:
-        return process_jobcan_automation(job_id, email, password, file_path)
+        add_job_log(job_id, "🔄 自動化処理を開始中...")
+        add_job_log(job_id, f"🔧 引数確認 - job_id: {job_id}, email: {email[:3]}***, file_path: {file_path}")
+        
+        # ファイルの存在確認
+        if not os.path.exists(file_path):
+            add_job_log(job_id, f"❌ ファイルが存在しません: {file_path}")
+            jobs[job_id]['status'] = 'error'
+            return False
+        
+        add_job_log(job_id, f"✅ ファイルが存在します: {file_path}")
+        
+        # メモリ使用量の確認
+        memory_info = psutil.virtual_memory()
+        add_job_log(job_id, f"🔧 メモリ使用量: {memory_info.percent}% ({memory_info.available // (1024**3)} GB 利用可能)")
+        
+        result = process_jobcan_automation(job_id, email, password, file_path)
+        add_job_log(job_id, f"✅ 自動化処理が完了しました: {result}")
+        return result
+        
     except Exception as e:
-        error_msg = f"自動化でエラー: {e}"
+        error_msg = f"❌ 自動化処理でエラーが発生しました: {e}"
         add_job_log(job_id, error_msg)
+        add_job_log(job_id, f"🔧 エラーの詳細: {type(e).__name__}")
+        add_job_log(job_id, f"🔧 エラーメッセージ: {str(e)}")
+        
+        # エラーの詳細情報をログに出力
+        import traceback
+        error_traceback = traceback.format_exc()
+        add_job_log(job_id, f"🔧 エラートレースバック: {error_traceback}")
+        
         jobs[job_id]['status'] = 'error'
         return False
 
@@ -373,11 +399,19 @@ def upload_file():
         
         # バックグラウンドで処理を実行
         try:
+            add_job_log(job_id, "🔄 バックグラウンド処理を開始中...")
+            
+            # スレッド作成前の詳細ログ
+            add_job_log(job_id, f"🔧 スレッド作成前のメモリ使用量: {psutil.virtual_memory().percent}%")
+            add_job_log(job_id, f"🔧 現在のプロセス数: {len(psutil.pids())}")
+            
             thread = threading.Thread(
                 target=run_automation,
                 args=(job_id, email, password, file_path)
             )
             thread.daemon = True
+            
+            add_job_log(job_id, "🔄 スレッドを開始中...")
             thread.start()
             
             add_job_log(job_id, "✅ バックグラウンド処理を開始しました")
@@ -385,6 +419,14 @@ def upload_file():
         except Exception as e:
             error_msg = f"❌ バックグラウンド処理の開始に失敗: {e}"
             add_job_log(job_id, error_msg)
+            add_job_log(job_id, f"🔧 エラーの詳細: {type(e).__name__}")
+            add_job_log(job_id, f"🔧 エラーメッセージ: {str(e)}")
+            
+            # エラーの詳細情報をログに出力
+            import traceback
+            error_traceback = traceback.format_exc()
+            add_job_log(job_id, f"🔧 エラートレースバック: {error_traceback}")
+            
             return jsonify({
                 'success': False,
                 'error': error_msg
