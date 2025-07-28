@@ -1495,6 +1495,7 @@ class AsyncJobcanAutomation:
                         const results = [];
                         for (let i = 0; i < inputs.length; i++) {
                             const input = inputs[i];
+                            const rect = input.getBoundingClientRect();
                             results.push({
                                 index: i,
                                 type: input.type || '',
@@ -1505,7 +1506,12 @@ class AsyncJobcanAutomation:
                                 value: input.value || '',
                                 visible: input.offsetWidth > 0 && input.offsetHeight > 0,
                                 display: window.getComputedStyle(input).display,
-                                position: window.getComputedStyle(input).position
+                                position: window.getComputedStyle(input).position,
+                                top: rect.top,
+                                left: rect.left,
+                                width: rect.width,
+                                height: rect.height,
+                                zIndex: window.getComputedStyle(input).zIndex
                             });
                         }
                         return results;
@@ -1521,6 +1527,7 @@ class AsyncJobcanAutomation:
                         const results = [];
                         for (let i = 0; i < forms.length; i++) {
                             const form = forms[i];
+                            const rect = form.getBoundingClientRect();
                             results.push({
                                 index: i,
                                 action: form.action || '',
@@ -1528,7 +1535,11 @@ class AsyncJobcanAutomation:
                                 id: form.id || '',
                                 className: form.className || '',
                                 visible: form.offsetWidth > 0 && form.offsetHeight > 0,
-                                display: window.getComputedStyle(form).display
+                                display: window.getComputedStyle(form).display,
+                                top: rect.top,
+                                left: rect.left,
+                                width: rect.width,
+                                height: rect.height
                             });
                         }
                         return results;
@@ -1546,10 +1557,11 @@ class AsyncJobcanAutomation:
                 html_structure = await self.page.evaluate("""
                     () => {
                         return {
-                            bodyHTML: document.body.innerHTML.substring(0, 2000),
-                            headHTML: document.head.innerHTML.substring(0, 1000),
+                            bodyHTML: document.body.innerHTML.substring(0, 3000),
+                            headHTML: document.head.innerHTML.substring(0, 1500),
                             title: document.title,
-                            url: window.location.href
+                            url: window.location.href,
+                            bodyText: document.body.textContent.substring(0, 1000)
                         };
                     }
                 """)
@@ -1725,6 +1737,26 @@ class AsyncJobcanAutomation:
             input_count = await self.page.evaluate("() => document.querySelectorAll('input').length")
             print(f"input要素数: {input_count}")
             
+            # ページのHTML構造を確認
+            print("\n=== HTML構造確認 ===")
+            try:
+                html_structure = await self.page.evaluate("""
+                    () => {
+                        return {
+                            bodyHTML: document.body.innerHTML.substring(0, 3000),
+                            headHTML: document.head.innerHTML.substring(0, 1500),
+                            title: document.title,
+                            url: window.location.href,
+                            bodyText: document.body.textContent.substring(0, 1000)
+                        };
+                    }
+                """)
+                
+                print(f"HTML構造情報: {html_structure}")
+                
+            except Exception as e:
+                print(f"HTML構造確認でエラー: {e}")
+            
             # 詳細な要素分析
             print("\n=== 詳細な要素分析 ===")
             try:
@@ -1735,6 +1767,7 @@ class AsyncJobcanAutomation:
                         const results = [];
                         for (let i = 0; i < inputs.length; i++) {
                             const input = inputs[i];
+                            const rect = input.getBoundingClientRect();
                             results.push({
                                 index: i,
                                 type: input.type || '',
@@ -1745,7 +1778,12 @@ class AsyncJobcanAutomation:
                                 value: input.value || '',
                                 visible: input.offsetWidth > 0 && input.offsetHeight > 0,
                                 display: window.getComputedStyle(input).display,
-                                position: window.getComputedStyle(input).position
+                                position: window.getComputedStyle(input).position,
+                                top: rect.top,
+                                left: rect.left,
+                                width: rect.width,
+                                height: rect.height,
+                                zIndex: window.getComputedStyle(input).zIndex
                             });
                         }
                         return results;
@@ -1761,6 +1799,7 @@ class AsyncJobcanAutomation:
                         const results = [];
                         for (let i = 0; i < forms.length; i++) {
                             const form = forms[i];
+                            const rect = form.getBoundingClientRect();
                             results.push({
                                 index: i,
                                 action: form.action || '',
@@ -1768,7 +1807,11 @@ class AsyncJobcanAutomation:
                                 id: form.id || '',
                                 className: form.className || '',
                                 visible: form.offsetWidth > 0 && form.offsetHeight > 0,
-                                display: window.getComputedStyle(form).display
+                                display: window.getComputedStyle(form).display,
+                                top: rect.top,
+                                left: rect.left,
+                                width: rect.width,
+                                height: rect.height
                             });
                         }
                         return results;
@@ -1779,25 +1822,6 @@ class AsyncJobcanAutomation:
                 
             except Exception as e:
                 print(f"詳細分析でエラー: {e}")
-            
-            # ページのHTML構造を確認
-            print("\n=== HTML構造確認 ===")
-            try:
-                html_structure = await self.page.evaluate("""
-                    () => {
-                        return {
-                            bodyHTML: document.body.innerHTML.substring(0, 2000),
-                            headHTML: document.head.innerHTML.substring(0, 1000),
-                            title: document.title,
-                            url: window.location.href
-                        };
-                    }
-                """)
-                
-                print(f"HTML構造情報: {html_structure}")
-                
-            except Exception as e:
-                print(f"HTML構造確認でエラー: {e}")
             
             # ページの状態を確認
             page_content = await self.page.content()
@@ -1868,11 +1892,11 @@ class AsyncJobcanAutomation:
             except Exception as e:
                 print(f"iframe確認でエラー: {e}")
             
-            # JavaScriptを使用した直接的な要素検索
+            # JavaScriptを使用した直接的な要素検索（より強力なバージョン）
             if not email_input:
-                print("JavaScriptを使用した要素検索を実行...")
+                print("JavaScriptを使用した強力な要素検索を実行...")
                 try:
-                    # JavaScriptでinput要素を直接検索
+                    # JavaScriptでinput要素を直接検索（非表示要素も含む）
                     email_input_info = await self.page.evaluate("""
                         () => {
                             const inputs = document.querySelectorAll('input');
@@ -1883,6 +1907,7 @@ class AsyncJobcanAutomation:
                                 const name = input.name || '';
                                 const id = input.id || '';
                                 const placeholder = input.placeholder || '';
+                                const rect = input.getBoundingClientRect();
                                 
                                 // パスワード、submit、button、checkbox、radio以外の要素を探す
                                 if (type !== 'password' && type !== 'submit' && type !== 'button' && type !== 'checkbox' && type !== 'radio' && type !== 'hidden') {
@@ -1894,7 +1919,14 @@ class AsyncJobcanAutomation:
                                         placeholder: placeholder,
                                         className: input.className || '',
                                         value: input.value || '',
-                                        visible: input.offsetWidth > 0 && input.offsetHeight > 0
+                                        visible: input.offsetWidth > 0 && input.offsetHeight > 0,
+                                        display: window.getComputedStyle(input).display,
+                                        position: window.getComputedStyle(input).position,
+                                        top: rect.top,
+                                        left: rect.left,
+                                        width: rect.width,
+                                        height: rect.height,
+                                        zIndex: window.getComputedStyle(input).zIndex
                                     });
                                 }
                             }
@@ -1915,9 +1947,9 @@ class AsyncJobcanAutomation:
                 except Exception as e:
                     print(f"JavaScript検索でエラー: {e}")
             
-            # より包括的なセレクターベースの検索
+            # より包括的なセレクターベースの検索（非表示要素も含む）
             if not email_input:
-                print("包括的なセレクターベースの検索を実行...")
+                print("包括的なセレクターベースの検索を実行（非表示要素も含む）...")
                 email_selectors = [
                     'input[name="email"]',
                     'input[name="staff_code"]',
@@ -1949,7 +1981,11 @@ class AsyncJobcanAutomation:
                     # より広範囲のセレクター
                     'input',
                     '*[contenteditable="true"]',
-                    'textarea'
+                    'textarea',
+                    # 非表示要素も含む
+                    'input[style*="display: none"]',
+                    'input[style*="visibility: hidden"]',
+                    'input[hidden]'
                 ]
                 
                 for selector in email_selectors:
@@ -1964,8 +2000,43 @@ class AsyncJobcanAutomation:
                         continue
             
             if not email_input:
-                print("メールアドレス入力フィールドが見つからないため、異なるログイン方法を試行")
-                return await self.try_different_login_methods(email, password)
+                print("メールアドレス入力フィールドが見つからないため、代替手段を試行")
+                
+                # 代替手段1: すべてのinput要素の最初のものを使用
+                try:
+                    all_inputs = self.page.locator('input')
+                    if await all_inputs.count() > 0:
+                        email_input = all_inputs.first
+                        input_type = await email_input.get_attribute('type') or ''
+                        print(f"代替手段1: 最初のinput要素を使用 (type='{input_type}')")
+                except Exception as e:
+                    print(f"代替手段1でエラー: {e}")
+                
+                # 代替手段2: フォーム内の最初の要素を使用
+                if not email_input:
+                    try:
+                        form_inputs = self.page.locator('form input')
+                        if await form_inputs.count() > 0:
+                            email_input = form_inputs.first
+                            input_type = await email_input.get_attribute('type') or ''
+                            print(f"代替手段2: フォーム内の最初のinput要素を使用 (type='{input_type}')")
+                    except Exception as e:
+                        print(f"代替手段2でエラー: {e}")
+                
+                # 代替手段3: ページ内の最初のinput要素を使用
+                if not email_input:
+                    try:
+                        first_input = self.page.locator('input').first
+                        if first_input:
+                            email_input = first_input
+                            input_type = await email_input.get_attribute('type') or ''
+                            print(f"代替手段3: ページ内の最初のinput要素を使用 (type='{input_type}')")
+                    except Exception as e:
+                        print(f"代替手段3でエラー: {e}")
+                
+                if not email_input:
+                    print("すべての代替手段が失敗したため、異なるログイン方法を試行")
+                    return await self.try_different_login_methods(email, password)
             
             # メールアドレスを人間らしく入力
             print("メールアドレスを入力中...")
@@ -2010,11 +2081,11 @@ class AsyncJobcanAutomation:
                 except Exception as e:
                     print(f"iframeパスワード確認でエラー: {e}")
             
-            # JavaScriptを使用した直接的なパスワード要素検索
+            # JavaScriptを使用した直接的なパスワード要素検索（より強力なバージョン）
             if not password_input:
-                print("JavaScriptを使用したパスワード要素検索を実行...")
+                print("JavaScriptを使用した強力なパスワード要素検索を実行...")
                 try:
-                    # JavaScriptでpassword要素を直接検索
+                    # JavaScriptでpassword要素を直接検索（非表示要素も含む）
                     password_input_info = await self.page.evaluate("""
                         () => {
                             const inputs = document.querySelectorAll('input[type="password"]');
@@ -2024,6 +2095,7 @@ class AsyncJobcanAutomation:
                                 const name = input.name || '';
                                 const id = input.id || '';
                                 const placeholder = input.placeholder || '';
+                                const rect = input.getBoundingClientRect();
                                 
                                 results.push({
                                     index: i,
@@ -2032,7 +2104,14 @@ class AsyncJobcanAutomation:
                                     placeholder: placeholder,
                                     className: input.className || '',
                                     value: input.value || '',
-                                    visible: input.offsetWidth > 0 && input.offsetHeight > 0
+                                    visible: input.offsetWidth > 0 && input.offsetHeight > 0,
+                                    display: window.getComputedStyle(input).display,
+                                    position: window.getComputedStyle(input).position,
+                                    top: rect.top,
+                                    left: rect.left,
+                                    width: rect.width,
+                                    height: rect.height,
+                                    zIndex: window.getComputedStyle(input).zIndex
                                 });
                             }
                             return results;
@@ -2052,9 +2131,9 @@ class AsyncJobcanAutomation:
                 except Exception as e:
                     print(f"パスワードJavaScript検索でエラー: {e}")
             
-            # より包括的なセレクターベースのパスワード検索
+            # より包括的なセレクターベースのパスワード検索（非表示要素も含む）
             if not password_input:
-                print("包括的なセレクターベースのパスワード検索を実行...")
+                print("包括的なセレクターベースのパスワード検索を実行（非表示要素も含む）...")
                 password_selectors = [
                     'input[name="password"]',
                     'input[type="password"]',
@@ -2074,7 +2153,11 @@ class AsyncJobcanAutomation:
                     'input[type="password"]',
                     # より広範囲のセレクター
                     'input[type="password"]',
-                    'input'
+                    'input',
+                    # 非表示要素も含む
+                    'input[type="password"][style*="display: none"]',
+                    'input[type="password"][style*="visibility: hidden"]',
+                    'input[type="password"][hidden]'
                 ]
                 
                 for selector in password_selectors:
@@ -2089,8 +2172,40 @@ class AsyncJobcanAutomation:
                         continue
             
             if not password_input:
-                print("パスワード入力フィールドが見つからないため、異なるログイン方法を試行")
-                return await self.try_different_login_methods(email, password)
+                print("パスワード入力フィールドが見つからないため、代替手段を試行")
+                
+                # 代替手段1: すべてのpassword要素の最初のものを使用
+                try:
+                    all_password_inputs = self.page.locator('input[type="password"]')
+                    if await all_password_inputs.count() > 0:
+                        password_input = all_password_inputs.first
+                        print(f"代替手段1: 最初のpassword要素を使用")
+                except Exception as e:
+                    print(f"パスワード代替手段1でエラー: {e}")
+                
+                # 代替手段2: フォーム内のpassword要素を使用
+                if not password_input:
+                    try:
+                        form_password_inputs = self.page.locator('form input[type="password"]')
+                        if await form_password_inputs.count() > 0:
+                            password_input = form_password_inputs.first
+                            print(f"代替手段2: フォーム内の最初のpassword要素を使用")
+                    except Exception as e:
+                        print(f"パスワード代替手段2でエラー: {e}")
+                
+                # 代替手段3: ページ内の最初のpassword要素を使用
+                if not password_input:
+                    try:
+                        first_password = self.page.locator('input[type="password"]').first
+                        if first_password:
+                            password_input = first_password
+                            print(f"代替手段3: ページ内の最初のpassword要素を使用")
+                    except Exception as e:
+                        print(f"パスワード代替手段3でエラー: {e}")
+                
+                if not password_input:
+                    print("すべてのパスワード代替手段が失敗したため、異なるログイン方法を試行")
+                    return await self.try_different_login_methods(email, password)
             
             # パスワードを人間らしく入力
             print("パスワードを入力中...")
