@@ -120,6 +120,11 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         add_job_log(job_id, f"🔧 総メモリ: {psutil.virtual_memory().total // (1024**3)} GB")
         add_job_log(job_id, f"🔧 メモリ使用率: {psutil.virtual_memory().percent}%")
         
+        # 環境変数の確認
+        add_job_log(job_id, f"🔧 RAILWAY_ENVIRONMENT: {os.environ.get('RAILWAY_ENVIRONMENT', '未設定')}")
+        add_job_log(job_id, f"🔧 PORT: {os.environ.get('PORT', '未設定')}")
+        add_job_log(job_id, f"🔧 NODE_ENV: {os.environ.get('NODE_ENV', '未設定')}")
+        
         # Playwrightの利用可能性をチェック
         try:
             from playwright.sync_api import sync_playwright
@@ -128,6 +133,28 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             add_job_log(job_id, f"❌ Playwrightモジュールのインポートに失敗: {e}")
             jobs[job_id]['status'] = 'error'
             return False
+        
+        # システムのブラウザの存在をチェック
+        try:
+            import subprocess
+            browsers_to_check = [
+                '/usr/bin/chromium-browser',
+                '/usr/bin/google-chrome',
+                '/usr/bin/chromium',
+                '/usr/bin/firefox'
+            ]
+            
+            for browser_path in browsers_to_check:
+                try:
+                    result = subprocess.run(['which', browser_path], capture_output=True, text=True)
+                    if result.returncode == 0:
+                        add_job_log(job_id, f"✅ システムブラウザが見つかりました: {browser_path}")
+                    else:
+                        add_job_log(job_id, f"❌ システムブラウザが見つかりません: {browser_path}")
+                except Exception as browser_check_error:
+                    add_job_log(job_id, f"⚠️ ブラウザチェックでエラー: {browser_check_error}")
+        except Exception as e:
+            add_job_log(job_id, f"⚠️ システムブラウザのチェックでエラー: {e}")
         
         # 自動化インスタンスを作成
         add_job_log(job_id, "🤖 自動化インスタンスを作成中...")
@@ -153,10 +180,12 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 # Railway環境での追加情報をログに出力
                 try:
                     import subprocess
-                    result = subprocess.run(['which', 'chromium'], capture_output=True, text=True)
-                    add_job_log(job_id, f"🔧 Chromiumの場所: {result.stdout.strip() if result.stdout else '見つかりません'}")
+                    browsers_to_check = ['chromium', 'chromium-browser', 'google-chrome', 'firefox']
+                    for browser in browsers_to_check:
+                        result = subprocess.run(['which', browser], capture_output=True, text=True)
+                        add_job_log(job_id, f"🔧 {browser}の場所: {result.stdout.strip() if result.stdout else '見つかりません'}")
                 except Exception as e:
-                    add_job_log(job_id, f"🔧 Chromiumの場所確認でエラー: {e}")
+                    add_job_log(job_id, f"🔧 ブラウザの場所確認でエラー: {e}")
                 
                 jobs[job_id]['status'] = 'error'
                 return False
