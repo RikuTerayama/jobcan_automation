@@ -273,26 +273,41 @@ class AsyncJobcanAutomation:
         try:
             print("出勤簿ページに移動中...")
             
-            # 出勤簿へのリンクを探す
-            attendance_selectors = [
-                'a[href*="attendance"]',
-                'a[href*="timecard"]',
+            # 1. 勤怠トップページに移動
+            print("勤怠トップページに移動中...")
+            await self.page.goto("https://ssl.jobcan.jp/employee", wait_until="networkidle")
+            await asyncio.sleep(2)
+            
+            # 2. 「出勤簿」タブを選択
+            print("出勤簿タブを選択中...")
+            attendance_tab_selectors = [
                 'a:has-text("出勤簿")',
+                'a[href*="attendance"]',
+                'a[href="/employee/attendance"]',
                 'a:has-text("勤怠")',
                 'a:has-text("Attendance")'
             ]
             
-            for selector in attendance_selectors:
+            tab_found = False
+            for selector in attendance_tab_selectors:
                 try:
                     if await self.page.locator(selector).count() > 0:
-                        print(f"出勤簿リンクを発見: {selector}")
+                        print(f"出勤簿タブを発見: {selector}")
                         await self.page.click(selector)
+                        tab_found = True
                         break
                 except:
                     continue
             
+            if not tab_found:
+                # 直接URLでアクセス
+                print("タブが見つからないため、直接URLでアクセス")
+                await self.page.goto("https://ssl.jobcan.jp/employee/attendance", wait_until="networkidle")
+            
+            await asyncio.sleep(3)
             await self.page.wait_for_load_state("networkidle")
-            print("出勤簿ページ移動完了")
+            
+            print(f"出勤簿ページ移動完了: {self.page.url}")
             
         except Exception as e:
             print(f"出勤簿ページへの移動に失敗しました: {e}")
@@ -363,17 +378,23 @@ class AsyncJobcanAutomation:
             await self.click_stamp_correction()
             await self.debug_page_state("打刻修正ボタンクリック後")
             
-            # 3. 始業時刻を入力
-            await self.input_start_time(start_time)
+            # 3. 始業時刻を入力して打刻
+            start_success = await self.input_start_time(start_time)
             await self.debug_page_state("始業時刻入力後")
             
-            # 4. 終業時刻を入力
-            await self.input_end_time(end_time)
+            # 4. 終業時刻を入力して打刻
+            end_success = await self.input_end_time(end_time)
             await self.debug_page_state("終業時刻入力後")
             
-            # 5. 保存ボタンをクリック
-            await self.click_save_button()
-            await self.debug_page_state("保存ボタンクリック後")
+            # 5. 出勤簿ページに戻る
+            await self.return_to_attendance_page()
+            await self.debug_page_state("出勤簿ページ戻り後")
+            
+            # 6. 処理結果をログに出力
+            if start_success and end_success:
+                print(f"✅ {date_str}の勤怠を登録しました（始業{start_time}／終業{end_time}）")
+            else:
+                print(f"❌ {date_str}の勤怠登録に失敗しました（始業{start_time}／終業{end_time}）")
             
             print(f"日付 {date_str} の勤怠入力が完了しました")
             
@@ -463,14 +484,26 @@ class AsyncJobcanAutomation:
         try:
             print(f"日付 {date_str} を選択中...")
             
-            # 日付セレクターを探す（複数のパターンを試す）
+            # 日付文字列を解析
+            date_obj = datetime.strptime(date_str, "%Y/%m/%d")
+            year = date_obj.year
+            month = date_obj.month
+            day = date_obj.day
+            
+            # Jobcanの日付形式に変換（例：2025年07月01日）
+            jobcan_date_format = f"{year}年{month:02d}月{day:02d}日"
+            print(f"Jobcan日付形式: {jobcan_date_format}")
+            
+            # 日付セレクターを探す（Jobcanの実際の形式に基づく）
             date_selectors = [
+                f'td:has-text("{jobcan_date_format}")',
+                f'a:has-text("{jobcan_date_format}")',
                 f'[data-date="{date_str}"]',
-                f'a[href*="{date_str}"]',
-                f'td:has-text("{date_str}")',
-                f'a:has-text("{date_str}")',
-                f'[data-value="{date_str}"]',
-                f'input[value="{date_str}"]'
+                f'[data-date="{year}-{month:02d}-{day:02d}"]',
+                f'td[data-date="{date_str}"]',
+                f'td[data-date="{year}-{month:02d}-{day:02d}"]',
+                f'a[href*="{year}/{month:02d}/{day:02d}"]',
+                f'a[href*="{year}-{month:02d}-{day:02d}"]'
             ]
             
             for selector in date_selectors:
@@ -478,9 +511,10 @@ class AsyncJobcanAutomation:
                     if await self.page.locator(selector).count() > 0:
                         print(f"日付セレクターを発見: {selector}")
                         await self.page.click(selector)
-                        await asyncio.sleep(1)
+                        await asyncio.sleep(2)
                         return
-                except:
+                except Exception as e:
+                    print(f"セレクター {selector} でエラー: {e}")
                     continue
             
             # 日付が見つからない場合は、カレンダーから探す
@@ -546,7 +580,7 @@ class AsyncJobcanAutomation:
         try:
             print("打刻修正ボタンをクリック中...")
             
-            # 打刻修正ボタンを探す（複数のパターンを試す）
+            # 打刻修正ボタンを探す（Jobcanの実際のUIに基づく）
             correction_selectors = [
                 'button:has-text("打刻修正")',
                 'a:has-text("打刻修正")',
@@ -557,7 +591,9 @@ class AsyncJobcanAutomation:
                 'a:has-text("編集")',
                 '[class*="edit"]',
                 '[class*="correction"]',
-                '[class*="modify"]'
+                '[class*="modify"]',
+                'a[href*="modify"]',
+                'a[href*="edit"]'
             ]
             
             for selector in correction_selectors:
@@ -565,9 +601,17 @@ class AsyncJobcanAutomation:
                     if await self.page.locator(selector).count() > 0:
                         print(f"打刻修正ボタンを発見: {selector}")
                         await self.page.click(selector)
-                        await asyncio.sleep(2)
-                        return
-                except:
+                        await asyncio.sleep(3)
+                        
+                        # URLが打刻修正ページに変わったか確認
+                        current_url = self.page.url
+                        if "modify" in current_url or "edit" in current_url:
+                            print(f"打刻修正ページに遷移しました: {current_url}")
+                            return
+                        else:
+                            print(f"打刻修正ページへの遷移を確認できません: {current_url}")
+                except Exception as e:
+                    print(f"セレクター {selector} でエラー: {e}")
                     continue
             
             print("打刻修正ボタンが見つかりませんでした")
@@ -577,11 +621,11 @@ class AsyncJobcanAutomation:
             raise
 
     async def input_start_time(self, start_time: str):
-        """始業時刻を入力"""
+        """始業時刻を入力して打刻"""
         try:
             print(f"始業時刻 {start_time} を入力中...")
             
-            # 始業時刻入力フィールドを探す
+            # 始業時刻入力フィールドを探す（Jobcanの実際のUIに基づく）
             start_time_selectors = [
                 'input[name*="start"]',
                 'input[name*="begin"]',
@@ -590,34 +634,85 @@ class AsyncJobcanAutomation:
                 'input[id*="start"]',
                 'input[id*="begin"]',
                 'input[type="time"]:first-of-type',
-                'input[type="time"]'
+                'input[type="time"]',
+                'input[name="start_time"]',
+                'input[name="begin_time"]'
             ]
             
+            start_input = None
             for selector in start_time_selectors:
                 try:
                     if await self.page.locator(selector).count() > 0:
                         print(f"始業時刻入力フィールドを発見: {selector}")
                         start_input = self.page.locator(selector).first
-                        await start_input.click()
-                        await asyncio.sleep(0.5)
-                        await start_input.fill(start_time)
-                        await asyncio.sleep(0.5)
-                        return
-                except:
+                        break
+                except Exception as e:
+                    print(f"セレクター {selector} でエラー: {e}")
                     continue
             
-            print("始業時刻入力フィールドが見つかりませんでした")
+            if not start_input:
+                print("始業時刻入力フィールドが見つかりませんでした")
+                return False
+            
+            # 始業時刻を入力
+            await start_input.click()
+            await asyncio.sleep(1)
+            await start_input.fill(start_time)
+            await asyncio.sleep(1)
+            
+            # 始業時刻の打刻ボタンをクリック
+            await self.click_start_stamp_button()
+            
+            return True
             
         except Exception as e:
             print(f"始業時刻入力でエラー: {e}")
             raise
 
+    async def click_start_stamp_button(self):
+        """始業時刻の打刻ボタンをクリック"""
+        try:
+            print("始業時刻の打刻ボタンをクリック中...")
+            
+            # 始業時刻の打刻ボタンを探す
+            start_stamp_selectors = [
+                'button:has-text("打刻")',
+                'input[value*="打刻"]',
+                'button:has-text("登録")',
+                'input[value*="登録"]',
+                'button[type="submit"]',
+                'input[type="submit"]',
+                '[class*="stamp"]',
+                '[class*="submit"]'
+            ]
+            
+            for selector in start_stamp_selectors:
+                try:
+                    if await self.page.locator(selector).count() > 0:
+                        print(f"始業時刻打刻ボタンを発見: {selector}")
+                        await self.page.click(selector)
+                        await asyncio.sleep(2)
+                        
+                        # 打刻完了メッセージを確認
+                        await self.check_stamp_completion_message("始業")
+                        return True
+                except Exception as e:
+                    print(f"セレクター {selector} でエラー: {e}")
+                    continue
+            
+            print("始業時刻の打刻ボタンが見つかりませんでした")
+            return False
+            
+        except Exception as e:
+            print(f"始業時刻打刻ボタンのクリックでエラー: {e}")
+            return False
+
     async def input_end_time(self, end_time: str):
-        """終業時刻を入力"""
+        """終業時刻を入力して打刻"""
         try:
             print(f"終業時刻 {end_time} を入力中...")
             
-            # 終業時刻入力フィールドを探す
+            # 終業時刻入力フィールドを探す（Jobcanの実際のUIに基づく）
             end_time_selectors = [
                 'input[name*="end"]',
                 'input[name*="finish"]',
@@ -626,27 +721,78 @@ class AsyncJobcanAutomation:
                 'input[id*="end"]',
                 'input[id*="finish"]',
                 'input[type="time"]:last-of-type',
-                'input[type="time"]'
+                'input[type="time"]',
+                'input[name="end_time"]',
+                'input[name="finish_time"]'
             ]
             
+            end_input = None
             for selector in end_time_selectors:
                 try:
                     if await self.page.locator(selector).count() > 0:
                         print(f"終業時刻入力フィールドを発見: {selector}")
                         end_input = self.page.locator(selector).first
-                        await end_input.click()
-                        await asyncio.sleep(0.5)
-                        await end_input.fill(end_time)
-                        await asyncio.sleep(0.5)
-                        return
-                except:
+                        break
+                except Exception as e:
+                    print(f"セレクター {selector} でエラー: {e}")
                     continue
             
-            print("終業時刻入力フィールドが見つかりませんでした")
+            if not end_input:
+                print("終業時刻入力フィールドが見つかりませんでした")
+                return False
+            
+            # 終業時刻を入力
+            await end_input.click()
+            await asyncio.sleep(1)
+            await end_input.fill(end_time)
+            await asyncio.sleep(1)
+            
+            # 終業時刻の打刻ボタンをクリック
+            await self.click_end_stamp_button()
+            
+            return True
             
         except Exception as e:
             print(f"終業時刻入力でエラー: {e}")
             raise
+
+    async def click_end_stamp_button(self):
+        """終業時刻の打刻ボタンをクリック"""
+        try:
+            print("終業時刻の打刻ボタンをクリック中...")
+            
+            # 終業時刻の打刻ボタンを探す
+            end_stamp_selectors = [
+                'button:has-text("打刻")',
+                'input[value*="打刻"]',
+                'button:has-text("登録")',
+                'input[value*="登録"]',
+                'button[type="submit"]',
+                'input[type="submit"]',
+                '[class*="stamp"]',
+                '[class*="submit"]'
+            ]
+            
+            for selector in end_stamp_selectors:
+                try:
+                    if await self.page.locator(selector).count() > 0:
+                        print(f"終業時刻打刻ボタンを発見: {selector}")
+                        await self.page.click(selector)
+                        await asyncio.sleep(2)
+                        
+                        # 打刻完了メッセージを確認
+                        await self.check_stamp_completion_message("終業")
+                        return True
+                except Exception as e:
+                    print(f"セレクター {selector} でエラー: {e}")
+                    continue
+            
+            print("終業時刻の打刻ボタンが見つかりませんでした")
+            return False
+            
+        except Exception as e:
+            print(f"終業時刻打刻ボタンのクリックでエラー: {e}")
+            return False
 
     async def click_save_button(self):
         """保存ボタンをクリック"""
@@ -682,4 +828,52 @@ class AsyncJobcanAutomation:
             
         except Exception as e:
             print(f"保存ボタンのクリックでエラー: {e}")
+            raise
+
+    async def check_stamp_completion_message(self, stamp_type: str):
+        """打刻完了メッセージを確認"""
+        try:
+            print(f"{stamp_type}打刻完了メッセージを確認中...")
+            
+            # 完了メッセージのセレクター
+            completion_selectors = [
+                'text=打刻が完了しました',
+                'text=登録が完了しました',
+                'text=保存が完了しました',
+                'text=完了しました',
+                'text=正常に処理されました',
+                '[class*="success"]',
+                '[class*="complete"]',
+                '[class*="message"]'
+            ]
+            
+            for selector in completion_selectors:
+                try:
+                    if await self.page.locator(selector).count() > 0:
+                        message = await self.page.locator(selector).first.text_content()
+                        print(f"{stamp_type}打刻完了メッセージ: {message}")
+                        return True
+                except:
+                    continue
+            
+            print(f"{stamp_type}打刻完了メッセージは確認できませんでした")
+            return False
+            
+        except Exception as e:
+            print(f"打刻完了メッセージ確認でエラー: {e}")
+            return False
+
+    async def return_to_attendance_page(self):
+        """出勤簿ページに戻る"""
+        try:
+            print("出勤簿ページに戻る中...")
+            
+            # 出勤簿ページに直接移動
+            await self.page.goto("https://ssl.jobcan.jp/employee/attendance", wait_until="networkidle")
+            await asyncio.sleep(3)
+            
+            print(f"出勤簿ページに戻りました: {self.page.url}")
+            
+        except Exception as e:
+            print(f"出勤簿ページへの戻りでエラー: {e}")
             raise 
