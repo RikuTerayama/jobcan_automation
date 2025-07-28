@@ -271,15 +271,23 @@ class AsyncJobcanAutomation:
     async def navigate_to_attendance(self):
         """出勤簿ページに移動"""
         try:
-            print("出勤簿ページに移動中...")
+            print("🏠 出勤簿ページに移動中...")
             
             # 1. 勤怠トップページに移動
-            print("勤怠トップページに移動中...")
+            print("🏠 ステップ1: 勤怠トップページに移動中...")
+            print(f"🔗 移動先URL: https://ssl.jobcan.jp/employee")
             await self.page.goto("https://ssl.jobcan.jp/employee", wait_until="networkidle")
             await asyncio.sleep(2)
             
+            current_url = self.page.url
+            print(f"✅ 現在のURL: {current_url}")
+            
+            # ページタイトルを確認
+            page_title = await self.page.title()
+            print(f"📄 ページタイトル: {page_title}")
+            
             # 2. 「出勤簿」タブを選択
-            print("出勤簿タブを選択中...")
+            print("🏠 ステップ2: 出勤簿タブを選択中...")
             attendance_tab_selectors = [
                 'a:has-text("出勤簿")',
                 'a[href*="attendance"]',
@@ -288,43 +296,60 @@ class AsyncJobcanAutomation:
                 'a:has-text("Attendance")'
             ]
             
+            print(f"🔍 出勤簿タブを検索中...")
             tab_found = False
-            for selector in attendance_tab_selectors:
+            for i, selector in enumerate(attendance_tab_selectors):
                 try:
-                    if await self.page.locator(selector).count() > 0:
-                        print(f"出勤簿タブを発見: {selector}")
+                    count = await self.page.locator(selector).count()
+                    print(f"🔍 セレクター {i+1}/{len(attendance_tab_selectors)}: {selector} → {count}個発見")
+                    if count > 0:
+                        print(f"✅ 出勤簿タブを発見: {selector}")
                         await self.page.click(selector)
                         tab_found = True
                         break
-                except:
+                except Exception as e:
+                    print(f"❌ セレクター {selector} でエラー: {e}")
                     continue
             
             if not tab_found:
                 # 直接URLでアクセス
-                print("タブが見つからないため、直接URLでアクセス")
+                print("⚠️ タブが見つからないため、直接URLでアクセス")
+                print(f"🔗 移動先URL: https://ssl.jobcan.jp/employee/attendance")
                 await self.page.goto("https://ssl.jobcan.jp/employee/attendance", wait_until="networkidle")
             
             await asyncio.sleep(3)
             await self.page.wait_for_load_state("networkidle")
             
-            print(f"出勤簿ページ移動完了: {self.page.url}")
+            final_url = self.page.url
+            final_title = await self.page.title()
+            print(f"✅ 出勤簿ページ移動完了")
+            print(f"🔗 最終URL: {final_url}")
+            print(f"📄 最終タイトル: {final_title}")
+            
+            # ページの状態をデバッグ
+            await self.debug_page_state("出勤簿ページ移動完了後")
             
         except Exception as e:
-            print(f"出勤簿ページへの移動に失敗しました: {e}")
+            print(f"❌ 出勤簿ページへの移動に失敗しました: {e}")
             raise
 
     async def process_attendance_data(self, df):
         """勤怠データを処理"""
         try:
-            print("勤怠データを処理中...")
-            print(f"データフレームの形状: {df.shape}")
-            print(f"データフレームの列名: {df.columns.tolist()}")
-            print(f"データフレームの最初の5行:")
+            print("🔄 勤怠データを処理中...")
+            print(f"📊 データフレームの形状: {df.shape}")
+            print(f"📊 データフレームの列名: {df.columns.tolist()}")
+            print(f"📊 データフレームの最初の5行:")
             print(df.head())
             
             # ヘッダー行をスキップするかチェック
             print(f"\n=== データ処理の詳細 ===")
-            print(f"総行数: {len(df)}")
+            print(f"📊 総行数: {len(df)}")
+            
+            # データの内容を詳細に確認
+            print(f"📋 全データの内容:")
+            for i, row in df.iterrows():
+                print(f"  行 {i}: {row.tolist()}")
             
             processed_count = 0
             success_count = 0
@@ -333,7 +358,7 @@ class AsyncJobcanAutomation:
             for index, row in df.iterrows():
                 try:
                     print(f"\n=== 行 {index} の処理開始 ===")
-                    print(f"行の内容: {row.tolist()}")
+                    print(f"📋 行の内容: {row.tolist()}")
                     
                     # ヘッダー行のチェック
                     if index == 0:
@@ -344,7 +369,7 @@ class AsyncJobcanAutomation:
                     start_time = row.iloc[1]  # B列：始業時刻
                     end_time = row.iloc[2]  # C列：終業時刻
                     
-                    print(f"生データ: 日付={date} ({type(date)}), 始業={start_time} ({type(start_time)}), 終業={end_time} ({type(end_time)})")
+                    print(f"📅 生データ: 日付={date} ({type(date)}), 始業={start_time} ({type(start_time)}), 終業={end_time} ({type(end_time)})")
                     
                     # データの妥当性チェック
                     if pd.isna(date) or pd.isna(start_time) or pd.isna(end_time):
@@ -384,7 +409,7 @@ class AsyncJobcanAutomation:
                         error_count += 1
                         continue
                     
-                    print(f"変換後データ: 日付={date_str}, 始業={start_time_str}, 終業={end_time_str}")
+                    print(f"📝 変換後データ: 日付={date_str}, 始業={start_time_str}, 終業={end_time_str}")
                     
                     # 実際の勤怠入力処理を実行
                     print(f"🔄 勤怠入力処理を開始: {date_str}")
@@ -407,11 +432,11 @@ class AsyncJobcanAutomation:
                     continue
             
             print(f"\n=== 処理結果サマリー ===")
-            print(f"処理対象行数: {processed_count}")
-            print(f"成功件数: {success_count}")
-            print(f"エラー件数: {error_count}")
-            print(f"成功率: {success_count/processed_count*100:.1f}%" if processed_count > 0 else "処理対象なし")
-            print("勤怠データの処理が完了しました")
+            print(f"📊 処理対象行数: {processed_count}")
+            print(f"✅ 成功件数: {success_count}")
+            print(f"❌ エラー件数: {error_count}")
+            print(f"📈 成功率: {success_count/processed_count*100:.1f}%" if processed_count > 0 else "処理対象なし")
+            print("📋 勤怠データの処理が完了しました")
             
         except Exception as e:
             print(f"❌ 勤怠データ処理中にエラーが発生しました: {e}")
