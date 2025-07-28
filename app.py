@@ -3,6 +3,7 @@
 """
 Jobcan勤怠申請Webアプリケーション
 Flask + Playwright + Pandasを使用したWebインターフェース
+Railwayデプロイ対応版
 """
 
 import os
@@ -16,9 +17,13 @@ from werkzeug.utils import secure_filename
 from playwright.sync_api import sync_playwright, Page, Browser
 import threading
 import queue
+from dotenv import load_dotenv
+
+# 環境変数の読み込み
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
+app.secret_key = os.environ.get('SECRET_KEY', os.urandom(24))
 
 # 設定
 UPLOAD_FOLDER = 'uploads'
@@ -102,7 +107,14 @@ class JobcanAutomation:
             '--disable-dev-shm-usage',
             '--disable-gpu',
             '--disable-web-security',
-            '--disable-features=VizDisplayCompositor'
+            '--disable-features=VizDisplayCompositor',
+            '--disable-extensions',
+            '--disable-plugins',
+            '--disable-images',
+            '--disable-javascript',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-renderer-backgrounding'
         ]
         
         self.browser = self.playwright.chromium.launch(
@@ -112,23 +124,51 @@ class JobcanAutomation:
         self.page = self.browser.new_page()
         self.status_queue.put({"status": "browser_started", "message": "ブラウザを起動しました"})
         
-    def navigate_to_url(self, url: str) -> bool:
-        """指定されたURLに移動"""
+    def login_to_jobcan(self, company_id: str, email: str, password: str) -> bool:
+        """Jobcanにログイン"""
         try:
-            self.status_queue.put({"status": "navigating", "message": f"URLに移動中: {url}"})
-            self.page.goto(url)
+            self.status_queue.put({"status": "logging_in", "message": "Jobcanにログイン中..."})
+            
+            # Jobcanログインページに移動
+            self.page.goto("https://ssl.jobcan.jp/employee")
             self.page.wait_for_load_state("networkidle")
             
-            # ログイン状態をチェック
+            # 会社IDを入力
+            company_id_input = self.page.locator('input[name="company_id"]')
+            if company_id_input.count() > 0:
+                company_id_input.fill(company_id)
+            
+            # メールアドレスを入力
+            email_input = self.page.locator('input[name="email"]')
+            if email_input.count() == 0:
+                email_input = self.page.locator('input[name="staff_code"]')
+            
+            if email_input.count() > 0:
+                email_input.fill(email)
+            
+            # パスワードを入力
+            password_input = self.page.locator('input[name="password"]')
+            if password_input.count() > 0:
+                password_input.fill(password)
+            
+            # ログインボタンをクリック
+            login_button = self.page.locator('input[type="submit"], button[type="submit"]')
+            if login_button.count() > 0:
+                login_button.click()
+            
+            # ログイン後のページ読み込みを待機
+            self.page.wait_for_load_state("networkidle")
+            
+            # ログイン成功の確認
             if "sign_in" in self.page.url or "login" in self.page.url:
-                self.status_queue.put({"status": "error", "message": "ログインが必要です。URLが正しいか確認してください"})
+                self.status_queue.put({"status": "error", "message": "ログインに失敗しました。会社ID、メールアドレス、パスワードを確認してください"})
                 return False
             
-            self.status_queue.put({"status": "url_loaded", "message": "URLに正常に移動しました"})
+            self.status_queue.put({"status": "login_success", "message": "Jobcanにログインしました"})
             return True
             
         except Exception as e:
-            self.status_queue.put({"status": "error", "message": f"URLへの移動に失敗しました: {e}"})
+            self.status_queue.put({"status": "error", "message": f"ログイン中にエラーが発生しました: {e}"})
             return False
     
     def navigate_to_attendance(self):
@@ -142,7 +182,8 @@ class JobcanAutomation:
                 'a[href*="timecard"]',
                 'a:has-text("出勤簿")',
                 'a:has-text("勤怠")',
-                'a:has-text("Attendance")'
+                'a:has-text("Attendance")',
+                'a:has-text("勤怠管理")'
             ]
             
             for selector in attendance_selectors:
@@ -175,7 +216,9 @@ class JobcanAutomation:
                 f'td[data-date="{formatted_date}"]',
                 f'td[data-date="{date_str}"]',
                 f'a[href*="{formatted_date}"]',
-                f'a[href*="{date_str}"]'
+                f'a[href*="{date_str}"]',
+                f'td:has-text("{date_str}")',
+                f'a:has-text("{date_str}")'
             ]
             
             for selector in date_selectors:
@@ -204,7 +247,9 @@ class JobcanAutomation:
                 'a:has-text("打刻修正")',
                 'input[value*="打刻修正"]',
                 'button:has-text("修正")',
-                'a:has-text("修正")'
+                'a:has-text("修正")',
+                'button:has-text("編集")',
+                'a:has-text("編集")'
             ]
             
             for selector in correction_selectors:
@@ -232,7 +277,9 @@ class JobcanAutomation:
                 f'input[name*="{time_type.lower()}"]',
                 f'input[name*="{time_type}"]',
                 f'input[placeholder*="{time_type}"]',
-                f'input[type="time"]'
+                f'input[type="time"]',
+                f'input[name*="start"]',
+                f'input[name*="end"]'
             ]
             
             time_input = None
@@ -255,7 +302,9 @@ class JobcanAutomation:
                 'button:has-text("打刻")',
                 'input[value*="打刻"]',
                 'button:has-text("登録")',
-                'input[value*="登録"]'
+                'input[value*="登録"]',
+                'button:has-text("保存")',
+                'input[value*="保存"]'
             ]
             
             for selector in stamp_selectors:
@@ -329,7 +378,7 @@ class JobcanAutomation:
             self.playwright.stop()
         self.status_queue.put({"status": "completed", "message": "ブラウザを閉じました"})
 
-def process_jobcan_automation(job_id: str, url: str, file_path: str):
+def process_jobcan_automation(job_id: str, company_id: str, email: str, password: str, file_path: str):
     """バックグラウンドでJobcan自動化処理を実行"""
     try:
         processing_status[job_id] = {"status": "starting", "message": "処理を開始しています..."}
@@ -341,9 +390,9 @@ def process_jobcan_automation(job_id: str, url: str, file_path: str):
         automation.start_browser()
         processing_status[job_id] = {"status": "browser_started", "message": "ブラウザを起動しました"}
         
-        # URLに移動
-        if not automation.navigate_to_url(url):
-            processing_status[job_id] = {"status": "error", "message": "URLへの移動に失敗しました"}
+        # Jobcanにログイン
+        if not automation.login_to_jobcan(company_id, email, password):
+            processing_status[job_id] = {"status": "error", "message": "ログインに失敗しました"}
             return
         
         # 出勤簿ページに移動
@@ -387,6 +436,21 @@ def index():
 def upload_file():
     """ファイルアップロードと処理開始"""
     try:
+        # フォームデータの取得
+        company_id = request.form.get('company_id', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
+        
+        # 必須項目の確認
+        if not company_id:
+            return jsonify({'error': '会社IDを入力してください'}), 400
+        
+        if not email:
+            return jsonify({'error': 'メールアドレスを入力してください'}), 400
+        
+        if not password:
+            return jsonify({'error': 'パスワードを入力してください'}), 400
+        
         # ファイルの確認
         if 'file' not in request.files:
             return jsonify({'error': 'ファイルが選択されていません'}), 400
@@ -397,11 +461,6 @@ def upload_file():
         
         if not allowed_file(file.filename):
             return jsonify({'error': 'Excelファイル（.xlsx, .xls）のみアップロード可能です'}), 400
-        
-        # URLの確認
-        url = request.form.get('jobcan_url', '').strip()
-        if not url:
-            return jsonify({'error': 'JobcanのURLを入力してください'}), 400
         
         # ファイルを一時保存
         filename = secure_filename(file.filename)
@@ -414,7 +473,7 @@ def upload_file():
         # バックグラウンドで処理を開始
         thread = threading.Thread(
             target=process_jobcan_automation,
-            args=(job_id, url, temp_path)
+            args=(job_id, company_id, email, password, temp_path)
         )
         thread.daemon = True
         thread.start()
