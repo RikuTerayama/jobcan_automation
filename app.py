@@ -1383,7 +1383,17 @@ class AsyncJobcanAutomation:
                 'input[id*="login"]',
                 'input[id*="user"]',
                 'input[name="username"]',
-                'input[name="account"]'
+                'input[name="account"]',
+                # より包括的なセレクター
+                'input[type="text"]:not([type="password"])',
+                'input:not([type="password"]):not([type="submit"]):not([type="button"])',
+                'form input:first-of-type',
+                'input[autocomplete="email"]',
+                'input[autocomplete="username"]',
+                'input[autocomplete="off"]:not([type="password"])',
+                # 位置ベースのセレクター
+                'form input:nth-of-type(1)',
+                'input:not([type="password"]):not([type="submit"]):not([type="button"]):not([type="checkbox"]):not([type="radio"])'
             ]
             
             email_input = None
@@ -1398,8 +1408,48 @@ class AsyncJobcanAutomation:
                     print(f"セレクター {selector} でエラー: {e}")
                     continue
             
+            # 最後の手段：すべてのinput要素から最初のテキスト入力フィールドを探す
             if not email_input:
-                print("メールアドレス入力フィールドが見つからないため、異なるログイン方法を試行")
+                print("標準セレクターで見つからないため、代替方法を試行")
+                try:
+                    # すべてのinput要素を取得
+                    all_inputs = self.page.locator('input')
+                    input_count = await all_inputs.count()
+                    print(f"ページ内のinput要素数: {input_count}")
+                    
+                    # 最初のテキスト入力フィールドを探す
+                    for i in range(input_count):
+                        input_elem = all_inputs.nth(i)
+                        type_attr = await input_elem.get_attribute('type') or ''
+                        
+                        # パスワード、submit、button、checkbox、radio以外の要素を探す
+                        if type_attr not in ['password', 'submit', 'button', 'checkbox', 'radio', 'hidden']:
+                            email_input = input_elem
+                            print(f"代替方法でメールアドレス入力フィールドを発見: input[{i}] (type='{type_attr}')")
+                            break
+                except Exception as e:
+                    print(f"代替方法でエラー: {e}")
+            
+            if not email_input:
+                print("メールアドレス入力フィールドが見つからないため、ページの詳細を確認")
+                # ページ内のすべてのinput要素を確認
+                all_inputs = self.page.locator('input')
+                input_count = await all_inputs.count()
+                print(f"ページ内のinput要素数: {input_count}")
+                
+                for i in range(input_count):
+                    try:
+                        input_elem = all_inputs.nth(i)
+                        name = await input_elem.get_attribute('name') or 'なし'
+                        type_attr = await input_elem.get_attribute('type') or 'なし'
+                        placeholder = await input_elem.get_attribute('placeholder') or 'なし'
+                        id_attr = await input_elem.get_attribute('id') or 'なし'
+                        class_attr = await input_elem.get_attribute('class') or 'なし'
+                        print(f"  input[{i}]: name='{name}', type='{type_attr}', placeholder='{placeholder}', id='{id_attr}', class='{class_attr}'")
+                    except Exception as e:
+                        print(f"  input[{i}]分析エラー: {e}")
+                
+                print("異なるログイン方法を試行")
                 return await self.try_different_login_methods(email, password)
             
             # メールアドレスを人間らしく入力
@@ -1424,7 +1474,16 @@ class AsyncJobcanAutomation:
                 'input[placeholder*="password"]',
                 'input[placeholder*="Password"]',
                 'input[id*="password"]',
-                'input[id*="pass"]'
+                'input[id*="pass"]',
+                # より包括的なセレクター
+                'input[type="password"]',
+                'input[autocomplete="current-password"]',
+                'input[autocomplete="new-password"]',
+                'input[autocomplete="off"][type="password"]',
+                # 位置ベースのセレクター
+                'form input:nth-of-type(2)',
+                'input[type="password"]:first-of-type',
+                'input[type="password"]'
             ]
             
             password_input = None
@@ -1439,8 +1498,39 @@ class AsyncJobcanAutomation:
                     print(f"パスワードセレクター {selector} でエラー: {e}")
                     continue
             
+            # 最後の手段：すべてのpassword要素から最初のものを探す
             if not password_input:
-                print("パスワード入力フィールドが見つからないため、異なるログイン方法を試行")
+                print("標準セレクターでパスワードが見つからないため、代替方法を試行")
+                try:
+                    # すべてのpassword要素を取得
+                    all_password_inputs = self.page.locator('input[type="password"]')
+                    password_count = await all_password_inputs.count()
+                    print(f"ページ内のpassword要素数: {password_count}")
+                    
+                    if password_count > 0:
+                        password_input = all_password_inputs.first
+                        print(f"代替方法でパスワード入力フィールドを発見: 最初のpassword要素")
+                except Exception as e:
+                    print(f"代替方法でエラー: {e}")
+            
+            if not password_input:
+                print("パスワード入力フィールドが見つからないため、ページの詳細を確認")
+                # ページ内のすべてのpassword要素を確認
+                all_password_inputs = self.page.locator('input[type="password"]')
+                password_count = await all_password_inputs.count()
+                print(f"ページ内のpassword要素数: {password_count}")
+                
+                for i in range(password_count):
+                    try:
+                        password_elem = all_password_inputs.nth(i)
+                        name = await password_elem.get_attribute('name') or 'なし'
+                        id_attr = await password_elem.get_attribute('id') or 'なし'
+                        class_attr = await password_elem.get_attribute('class') or 'なし'
+                        print(f"  password[{i}]: name='{name}', id='{id_attr}', class='{class_attr}'")
+                    except Exception as e:
+                        print(f"  password[{i}]分析エラー: {e}")
+                
+                print("異なるログイン方法を試行")
                 return await self.try_different_login_methods(email, password)
             
             # パスワードを人間らしく入力
