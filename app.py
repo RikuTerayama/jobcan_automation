@@ -87,7 +87,6 @@ async def async_process_jobcan_automation(job_id: str, email: str, password: str
         jobs[job_id]['status'] = 'running'
         
         # Playwrightブラウザを確保
-        from async_jobcan_automation import ensure_playwright_browser
         ensure_playwright_browser()
         
         # 非同期自動化インスタンスを作成
@@ -142,7 +141,6 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         jobs[job_id]['status'] = 'running'
         
         # Playwrightブラウザを確保
-        from async_jobcan_automation import ensure_playwright_browser
         ensure_playwright_browser()
         
         # 自動化インスタンスを作成
