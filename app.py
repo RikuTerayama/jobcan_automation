@@ -214,6 +214,14 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             add_job_log(job_id, "✅ 自動化インスタンスの作成が完了しました")
         except Exception as automation_error:
             add_job_log(job_id, f"❌ 自動化インスタンスの作成に失敗: {automation_error}")
+            add_job_log(job_id, f"🔧 エラーの詳細: {type(automation_error).__name__}")
+            add_job_log(job_id, f"🔧 エラーメッセージ: {str(automation_error)}")
+            
+            # エラーの詳細情報をログに出力
+            import traceback
+            error_traceback = traceback.format_exc()
+            add_job_log(job_id, f"🔧 エラートレースバック: {error_traceback}")
+            
             jobs[job_id]['status'] = 'error'
             return False
         
