@@ -29,6 +29,18 @@ def ensure_playwright_browser():
         # Railway環境では、ブラウザのインストールをスキップ
         print("🔄 Railway環境のため、ブラウザのインストールをスキップします")
         print("✅ 既存のブラウザを使用して続行します")
+        
+        # システムのChromiumが利用可能かチェック
+        try:
+            import subprocess
+            result = subprocess.run(['which', 'chromium'], capture_output=True, text=True)
+            if result.returncode == 0:
+                print(f"✅ システムのChromiumが見つかりました: {result.stdout.strip()}")
+            else:
+                print("⚠️ システムのChromiumが見つかりません")
+        except Exception as e:
+            print(f"⚠️ システムブラウザのチェックでエラー: {e}")
+        
         return True
         
     except Exception as e:
