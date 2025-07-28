@@ -95,9 +95,19 @@ class JobcanAutomation:
     def start_browser(self):
         """ブラウザを起動"""
         self.playwright = sync_playwright().start()
+        
+        # Railway環境用の設定
+        browser_args = [
+            '--no-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-web-security',
+            '--disable-features=VizDisplayCompositor'
+        ]
+        
         self.browser = self.playwright.chromium.launch(
             headless=self.headless,
-            args=['--no-sandbox', '--disable-dev-shm-usage']
+            args=browser_args
         )
         self.page = self.browser.new_page()
         self.status_queue.put({"status": "browser_started", "message": "ブラウザを起動しました"})
@@ -426,5 +436,12 @@ def get_status(job_id):
     else:
         return jsonify({'error': '処理が見つかりません'}), 404
 
+@app.route('/health')
+def health_check():
+    """ヘルスチェック用エンドポイント"""
+    return jsonify({'status': 'healthy', 'message': 'Jobcan Web App is running'})
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+    # Railway環境用のポート設定
+    port = int(os.environ.get('PORT', 5000))
+    app.run(debug=False, host='0.0.0.0', port=port) 
