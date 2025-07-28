@@ -124,7 +124,7 @@ class JobcanAutomation:
         self.page = self.browser.new_page()
         self.status_queue.put({"status": "browser_started", "message": "ブラウザを起動しました"})
         
-    def login_to_jobcan(self, company_id: str, email: str, password: str) -> bool:
+    def login_to_jobcan(self, email: str, password: str) -> bool:
         """Jobcanにログイン"""
         try:
             self.status_queue.put({"status": "logging_in", "message": "Jobcanにログイン中..."})
@@ -133,11 +133,6 @@ class JobcanAutomation:
             self.page.goto("https://ssl.jobcan.jp/employee")
             self.page.wait_for_load_state("networkidle")
             
-            # 会社IDを入力
-            company_id_input = self.page.locator('input[name="company_id"]')
-            if company_id_input.count() > 0:
-                company_id_input.fill(company_id)
-            
             # メールアドレスを入力
             email_input = self.page.locator('input[name="email"]')
             if email_input.count() == 0:
@@ -145,23 +140,29 @@ class JobcanAutomation:
             
             if email_input.count() > 0:
                 email_input.fill(email)
+            else:
+                raise Exception("メールアドレス入力フィールドが見つかりません")
             
             # パスワードを入力
             password_input = self.page.locator('input[name="password"]')
             if password_input.count() > 0:
                 password_input.fill(password)
+            else:
+                raise Exception("パスワード入力フィールドが見つかりません")
             
             # ログインボタンをクリック
             login_button = self.page.locator('input[type="submit"], button[type="submit"]')
             if login_button.count() > 0:
                 login_button.click()
+            else:
+                raise Exception("ログインボタンが見つかりません")
             
             # ログイン後のページ読み込みを待機
             self.page.wait_for_load_state("networkidle")
             
             # ログイン成功の確認
             if "sign_in" in self.page.url or "login" in self.page.url:
-                self.status_queue.put({"status": "error", "message": "ログインに失敗しました。会社ID、メールアドレス、パスワードを確認してください"})
+                self.status_queue.put({"status": "error", "message": "ログインに失敗しました。メールアドレスとパスワードを確認してください"})
                 return False
             
             self.status_queue.put({"status": "login_success", "message": "Jobcanにログインしました"})
@@ -378,7 +379,7 @@ class JobcanAutomation:
             self.playwright.stop()
         self.status_queue.put({"status": "completed", "message": "ブラウザを閉じました"})
 
-def process_jobcan_automation(job_id: str, company_id: str, email: str, password: str, file_path: str):
+def process_jobcan_automation(job_id: str, email: str, password: str, file_path: str):
     """バックグラウンドでJobcan自動化処理を実行"""
     try:
         processing_status[job_id] = {"status": "starting", "message": "処理を開始しています..."}
@@ -391,7 +392,7 @@ def process_jobcan_automation(job_id: str, company_id: str, email: str, password
         processing_status[job_id] = {"status": "browser_started", "message": "ブラウザを起動しました"}
         
         # Jobcanにログイン
-        if not automation.login_to_jobcan(company_id, email, password):
+        if not automation.login_to_jobcan(email, password):
             processing_status[job_id] = {"status": "error", "message": "ログインに失敗しました"}
             return
         
@@ -437,14 +438,10 @@ def upload_file():
     """ファイルアップロードと処理開始"""
     try:
         # フォームデータの取得
-        company_id = request.form.get('company_id', '').strip()
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
         
         # 必須項目の確認
-        if not company_id:
-            return jsonify({'error': '会社IDを入力してください'}), 400
-        
         if not email:
             return jsonify({'error': 'メールアドレスを入力してください'}), 400
         
@@ -473,7 +470,7 @@ def upload_file():
         # バックグラウンドで処理を開始
         thread = threading.Thread(
             target=process_jobcan_automation,
-            args=(job_id, company_id, email, password, temp_path)
+            args=(job_id, email, password, temp_path)
         )
         thread.daemon = True
         thread.start()
