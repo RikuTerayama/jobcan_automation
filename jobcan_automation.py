@@ -631,36 +631,71 @@ class JobcanAutomation:
     def select_date(self, date_str: str):
         """日付を選択"""
         try:
-            print(f"日付を選択中: {date_str}")
+            print(f"📅 日付を選択中: {date_str}")
             
-            # 日付選択のセレクターを試行
+            # 日付文字列を解析
+            from datetime import datetime
+            date_obj = datetime.strptime(date_str, "%Y/%m/%d")
+            year = date_obj.year
+            month = date_obj.month
+            day = date_obj.day
+            
+            # 曜日を取得（日本語）
+            weekday_jp = ['月', '火', '水', '木', '金', '土', '日']
+            weekday = weekday_jp[date_obj.weekday()]
+            
+            # Jobcanの実際の日付形式に変換（例：07/01(火)）
+            jobcan_date_format = f"{month:02d}/{day:02d}({weekday})"
+            jobcan_date_simple = f"{month:02d}/{day:02d}"
+            print(f"📅 Jobcan日付形式: {jobcan_date_format}")
+            
+            # 日付セレクターを探す（Jobcanの実際の形式に基づく）
             date_selectors = [
-                'input[type="date"]',
-                'input[name*="date"]',
-                'input[id*="date"]',
-                'input[placeholder*="日付"]',
-                'input[placeholder*="date"]',
-                'select[name*="date"]',
-                'select[id*="date"]'
+                f'td:has-text("{jobcan_date_format}")',
+                f'a:has-text("{jobcan_date_format}")',
+                f'td:has-text("{jobcan_date_simple}")',
+                f'a:has-text("{jobcan_date_simple}")',
+                f'[data-date="{date_str}"]',
+                f'[data-date="{year}-{month:02d}-{day:02d}"]',
+                f'td[data-date="{date_str}"]',
+                f'td[data-date="{year}-{month:02d}-{day:02d}"]',
+                f'a[href*="{year}/{month:02d}/{day:02d}"]',
+                f'a[href*="{year}-{month:02d}-{day:02d}"]',
+                f'input[type="date"]',
+                f'input[name*="date"]',
+                f'input[id*="date"]',
+                f'input[placeholder*="日付"]',
+                f'input[placeholder*="date"]',
+                f'select[name*="date"]',
+                f'select[id*="date"]'
             ]
             
-            for selector in date_selectors:
+            print(f"🔍 日付セレクターを検索中...")
+            for i, selector in enumerate(date_selectors):
                 try:
-                    date_input = self.page.locator(selector)
-                    if date_input.count() > 0:
-                        print(f"日付入力フィールドを発見: {selector}")
-                        date_input.first.fill(date_str)
-                        time.sleep(1)
+                    count = self.page.locator(selector).count()
+                    print(f"🔍 セレクター {i+1}/{len(date_selectors)}: {selector} → {count}個発見")
+                    if count > 0:
+                        print(f"✅ 日付セレクターを発見: {selector}")
+                        self.page.click(selector)
+                        time.sleep(2)
+                        self.page.wait_for_load_state("networkidle")
                         return True
                 except Exception as e:
-                    print(f"日付セレクター {selector} でエラー: {e}")
+                    print(f"❌ セレクター {selector} でエラー: {e}")
                     continue
             
-            print("日付入力フィールドが見つかりません")
+            # 日付が見つからない場合は、カレンダーから探す
+            print(f"🔍 カレンダーから日付を検索中...")
+            calendar_success = self.select_date_from_calendar(date_str)
+            if calendar_success:
+                return True
+            
+            print(f"❌ 日付 {date_str} が見つかりませんでした")
             return False
             
         except Exception as e:
-            print(f"日付選択でエラー: {e}")
+            print(f"❌ 日付選択でエラー: {e}")
             return False
     
     def click_stamp_correction(self):
