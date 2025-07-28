@@ -46,32 +46,52 @@ def ensure_playwright_browser():
 def load_excel_data(file_path: str) -> List[Dict[str, str]]:
     """Excelファイルからデータを読み込み"""
     try:
-        print(f"Excelファイルを読み込み中: {file_path}")
+        print(f"📁 Excelファイルを読み込み中: {file_path}")
+        
+        # ファイルの存在確認
+        if not os.path.exists(file_path):
+            print(f"❌ ファイルが存在しません: {file_path}")
+            return []
+        
+        print(f"✅ ファイルが存在します")
         
         # Excelファイルを読み込み
+        print(f"📊 Excelファイルを読み込み中...")
         df = pd.read_excel(file_path)
         
         # データの形式を確認
-        print(f"データ形状: {df.shape}")
-        print(f"列名: {list(df.columns)}")
+        print(f"📊 データ形状: {df.shape}")
+        print(f"📊 列名: {list(df.columns)}")
+        print(f"📊 最初の5行:")
+        print(df.head())
         
         # 最初の行がヘッダーかどうかを確認
+        print(f"📋 列名の設定を確認中...")
         if len(df.columns) >= 3:
             # 列名を設定
             df.columns = ['date', 'start_time', 'end_time']
+            print(f"✅ 3列以上のデータを検出、列名を設定")
         else:
             # 最初の行をヘッダーとして扱う
             df.columns = ['date', 'start_time', 'end_time']
             df = df.iloc[1:]  # 最初の行をスキップ
+            print(f"⚠️ 3列未満のデータ、最初の行をヘッダーとしてスキップ")
+        
+        print(f"📊 処理後のデータ形状: {df.shape}")
+        print(f"📊 処理後の列名: {list(df.columns)}")
         
         # データを辞書のリストに変換
         data = []
+        print(f"📋 データの変換を開始...")
         for index, row in df.iterrows():
             try:
+                print(f"📋 行 {index + 1} を処理中...")
+                print(f"📋 生データ: {row.tolist()}")
+                
                 # 日付を文字列に変換
                 date_str = str(row['date'])
                 if pd.isna(row['date']):
-                    print(f"行 {index + 1}: 日付が空です")
+                    print(f"⚠️ 行 {index + 1}: 日付が空です")
                     continue
                 
                 # 時間を文字列に変換
@@ -79,7 +99,7 @@ def load_excel_data(file_path: str) -> List[Dict[str, str]]:
                 end_time = str(row['end_time'])
                 
                 if pd.isna(row['start_time']) or pd.isna(row['end_time']):
-                    print(f"行 {index + 1}: 時間が空です")
+                    print(f"⚠️ 行 {index + 1}: 時間が空です")
                     continue
                 
                 data.append({
@@ -88,13 +108,13 @@ def load_excel_data(file_path: str) -> List[Dict[str, str]]:
                     'end_time': end_time
                 })
                 
-                print(f"行 {index + 1}: 日付={date_str}, 開始={start_time}, 終了={end_time}")
+                print(f"✅ 行 {index + 1}: 日付={date_str}, 開始={start_time}, 終了={end_time}")
                 
             except Exception as e:
-                print(f"行 {index + 1} の処理でエラー: {e}")
+                print(f"❌ 行 {index + 1} の処理でエラー: {e}")
                 continue
         
-        print(f"読み込み完了: {len(data)} 件のデータ")
+        print(f"✅ 読み込み完了: {len(data)} 件のデータ")
         return data
         
     except Exception as e:
