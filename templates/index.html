@@ -60,7 +60,8 @@
         }
 
         .form-group input[type="text"],
-        .form-group input[type="url"] {
+        .form-group input[type="email"],
+        .form-group input[type="password"] {
             width: 100%;
             padding: 12px 15px;
             border: 2px solid #e1e5e9;
@@ -70,7 +71,8 @@
         }
 
         .form-group input[type="text"]:focus,
-        .form-group input[type="url"]:focus {
+        .form-group input[type="email"]:focus,
+        .form-group input[type="password"]:focus {
             outline: none;
             border-color: #667eea;
         }
@@ -234,6 +236,20 @@
             font-size: 14px;
         }
 
+        .security-notice {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .security-notice h4 {
+            margin-bottom: 10px;
+            color: #856404;
+        }
+
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -254,17 +270,22 @@
     <div class="container">
         <div class="header">
             <h1>Jobcan勤怠申請Webアプリ</h1>
-            <p>ExcelファイルとJobcanのURLを入力して、勤怠データを自動入力</p>
+            <p>ログイン情報とExcelファイルを入力して、勤怠データを自動入力</p>
         </div>
 
         <div class="content">
+            <div class="security-notice">
+                <h4>🔒 セキュリティについて</h4>
+                <p>入力されたログイン情報は一時的にメモリに保存され、処理完了後に自動的に削除されます。サーバーには保存されません。</p>
+            </div>
+
             <div class="instructions">
                 <h3>📋 使用方法</h3>
                 <ol>
-                    <li><strong>Jobcanにログイン</strong> - ブラウザでJobcanにログインしてください</li>
-                    <li><strong>出勤簿ページに移動</strong> - 出勤簿ページのURLをコピーしてください</li>
+                    <li><strong>Jobcanのログイン情報を入力</strong> - 会社ID、メールアドレス、パスワード</li>
                     <li><strong>Excelファイルを準備</strong> - A列:日付、B列:始業時刻、C列:終業時刻の形式で作成</li>
-                    <li><strong>ファイルとURLをアップロード</strong> - 下記フォームに入力して送信</li>
+                    <li><strong>ファイルをアップロード</strong> - 下記フォームに入力して送信</li>
+                    <li><strong>自動処理</strong> - システムが自動的にJobcanにログインして勤怠データを入力</li>
                 </ol>
                 <div class="example">
                     <strong>Excelファイル形式例:</strong><br>
@@ -275,10 +296,21 @@
 
             <form id="uploadForm" enctype="multipart/form-data">
                 <div class="form-group">
-                    <label for="jobcan_url">JobcanのURL *</label>
-                    <input type="url" id="jobcan_url" name="jobcan_url" 
-                           placeholder="https://ssl.jobcan.jp/employee/attendance" 
-                           required>
+                    <label for="company_id">会社ID *</label>
+                    <input type="text" id="company_id" name="company_id" 
+                           placeholder="例: company123" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">メールアドレス *</label>
+                    <input type="email" id="email" name="email" 
+                           placeholder="your.email@example.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">パスワード *</label>
+                    <input type="password" id="password" name="password" 
+                           placeholder="パスワードを入力" required>
                 </div>
 
                 <div class="form-group">
@@ -332,20 +364,36 @@
             
             const formData = new FormData();
             const fileInput = document.getElementById('excel_file');
-            const urlInput = document.getElementById('jobcan_url');
+            const companyIdInput = document.getElementById('company_id');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            
+            // 必須項目の確認
+            if (!companyIdInput.value.trim()) {
+                showStatus('会社IDを入力してください', 'error');
+                return;
+            }
+            
+            if (!emailInput.value.trim()) {
+                showStatus('メールアドレスを入力してください', 'error');
+                return;
+            }
+            
+            if (!passwordInput.value.trim()) {
+                showStatus('パスワードを入力してください', 'error');
+                return;
+            }
             
             if (fileInput.files.length === 0) {
                 showStatus('ファイルを選択してください', 'error');
                 return;
             }
             
-            if (!urlInput.value.trim()) {
-                showStatus('JobcanのURLを入力してください', 'error');
-                return;
-            }
-            
+            // フォームデータを追加
+            formData.append('company_id', companyIdInput.value.trim());
+            formData.append('email', emailInput.value.trim());
+            formData.append('password', passwordInput.value.trim());
             formData.append('file', fileInput.files[0]);
-            formData.append('jobcan_url', urlInput.value.trim());
             
             // 送信ボタンを無効化
             const submitBtn = document.getElementById('submitBtn');
@@ -425,8 +473,9 @@
             switch (data.status) {
                 case 'starting':
                 case 'browser_started':
+                case 'logging_in':
+                case 'login_success':
                 case 'navigating':
-                case 'url_loaded':
                 case 'attendance_loaded':
                 case 'data_loaded':
                 case 'processing':
