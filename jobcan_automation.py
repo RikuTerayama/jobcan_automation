@@ -698,76 +698,193 @@ class JobcanAutomation:
             print(f"❌ 日付選択でエラー: {e}")
             return False
     
-    def click_stamp_correction(self):
-        """打刻修正ボタンをクリック"""
+    def select_date_from_calendar(self, date_str: str):
+        """カレンダーから日付を選択"""
         try:
-            print("打刻修正ボタンをクリック中...")
+            print(f"カレンダーから日付 {date_str} を選択中...")
             
-            # 打刻修正関連のセレクターを試行
-            correction_selectors = [
-                'button:has-text("打刻修正")',
-                'button:has-text("修正")',
-                'a:has-text("打刻修正")',
-                'a:has-text("修正")',
-                'input[value*="打刻修正"]',
-                'input[value*="修正"]',
-                '[class*="correction"]',
-                '[id*="correction"]'
+            # 日付文字列から日付オブジェクトを作成
+            from datetime import datetime
+            date_obj = datetime.strptime(date_str, "%Y/%m/%d")
+            year = date_obj.year
+            month = date_obj.month
+            day = date_obj.day
+            
+            # 曜日を取得（日本語）
+            weekday_jp = ['月', '火', '水', '木', '金', '土', '日']
+            weekday = weekday_jp[date_obj.weekday()]
+            
+            # Jobcanの実際の日付形式
+            jobcan_date_format = f"{month:02d}/{day:02d}({weekday})"
+            jobcan_date_simple = f"{month:02d}/{day:02d}"
+            
+            # カレンダーのセレクターを探す
+            calendar_selectors = [
+                '.calendar',
+                '.datepicker',
+                '[class*="calendar"]',
+                '[class*="datepicker"]',
+                'table[class*="calendar"]',
+                'div[class*="calendar"]',
+                'table',
+                'tbody'
             ]
             
-            for selector in correction_selectors:
+            for selector in calendar_selectors:
                 try:
-                    correction_button = self.page.locator(selector)
-                    if correction_button.count() > 0:
-                        print(f"打刻修正ボタンを発見: {selector}")
-                        correction_button.first.click()
-                        time.sleep(2)
-                        self.page.wait_for_load_state("networkidle")
-                        return True
+                    if self.page.locator(selector).count() > 0:
+                        print(f"カレンダーを発見: {selector}")
+                        
+                        # カレンダー内で日付を探す（複数の形式に対応）
+                        day_selectors = [
+                            f'td:has-text("{jobcan_date_format}")',
+                            f'a:has-text("{jobcan_date_format}")',
+                            f'td:has-text("{jobcan_date_simple}")',
+                            f'a:has-text("{jobcan_date_simple}")',
+                            f'td:has-text("{day}")',
+                            f'a:has-text("{day}")',
+                            f'[data-day="{day}"]',
+                            f'[data-date*="{day}"]',
+                            f'[data-date="{date_str}"]',
+                            f'[data-date="{year}-{month:02d}-{day:02d}"]'
+                        ]
+                        
+                        for day_selector in day_selectors:
+                            try:
+                                if self.page.locator(day_selector).count() > 0:
+                                    print(f"日付 {jobcan_date_format} を発見: {day_selector}")
+                                    self.page.click(day_selector)
+                                    time.sleep(2)
+                                    return True
+                            except Exception as e:
+                                print(f"日付セレクター {day_selector} でエラー: {e}")
+                                continue
+                        break
                 except Exception as e:
-                    print(f"打刻修正セレクター {selector} でエラー: {e}")
+                    print(f"カレンダーセレクター {selector} でエラー: {e}")
                     continue
             
-            print("打刻修正ボタンが見つかりません")
+            print(f"❌ 日付 {date_str} が見つかりませんでした")
             return False
             
         except Exception as e:
-            print(f"打刻修正ボタンクリックでエラー: {e}")
+            print(f"❌ カレンダーからの日付選択でエラー: {e}")
+            return False
+    
+    def click_stamp_correction(self):
+        """打刻修正ボタンをクリック"""
+        try:
+            print("🔧 打刻修正ボタンをクリック中...")
+            
+            # 打刻修正ボタンを探す（Jobcanの実際のUIに基づく）
+            correction_selectors = [
+                'button:has-text("打刻修正")',
+                'a:has-text("打刻修正")',
+                'input[value*="打刻修正"]',
+                'button:has-text("修正")',
+                'a:has-text("修正")',
+                'button:has-text("編集")',
+                'a:has-text("編集")',
+                '[class*="edit"]',
+                '[class*="correction"]',
+                '[class*="modify"]',
+                'a[href*="modify"]',
+                'a[href*="edit"]'
+            ]
+            
+            print(f"🔍 打刻修正ボタンを検索中...")
+            for i, selector in enumerate(correction_selectors):
+                try:
+                    count = self.page.locator(selector).count()
+                    print(f"🔍 セレクター {i+1}/{len(correction_selectors)}: {selector} → {count}個発見")
+                    if count > 0:
+                        print(f"✅ 打刻修正ボタンを発見: {selector}")
+                        self.page.click(selector)
+                        time.sleep(3)
+                        
+                        # URLが打刻修正ページに変わったか確認
+                        current_url = self.page.url
+                        print(f"🔗 現在のURL: {current_url}")
+                        if "modify" in current_url or "edit" in current_url:
+                            print(f"✅ 打刻修正ページに遷移しました: {current_url}")
+                            return True
+                        else:
+                            print(f"⚠️ 打刻修正ページへの遷移を確認できません: {current_url}")
+                except Exception as e:
+                    print(f"❌ セレクター {selector} でエラー: {e}")
+                    continue
+            
+            print("❌ 打刻修正ボタンが見つかりませんでした")
+            return False
+            
+        except Exception as e:
+            print(f"❌ 打刻修正ボタンのクリックでエラー: {e}")
             return False
     
     def input_time(self, time_type: str, time_str: str):
         """時間を入力"""
         try:
-            print(f"{time_type}時間を入力中: {time_str}")
+            print(f"⏰ {time_type}時間を入力中: {time_str}")
             
-            # 時間入力フィールドを探す
+            # 時間入力フィールドを探す（Jobcanの実際のUIに基づく）
             time_selectors = [
                 f'input[name*="{time_type.lower()}"]',
-                f'input[id*="{time_type.lower()}"]',
+                f'input[name*="{time_type}"]',
                 f'input[placeholder*="{time_type}"]',
                 f'input[placeholder*="{time_type.lower()}"]',
+                f'input[id*="{time_type.lower()}"]',
+                f'input[id*="{time_type}"]',
                 'input[type="time"]',
                 'input[name*="time"]',
-                'input[id*="time"]'
+                'input[id*="time"]',
+                'input[name="start_time"]',
+                'input[name="end_time"]',
+                'input[name="begin_time"]',
+                'input[name="finish_time"]'
             ]
             
-            for selector in time_selectors:
+            print(f"🔍 {time_type}時間入力フィールドを検索中...")
+            time_input = None
+            for i, selector in enumerate(time_selectors):
                 try:
-                    time_input = self.page.locator(selector)
-                    if time_input.count() > 0:
-                        print(f"{time_type}時間入力フィールドを発見: {selector}")
-                        time_input.first.fill(time_str)
-                        time.sleep(1)
-                        return True
+                    count = self.page.locator(selector).count()
+                    print(f"🔍 セレクター {i+1}/{len(time_selectors)}: {selector} → {count}個発見")
+                    if count > 0:
+                        print(f"✅ {time_type}時間入力フィールドを発見: {selector}")
+                        time_input = self.page.locator(selector).first
+                        break
                 except Exception as e:
-                    print(f"{time_type}時間セレクター {selector} でエラー: {e}")
+                    print(f"❌ セレクター {selector} でエラー: {e}")
                     continue
             
-            print(f"{time_type}時間入力フィールドが見つかりません")
-            return False
+            if not time_input:
+                print(f"❌ {time_type}時間入力フィールドが見つかりませんでした")
+                return False
+            
+            # 時間を入力
+            print(f"📝 {time_type}時間 {time_str} を入力中...")
+            time_input.click()
+            time.sleep(1)
+            time_input.fill(time_str)
+            time.sleep(1)
+            
+            # 入力後の値を確認
+            input_value = time_input.input_value()
+            print(f"📝 入力後の値: {input_value}")
+            
+            # 打刻ボタンをクリック
+            print(f"🔘 {time_type}時間の打刻ボタンをクリック中...")
+            stamp_success = self.click_stamp_button(time_type)
+            
+            if stamp_success:
+                print(f"✅ {time_type}時間 {time_str} の入力と打刻が完了しました")
+            else:
+                print(f"❌ {time_type}時間 {time_str} の打刻に失敗しました")
+            
+            return stamp_success
             
         except Exception as e:
-            print(f"{time_type}時間入力でエラー: {e}")
+            print(f"❌ {time_type}時間入力でエラー: {e}")
             return False
     
     def process_attendance_data(self, data: List[Dict[str, str]]) -> List[Dict[str, str]]:
