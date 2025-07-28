@@ -15,32 +15,49 @@ def allowed_file(filename):
 def ensure_playwright_browser():
     """Playwrightブラウザを確保"""
     try:
-        print("Playwrightブラウザを確認中...")
+        print("🔧 Playwrightブラウザを確認中...")
         
         # Playwrightがインストールされているかチェック
         try:
             import playwright
-            print("Playwrightがインストールされています")
+            print("✅ Playwrightがインストールされています")
         except ImportError:
-            print("Playwrightがインストールされていません。インストール中...")
+            print("⚠️ Playwrightがインストールされていません。インストール中...")
             subprocess.check_call([sys.executable, "-m", "pip", "install", "playwright"])
-            print("Playwrightのインストールが完了しました")
+            print("✅ Playwrightのインストールが完了しました")
         
-        # ブラウザをインストール
+        # Railway環境でのブラウザインストール（より安全な方法）
         try:
-            subprocess.check_call([sys.executable, "-m", "playwright", "install", "--force", "chromium"])
-            print("Chromiumブラウザのインストールが完了しました")
+            # まず依存関係をインストール
+            print("🔧 システム依存関係をインストール中...")
+            subprocess.check_call([sys.executable, "-m", "playwright", "install-deps"], 
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            print("✅ システム依存関係のインストールが完了しました")
+            
+            # ブラウザをインストール
+            print("🌐 Chromiumブラウザをインストール中...")
+            subprocess.check_call([sys.executable, "-m", "playwright", "install", "chromium"], 
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            print("✅ Chromiumブラウザのインストールが完了しました")
+            
         except subprocess.CalledProcessError as e:
-            print(f"ブラウザのインストールでエラー: {e}")
-            # システム依存関係をインストール
+            print(f"⚠️ ブラウザのインストールでエラー: {e}")
+            print("🔄 代替方法でブラウザをインストール中...")
+            
+            # 代替方法：より安全なインストール
             try:
-                subprocess.check_call([sys.executable, "-m", "playwright", "install-deps"])
-                print("システム依存関係のインストールが完了しました")
+                subprocess.check_call([sys.executable, "-m", "playwright", "install", "chromium", "--with-deps"], 
+                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                print("✅ 代替方法でChromiumブラウザのインストールが完了しました")
             except subprocess.CalledProcessError as e2:
-                print(f"システム依存関係のインストールでエラー: {e2}")
+                print(f"❌ 代替方法でもブラウザのインストールに失敗: {e2}")
+                print("⚠️ Railway環境ではブラウザのインストールに制限がある可能性があります")
+                # Railway環境では、ブラウザが既にインストールされている可能性があるため、エラーを無視
+                pass
         
     except Exception as e:
-        print(f"Playwrightブラウザの確保でエラー: {e}")
+        print(f"❌ Playwrightブラウザの確保でエラー: {e}")
+        print("⚠️ Railway環境での制限により、ブラウザのインストールをスキップします")
 
 
 def load_excel_data(file_path: str) -> List[Dict[str, str]]:
