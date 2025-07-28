@@ -173,6 +173,30 @@ class JobcanAutomation:
                 '--disable-component-update',
                 '--disable-domain-reliability',
                 '--disable-features=TranslateUI',
+                '--disable-ipc-flooding-protection',
+                '--disable-blink-features=AutomationControlled',
+                '--disable-web-security',
+                '--disable-features=VizDisplayCompositor',
+                '--disable-dev-shm-usage',
+                '--no-sandbox',
+                '--disable-setuid-sandbox',
+                '--disable-background-timer-throttling',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-renderer-backgrounding',
+                '--disable-features=TranslateUI',
+                '--disable-ipc-flooding-protection',
+                '--disable-background-networking',
+                '--disable-default-apps',
+                '--disable-sync',
+                '--disable-translate',
+                '--hide-scrollbars',
+                '--mute-audio',
+                '--no-first-run',
+                '--safebrowsing-disable-auto-update',
+                '--disable-client-side-phishing-detection',
+                '--disable-component-update',
+                '--disable-domain-reliability',
+                '--disable-features=TranslateUI',
                 '--disable-ipc-flooding-protection'
             ]
             
@@ -185,6 +209,14 @@ class JobcanAutomation:
             print("新しいページを作成中...")
             self.page = self.browser.new_page()
             
+            # ユーザーエージェントを設定
+            self.page.set_extra_http_headers({
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            })
+            
+            # JavaScriptを有効化（ログインに必要）
+            print("JavaScriptを有効化")
+            
             self.status_queue.put({"status": "browser_started", "message": "ブラウザを起動しました"})
             print("ブラウザ起動完了")
             
@@ -194,6 +226,56 @@ class JobcanAutomation:
             self.status_queue.put({"status": "error", "message": error_msg})
             raise
         
+    def login_to_jobcan_alternative(self, email: str, password: str) -> bool:
+        """Jobcanにログイン（代替方法）"""
+        try:
+            print(f"代替ログイン方法を試行: {email}")
+            self.status_queue.put({"status": "logging_in", "message": "代替ログイン方法を試行中..."})
+            
+            # 直接ログインページにアクセス
+            print("直接ログインページにアクセス中...")
+            self.page.goto("https://ssl.jobcan.jp/employee/login")
+            self.page.wait_for_load_state("networkidle")
+            
+            print("現在のURL:", self.page.url)
+            print("ページタイトル:", self.page.title())
+            
+            # メールアドレスを入力
+            print("メールアドレスを入力中...")
+            email_input = self.page.locator('input[name="email"], input[name="staff_code"], input[type="email"]').first
+            email_input.fill(email)
+            print("メールアドレス入力完了")
+            
+            # パスワードを入力
+            print("パスワードを入力中...")
+            password_input = self.page.locator('input[name="password"], input[type="password"]').first
+            password_input.fill(password)
+            print("パスワード入力完了")
+            
+            # ログインボタンをクリック
+            print("ログインボタンをクリック中...")
+            login_button = self.page.locator('input[type="submit"], button[type="submit"]').first
+            login_button.click()
+            print("ログインボタンクリック完了")
+            
+            # ログイン後のページ読み込みを待機
+            print("ログイン後のページ読み込みを待機中...")
+            self.page.wait_for_load_state("networkidle")
+            
+            print("ログイン後のURL:", self.page.url)
+            
+            # ログイン成功の確認
+            if "login" in self.page.url or "sign_in" in self.page.url:
+                print("代替ログイン方法でも失敗")
+                return False
+            
+            print("代替ログイン方法で成功")
+            return True
+            
+        except Exception as e:
+            print(f"代替ログイン方法でエラー: {e}")
+            return False
+
     def login_to_jobcan(self, email: str, password: str) -> bool:
         """Jobcanにログイン"""
         try:
@@ -207,6 +289,10 @@ class JobcanAutomation:
             
             print("現在のURL:", self.page.url)
             print("ページタイトル:", self.page.title())
+            
+            # JavaScriptが有効かチェック
+            js_enabled = self.page.evaluate("() => typeof window !== 'undefined'")
+            print(f"JavaScript有効: {js_enabled}")
             
             # ページのHTMLを確認（デバッグ用）
             page_content = self.page.content()
@@ -238,7 +324,9 @@ class JobcanAutomation:
                 'input[placeholder*="Email"]',
                 'input[id*="email"]',
                 'input[id*="login"]',
-                'input[id*="user"]'
+                'input[id*="user"]',
+                'input[name="username"]',
+                'input[name="account"]'
             ]
             
             email_input = None
@@ -304,6 +392,10 @@ class JobcanAutomation:
             password_input.fill(password)
             print("パスワード入力完了")
             
+            # 入力後の値を確認
+            print(f"入力されたメールアドレス: {email_input.input_value()}")
+            print(f"入力されたパスワード: {'*' * len(password_input.input_value())}")
+            
             # ログインボタンを探す（複数のパターンを試す）
             print("ログインボタンを探しています...")
             login_selectors = [
@@ -361,6 +453,11 @@ class JobcanAutomation:
             print("ログイン後のURL:", self.page.url)
             print("ログイン後のページタイトル:", self.page.title())
             
+            # ページの内容を確認
+            print("ログイン後のページ内容を確認中...")
+            page_text = self.page.text_content('body')
+            print(f"ページテキスト（最初の500文字）: {page_text[:500]}")
+            
             # ログイン成功の確認（複数の方法でチェック）
             login_success = True
             
@@ -377,10 +474,14 @@ class JobcanAutomation:
                 'text=Invalid email or password',
                 'text=認証に失敗しました',
                 'text=Authentication failed',
+                'text=ログインできませんでした',
+                'text=Could not login',
                 '.error',
                 '.alert',
                 '[class*="error"]',
-                '[class*="alert"]'
+                '[class*="alert"]',
+                '[class*="danger"]',
+                '[class*="warning"]'
             ]
             
             for error_selector in error_selectors:
@@ -401,8 +502,11 @@ class JobcanAutomation:
                 'text=Attendance',
                 'text=出勤簿',
                 'text=Timecard',
+                'text=マイページ',
+                'text=My Page',
                 'a[href*="attendance"]',
-                'a[href*="timecard"]'
+                'a[href*="timecard"]',
+                'a[href*="mypage"]'
             ]
             
             success_found = False
@@ -415,11 +519,14 @@ class JobcanAutomation:
                 except:
                     continue
             
+            # 追加のチェック：ログインフォームがまだ表示されているか
+            if self.page.locator('input[name="email"], input[name="staff_code"], input[name="password"]').count() > 0:
+                print("ログインフォームがまだ表示されているため、ログイン失敗と判断")
+                login_success = False
+            
             if not login_success or not success_found:
-                error_msg = "ログインに失敗しました。メールアドレスとパスワードを確認してください"
-                print(error_msg)
-                self.status_queue.put({"status": "error", "message": error_msg})
-                return False
+                print("通常のログイン方法が失敗したため、代替方法を試行")
+                return self.login_to_jobcan_alternative(email, password)
             
             print("ログイン成功")
             self.status_queue.put({"status": "login_success", "message": "Jobcanにログインしました"})
