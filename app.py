@@ -353,8 +353,19 @@ class JobcanAutomation:
                 'inputs': [],
                 'buttons': [],
                 'error_messages': [],
-                'page_text': self.page.text_content('body')[:1000]
+                'page_text': self.page.text_content('body')[:1000],
+                'html_content': self.page.content()[:2000],  # HTMLコンテンツも追加
+                'screenshot_base64': None  # スクリーンショットも追加
             }
+            
+            # スクリーンショットを取得（デバッグ用）
+            try:
+                screenshot_bytes = self.page.screenshot()
+                import base64
+                self.diagnosis_data['screenshot_base64'] = base64.b64encode(screenshot_bytes).decode('utf-8')
+                print("スクリーンショットを取得しました")
+            except Exception as e:
+                print(f"スクリーンショット取得エラー: {e}")
             
             # ページの基本情報
             print(f"現在のURL: {self.page.url}")
@@ -365,9 +376,10 @@ class JobcanAutomation:
             
             # フォーム要素の詳細
             forms = self.page.locator('form')
-            print(f"フォーム数: {forms.count()}")
+            forms_count = forms.count()
+            print(f"フォーム数: {forms_count}")
             
-            for i in range(forms.count()):
+            for i in range(forms_count):
                 try:
                     form = forms.nth(i)
                     form_data = {
@@ -384,9 +396,10 @@ class JobcanAutomation:
             
             # 入力フィールドの詳細
             inputs = self.page.locator('input')
-            print(f"\n入力フィールド数: {inputs.count()}")
+            inputs_count = inputs.count()
+            print(f"\n入力フィールド数: {inputs_count}")
             
-            for i in range(inputs.count()):
+            for i in range(inputs_count):
                 try:
                     input_elem = inputs.nth(i)
                     input_data = {
@@ -396,18 +409,20 @@ class JobcanAutomation:
                         'placeholder': input_elem.get_attribute('placeholder') or 'なし',
                         'id': input_elem.get_attribute('id') or 'なし',
                         'class': input_elem.get_attribute('class') or 'なし',
-                        'value': input_elem.get_attribute('value') or 'なし'
+                        'value': input_elem.get_attribute('value') or 'なし',
+                        'autocomplete': input_elem.get_attribute('autocomplete') or 'なし'
                     }
                     self.diagnosis_data['inputs'].append(input_data)
-                    print(f"  input[{i}]: name='{input_data['name']}', type='{input_data['type']}', placeholder='{input_data['placeholder']}', id='{input_data['id']}', class='{input_data['class']}', value='{input_data['value']}'")
+                    print(f"  input[{i}]: name='{input_data['name']}', type='{input_data['type']}', placeholder='{input_data['placeholder']}', id='{input_data['id']}', class='{input_data['class']}', value='{input_data['value']}', autocomplete='{input_data['autocomplete']}'")
                 except Exception as e:
                     print(f"  input[{i}]分析エラー: {e}")
             
             # ボタン要素の詳細
             buttons = self.page.locator('button, input[type="submit"]')
-            print(f"\nボタン要素数: {buttons.count()}")
+            buttons_count = buttons.count()
+            print(f"\nボタン要素数: {buttons_count}")
             
-            for i in range(buttons.count()):
+            for i in range(buttons_count):
                 try:
                     button_elem = buttons.nth(i)
                     button_data = {
@@ -449,9 +464,33 @@ class JobcanAutomation:
                     pass
             
             print("=== ログインページ診断完了 ===")
+            print(f"診断データ: {self.diagnosis_data}")
+            
+            # 診断データの詳細を表示
+            print(f"\n=== 診断データ詳細 ===")
+            print(f"URL: {self.diagnosis_data.get('url', 'N/A')}")
+            print(f"タイトル: {self.diagnosis_data.get('title', 'N/A')}")
+            print(f"フォーム数: {len(self.diagnosis_data.get('forms', []))}")
+            print(f"入力フィールド数: {len(self.diagnosis_data.get('inputs', []))}")
+            print(f"ボタン数: {len(self.diagnosis_data.get('buttons', []))}")
+            print(f"エラーメッセージ数: {len(self.diagnosis_data.get('error_messages', []))}")
+            
+            # 入力フィールドの詳細を表示
+            if self.diagnosis_data.get('inputs'):
+                print(f"\n=== 入力フィールド詳細 ===")
+                for i, input_data in enumerate(self.diagnosis_data['inputs']):
+                    print(f"  input[{i}]: {input_data}")
+            
+            # ボタンの詳細を表示
+            if self.diagnosis_data.get('buttons'):
+                print(f"\n=== ボタン詳細 ===")
+                for i, button_data in enumerate(self.diagnosis_data['buttons']):
+                    print(f"  button[{i}]: {button_data}")
             
         except Exception as e:
             print(f"診断中にエラー: {e}")
+            import traceback
+            traceback.print_exc()
 
     def try_different_login_methods(self, email: str, password: str):
         """異なるログイン方法を試行"""
@@ -1118,8 +1157,19 @@ class AsyncJobcanAutomation:
                 'inputs': [],
                 'buttons': [],
                 'error_messages': [],
-                'page_text': await self.page.text_content('body')[:1000]
+                'page_text': await self.page.text_content('body')[:1000],
+                'html_content': await self.page.content()[:2000],  # HTMLコンテンツも追加
+                'screenshot_base64': None  # スクリーンショットも追加
             }
+            
+            # スクリーンショットを取得（デバッグ用）
+            try:
+                screenshot_bytes = await self.page.screenshot()
+                import base64
+                self.diagnosis_data['screenshot_base64'] = base64.b64encode(screenshot_bytes).decode('utf-8')
+                print("スクリーンショットを取得しました")
+            except Exception as e:
+                print(f"スクリーンショット取得エラー: {e}")
             
             # ページの基本情報
             print(f"現在のURL: {self.page.url}")
@@ -1163,10 +1213,11 @@ class AsyncJobcanAutomation:
                         'placeholder': await input_elem.get_attribute('placeholder') or 'なし',
                         'id': await input_elem.get_attribute('id') or 'なし',
                         'class': await input_elem.get_attribute('class') or 'なし',
-                        'value': await input_elem.get_attribute('value') or 'なし'
+                        'value': await input_elem.get_attribute('value') or 'なし',
+                        'autocomplete': await input_elem.get_attribute('autocomplete') or 'なし'
                     }
                     self.diagnosis_data['inputs'].append(input_data)
-                    print(f"  input[{i}]: name='{input_data['name']}', type='{input_data['type']}', placeholder='{input_data['placeholder']}', id='{input_data['id']}', class='{input_data['class']}', value='{input_data['value']}'")
+                    print(f"  input[{i}]: name='{input_data['name']}', type='{input_data['type']}', placeholder='{input_data['placeholder']}', id='{input_data['id']}', class='{input_data['class']}', value='{input_data['value']}', autocomplete='{input_data['autocomplete']}'")
                 except Exception as e:
                     print(f"  input[{i}]分析エラー: {e}")
             
@@ -1218,9 +1269,33 @@ class AsyncJobcanAutomation:
                     pass
             
             print("=== ログインページ診断完了 ===")
+            print(f"診断データ: {self.diagnosis_data}")
+            
+            # 診断データの詳細を表示
+            print(f"\n=== 診断データ詳細 ===")
+            print(f"URL: {self.diagnosis_data.get('url', 'N/A')}")
+            print(f"タイトル: {self.diagnosis_data.get('title', 'N/A')}")
+            print(f"フォーム数: {len(self.diagnosis_data.get('forms', []))}")
+            print(f"入力フィールド数: {len(self.diagnosis_data.get('inputs', []))}")
+            print(f"ボタン数: {len(self.diagnosis_data.get('buttons', []))}")
+            print(f"エラーメッセージ数: {len(self.diagnosis_data.get('error_messages', []))}")
+            
+            # 入力フィールドの詳細を表示
+            if self.diagnosis_data.get('inputs'):
+                print(f"\n=== 入力フィールド詳細 ===")
+                for i, input_data in enumerate(self.diagnosis_data['inputs']):
+                    print(f"  input[{i}]: {input_data}")
+            
+            # ボタンの詳細を表示
+            if self.diagnosis_data.get('buttons'):
+                print(f"\n=== ボタン詳細 ===")
+                for i, button_data in enumerate(self.diagnosis_data['buttons']):
+                    print(f"  button[{i}]: {button_data}")
             
         except Exception as e:
             print(f"診断中にエラー: {e}")
+            import traceback
+            traceback.print_exc()
 
     async def analyze_login_failure(self):
         """ログイン失敗の原因を分析"""
@@ -1430,6 +1505,35 @@ class AsyncJobcanAutomation:
                 except Exception as e:
                     print(f"代替方法でエラー: {e}")
             
+            # さらに直接的なアプローチ：位置ベースの検索
+            if not email_input:
+                print("位置ベースの検索を試行")
+                try:
+                    # フォーム内の最初の入力フィールドを探す
+                    form_inputs = self.page.locator('form input')
+                    form_input_count = await form_inputs.count()
+                    print(f"フォーム内のinput要素数: {form_input_count}")
+                    
+                    if form_input_count > 0:
+                        # 最初の要素を取得
+                        email_input = form_inputs.first
+                        type_attr = await email_input.get_attribute('type') or ''
+                        print(f"位置ベースでメールアドレス入力フィールドを発見: type='{type_attr}'")
+                except Exception as e:
+                    print(f"位置ベース検索でエラー: {e}")
+            
+            # 最終手段：すべてのinput要素の最初のものを使用
+            if not email_input:
+                print("最終手段：すべてのinput要素の最初のものを使用")
+                try:
+                    all_inputs = self.page.locator('input')
+                    if await all_inputs.count() > 0:
+                        email_input = all_inputs.first
+                        type_attr = await email_input.get_attribute('type') or ''
+                        print(f"最終手段でメールアドレス入力フィールドを発見: type='{type_attr}'")
+                except Exception as e:
+                    print(f"最終手段でエラー: {e}")
+            
             if not email_input:
                 print("メールアドレス入力フィールドが見つからないため、ページの詳細を確認")
                 # ページ内のすべてのinput要素を確認
@@ -1512,6 +1616,32 @@ class AsyncJobcanAutomation:
                         print(f"代替方法でパスワード入力フィールドを発見: 最初のpassword要素")
                 except Exception as e:
                     print(f"代替方法でエラー: {e}")
+            
+            # さらに直接的なアプローチ：位置ベースの検索
+            if not password_input:
+                print("位置ベースのパスワード検索を試行")
+                try:
+                    # フォーム内のpassword要素を探す
+                    form_password_inputs = self.page.locator('form input[type="password"]')
+                    form_password_count = await form_password_inputs.count()
+                    print(f"フォーム内のpassword要素数: {form_password_count}")
+                    
+                    if form_password_count > 0:
+                        password_input = form_password_inputs.first
+                        print(f"位置ベースでパスワード入力フィールドを発見")
+                except Exception as e:
+                    print(f"位置ベースパスワード検索でエラー: {e}")
+            
+            # 最終手段：すべてのpassword要素の最初のものを使用
+            if not password_input:
+                print("最終手段：すべてのpassword要素の最初のものを使用")
+                try:
+                    all_password_inputs = self.page.locator('input[type="password"]')
+                    if await all_password_inputs.count() > 0:
+                        password_input = all_password_inputs.first
+                        print(f"最終手段でパスワード入力フィールドを発見")
+                except Exception as e:
+                    print(f"最終手段でエラー: {e}")
             
             if not password_input:
                 print("パスワード入力フィールドが見つからないため、ページの詳細を確認")
