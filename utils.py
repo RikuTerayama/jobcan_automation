@@ -33,13 +33,23 @@ def ensure_playwright_browser():
         # システムのChromiumが利用可能かチェック
         try:
             import subprocess
-            result = subprocess.run(['which', 'chromium'], capture_output=True, text=True)
-            if result.returncode == 0:
-                print(f"✅ システムのChromiumが見つかりました: {result.stdout.strip()}")
-            else:
-                print("⚠️ システムのChromiumが見つかりません")
+            # 複数のブラウザパスをチェック
+            browser_paths = ['chromium', 'chromium-browser', 'google-chrome', 'chrome']
+            found_browser = None
+            
+            for browser in browser_paths:
+                result = subprocess.run(['which', browser], capture_output=True, text=True)
+                if result.returncode == 0:
+                    found_browser = result.stdout.strip()
+                    print(f"✅ システムの{browser}が見つかりました: {found_browser}")
+                    break
+            
+            if not found_browser:
+                print("⚠️ システムのブラウザが見つかりません")
+                print("🔄 Playwrightの組み込みブラウザを使用します")
         except Exception as e:
             print(f"⚠️ システムブラウザのチェックでエラー: {e}")
+            print("🔄 Playwrightの組み込みブラウザを使用します")
         
         return True
         
