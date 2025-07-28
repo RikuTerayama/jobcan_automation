@@ -332,10 +332,10 @@ class AsyncJobcanAutomation:
                     
                     print(f"処理データ: 日付={date_str}, 始業={start_time_str}, 終業={end_time_str}")
                     
-                    # ここで実際の勤怠入力処理を行う
-                    # （実際のJobcanのUIに応じて実装）
+                    # 実際の勤怠入力処理を実行
+                    await self.input_attendance_for_date(date_str, start_time_str, end_time_str)
                     
-                    await asyncio.sleep(1)  # 処理間隔
+                    await asyncio.sleep(2)  # 処理間隔
                     
                 except Exception as e:
                     print(f"{date} の処理でエラー: {e}")
@@ -345,4 +345,341 @@ class AsyncJobcanAutomation:
             
         except Exception as e:
             print(f"勤怠データ処理中にエラーが発生しました: {e}")
+            raise
+
+    async def input_attendance_for_date(self, date_str: str, start_time: str, end_time: str):
+        """指定された日付の勤怠を入力"""
+        try:
+            print(f"日付 {date_str} の勤怠入力を開始...")
+            
+            # 現在のページの状態を確認
+            await self.debug_page_state("勤怠入力開始前")
+            
+            # 1. 日付を選択
+            await self.select_date(date_str)
+            await self.debug_page_state("日付選択後")
+            
+            # 2. 打刻修正ボタンをクリック
+            await self.click_stamp_correction()
+            await self.debug_page_state("打刻修正ボタンクリック後")
+            
+            # 3. 始業時刻を入力
+            await self.input_start_time(start_time)
+            await self.debug_page_state("始業時刻入力後")
+            
+            # 4. 終業時刻を入力
+            await self.input_end_time(end_time)
+            await self.debug_page_state("終業時刻入力後")
+            
+            # 5. 保存ボタンをクリック
+            await self.click_save_button()
+            await self.debug_page_state("保存ボタンクリック後")
+            
+            print(f"日付 {date_str} の勤怠入力が完了しました")
+            
+        except Exception as e:
+            print(f"日付 {date_str} の勤怠入力でエラー: {e}")
+            await self.debug_page_state("エラー発生時")
+            raise
+
+    async def debug_page_state(self, stage: str):
+        """ページの状態をデバッグ出力"""
+        try:
+            print(f"\n=== デバッグ情報 ({stage}) ===")
+            print(f"現在のURL: {self.page.url}")
+            print(f"ページタイトル: {await self.page.title()}")
+            
+            # ページ内の要素数を確認
+            try:
+                form_count = await self.page.evaluate("() => document.forms.length")
+                input_count = await self.page.evaluate("() => document.querySelectorAll('input').length")
+                button_count = await self.page.evaluate("() => document.querySelectorAll('button').length")
+                
+                print(f"フォーム数: {form_count}")
+                print(f"入力フィールド数: {input_count}")
+                print(f"ボタン数: {button_count}")
+                
+                # 入力フィールドの詳細を確認
+                if input_count > 0:
+                    print("入力フィールドの詳細:")
+                    inputs_info = await self.page.evaluate("""
+                        () => {
+                            const inputs = document.querySelectorAll('input');
+                            const results = [];
+                            for (let i = 0; i < inputs.length; i++) {
+                                const input = inputs[i];
+                                results.push({
+                                    index: i,
+                                    type: input.type || '',
+                                    name: input.name || '',
+                                    id: input.id || '',
+                                    placeholder: input.placeholder || '',
+                                    value: input.value || '',
+                                    visible: input.offsetWidth > 0 && input.offsetHeight > 0
+                                });
+                            }
+                            return results;
+                        }
+                    """)
+                    
+                    for i, input_info in enumerate(inputs_info):
+                        print(f"  input[{i}]: {input_info}")
+                
+                # ボタンの詳細を確認
+                if button_count > 0:
+                    print("ボタンの詳細:")
+                    buttons_info = await self.page.evaluate("""
+                        () => {
+                            const buttons = document.querySelectorAll('button');
+                            const results = [];
+                            for (let i = 0; i < buttons.length; i++) {
+                                const button = buttons[i];
+                                results.push({
+                                    index: i,
+                                    text: button.textContent || '',
+                                    type: button.type || '',
+                                    id: button.id || '',
+                                    className: button.className || '',
+                                    visible: button.offsetWidth > 0 && button.offsetHeight > 0
+                                });
+                            }
+                            return results;
+                        }
+                    """)
+                    
+                    for i, button_info in enumerate(buttons_info):
+                        print(f"  button[{i}]: {button_info}")
+                
+            except Exception as e:
+                print(f"デバッグ情報取得でエラー: {e}")
+            
+            print("=== デバッグ情報終了 ===\n")
+            
+        except Exception as e:
+            print(f"デバッグページ状態でエラー: {e}")
+
+    async def select_date(self, date_str: str):
+        """指定された日付を選択"""
+        try:
+            print(f"日付 {date_str} を選択中...")
+            
+            # 日付セレクターを探す（複数のパターンを試す）
+            date_selectors = [
+                f'[data-date="{date_str}"]',
+                f'a[href*="{date_str}"]',
+                f'td:has-text("{date_str}")',
+                f'a:has-text("{date_str}")',
+                f'[data-value="{date_str}"]',
+                f'input[value="{date_str}"]'
+            ]
+            
+            for selector in date_selectors:
+                try:
+                    if await self.page.locator(selector).count() > 0:
+                        print(f"日付セレクターを発見: {selector}")
+                        await self.page.click(selector)
+                        await asyncio.sleep(1)
+                        return
+                except:
+                    continue
+            
+            # 日付が見つからない場合は、カレンダーから探す
+            await self.select_date_from_calendar(date_str)
+            
+        except Exception as e:
+            print(f"日付選択でエラー: {e}")
+            raise
+
+    async def select_date_from_calendar(self, date_str: str):
+        """カレンダーから日付を選択"""
+        try:
+            print(f"カレンダーから日付 {date_str} を選択中...")
+            
+            # カレンダーのセレクターを探す
+            calendar_selectors = [
+                '.calendar',
+                '.datepicker',
+                '[class*="calendar"]',
+                '[class*="datepicker"]',
+                'table[class*="calendar"]',
+                'div[class*="calendar"]'
+            ]
+            
+            for selector in calendar_selectors:
+                try:
+                    if await self.page.locator(selector).count() > 0:
+                        print(f"カレンダーを発見: {selector}")
+                        
+                        # 日付文字列から日付オブジェクトを作成
+                        date_obj = datetime.strptime(date_str, "%Y/%m/%d")
+                        day = date_obj.day
+                        
+                        # カレンダー内で日付を探す
+                        day_selectors = [
+                            f'td:has-text("{day}")',
+                            f'a:has-text("{day}")',
+                            f'[data-day="{day}"]',
+                            f'[data-date*="{day}"]'
+                        ]
+                        
+                        for day_selector in day_selectors:
+                            try:
+                                if await self.page.locator(day_selector).count() > 0:
+                                    print(f"日付 {day} を発見: {day_selector}")
+                                    await self.page.click(day_selector)
+                                    await asyncio.sleep(1)
+                                    return
+                            except:
+                                continue
+                        break
+                except:
+                    continue
+            
+            print(f"日付 {date_str} が見つかりませんでした")
+            
+        except Exception as e:
+            print(f"カレンダーからの日付選択でエラー: {e}")
+            raise
+
+    async def click_stamp_correction(self):
+        """打刻修正ボタンをクリック"""
+        try:
+            print("打刻修正ボタンをクリック中...")
+            
+            # 打刻修正ボタンを探す（複数のパターンを試す）
+            correction_selectors = [
+                'button:has-text("打刻修正")',
+                'a:has-text("打刻修正")',
+                'input[value*="打刻修正"]',
+                'button:has-text("修正")',
+                'a:has-text("修正")',
+                'button:has-text("編集")',
+                'a:has-text("編集")',
+                '[class*="edit"]',
+                '[class*="correction"]',
+                '[class*="modify"]'
+            ]
+            
+            for selector in correction_selectors:
+                try:
+                    if await self.page.locator(selector).count() > 0:
+                        print(f"打刻修正ボタンを発見: {selector}")
+                        await self.page.click(selector)
+                        await asyncio.sleep(2)
+                        return
+                except:
+                    continue
+            
+            print("打刻修正ボタンが見つかりませんでした")
+            
+        except Exception as e:
+            print(f"打刻修正ボタンのクリックでエラー: {e}")
+            raise
+
+    async def input_start_time(self, start_time: str):
+        """始業時刻を入力"""
+        try:
+            print(f"始業時刻 {start_time} を入力中...")
+            
+            # 始業時刻入力フィールドを探す
+            start_time_selectors = [
+                'input[name*="start"]',
+                'input[name*="begin"]',
+                'input[placeholder*="始業"]',
+                'input[placeholder*="開始"]',
+                'input[id*="start"]',
+                'input[id*="begin"]',
+                'input[type="time"]:first-of-type',
+                'input[type="time"]'
+            ]
+            
+            for selector in start_time_selectors:
+                try:
+                    if await self.page.locator(selector).count() > 0:
+                        print(f"始業時刻入力フィールドを発見: {selector}")
+                        start_input = self.page.locator(selector).first
+                        await start_input.click()
+                        await asyncio.sleep(0.5)
+                        await start_input.fill(start_time)
+                        await asyncio.sleep(0.5)
+                        return
+                except:
+                    continue
+            
+            print("始業時刻入力フィールドが見つかりませんでした")
+            
+        except Exception as e:
+            print(f"始業時刻入力でエラー: {e}")
+            raise
+
+    async def input_end_time(self, end_time: str):
+        """終業時刻を入力"""
+        try:
+            print(f"終業時刻 {end_time} を入力中...")
+            
+            # 終業時刻入力フィールドを探す
+            end_time_selectors = [
+                'input[name*="end"]',
+                'input[name*="finish"]',
+                'input[placeholder*="終業"]',
+                'input[placeholder*="終了"]',
+                'input[id*="end"]',
+                'input[id*="finish"]',
+                'input[type="time"]:last-of-type',
+                'input[type="time"]'
+            ]
+            
+            for selector in end_time_selectors:
+                try:
+                    if await self.page.locator(selector).count() > 0:
+                        print(f"終業時刻入力フィールドを発見: {selector}")
+                        end_input = self.page.locator(selector).first
+                        await end_input.click()
+                        await asyncio.sleep(0.5)
+                        await end_input.fill(end_time)
+                        await asyncio.sleep(0.5)
+                        return
+                except:
+                    continue
+            
+            print("終業時刻入力フィールドが見つかりませんでした")
+            
+        except Exception as e:
+            print(f"終業時刻入力でエラー: {e}")
+            raise
+
+    async def click_save_button(self):
+        """保存ボタンをクリック"""
+        try:
+            print("保存ボタンをクリック中...")
+            
+            # 保存ボタンを探す（複数のパターンを試す）
+            save_selectors = [
+                'button:has-text("保存")',
+                'button:has-text("登録")',
+                'button:has-text("確定")',
+                'input[value*="保存"]',
+                'input[value*="登録"]',
+                'input[value*="確定"]',
+                'button[type="submit"]',
+                'input[type="submit"]',
+                '[class*="save"]',
+                '[class*="submit"]',
+                '[class*="confirm"]'
+            ]
+            
+            for selector in save_selectors:
+                try:
+                    if await self.page.locator(selector).count() > 0:
+                        print(f"保存ボタンを発見: {selector}")
+                        await self.page.click(selector)
+                        await asyncio.sleep(2)
+                        return
+                except:
+                    continue
+            
+            print("保存ボタンが見つかりませんでした")
+            
+        except Exception as e:
+            print(f"保存ボタンのクリックでエラー: {e}")
             raise 
