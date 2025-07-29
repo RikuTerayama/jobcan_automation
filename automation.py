@@ -600,35 +600,42 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     os.makedirs(user_data_dir, exist_ok=True)
                 
                 # セッション固有のブラウザ起動オプション
-                browser_options = {
-                    'headless': True,
-                    'args': [
-                        '--no-sandbox',
-                        '--disable-setuid-sandbox',
-                        '--disable-dev-shm-usage',
-                        '--disable-accelerated-2d-canvas',
-                        '--no-first-run',
-                        '--no-zygote',
-                        '--disable-gpu',
-                        '--disable-background-timer-throttling',
-                        '--disable-backgrounding-occluded-windows',
-                        '--disable-renderer-backgrounding'
-                    ]
-                }
+                browser_args = [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-accelerated-2d-canvas',
+                    '--no-first-run',
+                    '--no-zygote',
+                    '--disable-gpu',
+                    '--disable-background-timer-throttling',
+                    '--disable-backgrounding-occluded-windows',
+                    '--disable-renderer-backgrounding'
+                ]
                 
+                # user_data_dirがある場合はlaunch_persistent_contextを使用
                 if user_data_dir:
-                    browser_options['user_data_dir'] = user_data_dir
-                
-                browser = p.chromium.launch(**browser_options)
-                
-                # セッション固有のコンテキスト設定
-                context_options = {
-                    'viewport': {'width': 1280, 'height': 720},
-                    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-                }
-                
-                context = browser.new_context(**context_options)
-                page = context.new_page()
+                    context = p.chromium.launch_persistent_context(
+                        user_data_dir=user_data_dir,
+                        headless=True,
+                        args=browser_args
+                    )
+                    page = context.new_page()
+                else:
+                    # user_data_dirがない場合は通常のlaunchを使用
+                    browser = p.chromium.launch(
+                        headless=True,
+                        args=browser_args
+                    )
+                    
+                    # セッション固有のコンテキスト設定
+                    context_options = {
+                        'viewport': {'width': 1280, 'height': 720},
+                        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                    }
+                    
+                    context = browser.new_context(**context_options)
+                    page = context.new_page()
                 
                 add_job_log(job_id, "✅ ブラウザ起動完了", jobs)
                 if session_id:
@@ -666,7 +673,12 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 jobs[job_id]['status'] = 'completed'
                 
                 # ブラウザを閉じる
-                browser.close()
+                if user_data_dir:
+                    # launch_persistent_contextを使用した場合
+                    context.close()
+                else:
+                    # 通常のlaunchを使用した場合
+                    browser.close()
                 add_job_log(job_id, "🔒 ブラウザセッションを終了しました", jobs)
                 
         except Exception as e:
