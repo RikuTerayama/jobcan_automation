@@ -480,17 +480,19 @@ def get_status(job_id):
 
 @app.route('/health')
 def health_check():
-    """ヘルスチェックエンドポイント"""
+    """ヘルスチェックエンドポイント（最適化版）"""
     try:
-        # 最小限の情報のみを返す
+        # 最小限のチェックのみ実行
         return jsonify({
             'status': 'healthy',
-            'message': 'Service is running'
+            'message': 'Service is running',
+            'timestamp': time.time()
         })
     except Exception as e:
         return jsonify({
             'status': 'error',
-            'error': str(e)
+            'error': str(e),
+            'timestamp': time.time()
         }), 500
 
 @app.route('/health/detailed')
