@@ -549,9 +549,13 @@ try:
     print(f"🔧 環境: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
     print(f"🔧 Python バージョン: {os.sys.version}")
     print(f"🔧 ポート: {os.environ.get('PORT', '5000')}")
+    print(f"🔧 作業ディレクトリ: {os.getcwd()}")
+    print(f"🔧 ファイル一覧: {os.listdir('.')}")
     print(f"✅ アプリケーション初期化完了")
 except Exception as e:
     print(f"❌ アプリケーション初期化でエラー: {e}")
+    import traceback
+    traceback.print_exc()
 
 if __name__ == '__main__':
     try:
