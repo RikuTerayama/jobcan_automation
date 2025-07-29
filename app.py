@@ -6,6 +6,8 @@ import uuid
 import threading
 import tempfile
 import shutil
+import psutil
+import time
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template, send_file
 
@@ -25,25 +27,93 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 jobs = {}
 jobs_lock = threading.Lock()
 
-# アクティブなPlaywrightインスタンスを管理
-active_browsers = {}
-browser_lock = threading.Lock()
+# セッション管理とリソース監視
+session_manager = {
+    'active_sessions': {},
+    'session_lock': threading.Lock(),
+    'resource_monitor': {
+        'last_check': time.time(),
+        'memory_usage': 0,
+        'cpu_usage': 0,
+        'active_browsers': 0
+    }
+}
 
-def get_user_session_dir(job_id):
-    """ユーザーごとの一時ディレクトリを取得"""
-    session_dir = os.path.join(tempfile.gettempdir(), f'jobcan_session_{job_id}')
+def get_system_resources():
+    """システムリソースの使用状況を取得"""
+    try:
+        process = psutil.Process()
+        memory_info = process.memory_info()
+        cpu_percent = process.cpu_percent()
+        
+        return {
+            'memory_mb': memory_info.rss / 1024 / 1024,
+            'cpu_percent': cpu_percent,
+            'active_sessions': len(session_manager['active_sessions'])
+        }
+    except Exception as e:
+        print(f"リソース監視エラー: {e}")
+        return {'memory_mb': 0, 'cpu_percent': 0, 'active_sessions': 0}
+
+def check_resource_limits():
+    """リソース制限のチェック（警告のみ、処理は継続）"""
+    resources = get_system_resources()
+    
+    warnings = []
+    
+    # メモリ使用量の警告（1GB超過）
+    if resources['memory_mb'] > 1024:
+        warnings.append(f"メモリ使用量が高いです: {resources['memory_mb']:.1f}MB")
+    
+    # CPU使用量の警告（80%超過）
+    if resources['cpu_percent'] > 80:
+        warnings.append(f"CPU使用量が高いです: {resources['cpu_percent']:.1f}%")
+    
+    # アクティブセッション数の警告（50超過）
+    if resources['active_sessions'] > 50:
+        warnings.append(f"アクティブセッション数が多いです: {resources['active_sessions']}個")
+    
+    return warnings
+
+def create_unique_session_id():
+    """ユニークなセッションIDを生成"""
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+    session_id = f"session_{uuid.uuid4().hex}_{timestamp}"
+    return session_id
+
+def get_user_session_dir(session_id):
+    """ユーザーごとの一時ディレクトリを取得（完全分離）"""
+    session_dir = os.path.join(tempfile.gettempdir(), f'jobcan_session_{session_id}')
     if not os.path.exists(session_dir):
         os.makedirs(session_dir)
     return session_dir
 
-def cleanup_user_session(job_id):
-    """ユーザーセッションのクリーンアップ"""
+def cleanup_user_session(session_id):
+    """ユーザーセッションのクリーンアップ（完全削除）"""
     try:
-        session_dir = get_user_session_dir(job_id)
+        session_dir = get_user_session_dir(session_id)
         if os.path.exists(session_dir):
             shutil.rmtree(session_dir)
+            print(f"セッションクリーンアップ完了: {session_id}")
     except Exception as e:
-        print(f"セッションクリーンアップエラー: {e}")
+        print(f"セッションクリーンアップエラー {session_id}: {e}")
+
+def register_session(session_id, job_id):
+    """セッションを登録"""
+    with session_manager['session_lock']:
+        session_manager['active_sessions'][session_id] = {
+            'job_id': job_id,
+            'start_time': time.time(),
+            'status': 'active'
+        }
+        print(f"セッション登録: {session_id} (ジョブ: {job_id})")
+
+def unregister_session(session_id):
+    """セッションを登録解除"""
+    with session_manager['session_lock']:
+        if session_id in session_manager['active_sessions']:
+            del session_manager['active_sessions'][session_id]
+            print(f"セッション解除: {session_id}")
 
 def validate_input_data(email, password, file):
     """入力データの検証"""
@@ -75,12 +145,19 @@ def ping():
 @app.route('/health')
 def health():
     from utils import pandas_available, openpyxl_available, playwright_available
+    
+    # リソース監視情報を追加
+    resources = get_system_resources()
+    warnings = check_resource_limits()
+    
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
         'pandas_available': pandas_available,
         'openpyxl_available': openpyxl_available,
-        'playwright_available': playwright_available
+        'playwright_available': playwright_available,
+        'resources': resources,
+        'warnings': warnings
     })
 
 @app.route('/ready')
@@ -139,21 +216,26 @@ def upload_file():
         if validation_errors:
             return jsonify({'error': '入力エラー: ' + '; '.join(validation_errors)})
         
-        # 同時実行数の制限チェック
-        with jobs_lock:
-            active_jobs = len([j for j in jobs.values() if j.get('status') == 'running'])
-            if active_jobs >= 5:  # 最大5つの同時実行を制限
-                return jsonify({'error': '現在処理中のジョブが多すぎます。しばらく待ってから再試行してください'})
+        # リソース監視と警告（処理は継続）
+        resource_warnings = check_resource_limits()
+        if resource_warnings:
+            print(f"リソース警告: {', '.join(resource_warnings)}")
         
-        # ユーザーセッション用の一時ディレクトリを作成
+        # ユニークなセッションIDを生成
+        session_id = create_unique_session_id()
         job_id = str(uuid.uuid4())
-        session_dir = get_user_session_dir(job_id)
         
-        # ファイルを保存（タイムスタンプ付きで一意性を確保）
+        # 完全分離されたセッションディレクトリを作成
+        session_dir = get_user_session_dir(session_id)
+        
+        # ファイルを保存（セッションID付きで一意性を確保）
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
-        filename = f"{job_id}_{timestamp}.xlsx"
+        filename = f"{session_id}_{timestamp}.xlsx"
         file_path = os.path.join(session_dir, filename)
         file.save(file_path)
+        
+        # セッションを登録
+        register_session(session_id, job_id)
         
         # ジョブ情報を初期化（スレッドセーフ）
         with jobs_lock:
@@ -164,28 +246,32 @@ def upload_file():
                 'start_time': datetime.now().timestamp(),
                 'login_status': 'not_started',
                 'login_message': 'ログイン処理が開始されていません',
+                'session_id': session_id,
                 'session_dir': session_dir,
                 'file_path': file_path,
-                'email_hash': hash(email)  # 個人情報はハッシュ化
+                'email_hash': hash(email),  # 個人情報はハッシュ化
+                'resource_warnings': resource_warnings
             }
         
         # バックグラウンドで処理を実行
         def run_automation():
             try:
-                process_jobcan_automation(job_id, email, password, file_path, jobs, session_dir)
+                # セッション固有のブラウザ環境で処理を実行
+                process_jobcan_automation(job_id, email, password, file_path, jobs, session_dir, session_id)
             except Exception as e:
                 with jobs_lock:
                     if job_id in jobs:
                         jobs[job_id]['status'] = 'error'
                         jobs[job_id]['login_message'] = f'処理中にエラーが発生しました: {str(e)}'
             finally:
-                # 処理完了後のクリーンアップ
+                # 処理完了後の完全クリーンアップ
                 try:
                     if os.path.exists(file_path):
                         os.remove(file_path)
-                    cleanup_user_session(job_id)
+                    cleanup_user_session(session_id)
+                    unregister_session(session_id)
                 except Exception as cleanup_error:
-                    print(f"クリーンアップエラー: {cleanup_error}")
+                    print(f"クリーンアップエラー {session_id}: {cleanup_error}")
         
         thread = threading.Thread(target=run_automation)
         thread.daemon = True  # メインプロセス終了時に自動終了
@@ -193,8 +279,10 @@ def upload_file():
         
         return jsonify({
             'job_id': job_id,
+            'session_id': session_id,
             'message': '処理を開始しました',
-            'status_url': f'/status/{job_id}'
+            'status_url': f'/status/{job_id}',
+            'resource_warnings': resource_warnings
         })
         
     except Exception as e:
@@ -216,6 +304,9 @@ def get_status(job_id):
             # ユーザー向けの詳細メッセージを生成
             user_message = generate_user_message(job['status'], login_status, login_message, job.get('progress', 0))
             
+            # リソース情報を追加
+            resources = get_system_resources()
+            
             return jsonify({
                 'status': job['status'],
                 'progress': job.get('progress', 0),
@@ -226,7 +317,10 @@ def get_status(job_id):
                 'start_time': job.get('start_time', 0),
                 'login_status': login_status,
                 'login_message': login_message,
-                'user_message': user_message
+                'user_message': user_message,
+                'session_id': job.get('session_id', ''),
+                'resources': resources,
+                'resource_warnings': job.get('resource_warnings', [])
             })
     except Exception as e:
         return jsonify({'error': f'ステータス取得エラー: {str(e)}'})
