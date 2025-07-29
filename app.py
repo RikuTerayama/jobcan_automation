@@ -194,7 +194,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             update_progress(job_id, 3, "データ検証完了", 0, total_data)
         except Exception as e:
             add_job_log(job_id, f"❌ ステップ3: データ検証エラー - {e}")
-                jobs[job_id]['status'] = 'error'
+            jobs[job_id]['status'] = 'error'
             return
         
         # ステップ4: ブラウザ起動準備
@@ -783,7 +783,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         add_job_log(job_id, "   - playwright==1.40.0")
         add_job_log(job_id, "   - openpyxl==3.1.2")
         add_job_log(job_id, "   - pandas==2.1.4")
-            jobs[job_id]['status'] = 'completed'
+        jobs[job_id]['status'] = 'completed'
             
     except Exception as e:
         add_job_log(job_id, f"❌ 自動化処理でエラーが発生しました: {e}")
@@ -793,7 +793,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
 def index():
     """メインページ"""
     try:
-    return render_template('index.html')
+        return render_template('index.html')
     except Exception as e:
         print(f"❌ indexエンドポイントでエラー: {e}")
         return jsonify({
