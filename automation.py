@@ -779,6 +779,35 @@ def setup_stealth_mode(page, job_id, jobs):
             Object.defineProperty(navigator, 'languages', {
                 get: () => ['ja-JP', 'ja', 'en-US', 'en'],
             });
+            
+            // ヘッドレス環境の検知を回避
+            Object.defineProperty(navigator, 'hardwareConcurrency', {
+                get: () => 8,
+            });
+            
+            Object.defineProperty(navigator, 'deviceMemory', {
+                get: () => 8,
+            });
+            
+            // 画面サイズの偽装
+            Object.defineProperty(screen, 'width', {
+                get: () => 1920,
+            });
+            
+            Object.defineProperty(screen, 'height', {
+                get: () => 1080,
+            });
+            
+            // タイムゾーンの偽装
+            Object.defineProperty(Intl, 'DateTimeFormat', {
+                get: () => function() {
+                    return {
+                        resolvedOptions: () => ({
+                            timeZone: 'Asia/Tokyo'
+                        })
+                    };
+                }
+            });
         """)
         
         add_job_log(job_id, "✅ ステルスモード設定完了", jobs)
