@@ -903,12 +903,6 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             from playwright.sync_api import sync_playwright
             
             with sync_playwright() as p:
-                # セッション固有のユーザーデータディレクトリを設定
-                user_data_dir = None
-                if session_dir:
-                    user_data_dir = os.path.join(session_dir, 'browser_data')
-                    os.makedirs(user_data_dir, exist_ok=True)
-                
                 # セッション固有のブラウザ起動オプション
                 browser_args = [
                     '--no-sandbox',
@@ -931,7 +925,6 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     '--mute-audio',
                     '--no-default-browser-check',
                     '--no-pings',
-                    '--no-zygote',
                     '--disable-web-security',
                     '--disable-features=VizDisplayCompositor'
                 ]
@@ -939,37 +932,23 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 # より人間らしいUser-Agent
                 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                 
-                # user_data_dirがある場合はlaunch_persistent_contextを使用
-                if user_data_dir:
-                    context = p.chromium.launch_persistent_context(
-                        user_data_dir=user_data_dir,
-                        headless=False,  # ヘッドレスモードを無効化
-                        args=browser_args,
-                        viewport={'width': 1280, 'height': 720},
-                        user_agent=user_agent,
-                        ignore_https_errors=True,
-                        java_script_enabled=True,
-                        accept_downloads=True
-                    )
-                    page = context.new_page()
-                else:
-                    # user_data_dirがない場合は通常のlaunchを使用
-                    browser = p.chromium.launch(
-                        headless=False,  # ヘッドレスモードを無効化
-                        args=browser_args
-                    )
-                    
-                    # セッション固有のコンテキスト設定
-                    context_options = {
-                        'viewport': {'width': 1280, 'height': 720},
-                        'user_agent': user_agent,
-                        'ignore_https_errors': True,
-                        'java_script_enabled': True,
-                        'accept_downloads': True
-                    }
-                    
-                    context = browser.new_context(**context_options)
-                    page = context.new_page()
+                # サーバー環境対応のため、通常のlaunchを使用
+                browser = p.chromium.launch(
+                    headless=True,  # サーバー環境対応のためヘッドレスモードを有効化
+                    args=browser_args
+                )
+                
+                # セッション固有のコンテキスト設定
+                context_options = {
+                    'viewport': {'width': 1280, 'height': 720},
+                    'user_agent': user_agent,
+                    'ignore_https_errors': True,
+                    'java_script_enabled': True,
+                    'accept_downloads': True
+                }
+                
+                context = browser.new_context(**context_options)
+                page = context.new_page()
                 
                 add_job_log(job_id, "✅ ブラウザ起動完了", jobs)
                 if session_id:
@@ -1014,12 +993,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 jobs[job_id]['status'] = 'completed'
                 
                 # ブラウザを閉じる
-                if user_data_dir:
-                    # launch_persistent_contextを使用した場合
-                    context.close()
-                else:
-                    # 通常のlaunchを使用した場合
-                    browser.close()
+                browser.close()
                 add_job_log(job_id, "🔒 ブラウザセッションを終了しました", jobs)
                 
         except Exception as e:
