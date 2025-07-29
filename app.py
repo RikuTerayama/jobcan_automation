@@ -3,10 +3,25 @@
 
 import os
 import time
-from flask import Flask, jsonify, render_template
+import uuid
+import threading
+import psutil
+from datetime import datetime
+from flask import Flask, jsonify, render_template, request
+from werkzeug.utils import secure_filename
+import pandas as pd
 
 # Flaskアプリケーション
 app = Flask(__name__)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key-here')
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
+
+# アップロードフォルダが存在しない場合は作成
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# グローバル変数
+jobs = {}
 
 # 起動ログ
 try:
@@ -17,6 +32,30 @@ try:
     print("✅ アプリケーション起動完了")
 except Exception as e:
     print(f"❌ 起動ログでエラー: {e}")
+
+def allowed_file(filename):
+    """許可されたファイル形式かチェック"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'xlsx'}
+
+def add_job_log(job_id: str, message: str):
+    """ジョブログを追加"""
+    if job_id not in jobs:
+        jobs[job_id] = {
+            'status': 'pending',
+            'logs': [],
+            'diagnosis': {},
+            'start_time': datetime.now().isoformat(),
+            'progress': {
+                'current_step': 0,
+                'total_steps': 0,
+                'current_data': 0,
+                'total_data': 0
+            }
+        }
+    
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    jobs[job_id]['logs'].append(f"[{timestamp}] {message}")
+    print(f"[{job_id}] {message}")
 
 @app.route('/')
 def index():
@@ -29,6 +68,87 @@ def index():
             'error': str(e),
             'message': 'テンプレートの読み込みに失敗しました'
         }), 500
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    """ファイルアップロード処理"""
+    try:
+        # フォームデータを取得
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
+        
+        if not email or not password:
+            return jsonify({
+                'success': False,
+                'error': 'メールアドレスとパスワードを入力してください'
+            })
+        
+        # ファイルが存在するかチェック
+        if 'file' not in request.files:
+            return jsonify({
+                'success': False,
+                'error': 'ファイルが選択されていません'
+            })
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({
+                'success': False,
+                'error': 'ファイルが選択されていません'
+            })
+        
+        if not allowed_file(file.filename):
+            return jsonify({
+                'success': False,
+                'error': 'Excelファイル（.xlsx）を選択してください'
+            })
+        
+        # ファイルを保存
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        
+        # ジョブIDを生成
+        job_id = str(uuid.uuid4())
+        
+        # ジョブを開始
+        add_job_log(job_id, "アップロード処理を開始")
+        add_job_log(job_id, "✅ ファイルのアップロードが完了しました")
+        add_job_log(job_id, "⚠️ 自動化機能は現在無効化されています")
+        
+        jobs[job_id]['status'] = 'completed'
+        
+        return jsonify({
+            'success': True,
+            'job_id': job_id,
+            'message': 'ファイルのアップロードが完了しました。自動化機能は現在無効化されています。'
+        })
+        
+    except Exception as e:
+        error_msg = f"アップロード処理でエラーが発生しました: {e}"
+        return jsonify({
+            'success': False,
+            'error': error_msg
+        })
+
+@app.route('/status/<job_id>')
+def get_status(job_id):
+    """ジョブステータスを取得"""
+    try:
+        job_data = jobs.get(job_id, {})
+        return jsonify({
+            'status': job_data.get('status', 'not_found'),
+            'logs': job_data.get('logs', []),
+            'diagnosis': job_data.get('diagnosis', {}),
+            'progress': job_data.get('progress', {}),
+            'start_time': job_data.get('start_time', ''),
+            'current_time': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        })
 
 @app.route('/ping')
 def ping():
