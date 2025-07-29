@@ -486,7 +486,27 @@ def health_check():
         return jsonify({
             'status': 'healthy',
             'message': 'Service is running',
+            'timestamp': time.time(),
+            'port': os.environ.get('PORT', '5000'),
+            'environment': os.environ.get('RAILWAY_ENVIRONMENT', 'local')
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
             'timestamp': time.time()
+        }), 500
+
+@app.route('/')
+def root():
+    """ルートエンドポイント（起動確認用）"""
+    try:
+        return jsonify({
+            'status': 'running',
+            'message': 'Jobcan Automation Service',
+            'timestamp': time.time(),
+            'health_check': '/health',
+            'detailed_health': '/health/detailed'
         })
     except Exception as e:
         return jsonify({
