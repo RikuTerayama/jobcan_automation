@@ -38,18 +38,30 @@
         }
         
         .header {
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background-image: url("{{ url_for('static', filename='JobcanAutofill.png') }}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             color: #FFFFFF;
-            padding: 60px 40px;
+            padding: 80px 40px;
             text-align: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             position: relative;
-            border-radius: 16px;
-            box-shadow: 
-                0 12px 40px rgba(0, 0, 0, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1),
-                0 0 0 1px rgba(255, 255, 255, 0.05);
             margin-bottom: 35px;
+            min-height: 240px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 1;
         }
         
         .header::before {
@@ -89,29 +101,7 @@
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
         }
         
-        .logo-image {
-            max-width: 400px;
-            width: 100%;
-            height: auto;
-            display: block;
-            margin: 0 auto;
-            filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4));
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border-radius: 8px;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            padding: 20px;
-            box-shadow: 
-                0 8px 32px rgba(0, 0, 0, 0.3),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        }
-        
-        .logo-image:hover {
-            transform: translateY(-3px);
-            filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.5));
-            box-shadow: 
-                0 12px 40px rgba(0, 0, 0, 0.4),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        }
+
         
         .header p {
             margin: 15px 0 0 0;
@@ -526,21 +516,8 @@
             }
             
             .header {
-                padding: 50px 25px;
-            }
-            
-            .header h1 {
-                font-size: 2.8em;
-            }
-            
-            .header h1::before {
-                left: -40px;
-                font-size: 0.5em;
-            }
-            
-            .logo-image {
-                max-width: 300px;
-                padding: 15px;
+                padding: 60px 25px;
+                min-height: 200px;
             }
             
             .content {
@@ -576,7 +553,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <img src="{{ url_for('static', filename='JobcanAutofill.png') }}" alt="Jobcan AutoFill logo" class="logo-image">
+            <!-- 背景画像としてロゴを表示 -->
         </div>
         
         <div class="content">
