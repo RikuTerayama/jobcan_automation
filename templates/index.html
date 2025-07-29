@@ -434,6 +434,29 @@
             border-color: rgba(255, 193, 7, 0.3);
         }
         
+        .message-content {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+            white-space: pre-line;
+            color: rgba(255, 255, 255, 0.9);
+            border-left: 3px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .message-content.error {
+            background: rgba(220, 53, 69, 0.1);
+            border-left-color: rgba(220, 53, 69, 0.5);
+        }
+        
+        .message-content.warning {
+            background: rgba(255, 193, 7, 0.1);
+            border-left-color: rgba(255, 193, 7, 0.5);
+        }
+        
         .loading-spinner {
             display: inline-block;
             width: 20px;
@@ -756,8 +779,12 @@
             
             loginResultDiv.classList.add(statusClass);
             
+            // 改行を適切に処理
+            const formattedMessage = loginMessage.replace(/\n/g, '<br>');
+            
             loginResultContent.innerHTML = `
-                <p><strong>${statusIcon} ログイン状態:</strong> ${loginMessage}</p>
+                <p><strong>${statusIcon} ログイン状態:</strong></p>
+                <div class="message-content ${statusClass}">${formattedMessage}</div>
                 <p><strong>ステータスコード:</strong> ${loginStatus}</p>
             `;
             
