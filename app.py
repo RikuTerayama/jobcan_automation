@@ -11,7 +11,7 @@ import io
 # pandasは必要時にインポート
 pandas_available = False
 try:
-    import pandas as pd
+import pandas as pd
     pandas_available = True
 except ImportError:
     print("⚠️ pandasが利用できません。Excel処理機能は無効化されます。")
@@ -24,7 +24,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
 
 # アップロードフォルダが存在しない場合は作成
 try:
-    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 except Exception as e:
     print(f"⚠️ アップロードフォルダ作成エラー: {e}")
 
@@ -194,7 +194,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             update_progress(job_id, 3, "データ検証完了", 0, total_data)
         except Exception as e:
             add_job_log(job_id, f"❌ ステップ3: データ検証エラー - {e}")
-            jobs[job_id]['status'] = 'error'
+                jobs[job_id]['status'] = 'error'
             return
         
         # ステップ4: ブラウザ起動準備
@@ -329,23 +329,138 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                                 page.wait_for_load_state('networkidle')
                                 add_job_log(job_id, f"✅ 打刻修正ページアクセス成功")
                                 
-                                # 実際のデータ入力処理（セレクタは実際のJobcanサイトに合わせて調整が必要）
+                                # 実際のデータ入力処理（詳細な診断付き）
+                                add_job_log(job_id, f"🔍 データ入力処理開始: {date_str}")
+                                
                                 try:
-                                    # 開始時刻の入力
-                                    page.fill('input[name="start_time"]', str(start_time))
-                                    add_job_log(job_id, f"✅ 開始時刻入力: {start_time}")
+                                    # ページの要素を確認
+                                    add_job_log(job_id, "🔍 ページ要素の確認中...")
                                     
-                                    # 終了時刻の入力
-                                    page.fill('input[name="end_time"]', str(end_time))
-                                    add_job_log(job_id, f"✅ 終了時刻入力: {end_time}")
+                                    # 開始時刻入力フィールドの検索
+                                    start_time_selectors = [
+                                        'input[name="start_time"]',
+                                        'input[name="startTime"]',
+                                        'input[name="start"]',
+                                        'input[placeholder*="開始"]',
+                                        'input[placeholder*="start"]',
+                                        '#start_time',
+                                        '#startTime',
+                                        '.start-time input',
+                                        'input[type="time"]'
+                                    ]
                                     
-                                    # 保存ボタンをクリック
-                                    page.click('input[type="submit"]')
-                                    add_job_log(job_id, f"✅ データ保存完了")
+                                    start_time_found = False
+                                    for selector in start_time_selectors:
+                                        try:
+                                            element = page.query_selector(selector)
+                                            if element:
+                                                add_job_log(job_id, f"✅ 開始時刻フィールド発見: {selector}")
+                                                page.fill(selector, str(start_time))
+                                                add_job_log(job_id, f"✅ 開始時刻入力完了: {start_time}")
+                                                start_time_found = True
+                                                break
+                                        except Exception as e:
+                                            add_job_log(job_id, f"❌ セレクタ {selector} でエラー: {e}")
+                                    
+                                    if not start_time_found:
+                                        add_job_log(job_id, "❌ 開始時刻入力フィールドが見つかりません")
+                                        add_job_log(job_id, "🔍 利用可能な入力フィールド:")
+                                        inputs = page.query_selector_all('input')
+                                        for i, input_elem in enumerate(inputs[:10]):  # 最初の10個のみ表示
+                                            try:
+                                                input_type = input_elem.get_attribute('type') or 'unknown'
+                                                input_name = input_elem.get_attribute('name') or 'no-name'
+                                                input_id = input_elem.get_attribute('id') or 'no-id'
+                                                add_job_log(job_id, f"   {i+1}. type={input_type}, name={input_name}, id={input_id}")
+                                            except:
+                                                pass
+                                    
+                                    # 終了時刻入力フィールドの検索
+                                    end_time_selectors = [
+                                        'input[name="end_time"]',
+                                        'input[name="endTime"]',
+                                        'input[name="end"]',
+                                        'input[placeholder*="終了"]',
+                                        'input[placeholder*="end"]',
+                                        '#end_time',
+                                        '#endTime',
+                                        '.end-time input',
+                                        'input[type="time"]'
+                                    ]
+                                    
+                                    end_time_found = False
+                                    for selector in end_time_selectors:
+                                        try:
+                                            element = page.query_selector(selector)
+                                            if element:
+                                                add_job_log(job_id, f"✅ 終了時刻フィールド発見: {selector}")
+                                                page.fill(selector, str(end_time))
+                                                add_job_log(job_id, f"✅ 終了時刻入力完了: {end_time}")
+                                                end_time_found = True
+                                                break
+                                        except Exception as e:
+                                            add_job_log(job_id, f"❌ セレクタ {selector} でエラー: {e}")
+                                    
+                                    if not end_time_found:
+                                        add_job_log(job_id, "❌ 終了時刻入力フィールドが見つかりません")
+                                    
+                                    # 保存ボタンの検索
+                                    save_selectors = [
+                                        'input[type="submit"]',
+                                        'button[type="submit"]',
+                                        'button:contains("保存")',
+                                        'button:contains("Save")',
+                                        'button:contains("登録")',
+                                        'button:contains("更新")',
+                                        '.save-btn',
+                                        '.submit-btn',
+                                        '#save',
+                                        '#submit'
+                                    ]
+                                    
+                                    save_found = False
+                                    for selector in save_selectors:
+                                        try:
+                                            element = page.query_selector(selector)
+                                            if element:
+                                                add_job_log(job_id, f"✅ 保存ボタン発見: {selector}")
+                                                page.click(selector)
+                                                add_job_log(job_id, f"✅ 保存ボタンクリック完了")
+                                                save_found = True
+                                                break
+                                        except Exception as e:
+                                            add_job_log(job_id, f"❌ セレクタ {selector} でエラー: {e}")
+                                    
+                                    if not save_found:
+                                        add_job_log(job_id, "❌ 保存ボタンが見つかりません")
+                                        add_job_log(job_id, "🔍 利用可能なボタン:")
+                                        buttons = page.query_selector_all('button')
+                                        for i, button in enumerate(buttons[:10]):  # 最初の10個のみ表示
+                                            try:
+                                                button_text = button.text_content() or 'no-text'
+                                                button_type = button.get_attribute('type') or 'no-type'
+                                                add_job_log(job_id, f"   {i+1}. text={button_text}, type={button_type}")
+                                            except:
+                                                pass
+                                    
+                                    # 処理結果の確認
+                                    if start_time_found and end_time_found and save_found:
+                                        add_job_log(job_id, f"✅ データ入力処理完了: {date_str}")
+                                    else:
+                                        add_job_log(job_id, f"⚠️ データ入力処理部分完了: {date_str}")
+                                        add_job_log(job_id, f"   - 開始時刻入力: {'✅' if start_time_found else '❌'}")
+                                        add_job_log(job_id, f"   - 終了時刻入力: {'✅' if end_time_found else '❌'}")
+                                        add_job_log(job_id, f"   - 保存ボタン: {'✅' if save_found else '❌'}")
                                     
                                 except Exception as e:
-                                    add_job_log(job_id, f"⚠️ データ入力エラー: {e}")
-                                    add_job_log(job_id, "💡 セレクタの調整が必要な可能性があります")
+                                    add_job_log(job_id, f"❌ データ入力処理でエラー: {e}")
+                                    add_job_log(job_id, "🔍 エラーの詳細:")
+                                    add_job_log(job_id, f"   - エラータイプ: {type(e).__name__}")
+                                    add_job_log(job_id, f"   - エラーメッセージ: {str(e)}")
+                                    add_job_log(job_id, "💡 解決策:")
+                                    add_job_log(job_id, "   1. Jobcanサイトの構造を確認")
+                                    add_job_log(job_id, "   2. セレクタの調整が必要")
+                                    add_job_log(job_id, "   3. ページの読み込み待機時間の調整")
                                 
                             except Exception as e:
                                 add_job_log(job_id, f"⚠️ URL生成エラー: {e}")
@@ -399,6 +514,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                         time.sleep(1)  # 処理時間をシミュレート
                         update_progress(job_id, 6, f"勤怠データ入力中 ({index + 1}/{total_data})", index + 1, total_data)
                 else:
+                    add_job_log(job_id, "🔧 openpyxlを使用したデータ処理を開始")
                     for row in range(2, ws.max_row + 1):
                         date = ws[f'A{row}'].value
                         start_time = ws[f'B{row}'].value
@@ -429,6 +545,171 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                                     year = month = day = "01"
                             
                             add_job_log(job_id, f"🔧 打刻修正URL: https://ssl.jobcan.jp/employee/adit/modify?year={year}&month={month}&day={day}")
+                            
+                            # ログインが成功した場合のみ実際のデータ入力を試行
+                            if 'login_success' in locals() and login_success and playwright_available:
+                                add_job_log(job_id, "🔧 ログイン成功のため、実際のデータ入力を試行します")
+                                
+                                try:
+                                    with sync_playwright() as p:
+                                        browser = p.chromium.launch(headless=True)
+                                        page = browser.new_page()
+                                        
+                                        # 再度ログイン
+                                        page.goto("https://id.jobcan.jp/users/sign_in?app_key=atd&redirect_to=https://ssl.jobcan.jp/jbcoauth/callback")
+                                        page.fill('#user_email', email)
+                                        page.fill('#user_password', password)
+                                        page.click('input[type="submit"]')
+                                        page.wait_for_load_state('networkidle')
+                                        
+                                        # 打刻修正ページにアクセス
+                                        modify_url = f"https://ssl.jobcan.jp/employee/adit/modify?year={year}&month={month}&day={day}"
+                                        add_job_log(job_id, f"🔧 打刻修正ページにアクセス: {modify_url}")
+                                        
+                                        page.goto(modify_url)
+                                        page.wait_for_load_state('networkidle')
+                                        add_job_log(job_id, f"✅ 打刻修正ページアクセス成功")
+                                        
+                                        # 実際のデータ入力処理（詳細な診断付き）
+                                        add_job_log(job_id, f"🔍 データ入力処理開始: {date_str}")
+                                        
+                                        try:
+                                            # ページの要素を確認
+                                            add_job_log(job_id, "🔍 ページ要素の確認中...")
+                                            
+                                            # 開始時刻入力フィールドの検索
+                                            start_time_selectors = [
+                                                'input[name="start_time"]',
+                                                'input[name="startTime"]',
+                                                'input[name="start"]',
+                                                'input[placeholder*="開始"]',
+                                                'input[placeholder*="start"]',
+                                                '#start_time',
+                                                '#startTime',
+                                                '.start-time input',
+                                                'input[type="time"]'
+                                            ]
+                                            
+                                            start_time_found = False
+                                            for selector in start_time_selectors:
+                                                try:
+                                                    element = page.query_selector(selector)
+                                                    if element:
+                                                        add_job_log(job_id, f"✅ 開始時刻フィールド発見: {selector}")
+                                                        page.fill(selector, str(start_time))
+                                                        add_job_log(job_id, f"✅ 開始時刻入力完了: {start_time}")
+                                                        start_time_found = True
+                                                        break
+                                                except Exception as e:
+                                                    add_job_log(job_id, f"❌ セレクタ {selector} でエラー: {e}")
+                                            
+                                            if not start_time_found:
+                                                add_job_log(job_id, "❌ 開始時刻入力フィールドが見つかりません")
+                                                add_job_log(job_id, "🔍 利用可能な入力フィールド:")
+                                                inputs = page.query_selector_all('input')
+                                                for i, input_elem in enumerate(inputs[:10]):  # 最初の10個のみ表示
+                                                    try:
+                                                        input_type = input_elem.get_attribute('type') or 'unknown'
+                                                        input_name = input_elem.get_attribute('name') or 'no-name'
+                                                        input_id = input_elem.get_attribute('id') or 'no-id'
+                                                        add_job_log(job_id, f"   {i+1}. type={input_type}, name={input_name}, id={input_id}")
+                                                    except:
+                                                        pass
+                                            
+                                            # 終了時刻入力フィールドの検索
+                                            end_time_selectors = [
+                                                'input[name="end_time"]',
+                                                'input[name="endTime"]',
+                                                'input[name="end"]',
+                                                'input[placeholder*="終了"]',
+                                                'input[placeholder*="end"]',
+                                                '#end_time',
+                                                '#endTime',
+                                                '.end-time input',
+                                                'input[type="time"]'
+                                            ]
+                                            
+                                            end_time_found = False
+                                            for selector in end_time_selectors:
+                                                try:
+                                                    element = page.query_selector(selector)
+                                                    if element:
+                                                        add_job_log(job_id, f"✅ 終了時刻フィールド発見: {selector}")
+                                                        page.fill(selector, str(end_time))
+                                                        add_job_log(job_id, f"✅ 終了時刻入力完了: {end_time}")
+                                                        end_time_found = True
+                                                        break
+                                                except Exception as e:
+                                                    add_job_log(job_id, f"❌ セレクタ {selector} でエラー: {e}")
+                                            
+                                            if not end_time_found:
+                                                add_job_log(job_id, "❌ 終了時刻入力フィールドが見つかりません")
+                                            
+                                            # 保存ボタンの検索
+                                            save_selectors = [
+                                                'input[type="submit"]',
+                                                'button[type="submit"]',
+                                                'button:contains("保存")',
+                                                'button:contains("Save")',
+                                                'button:contains("登録")',
+                                                'button:contains("更新")',
+                                                '.save-btn',
+                                                '.submit-btn',
+                                                '#save',
+                                                '#submit'
+                                            ]
+                                            
+                                            save_found = False
+                                            for selector in save_selectors:
+                                                try:
+                                                    element = page.query_selector(selector)
+                                                    if element:
+                                                        add_job_log(job_id, f"✅ 保存ボタン発見: {selector}")
+                                                        page.click(selector)
+                                                        add_job_log(job_id, f"✅ 保存ボタンクリック完了")
+                                                        save_found = True
+                                                        break
+                                                except Exception as e:
+                                                    add_job_log(job_id, f"❌ セレクタ {selector} でエラー: {e}")
+                                            
+                                            if not save_found:
+                                                add_job_log(job_id, "❌ 保存ボタンが見つかりません")
+                                                add_job_log(job_id, "🔍 利用可能なボタン:")
+                                                buttons = page.query_selector_all('button')
+                                                for i, button in enumerate(buttons[:10]):  # 最初の10個のみ表示
+                                                    try:
+                                                        button_text = button.text_content() or 'no-text'
+                                                        button_type = button.get_attribute('type') or 'no-type'
+                                                        add_job_log(job_id, f"   {i+1}. text={button_text}, type={button_type}")
+                                                    except:
+                                                        pass
+                                            
+                                            # 処理結果の確認
+                                            if start_time_found and end_time_found and save_found:
+                                                add_job_log(job_id, f"✅ データ入力処理完了: {date_str}")
+                                            else:
+                                                add_job_log(job_id, f"⚠️ データ入力処理部分完了: {date_str}")
+                                                add_job_log(job_id, f"   - 開始時刻入力: {'✅' if start_time_found else '❌'}")
+                                                add_job_log(job_id, f"   - 終了時刻入力: {'✅' if end_time_found else '❌'}")
+                                                add_job_log(job_id, f"   - 保存ボタン: {'✅' if save_found else '❌'}")
+                                            
+                                        except Exception as e:
+                                            add_job_log(job_id, f"❌ データ入力処理でエラー: {e}")
+                                            add_job_log(job_id, "🔍 エラーの詳細:")
+                                            add_job_log(job_id, f"   - エラータイプ: {type(e).__name__}")
+                                            add_job_log(job_id, f"   - エラーメッセージ: {str(e)}")
+                                            add_job_log(job_id, "💡 解決策:")
+                                            add_job_log(job_id, "   1. Jobcanサイトの構造を確認")
+                                            add_job_log(job_id, "   2. セレクタの調整が必要")
+                                            add_job_log(job_id, "   3. ページの読み込み待機時間の調整")
+                                        
+                                        browser.close()
+                                        
+                                except Exception as e:
+                                    add_job_log(job_id, f"❌ ステップ6: データ入力エラー - {e}")
+                            else:
+                                add_job_log(job_id, "⚠️ ログインが成功していないため、データ入力処理をスキップします")
+                            
                         except Exception as e:
                             add_job_log(job_id, f"⚠️ URL生成エラー: {e}")
                         
@@ -502,8 +783,8 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         add_job_log(job_id, "   - playwright==1.40.0")
         add_job_log(job_id, "   - openpyxl==3.1.2")
         add_job_log(job_id, "   - pandas==2.1.4")
-        jobs[job_id]['status'] = 'completed'
-        
+            jobs[job_id]['status'] = 'completed'
+            
     except Exception as e:
         add_job_log(job_id, f"❌ 自動化処理でエラーが発生しました: {e}")
         jobs[job_id]['status'] = 'error'
@@ -512,7 +793,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
 def index():
     """メインページ"""
     try:
-        return render_template('index.html')
+    return render_template('index.html')
     except Exception as e:
         print(f"❌ indexエンドポイントでエラー: {e}")
         return jsonify({
