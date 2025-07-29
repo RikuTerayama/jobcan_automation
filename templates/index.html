@@ -39,15 +39,15 @@
         
         .header {
             background-image: url("{{ url_for('static', filename='JobcanAutofill.png') }}");
-            background-size: cover;
+            background-size: 85%;
             background-position: center;
             background-repeat: no-repeat;
             color: #FFFFFF;
-            padding: 80px 40px;
+            padding: 100px 40px 80px 40px;
             text-align: center;
             position: relative;
             margin-bottom: 35px;
-            min-height: 240px;
+            min-height: 200px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -60,7 +60,12 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.3);
+            background: linear-gradient(
+                to bottom,
+                rgba(0, 0, 0, 0.2) 0%,
+                rgba(0, 0, 0, 0.1) 50%,
+                rgba(0, 0, 0, 0.3) 100%
+            );
             z-index: 1;
         }
         
@@ -516,8 +521,9 @@
             }
             
             .header {
-                padding: 60px 25px;
-                min-height: 200px;
+                padding: 80px 25px 60px 25px;
+                min-height: 180px;
+                background-size: 90%;
             }
             
             .content {
