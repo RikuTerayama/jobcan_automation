@@ -115,7 +115,7 @@ def reliable_fill(page, selector: str, text: str, job_id: str, jobs: dict, retri
             add_job_log(job_id, f"📝 fill試行 {attempt + 1}/{retries}: {selector}", jobs)
             
             # 要素の存在確認
-            page.wait_for_selector(selector, selector, timeout=5000)
+            page.wait_for_selector(selector, timeout=5000)
             
             # 要素をクリックしてフォーカス
             page.click(selector)
