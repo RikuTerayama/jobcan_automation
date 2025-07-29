@@ -562,8 +562,19 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             # エラーがある場合は処理を停止
             if errors:
                 add_job_log(job_id, f"❌ データ検証で{len(errors)}件のエラーが見つかりました", jobs)
+                
+                # エラーの詳細をユーザーメッセージに含める
+                error_details = []
+                for error in errors[:5]:  # 最初の5件のエラーを詳細表示
+                    error_details.append(error)
+                
+                if len(errors) > 5:
+                    error_details.append(f"他{len(errors) - 5}件のエラーがあります")
+                
+                error_message = f'データ検証で{len(errors)}件のエラーが見つかりました。\n\n詳細:\n' + '\n'.join(error_details)
+                
                 jobs[job_id]['status'] = 'error'
-                jobs[job_id]['login_message'] = f'データ検証で{len(errors)}件のエラーが見つかりました。Excelファイルを確認してください。'
+                jobs[job_id]['login_message'] = error_message
                 return
             
             # 警告がある場合はログに記録
