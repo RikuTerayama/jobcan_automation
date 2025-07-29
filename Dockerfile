@@ -44,17 +44,34 @@ RUN playwright install chromium --with-deps --force
 # アプリケーションのコードをコピー
 COPY . .
 
-# ポートを公開
-EXPOSE 8000
-
 # 環境変数を設定
-ENV PORT=8000
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
-# ヘルスチェックを追加
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+# 起動スクリプトを作成
+RUN echo '#!/bin/bash\n\
+echo "🚀 アプリケーションを起動中..."\n\
+echo "🔧 ポート: $PORT"\n\
+echo "🔧 環境: $RAILWAY_ENVIRONMENT"\n\
+\n\
+# ポートが設定されていない場合は8000を使用\n\
+if [ -z "$PORT" ]; then\n\
+    export PORT=8000\n\
+fi\n\
+\n\
+echo "✅ Gunicornを起動中: 0.0.0.0:$PORT"\n\
+exec gunicorn app:app \\\n\
+    --bind 0.0.0.0:$PORT \\\n\
+    --timeout 300 \\\n\
+    --workers 1 \\\n\
+    --preload \\\n\
+    --max-requests 1000 \\\n\
+    --keep-alive 2 \\\n\
+    --log-level info \\\n\
+    --access-logfile - \\\n\
+    --error-logfile - \\\n\
+    --capture-output\n\
+' > /app/start.sh && chmod +x /app/start.sh
 
-# アプリケーションを起動（Railway環境最適化）
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8000", "--timeout", "300", "--workers", "1", "--preload", "--max-requests", "1000", "--keep-alive", "2", "--log-level", "info", "--access-logfile", "-", "--error-logfile", "-"] 
+# アプリケーションを起動
+CMD ["/app/start.sh"] 
