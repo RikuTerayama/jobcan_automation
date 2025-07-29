@@ -36,27 +36,27 @@ class JobcanAutomation:
                 self.browser = self.playwright.chromium.launch(
                     headless=True,
                     args=[
-                        '--no-sandbox',
-                        '--disable-dev-shm-usage',
-                        '--disable-gpu',
+                '--no-sandbox',
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
                         '--disable-software-rasterizer',
                         '--disable-extensions',
-                        '--disable-background-timer-throttling',
-                        '--disable-backgrounding-occluded-windows',
-                        '--disable-renderer-backgrounding',
-                        '--disable-features=TranslateUI',
-                        '--disable-ipc-flooding-protection'
-                    ]
+                '--disable-background-timer-throttling',
+                '--disable-backgrounding-occluded-windows',
+                '--disable-renderer-backgrounding',
+                '--disable-features=TranslateUI',
+                '--disable-ipc-flooding-protection'
+            ]
                 )
                 browser_launched = True
                 print("✅ 方法1でブラウザ起動成功")
             except Exception as e1:
                 print(f"❌ 方法1でブラウザ起動失敗: {e1}")
-                
+            
                 # 方法2: システムのChromiumを使用
                 try:
                     print("🔄 方法2: システムのChromiumを使用中...")
-                    self.browser = self.playwright.chromium.launch(
+            self.browser = self.playwright.chromium.launch(
                         headless=True,
                         executable_path="/usr/bin/chromium-browser",
                         args=['--no-sandbox', '--disable-dev-shm-usage']
@@ -734,9 +734,21 @@ class JobcanAutomation:
         try:
             print(f"📅 日付を選択中: {date_str}")
             
-            # 日付文字列を解析
+            # 日付文字列を解析（複数フォーマット対応）
             from datetime import datetime
-            date_obj = datetime.strptime(date_str, "%Y/%m/%d")
+            date_obj = None
+            date_formats = ['%Y-%m-%d', '%Y/%m/%d', '%Y年%m月%d日']
+            
+            for fmt in date_formats:
+                try:
+                    date_obj = datetime.strptime(date_str, fmt)
+                    break
+                except ValueError:
+                    continue
+            
+            if date_obj is None:
+                print(f"❌ 日付形式が無効です: {date_str}")
+                return False
             year = date_obj.year
             month = date_obj.month
             day = date_obj.day
@@ -804,9 +816,21 @@ class JobcanAutomation:
         try:
             print(f"カレンダーから日付 {date_str} を選択中...")
             
-            # 日付文字列から日付オブジェクトを作成
+            # 日付文字列から日付オブジェクトを作成（複数フォーマット対応）
             from datetime import datetime
-            date_obj = datetime.strptime(date_str, "%Y/%m/%d")
+            date_obj = None
+            date_formats = ['%Y-%m-%d', '%Y/%m/%d', '%Y年%m月%d日']
+            
+            for fmt in date_formats:
+                try:
+                    date_obj = datetime.strptime(date_str, fmt)
+                    break
+                except ValueError:
+                    continue
+            
+            if date_obj is None:
+                print(f"❌ 日付形式が無効です: {date_str}")
+                return False
             year = date_obj.year
             month = date_obj.month
             day = date_obj.day
@@ -908,7 +932,7 @@ class JobcanAutomation:
                         print(f"🔗 現在のURL: {current_url}")
                         if "modify" in current_url or "edit" in current_url:
                             print(f"✅ 打刻修正ページに遷移しました: {current_url}")
-                            return True
+                        return True
                         else:
                             print(f"⚠️ 打刻修正ページへの遷移を確認できません: {current_url}")
                 except Exception as e:
@@ -965,7 +989,7 @@ class JobcanAutomation:
             # 時間を入力
             print(f"📝 {time_type}時間 {time_str} を入力中...")
             time_input.click()
-            time.sleep(1)
+                        time.sleep(1)
             time_input.fill(time_str)
             time.sleep(1)
             
@@ -1229,12 +1253,12 @@ class JobcanAutomation:
                     if overall_success:
                         success_count += 1
                         print(f"✅ データ {i+1} の処理が成功しました")
-                        processed_data.append({
-                            'date': date,
-                            'start_time': start_time,
-                            'end_time': end_time,
-                            'status': 'success'
-                        })
+                    processed_data.append({
+                        'date': date,
+                        'start_time': start_time,
+                        'end_time': end_time,
+                        'status': 'success'
+                    })
                     else:
                         error_count += 1
                         print(f"❌ データ {i+1} の処理が失敗しました")
