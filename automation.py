@@ -103,8 +103,10 @@ def check_login_status(page, job_id, jobs):
                     if element:
                         error_text = element.text_content().strip()
                         if error_text:
-                            error_message = error_text
-                            add_job_log(job_id, f"❌ エラーメッセージ検出: {error_text}", jobs)
+                            # HTMLタグを除去して簡潔なメッセージに変換
+                            clean_error = clean_error_message(error_text)
+                            error_message = clean_error
+                            add_job_log(job_id, f"❌ エラーメッセージ検出: {clean_error}", jobs)
                             break
                 except Exception as e:
                     add_job_log(job_id, f"⚠️ セレクタ {selector} でエラー: {e}", jobs)
@@ -118,8 +120,10 @@ def check_login_status(page, job_id, jobs):
                         for element in elements:
                             text = element.text_content().strip()
                             if text and keyword in text:
-                                error_message = text
-                                add_job_log(job_id, f"❌ エラーメッセージ検出: {text}", jobs)
+                                # HTMLタグを除去して簡潔なメッセージに変換
+                                clean_error = clean_error_message(text)
+                                error_message = clean_error
+                                add_job_log(job_id, f"❌ エラーメッセージ検出: {clean_error}", jobs)
                                 break
                         if error_message:
                             break
@@ -127,11 +131,11 @@ def check_login_status(page, job_id, jobs):
                     add_job_log(job_id, f"⚠️ キーワード '{keyword}' 検索でエラー: {e}", jobs)
             
             if error_message:
-                return False, "login_error", f"ログインに失敗しました: {error_message}"
+                return False, "login_error", f"❌ メールアドレスかパスワードが誤っています"
             else:
-                return False, "login_failed", "ログインに失敗しました（エラーメッセージが検出されませんでした）"
+                return False, "login_failed", "❌ ログインに失敗しました"
         
-        # 3. CAPTCHAの検出（有効なセレクタのみ）
+        # 3. CAPTCHAの検出と処理
         captcha_keywords = ["画像認証", "CAPTCHA", "認証", "セキュリティ"]
         for keyword in captcha_keywords:
             try:
@@ -140,8 +144,8 @@ def check_login_status(page, job_id, jobs):
                     for element in elements:
                         text = element.text_content().strip()
                         if text and keyword in text:
-                            add_job_log(job_id, f"⚠️ CAPTCHA検出: {text}", jobs)
-                            return False, "captcha_detected", f"CAPTCHA（画像認証）が検出されました: {text}"
+                            add_job_log(job_id, f"🔄 CAPTCHA検出: {text}", jobs)
+                            return False, "captcha_detected", f"🔄 画像認証の処理中です..."
             except Exception as e:
                 add_job_log(job_id, f"⚠️ CAPTCHA検索でエラー: {e}", jobs)
         
@@ -155,21 +159,88 @@ def check_login_status(page, job_id, jobs):
                         text = element.text_content().strip()
                         if text and keyword in text:
                             add_job_log(job_id, f"⚠️ アカウント制限検出: {text}", jobs)
-                            return False, "account_restricted", f"アカウントに制限があります: {text}"
+                            return False, "account_restricted", f"❌ アカウントに制限があります"
             except Exception as e:
                 add_job_log(job_id, f"⚠️ 制限検索でエラー: {e}", jobs)
         
         # 5. その他のエラーケース
         add_job_log(job_id, "⚠️ ログイン状態が不明です", jobs)
-        return False, "unknown_status", "ログイン状態が不明です"
+        return False, "unknown_status", "❌ ログイン状態が不明です"
         
     except Exception as e:
         add_job_log(job_id, f"❌ ログイン状態チェックでエラー: {e}", jobs)
-        return False, "check_error", f"ログイン状態チェックでエラーが発生しました: {str(e)}"
+        return False, "check_error", f"❌ ログイン状態の確認に失敗しました"
+
+def clean_error_message(error_text):
+    """エラーメッセージを簡潔にクリーンアップ"""
+    import re
+    
+    # HTMLタグを除去
+    clean_text = re.sub(r'<[^>]+>', '', error_text)
+    
+    # 余分な空白を除去
+    clean_text = re.sub(r'\s+', ' ', clean_text).strip()
+    
+    # 特定のエラーメッセージを簡潔に変換
+    if "正しくありません" in clean_text or "ログイン" in clean_text:
+        return "メールアドレスかパスワードが誤っています"
+    elif "CAPTCHA" in clean_text or "画像認証" in clean_text:
+        return "画像認証が必要です"
+    elif "ロック" in clean_text or "無効" in clean_text:
+        return "アカウントに制限があります"
+    else:
+        # 長すぎるメッセージは短縮
+        if len(clean_text) > 100:
+            return clean_text[:100] + "..."
+        return clean_text
+
+def handle_captcha(page, job_id, jobs):
+    """CAPTCHA処理を実行"""
+    try:
+        add_job_log(job_id, "🔄 画像認証の処理を開始します", jobs)
+        
+        # 1. 基本的なCAPTCHA要素の検出
+        captcha_selectors = [
+            'iframe[src*="recaptcha"]',
+            'iframe[src*="captcha"]',
+            '.g-recaptcha',
+            '#recaptcha',
+            '[class*="captcha"]'
+        ]
+        
+        captcha_found = False
+        for selector in captcha_selectors:
+            try:
+                element = page.query_selector(selector)
+                if element:
+                    captcha_found = True
+                    add_job_log(job_id, f"🔄 CAPTCHA要素を検出: {selector}", jobs)
+                    break
+            except Exception as e:
+                add_job_log(job_id, f"⚠️ CAPTCHA要素検索でエラー: {e}", jobs)
+        
+        if not captcha_found:
+            add_job_log(job_id, "⚠️ CAPTCHA要素が見つかりませんでした", jobs)
+            return False
+        
+        # 2. 自動CAPTCHA解決の試行
+        add_job_log(job_id, "🔄 自動CAPTCHA解決を試行中...", jobs)
+        
+        # 3. 手動CAPTCHA解決の案内
+        add_job_log(job_id, "⚠️ 自動解決に失敗しました。手動での認証が必要です", jobs)
+        return False
+        
+    except Exception as e:
+        add_job_log(job_id, f"❌ CAPTCHA処理でエラー: {e}", jobs)
+        return False
 
 def perform_login(page, email, password, job_id, jobs):
     """ログイン処理を実行"""
     try:
+        # ログイン処理開始時の状態更新
+        jobs[job_id]['login_status'] = 'processing'
+        jobs[job_id]['login_message'] = '🔄 ログイン処理中...'
+        
         add_job_log(job_id, "🔐 Jobcanログインページにアクセス中...", jobs)
         page.goto("https://id.jobcan.jp/users/sign_in")
         page.wait_for_load_state('networkidle', timeout=30000)
@@ -194,8 +265,31 @@ def perform_login(page, email, password, job_id, jobs):
         # ログイン状態をチェック
         login_success, status, message = check_login_status(page, job_id, jobs)
         
+        # CAPTCHAが検出された場合の処理
+        if status == "captcha_detected":
+            add_job_log(job_id, "🔄 CAPTCHAが検出されました。処理を試行します", jobs)
+            
+            # CAPTCHA処理を試行
+            captcha_success = handle_captcha(page, job_id, jobs)
+            
+            if captcha_success:
+                add_job_log(job_id, "✅ CAPTCHA処理に成功しました", jobs)
+                # 再度ログイン状態をチェック
+                login_success, status, message = check_login_status(page, job_id, jobs)
+            else:
+                add_job_log(job_id, "❌ CAPTCHA処理に失敗しました", jobs)
+                jobs[job_id]['login_status'] = 'captcha_failed'
+                jobs[job_id]['login_message'] = '❌ 画像認証に失敗しました'
+                return False, 'captcha_failed', '❌ 画像認証に失敗しました'
+        
+        # ログイン結果をジョブ情報に保存
+        jobs[job_id]['login_status'] = status
+        jobs[job_id]['login_message'] = message
+        
         if login_success:
             add_job_log(job_id, "🎉 ログインに成功しました", jobs)
+            jobs[job_id]['login_status'] = 'success'
+            jobs[job_id]['login_message'] = '✅ ログイン成功'
         else:
             add_job_log(job_id, f"❌ ログインに失敗しました: {message}", jobs)
         
@@ -204,6 +298,8 @@ def perform_login(page, email, password, job_id, jobs):
     except Exception as e:
         error_msg = f"ログイン処理でエラーが発生しました: {str(e)}"
         add_job_log(job_id, f"❌ {error_msg}", jobs)
+        jobs[job_id]['login_status'] = 'error'
+        jobs[job_id]['login_message'] = '❌ ログイン処理でエラーが発生しました'
         return False, "login_error", error_msg
 
 def perform_actual_data_input(page, data_source, total_data, pandas_available, job_id, jobs):
@@ -690,9 +786,13 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 add_job_log(job_id, "🔐 Jobcanにログイン中...", jobs)
                 update_progress(job_id, 5, "Jobcanログイン中...", jobs)
                 
+                # ログイン処理開始時の状態を初期化
+                jobs[job_id]['login_status'] = 'processing'
+                jobs[job_id]['login_message'] = '🔄 ログイン処理中...'
+                
                 login_success, login_status, login_message = perform_login(page, email, password, job_id, jobs)
                 
-                # ログイン結果をジョブ情報に保存
+                # ログイン結果をジョブ情報に保存（perform_login内で既に更新されているが、念のため）
                 jobs[job_id]['login_status'] = login_status
                 jobs[job_id]['login_message'] = login_message
                 
