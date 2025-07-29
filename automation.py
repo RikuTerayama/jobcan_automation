@@ -35,6 +35,121 @@ from utils import (
     openpyxl_available
 )
 
+def reliable_type(page, selector: str, text: str, job_id: str, jobs: dict, retries: int = 3) -> bool:
+    """
+    信頼性の高い入力機能（再試行機能付き）
+    
+    Args:
+        page: Playwrightページオブジェクト
+        selector: 要素セレクター
+        text: 入力テキスト
+        job_id: ジョブID
+        jobs: ジョブ辞書
+        retries: 再試行回数
+    
+    Returns:
+        bool: 成功時True、失敗時False
+    """
+    for attempt in range(retries):
+        try:
+            add_job_log(job_id, f"📝 入力試行 {attempt + 1}/{retries}: {selector}", jobs)
+            
+            # 要素の存在確認
+            page.wait_for_selector(selector, timeout=5000)
+            
+            # 要素をクリックしてフォーカス
+            page.click(selector)
+            human_like_wait(0.5, 1.0)
+            
+            # 既存の内容をクリア
+            page.fill(selector, "")
+            human_like_wait(0.3, 0.8)
+            
+            # 1文字ずつランダム遅延で入力
+            for char in text:
+                page.type(selector, char, delay=random.uniform(100, 300))
+                human_like_wait(0.1, 0.3)
+            
+            # 入力内容の確認
+            actual_value = page.input_value(selector)
+            if actual_value == text:
+                add_job_log(job_id, f"✅ 入力成功: {selector}", jobs)
+                return True
+            else:
+                add_job_log(job_id, f"⚠️ 入力内容不一致: 期待={text}, 実際={actual_value}", jobs)
+                if attempt < retries - 1:
+                    human_like_wait(1.0, 2.0)
+                    continue
+                else:
+                    add_job_log(job_id, f"❌ 入力失敗: {selector} (最終試行)", jobs)
+                    return False
+                    
+        except Exception as e:
+            add_job_log(job_id, f"⚠️ 入力エラー (試行 {attempt + 1}): {str(e)}", jobs)
+            if attempt < retries - 1:
+                human_like_wait(1.0, 2.0)
+                continue
+            else:
+                add_job_log(job_id, f"❌ 入力失敗: {selector} (最終試行)", jobs)
+                return False
+    
+    return False
+
+def reliable_fill(page, selector: str, text: str, job_id: str, jobs: dict, retries: int = 3) -> bool:
+    """
+    信頼性の高いfill機能（再試行機能付き）
+    
+    Args:
+        page: Playwrightページオブジェクト
+        selector: 要素セレクター
+        text: 入力テキスト
+        job_id: ジョブID
+        jobs: ジョブ辞書
+        retries: 再試行回数
+    
+    Returns:
+        bool: 成功時True、失敗時False
+    """
+    for attempt in range(retries):
+        try:
+            add_job_log(job_id, f"📝 fill試行 {attempt + 1}/{retries}: {selector}", jobs)
+            
+            # 要素の存在確認
+            page.wait_for_selector(selector, selector, timeout=5000)
+            
+            # 要素をクリックしてフォーカス
+            page.click(selector)
+            human_like_wait(0.5, 1.0)
+            
+            # fillで入力
+            page.fill(selector, text)
+            human_like_wait(0.5, 1.0)
+            
+            # 入力内容の確認
+            actual_value = page.input_value(selector)
+            if actual_value == text:
+                add_job_log(job_id, f"✅ fill成功: {selector}", jobs)
+                return True
+            else:
+                add_job_log(job_id, f"⚠️ fill内容不一致: 期待={text}, 実際={actual_value}", jobs)
+                if attempt < retries - 1:
+                    human_like_wait(1.0, 2.0)
+                    continue
+                else:
+                    add_job_log(job_id, f"❌ fill失敗: {selector} (最終試行)", jobs)
+                    return False
+                    
+        except Exception as e:
+            add_job_log(job_id, f"⚠️ fillエラー (試行 {attempt + 1}): {str(e)}", jobs)
+            if attempt < retries - 1:
+                human_like_wait(1.0, 2.0)
+                continue
+            else:
+                add_job_log(job_id, f"❌ fill失敗: {selector} (最終試行)", jobs)
+                return False
+    
+    return False
+
 def convert_time_to_4digit(time_str):
     """時刻を4桁の数字形式に変換（HH:MM:SS形式にも対応）"""
     try:
@@ -98,102 +213,107 @@ def check_login_status(page, job_id, jobs):
         # 1. ログイン成功の判定（複数の成功パターンをチェック）
         success_urls = [
             "ssl.jobcan.jp/employee",
-            "ssl.jobcan.jp/jbcoauth",
-            "ssl.jobcan.jp/employee/attendance"
+            "ssl.jobcan.jp/employee/attendance",
+            "ssl.jobcan.jp/employee/adit",
+            "ssl.jobcan.jp/employee/profile"
         ]
         
+        # URLベースの成功判定
         for success_url in success_urls:
             if success_url in current_url:
-                add_job_log(job_id, f"✅ ログイン成功: {success_url} にアクセスできました", jobs)
-                return True, "success", "ログインに成功しました"
+                add_job_log(job_id, f"✅ URL判定でログイン成功を検出: {success_url}", jobs)
+                return True, "success", "✅ ログイン成功"
         
-        # 2. ログインページに留まっている場合の詳細チェック
-        if "id.jobcan.jp/users/sign_in" in current_url:
-            add_job_log(job_id, "⚠️ ログインページに留まっています。詳細を確認中...", jobs)
-            
-            # エラーメッセージの検索（有効なセレクタのみ）
-            error_selectors = [
-                '.alert-danger',
-                '.error-message',
-                '.login-error',
-                '[class*="error"]',
-                '[class*="alert"]'
+        # 2. ページ要素ベースの成功判定
+        try:
+            # プロフィール要素の存在確認
+            profile_elements = [
+                'a[href*="/employee/profile"]',
+                'a[href*="/employee/attendance"]',
+                '.employee-menu',
+                '.user-info',
+                '.profile-link'
             ]
             
-            error_message = None
-            for selector in error_selectors:
+            for selector in profile_elements:
                 try:
-                    element = page.query_selector(selector)
-                    if element:
-                        error_text = element.text_content().strip()
-                        if error_text:
-                            # HTMLタグを除去して簡潔なメッセージに変換
-                            clean_error = clean_error_message(error_text)
-                            error_message = clean_error
-                            add_job_log(job_id, f"❌ エラーメッセージ検出: {clean_error}", jobs)
-                            break
-                except Exception as e:
-                    add_job_log(job_id, f"⚠️ セレクタ {selector} でエラー: {e}", jobs)
+                    element = page.locator(selector).first
+                    if element.is_visible(timeout=2000):
+                        add_job_log(job_id, f"✅ 要素判定でログイン成功を検出: {selector}", jobs)
+                        return True, "success", "✅ ログイン成功"
+                except:
+                    continue
             
-            # テキストベースのエラーメッセージ検索
-            error_keywords = ["正しくありません", "ログイン", "エラー", "失敗"]
-            for keyword in error_keywords:
-                try:
-                    elements = page.locator("div, p, span").filter(has_text=keyword).all()
-                    if elements:
-                        for element in elements:
-                            text = element.text_content().strip()
-                            if text and keyword in text:
-                                # HTMLタグを除去して簡潔なメッセージに変換
-                                clean_error = clean_error_message(text)
-                                error_message = clean_error
-                                add_job_log(job_id, f"❌ エラーメッセージ検出: {clean_error}", jobs)
-                                break
-                        if error_message:
-                            break
-                except Exception as e:
-                    add_job_log(job_id, f"⚠️ キーワード '{keyword}' 検索でエラー: {e}", jobs)
-            
-            if error_message:
-                return False, "login_error", f"❌ メールアドレスかパスワードが誤っています"
-            else:
-                return False, "login_failed", "❌ ログインに失敗しました"
-        
-        # 3. CAPTCHAの検出と処理
-        captcha_keywords = ["画像認証", "CAPTCHA", "認証", "セキュリティ"]
-        for keyword in captcha_keywords:
+            # ログアウトボタンの存在確認（ログイン成功の指標）
             try:
-                elements = page.locator("div, p, span").filter(has_text=keyword).all()
-                if elements:
-                    for element in elements:
-                        text = element.text_content().strip()
-                        if text and keyword in text:
-                            add_job_log(job_id, f"🔄 CAPTCHA検出: {text}", jobs)
-                            return False, "captcha_detected", f"🔄 画像認証の処理中です..."
+                logout_elements = [
+                    'a[href*="/users/sign_out"]',
+                    'a[href*="logout"]',
+                    '.logout',
+                    '.sign-out'
+                ]
+                
+                for selector in logout_elements:
+                    try:
+                        element = page.locator(selector).first
+                        if element.is_visible(timeout=2000):
+                            add_job_log(job_id, f"✅ ログアウト要素でログイン成功を検出: {selector}", jobs)
+                            return True, "success", "✅ ログイン成功"
+                    except:
+                        continue
+                        
             except Exception as e:
-                add_job_log(job_id, f"⚠️ CAPTCHA検索でエラー: {e}", jobs)
+                add_job_log(job_id, f"⚠️ ログアウト要素確認エラー: {e}", jobs)
         
-        # 4. アカウント制限の検出
-        restriction_keywords = ["ロック", "無効", "制限", "停止", "アカウント"]
-        for keyword in restriction_keywords:
-            try:
-                elements = page.locator("div, p, span").filter(has_text=keyword).all()
-                if elements:
-                    for element in elements:
-                        text = element.text_content().strip()
-                        if text and keyword in text:
-                            add_job_log(job_id, f"⚠️ アカウント制限検出: {text}", jobs)
-                            return False, "account_restricted", f"❌ アカウントに制限があります"
-            except Exception as e:
-                add_job_log(job_id, f"⚠️ 制限検索でエラー: {e}", jobs)
+        except Exception as e:
+            add_job_log(job_id, f"⚠️ 要素判定エラー: {e}", jobs)
         
-        # 5. その他のエラーケース
-        add_job_log(job_id, "⚠️ ログイン状態が不明です", jobs)
-        return False, "unknown_status", "❌ ログイン状態が不明です"
+        # 3. CAPTCHAの検出
+        captcha_indicators = [
+            "captcha",
+            "recaptcha",
+            "画像認証",
+            "人間確認",
+            "robot",
+            "bot"
+        ]
+        
+        page_content = page.content().lower()
+        for indicator in captcha_indicators:
+            if indicator in page_content:
+                add_job_log(job_id, f"🔄 CAPTCHA検出: {indicator}", jobs)
+                return False, "captcha_detected", "🔄 CAPTCHAが検出されました"
+        
+        # 4. ログインエラーの検出
+        error_indicators = [
+            "メールアドレスかパスワードが誤っています",
+            "メールアドレスまたはパスワードが正しくありません",
+            "ログインに失敗しました",
+            "アカウントが無効です",
+            "アカウントがロックされています",
+            "too many login attempts",
+            "account locked",
+            "invalid credentials"
+        ]
+        
+        for indicator in error_indicators:
+            if indicator in page_content:
+                clean_msg = clean_error_message(indicator)
+                add_job_log(job_id, f"❌ ログインエラー検出: {clean_msg}", jobs)
+                return False, "login_failed", f"❌ {clean_msg}"
+        
+        # 5. その他のエラー状態
+        if "error" in page_content or "エラー" in page_content:
+            add_job_log(job_id, "❌ 一般的なエラーが検出されました", jobs)
+            return False, "general_error", "❌ ログイン処理でエラーが発生しました"
+        
+        # 6. 不明な状態（デフォルト）
+        add_job_log(job_id, "❓ ログイン状態が不明です", jobs)
+        return False, "unknown", "❓ ログイン状態が確認できませんでした"
         
     except Exception as e:
         add_job_log(job_id, f"❌ ログイン状態チェックでエラー: {e}", jobs)
-        return False, "check_error", f"❌ ログイン状態の確認に失敗しました"
+        return False, "check_error", f"❌ ログイン状態チェックでエラー: {str(e)}"
 
 def clean_error_message(error_text):
     """エラーメッセージを簡潔にクリーンアップ"""
@@ -270,32 +390,41 @@ def perform_login(page, email, password, job_id, jobs):
         page.wait_for_load_state('networkidle', timeout=30000)
         
         # 人間らしい待機
-        human_like_wait()
+        human_like_wait(2.0, 4.0)
         add_job_log(job_id, "✅ ログインページアクセス完了", jobs)
         
-        # メールアドレスを人間らしく入力
+        # メールアドレスを信頼性の高い方法で入力
         add_job_log(job_id, "📧 メールアドレスを入力中...", jobs)
-        if not human_like_typing(page, 'input[name="user[email]"]', email, job_id, jobs):
+        if not reliable_fill(page, 'input[name="user[email]"]', email, job_id, jobs):
             return False, "typing_error", "❌ メールアドレス入力に失敗しました"
         
         # 人間らしい待機
-        human_like_wait()
+        human_like_wait(1.0, 2.0)
         
-        # パスワードを人間らしく入力
+        # パスワードを信頼性の高い方法で入力
         add_job_log(job_id, "🔑 パスワードを入力中...", jobs)
-        if not human_like_typing(page, 'input[name="user[password]"]', password, job_id, jobs):
+        if not reliable_fill(page, 'input[name="user[password]"]', password, job_id, jobs):
             return False, "typing_error", "❌ パスワード入力に失敗しました"
         
         # 人間らしい待機
-        human_like_wait()
+        human_like_wait(1.0, 2.0)
         
         # ログインボタンを人間らしくクリック
         add_job_log(job_id, "🔘 ログインボタンをクリック中...", jobs)
-        login_button = page.locator('input[type="submit"]').first
-        login_button.click()
+        try:
+            login_button = page.locator('input[type="submit"]').first
+            login_button.click()
+        except Exception as e:
+            add_job_log(job_id, f"⚠️ ログインボタンクリックエラー: {e}", jobs)
+            # 代替方法を試行
+            try:
+                page.click('input[type="submit"]')
+            except Exception as e2:
+                add_job_log(job_id, f"❌ 代替ログインボタンクリックも失敗: {e2}", jobs)
+                return False, "button_error", "❌ ログインボタンクリックに失敗しました"
         
         # 人間らしい待機
-        human_like_wait()
+        human_like_wait(2.0, 4.0)
         
         page.wait_for_load_state('networkidle', timeout=30000)
         add_job_log(job_id, "✅ ログインボタンクリック完了", jobs)
@@ -748,9 +877,9 @@ def human_like_typing(page, selector, text, job_id, jobs):
         add_job_log(job_id, f"❌ タイピングエラー: {e}", jobs)
         return False
 
-def human_like_wait():
+def human_like_wait(min_seconds=0.5, max_seconds=2.0):
     """人間らしい待機時間"""
-    time.sleep(random.uniform(0.5, 2.0))
+    time.sleep(random.uniform(min_seconds, max_seconds))
 
 def setup_stealth_mode(page, job_id, jobs):
     """ステルスモードの設定（Bot検知回避）"""
@@ -808,6 +937,51 @@ def setup_stealth_mode(page, job_id, jobs):
                     };
                 }
             });
+            
+            // 追加のBot検知回避
+            Object.defineProperty(navigator, 'permissions', {
+                get: () => ({
+                    query: () => Promise.resolve({ state: 'granted' })
+                })
+            });
+            
+            // Chromeオブジェクトの偽装
+            window.chrome = {
+                runtime: {},
+                loadTimes: function() {},
+                csi: function() {},
+                app: {}
+            };
+            
+            // 自動化フラグの削除
+            delete window.navigator.__proto__.webdriver;
+            
+            // プロパティ記述子の偽装
+            const originalGetOwnPropertyDescriptor = Object.getOwnPropertyDescriptor;
+            Object.getOwnPropertyDescriptor = function(obj, prop) {
+                if (prop === 'webdriver' && obj === navigator) {
+                    return undefined;
+                }
+                return originalGetOwnPropertyDescriptor.call(this, obj, prop);
+            };
+            
+            // コンソールログの偽装
+            const originalLog = console.log;
+            console.log = function(...args) {
+                if (args[0] && typeof args[0] === 'string' && args[0].includes('webdriver')) {
+                    return;
+                }
+                return originalLog.apply(this, args);
+            };
+            
+            // パフォーマンスタイミングの偽装
+            Object.defineProperty(performance, 'timing', {
+                get: () => ({
+                    navigationStart: Date.now() - Math.random() * 1000,
+                    loadEventEnd: Date.now(),
+                    domContentLoadedEventEnd: Date.now() - Math.random() * 500
+                })
+            });
         """)
         
         add_job_log(job_id, "✅ ステルスモード設定完了", jobs)
@@ -827,8 +1001,10 @@ def retry_on_captcha(page, email, password, job_id, jobs, max_retries=3):
             page.reload()
             page.wait_for_load_state('networkidle', timeout=30000)
             
-            # 人間らしい待機
-            human_like_wait()
+            # 人間らしい待機（CAPTCHA対策のため長め）
+            wait_time = random.uniform(3.0, 6.0)
+            add_job_log(job_id, f"⏳ {wait_time:.1f}秒待機中...", jobs)
+            human_like_wait(wait_time, wait_time + 2.0)
             
             # ログイン処理を再実行
             login_success, status, message = perform_login(page, email, password, job_id, jobs)
@@ -839,8 +1015,8 @@ def retry_on_captcha(page, email, password, job_id, jobs, max_retries=3):
             elif status == "captcha_detected":
                 add_job_log(job_id, f"⚠️ リトライ {attempt + 1} でもCAPTCHAが発生", jobs)
                 if attempt < max_retries - 1:
-                    # 次のリトライ前に待機
-                    wait_time = random.uniform(5, 10)
+                    # 次のリトライ前に待機（CAPTCHA対策のため長め）
+                    wait_time = random.uniform(10.0, 20.0)
                     add_job_log(job_id, f"⏳ {wait_time:.1f}秒待機してから再試行", jobs)
                     time.sleep(wait_time)
                 continue
@@ -849,13 +1025,15 @@ def retry_on_captcha(page, email, password, job_id, jobs, max_retries=3):
                 return False, status, message
                 
         except Exception as e:
-            add_job_log(job_id, f"❌ リトライ {attempt + 1} でエラー: {e}", jobs)
+            add_job_log(job_id, f"❌ CAPTCHAリトライ {attempt + 1} でエラー: {e}", jobs)
             if attempt < max_retries - 1:
-                time.sleep(random.uniform(2, 5))
+                wait_time = random.uniform(5.0, 10.0)
+                add_job_log(job_id, f"⏳ {wait_time:.1f}秒待機してから再試行", jobs)
+                time.sleep(wait_time)
             continue
     
-    add_job_log(job_id, f"❌ 最大リトライ回数 {max_retries} に達しました", jobs)
-    return False, "captcha_failed", "❌ 画像認証に失敗しました（最大リトライ回数に達しました）"
+    add_job_log(job_id, f"❌ CAPTCHAリトライ {max_retries} 回すべて失敗", jobs)
+    return False, "captcha_failed", "❌ CAPTCHAが解決できませんでした。手動でログインしてください。"
 
 def process_jobcan_automation(job_id: str, email: str, password: str, file_path: str, jobs: dict, session_dir: str = None, session_id: str = None):
     """Jobcan自動化処理のメイン関数（セッション固有のブラウザ環境）"""
