@@ -4,8 +4,8 @@ nixPkgs = ["python311"]
 [phases.install]
 cmds = [
     "python -m venv --copies /opt/venv",
-    ". /opt/venv/bin/activate && pip install --no-cache-dir --disable-pip-version-check flask==3.0.0 gunicorn==21.2.0"
+    ". /opt/venv/bin/activate && pip install --no-cache-dir --disable-pip-version-check flask==3.0.0 gunicorn==21.2.0 werkzeug==3.0.1 jinja2==3.1.6 pandas==2.1.1 openpyxl==3.1.2"
 ]
 
 [start]
-cmd = "gunicorn app:app --bind 0.0.0.0:$PORT --timeout 30 --workers 1 --log-level info" 
+cmd = "gunicorn app:app --bind 0.0.0.0:$PORT --timeout 60 --workers 1 --log-level info" 
