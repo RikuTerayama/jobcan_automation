@@ -200,169 +200,155 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                 
                 # 時刻形式の検証
                 for time_value, time_name in [(start_time, "開始時刻"), (end_time, "終了時刻")]:
-                    time_str = str(time_value).strip()
-                    if not re.match(r'^\d{1,2}:\d{2}(:\d{2})?$', time_str):
-                        errors.append(f"行{row_num}: {time_name}の形式が無効です: {time_value}")
-                continue
-        
-        # 検証結果をログに記録
-        if errors:
-            add_job_log(job_id, f"❌ データ検証エラー: {len(errors)}件", jobs)
-            for error in errors[:5]:  # 最初の5件のみ表示
-                add_job_log(job_id, f"  - {error}", jobs)
-            if len(errors) > 5:
-                add_job_log(job_id, f"  - 他{len(errors) - 5}件のエラーがあります", jobs)
-        
-        if warnings:
-            add_job_log(job_id, f"⚠️ データ検証警告: {len(warnings)}件", jobs)
-            for warning in warnings[:3]:  # 最初の3件のみ表示
-                add_job_log(job_id, f"  - {warning}", jobs)
-            if len(warnings) > 3:
-                add_job_log(job_id, f"  - 他{len(warnings) - 3}件の警告があります", jobs)
-        
-        return errors, warnings
-        
+                    try:
+                        if isinstance(time_value, str):
+                            # 時刻形式の正規化
+                            time_str = str(time_value).strip()
+                            if not re.match(r'^\d{1,2}:\d{2}(:\d{2})?$', time_str):
+                                errors.append(f"行{row_num}: {time_name}の形式が無効です: {time_value}")
+                                continue
+                        elif hasattr(time_value, 'time'):
+                            # datetimeオブジェクトの場合
+                            pass
+                        else:
+                            errors.append(f"行{row_num}: {time_name}の形式が無効です: {time_value}")
+                            continue
+                    except Exception as e:
+                        errors.append(f"行{row_num}: {time_name}の解析に失敗しました: {time_value}")
+                        continue
+                
+                # 勤務時間の妥当性チェック
+                try:
+                    start_str = str(start_time)
+                    end_str = str(end_time)
+                    
+                    # 時刻を分に変換
+                    start_parts = start_str.split(':')
+                    end_parts = end_str.split(':')
+                    
+                    if len(start_parts) >= 2 and len(end_parts) >= 2:
+                        start_minutes = int(start_parts[0]) * 60 + int(start_parts[1])
+                        end_minutes = int(end_parts[0]) * 60 + int(end_parts[1])
+                        
+                        # 勤務時間が短すぎる場合
+                        work_hours = (end_minutes - start_minutes) / 60
+                        if work_hours < 0.5:  # 30分未満
+                            warnings.append(f"行{row_num}: 勤務時間が短すぎます: {work_hours:.1f}時間")
+                        elif work_hours > 24:  # 24時間超過
+                            warnings.append(f"行{row_num}: 勤務時間が長すぎます: {work_hours:.1f}時間")
+                        
+                        # 開始時刻が終了時刻より後の場合
+                        if start_minutes >= end_minutes:
+                            errors.append(f"行{row_num}: 開始時刻が終了時刻より後です: {start_time} > {end_time}")
+                    
+                except Exception as e:
+                    warnings.append(f"行{row_num}: 勤務時間の計算に失敗しました: {e}")
+    
     except Exception as e:
-        error_msg = f"データ検証中にエラーが発生しました: {str(e)}"
-        add_job_log(job_id, f"❌ {error_msg}", jobs)
-        return [error_msg], []
+        errors.append(f"データ検証中にエラーが発生しました: {e}")
+    
+    return errors, warnings
 
 def allowed_file(filename):
     """アップロードされたファイルの拡張子をチェック"""
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in {'xlsx', 'xls'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'xlsx', 'xls'}
 
 def add_job_log(job_id: str, message: str, jobs: dict):
-    """ジョブログにメッセージを追加（個人情報を除去）"""
-    if job_id not in jobs:
-        jobs[job_id] = {'logs': [], 'status': 'running', 'progress': 0, 'start_time': time.time()}
-    
-    # 個人情報を除去したメッセージ
-    sanitized_message = sanitize_log_message(message)
-    
-    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    log_entry = f"[{timestamp}] {sanitized_message}"
-    jobs[job_id]['logs'].append(log_entry)
-    
-    # ログサイズの制限（最新100件まで保持）
-    if len(jobs[job_id]['logs']) > 100:
-        jobs[job_id]['logs'] = jobs[job_id]['logs'][-50:]
+    """ジョブのログを追加"""
+    if job_id in jobs:
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        sanitized_message = sanitize_log_message(message)
+        jobs[job_id]['logs'].append(f"[{timestamp}] {sanitized_message}")
 
 def sanitize_log_message(message):
     """ログメッセージから個人情報を除去"""
-    # メールアドレスの除去
-    message = re.sub(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', '[EMAIL]', message)
+    # メールアドレスを除去
+    message = re.sub(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', '[EMAIL]', message)
     
-    # パスワードの除去
-    message = re.sub(r'password[:\s]*[^\s]+', 'password: [HIDDEN]', message, flags=re.IGNORECASE)
+    # パスワードを除去
+    message = re.sub(r'password["\']?\s*[:=]\s*["\']?[^"\s]+["\']?', 'password="[PASSWORD]"', message, flags=re.IGNORECASE)
     
-    # その他の個人情報パターン
-    message = re.sub(r'[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{4}', '[CARD_NUMBER]', message)  # クレジットカード番号
+    # クレジットカード番号を除去
+    message = re.sub(r'\b\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b', '[CARD_NUMBER]', message)
     
     return message
 
 def update_progress(job_id: str, step: int, step_name: str, jobs: dict, current_data: int = 0, total_data: int = 0):
-    """進捗状況を更新"""
+    """ジョブの進捗を更新"""
     if job_id in jobs:
-        jobs[job_id]['progress'] = step
+        jobs[job_id]['step'] = step
         jobs[job_id]['step_name'] = step_name
         jobs[job_id]['current_data'] = current_data
         jobs[job_id]['total_data'] = total_data
 
 def create_template_excel():
-    """テンプレートExcelファイルを作成（本日の月の平日を自動生成）"""
+    """今月の平日のテンプレートExcelファイルを作成"""
     try:
-        # 本日の月の平日を取得
+        # 今月の平日を取得
         weekdays = get_weekdays_in_current_month()
         
-        if pandas_available:
-            # pandasを使用
-            df = pd.DataFrame({
-                '日付': weekdays,
-                '開始時刻': ['09:00'] * len(weekdays),
-                '終了時刻': ['18:00'] * len(weekdays)
+        if not weekdays:
+            return None, "今月の平日が見つかりませんでした"
+        
+        # サンプルデータを作成
+        sample_data = []
+        for weekday in weekdays:
+            # 9:00-18:00の勤務時間をサンプルとして設定
+            sample_data.append({
+                '日付': weekday,
+                '開始時刻': '09:00',
+                '終了時刻': '18:00'
             })
-            
-            # 一時ファイルに保存
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx')
-            df.to_excel(temp_file.name, index=False)
-            return temp_file.name
-        elif openpyxl_available:
-            # openpyxlを使用
+        
+        # テンプレートファイルを作成
+        if openpyxl_available:
             wb = Workbook()
             ws = wb.active
             ws.title = "勤怠データ"
             
-            # ヘッダーを追加
+            # ヘッダー行を追加
             ws['A1'] = '日付'
             ws['B1'] = '開始時刻'
             ws['C1'] = '終了時刻'
             
-            # 平日データを追加
-            for row, weekday in enumerate(weekdays, start=2):
-                ws[f'A{row}'] = weekday
-                ws[f'B{row}'] = '09:00'
-                ws[f'C{row}'] = '18:00'
+            # データ行を追加
+            for i, data in enumerate(sample_data, start=2):
+                ws[f'A{i}'] = data['日付']
+                ws[f'B{i}'] = data['開始時刻']
+                ws[f'C{i}'] = data['終了時刻']
             
-            # 一時ファイルに保存
+            # ファイルを保存
             temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx')
             wb.save(temp_file.name)
-            return temp_file.name
+            temp_file.close()
+            
+            return temp_file.name, None
         else:
-            raise Exception("pandasとopenpyxlの両方が利用できません")
+            return None, "openpyxlが利用できません"
+    
     except Exception as e:
-        # エラーが発生した場合は従来のサンプルデータを使用
-        if pandas_available:
-            df = pd.DataFrame({
-                '日付': ['2025-01-01', '2025-01-02', '2025-01-03'],
-                '開始時刻': ['09:00', '09:00', '09:00'],
-                '終了時刻': ['18:00', '18:00', '18:00']
-            })
-            
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx')
-            df.to_excel(temp_file.name, index=False)
-            return temp_file.name
-        elif openpyxl_available:
-            wb = Workbook()
-            ws = wb.active
-            ws.title = "勤怠データ"
-            
-            ws['A1'] = '日付'
-            ws['B1'] = '開始時刻'
-            ws['C1'] = '終了時刻'
-            
-            sample_data = [
-                ['2025-01-01', '09:00', '18:00'],
-                ['2025-01-02', '09:00', '18:00'],
-                ['2025-01-03', '09:00', '18:00']
-            ]
-            
-            for row, data in enumerate(sample_data, start=2):
-                ws[f'A{row}'] = data[0]
-                ws[f'B{row}'] = data[1]
-                ws[f'C{row}'] = data[2]
-            
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx')
-            wb.save(temp_file.name)
-            return temp_file.name
-        else:
-            raise Exception("pandasとopenpyxlの両方が利用できません")
+        return None, f"テンプレート作成中にエラーが発生しました: {e}"
 
 def load_excel_data(file_path):
-    """Excelファイルを読み込み、データを返す"""
-    if pandas_available:
-        df = pd.read_excel(file_path)
-        return df, len(df)
-    elif openpyxl_available:
-        wb = openpyxl.load_workbook(file_path)
-        ws = wb.active
-        total_data = ws.max_row - 1  # ヘッダー行を除く
-        return wb, total_data
-    else:
-        raise Exception("Excelファイルを読み込むためのライブラリが利用できません")
+    """Excelファイルを読み込み"""
+    try:
+        if pandas_available:
+            # pandasを使用して読み込み
+            import pandas as pd
+            data = pd.read_excel(file_path)
+            return data, True
+        elif openpyxl_available:
+            # openpyxlを使用して読み込み
+            from openpyxl import load_workbook
+            wb = load_workbook(file_path)
+            return wb, False
+        else:
+            return None, False
+    except Exception as e:
+        return None, False
 
 def extract_date_info(date):
-    """日付から年月日を抽出（複数フォーマット対応）"""
+    """日付から年月日を抽出"""
     if hasattr(date, 'strftime'):
         date_str = date.strftime('%Y-%m-%d')
     else:
@@ -373,10 +359,7 @@ def extract_date_info(date):
         month = date.month
         day = date.day
     else:
-        # 文字列から年月日を抽出（複数フォーマット対応）
         date_str_clean = str(date_str).strip()
-        
-        # 複数の区切り文字に対応
         separators = ['-', '/', '年', '月', '日']
         date_parts = None
         
@@ -384,13 +367,10 @@ def extract_date_info(date):
             if sep in date_str_clean:
                 parts = date_str_clean.split(sep)
                 if len(parts) >= 3:
-                    # 年月日の順序を確認（YYYY-MM-DD形式を想定）
                     try:
                         year_part = parts[0].strip()
                         month_part = parts[1].strip()
                         day_part = parts[2].strip()
-                        
-                        # 数値として有効かチェック
                         if (year_part.isdigit() and len(year_part) == 4 and
                             month_part.isdigit() and 1 <= int(month_part) <= 12 and
                             day_part.isdigit() and 1 <= int(day_part) <= 31):
@@ -404,41 +384,14 @@ def extract_date_info(date):
             month = date_parts[1]
             day = date_parts[2]
         else:
-            # フォールバック: デフォルト値
             year = month = day = "01"
     
     return date_str, year, month, day
 
 def simulate_data_processing(job_id, data_source, total_data, pandas_available, jobs):
     """データ処理のシミュレーション"""
-    try:
-        if pandas_available:
-            for index, row in data_source.iterrows():
-                date = row.iloc[0]
-                start_time = row.iloc[1]
-                end_time = row.iloc[2]
-                
-                date_str, year, month, day = extract_date_info(date)
-                add_job_log(job_id, f"📝 データ {index + 1}/{total_data}: {date_str} {start_time}-{end_time}", jobs)
-                add_job_log(job_id, f"🔧 打刻修正URL: https://ssl.jobcan.jp/employee/adit/modify?year={year}&month={month}&day={day}", jobs)
-                add_job_log(job_id, "⚠️ 実際のデータ入力はスキップされました（シミュレーションモード）", jobs)
-                
-                time.sleep(1)
-                update_progress(job_id, 6, f"勤怠データ入力中 ({index + 1}/{total_data})", jobs, index + 1, total_data)
-        else:
-            # openpyxlを使用した処理
-            ws = data_source.active
-            for row in range(2, ws.max_row + 1):
-                date = ws[f'A{row}'].value
-                start_time = ws[f'B{row}'].value
-                end_time = ws[f'C{row}'].value
-                
-                date_str, year, month, day = extract_date_info(date)
-                add_job_log(job_id, f"📝 データ {row - 1}/{total_data}: {date_str} {start_time}-{end_time}", jobs)
-                add_job_log(job_id, f"🔧 打刻修正URL: https://ssl.jobcan.jp/employee/adit/modify?year={year}&month={month}&day={day}", jobs)
-                add_job_log(job_id, "⚠️ 実際のデータ入力はスキップされました（シミュレーションモード）", jobs)
-                
-                time.sleep(1)
-                update_progress(job_id, 6, f"勤怠データ入力中 ({row - 1}/{total_data})", jobs, row - 1, total_data)
-    except Exception as e:
-        add_job_log(job_id, f"❌ データ処理エラー: {e}", jobs)
+    for i in range(total_data):
+        time.sleep(0.1)  # 処理時間をシミュレート
+        progress = int((i + 1) / total_data * 100)
+        update_progress(job_id, 6, f"データ処理中... ({i + 1}/{total_data})", jobs, i + 1, total_data)
+        add_job_log(job_id, f"データ処理進捗: {progress}%", jobs)
