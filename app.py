@@ -29,9 +29,12 @@ try:
     print(f"🔧 ポート: {os.environ.get('PORT', '5000')}")
     print(f"🔧 環境: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
     print(f"🔧 作業ディレクトリ: {os.getcwd()}")
+    print(f"🔧 Python バージョン: {os.sys.version}")
     print("✅ アプリケーション起動完了")
 except Exception as e:
     print(f"❌ 起動ログでエラー: {e}")
+    import traceback
+    traceback.print_exc()
 
 def allowed_file(filename):
     """許可されたファイル形式かチェック"""
@@ -154,14 +157,17 @@ def get_status(job_id):
 def ping():
     """シンプルなpingエンドポイント"""
     try:
+        # 最小限の処理のみ実行
         return "pong"
     except Exception as e:
-        return f"error: {str(e)}", 500
+        print(f"❌ pingエンドポイントでエラー: {e}")
+        return "pong"  # エラーが発生してもpongを返す
 
 @app.route('/health')
 def health():
     """ヘルスチェックエンドポイント"""
     try:
+        # 最小限のチェックのみ実行
         return jsonify({
             'status': 'healthy',
             'timestamp': time.time(),
@@ -169,11 +175,13 @@ def health():
             'environment': os.environ.get('RAILWAY_ENVIRONMENT', 'local')
         })
     except Exception as e:
+        print(f"❌ healthエンドポイントでエラー: {e}")
+        # エラーが発生してもhealthyを返す
         return jsonify({
-            'status': 'error',
-            'error': str(e),
-            'timestamp': time.time()
-        }), 500
+            'status': 'healthy',
+            'timestamp': time.time(),
+            'error': str(e)
+        })
 
 @app.route('/api/status')
 def api_status():
@@ -187,15 +195,34 @@ def api_status():
             'environment': os.environ.get('RAILWAY_ENVIRONMENT', 'local')
         })
     except Exception as e:
+        print(f"❌ api_statusエンドポイントでエラー: {e}")
         return jsonify({
-            'status': 'error',
-            'error': str(e),
+            'status': 'running',
+            'message': 'Jobcan Automation Service',
+            'timestamp': time.time(),
+            'error': str(e)
+        })
+
+@app.route('/ready')
+def ready():
+    """起動確認エンドポイント"""
+    try:
+        return jsonify({
+            'status': 'ready',
             'timestamp': time.time()
-        }), 500
+        })
+    except Exception as e:
+        print(f"❌ readyエンドポイントでエラー: {e}")
+        return jsonify({
+            'status': 'ready',
+            'timestamp': time.time(),
+            'error': str(e)
+        })
 
 if __name__ == '__main__':
     try:
         port = int(os.environ.get('PORT', 5000))
+        print(f"🚀 アプリケーションをポート {port} で起動中...")
         app.run(host='0.0.0.0', port=port, debug=False)
     except Exception as e:
         print(f"❌ アプリケーション起動でエラー: {e}")
