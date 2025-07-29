@@ -89,6 +89,21 @@
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
         }
         
+        .logo-image {
+            max-width: 250px;
+            width: 100%;
+            height: auto;
+            display: block;
+            margin: 0 auto;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .logo-image:hover {
+            transform: translateY(-2px);
+            filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4));
+        }
+        
         .header p {
             margin: 15px 0 0 0;
             opacity: 0.9;
@@ -514,6 +529,10 @@
                 font-size: 0.5em;
             }
             
+            .logo-image {
+                max-width: 200px;
+            }
+            
             .content {
                 padding: 30px 25px;
             }
@@ -547,7 +566,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Jobcan AutoFill</h1>
+            <img src="{{ url_for('static', filename='JobcanAutofill.png') }}" alt="Jobcan AutoFill logo" class="logo-image">
         </div>
         
         <div class="content">
