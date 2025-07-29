@@ -104,7 +104,9 @@ def upload_file():
         'status': 'running',
         'logs': [],
         'progress': 0,
-        'start_time': datetime.now().timestamp()
+        'start_time': datetime.now().timestamp(),
+        'login_status': 'not_started',
+        'login_message': 'ログイン処理が開始されていません'
     }
     
     # バックグラウンドで処理を実行
@@ -133,6 +135,14 @@ def get_status(job_id):
         return jsonify({'error': 'ジョブが見つかりません'})
     
     job = jobs[job_id]
+    
+    # ログイン結果の詳細情報を取得
+    login_status = job.get('login_status', 'unknown')
+    login_message = job.get('login_message', 'ログイン状態が不明です')
+    
+    # ユーザー向けの詳細メッセージを生成
+    user_message = generate_user_message(job['status'], login_status, login_message)
+    
     return jsonify({
         'status': job['status'],
         'progress': job.get('progress', 0),
@@ -140,8 +150,43 @@ def get_status(job_id):
         'current_data': job.get('current_data', 0),
         'total_data': job.get('total_data', 0),
         'logs': job.get('logs', []),
-        'start_time': job.get('start_time', 0)
+        'start_time': job.get('start_time', 0),
+        'login_status': login_status,
+        'login_message': login_message,
+        'user_message': user_message
     })
+
+def generate_user_message(status, login_status, login_message):
+    """ユーザー向けの詳細メッセージを生成"""
+    
+    if status == 'error':
+        return f"❌ エラーが発生しました: {login_message}"
+    
+    if status == 'completed':
+        if login_status == 'success':
+            return "✅ 処理が正常に完了しました"
+        elif login_status in ['login_error', 'login_failed']:
+            return f"⚠️ ログインに失敗しました: {login_message}"
+        elif login_status == 'captcha_detected':
+            return "⚠️ CAPTCHA（画像認証）が表示されています。手動でのログインが必要です"
+        elif login_status == 'account_restricted':
+            return f"⚠️ アカウントに制限があります: {login_message}"
+        elif login_status == 'timeout_error':
+            return "⚠️ ページの読み込みがタイムアウトしました。ネットワーク接続を確認してください"
+        elif login_status == 'browser_launch_error':
+            return "⚠️ ブラウザの起動に失敗しました。システム環境を確認してください"
+        elif login_status == 'playwright_unavailable':
+            return "⚠️ ブラウザ自動化機能が利用できません。ローカル環境での実行を推奨します"
+        else:
+            return f"⚠️ 処理は完了しましたが、ログインに問題がありました: {login_message}"
+    
+    # 処理中のメッセージ
+    if login_status == 'success':
+        return "🔄 処理中... ログインに成功しました"
+    elif login_status in ['login_error', 'login_failed']:
+        return f"🔄 処理中... ログインに失敗: {login_message}"
+    else:
+        return "🔄 処理中..."
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000))) 
