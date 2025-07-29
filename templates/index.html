@@ -40,7 +40,7 @@
         .header {
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             color: #FFFFFF;
-            padding: 50px 40px;
+            padding: 60px 40px;
             text-align: center;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             position: relative;
@@ -90,18 +90,27 @@
         }
         
         .logo-image {
-            max-width: 250px;
+            max-width: 400px;
             width: 100%;
             height: auto;
             display: block;
             margin: 0 auto;
-            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+            filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4));
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 8px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            padding: 20px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
         
         .logo-image:hover {
-            transform: translateY(-2px);
-            filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4));
+            transform: translateY(-3px);
+            filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.5));
+            box-shadow: 
+                0 12px 40px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
         }
         
         .header p {
@@ -517,7 +526,7 @@
             }
             
             .header {
-                padding: 40px 25px;
+                padding: 50px 25px;
             }
             
             .header h1 {
@@ -530,7 +539,8 @@
             }
             
             .logo-image {
-                max-width: 200px;
+                max-width: 300px;
+                padding: 15px;
             }
             
             .content {
