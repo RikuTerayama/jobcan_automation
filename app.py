@@ -523,6 +523,16 @@ def detailed_health_check():
             'timestamp': datetime.now().isoformat()
         }), 500
 
+# アプリケーション初期化ログ（Railway環境対応）
+try:
+    print(f"🚀 アプリケーションを初期化中...")
+    print(f"🔧 環境: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
+    print(f"🔧 Python バージョン: {os.sys.version}")
+    print(f"🔧 ポート: {os.environ.get('PORT', '5000')}")
+    print(f"✅ アプリケーション初期化完了")
+except Exception as e:
+    print(f"❌ アプリケーション初期化でエラー: {e}")
+
 if __name__ == '__main__':
     try:
         # 開発環境ではデバッグモードで実行
