@@ -4,6 +4,8 @@
 import os
 import uuid
 import threading
+import tempfile
+import shutil
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template, send_file
 
@@ -19,8 +21,48 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# ジョブの状態を管理
+# ジョブの状態を管理（スレッドセーフな辞書）
 jobs = {}
+jobs_lock = threading.Lock()
+
+# アクティブなPlaywrightインスタンスを管理
+active_browsers = {}
+browser_lock = threading.Lock()
+
+def get_user_session_dir(job_id):
+    """ユーザーごとの一時ディレクトリを取得"""
+    session_dir = os.path.join(tempfile.gettempdir(), f'jobcan_session_{job_id}')
+    if not os.path.exists(session_dir):
+        os.makedirs(session_dir)
+    return session_dir
+
+def cleanup_user_session(job_id):
+    """ユーザーセッションのクリーンアップ"""
+    try:
+        session_dir = get_user_session_dir(job_id)
+        if os.path.exists(session_dir):
+            shutil.rmtree(session_dir)
+    except Exception as e:
+        print(f"セッションクリーンアップエラー: {e}")
+
+def validate_input_data(email, password, file):
+    """入力データの検証"""
+    errors = []
+    
+    # メールアドレスの検証
+    if not email or '@' not in email or '.' not in email:
+        errors.append("有効なメールアドレスを入力してください")
+    
+    # パスワードの検証
+    if not password or len(password) < 1:
+        errors.append("パスワードを入力してください")
+    
+    # ファイルサイズの検証（10MB制限）
+    if file and hasattr(file, 'content_length'):
+        if file.content_length > 10 * 1024 * 1024:  # 10MB
+            errors.append("ファイルサイズが大きすぎます（10MB以下にしてください）")
+    
+    return errors
 
 @app.route('/')
 def index():
@@ -77,84 +119,117 @@ def download_template():
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
-    if 'file' not in request.files:
-        return jsonify({'error': 'ファイルが選択されていません'})
-    
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'ファイルが選択されていません'})
-    
-    if not allowed_file(file.filename):
-        return jsonify({'error': 'Excelファイル（.xlsx, .xls）のみアップロード可能です'})
-    
-    email = request.form.get('email', '')
-    password = request.form.get('password', '')
-    
-    if not email or not password:
-        return jsonify({'error': 'メールアドレスとパスワードを入力してください'})
-    
-    # ファイルを保存
-    filename = f"{uuid.uuid4()}.xlsx"
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    file.save(file_path)
-    
-    # ジョブIDを生成
-    job_id = str(uuid.uuid4())
-    jobs[job_id] = {
-        'status': 'running',
-        'logs': [],
-        'progress': 0,
-        'start_time': datetime.now().timestamp(),
-        'login_status': 'not_started',
-        'login_message': 'ログイン処理が開始されていません'
-    }
-    
-    # バックグラウンドで処理を実行
-    def run_automation():
-        try:
-            process_jobcan_automation(job_id, email, password, file_path, jobs)
-        finally:
-            # 処理完了後にファイルを削除
+    try:
+        # 入力データの検証
+        if 'file' not in request.files:
+            return jsonify({'error': 'ファイルが選択されていません'})
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'ファイルが選択されていません'})
+        
+        if not allowed_file(file.filename):
+            return jsonify({'error': 'Excelファイル（.xlsx, .xls）のみアップロード可能です'})
+        
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password', '').strip()
+        
+        # 入力データの詳細検証
+        validation_errors = validate_input_data(email, password, file)
+        if validation_errors:
+            return jsonify({'error': '入力エラー: ' + '; '.join(validation_errors)})
+        
+        # 同時実行数の制限チェック
+        with jobs_lock:
+            active_jobs = len([j for j in jobs.values() if j.get('status') == 'running'])
+            if active_jobs >= 5:  # 最大5つの同時実行を制限
+                return jsonify({'error': '現在処理中のジョブが多すぎます。しばらく待ってから再試行してください'})
+        
+        # ユーザーセッション用の一時ディレクトリを作成
+        job_id = str(uuid.uuid4())
+        session_dir = get_user_session_dir(job_id)
+        
+        # ファイルを保存（タイムスタンプ付きで一意性を確保）
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+        filename = f"{job_id}_{timestamp}.xlsx"
+        file_path = os.path.join(session_dir, filename)
+        file.save(file_path)
+        
+        # ジョブ情報を初期化（スレッドセーフ）
+        with jobs_lock:
+            jobs[job_id] = {
+                'status': 'running',
+                'logs': [],
+                'progress': 0,
+                'start_time': datetime.now().timestamp(),
+                'login_status': 'not_started',
+                'login_message': 'ログイン処理が開始されていません',
+                'session_dir': session_dir,
+                'file_path': file_path,
+                'email_hash': hash(email)  # 個人情報はハッシュ化
+            }
+        
+        # バックグラウンドで処理を実行
+        def run_automation():
             try:
-                os.remove(file_path)
-            except:
-                pass
-    
-    thread = threading.Thread(target=run_automation)
-    thread.start()
-    
-    return jsonify({
-        'job_id': job_id,
-        'message': '処理を開始しました',
-        'status_url': f'/status/{job_id}'
-    })
+                process_jobcan_automation(job_id, email, password, file_path, jobs, session_dir)
+            except Exception as e:
+                with jobs_lock:
+                    if job_id in jobs:
+                        jobs[job_id]['status'] = 'error'
+                        jobs[job_id]['login_message'] = f'処理中にエラーが発生しました: {str(e)}'
+            finally:
+                # 処理完了後のクリーンアップ
+                try:
+                    if os.path.exists(file_path):
+                        os.remove(file_path)
+                    cleanup_user_session(job_id)
+                except Exception as cleanup_error:
+                    print(f"クリーンアップエラー: {cleanup_error}")
+        
+        thread = threading.Thread(target=run_automation)
+        thread.daemon = True  # メインプロセス終了時に自動終了
+        thread.start()
+        
+        return jsonify({
+            'job_id': job_id,
+            'message': '処理を開始しました',
+            'status_url': f'/status/{job_id}'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'予期しないエラーが発生しました: {str(e)}'})
 
 @app.route('/status/<job_id>')
 def get_status(job_id):
-    if job_id not in jobs:
-        return jsonify({'error': 'ジョブが見つかりません'})
-    
-    job = jobs[job_id]
-    
-    # ログイン結果の詳細情報を取得
-    login_status = job.get('login_status', 'unknown')
-    login_message = job.get('login_message', 'ログイン状態が不明です')
-    
-    # ユーザー向けの詳細メッセージを生成
-    user_message = generate_user_message(job['status'], login_status, login_message, job.get('progress', 0))
-    
-    return jsonify({
-        'status': job['status'],
-        'progress': job.get('progress', 0),
-        'step_name': job.get('step_name', ''),
-        'current_data': job.get('current_data', 0),
-        'total_data': job.get('total_data', 0),
-        'logs': job.get('logs', []),
-        'start_time': job.get('start_time', 0),
-        'login_status': login_status,
-        'login_message': login_message,
-        'user_message': user_message
-    })
+    try:
+        with jobs_lock:
+            if job_id not in jobs:
+                return jsonify({'error': 'ジョブが見つかりません'})
+            
+            job = jobs[job_id]
+            
+            # ログイン結果の詳細情報を取得
+            login_status = job.get('login_status', 'unknown')
+            login_message = job.get('login_message', 'ログイン状態が不明です')
+            
+            # ユーザー向けの詳細メッセージを生成
+            user_message = generate_user_message(job['status'], login_status, login_message, job.get('progress', 0))
+            
+            return jsonify({
+                'status': job['status'],
+                'progress': job.get('progress', 0),
+                'step_name': job.get('step_name', ''),
+                'current_data': job.get('current_data', 0),
+                'total_data': job.get('total_data', 0),
+                'logs': job.get('logs', []),
+                'start_time': job.get('start_time', 0),
+                'login_status': login_status,
+                'login_message': login_message,
+                'user_message': user_message
+            })
+    except Exception as e:
+        return jsonify({'error': f'ステータス取得エラー: {str(e)}'})
 
 def generate_user_message(status, login_status, login_message, progress):
     """ユーザー向けの詳細メッセージを生成"""
