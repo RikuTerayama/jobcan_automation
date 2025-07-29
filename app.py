@@ -42,6 +42,7 @@ session_manager = {
 def get_system_resources():
     """システムリソースの使用状況を取得"""
     try:
+        import psutil
         process = psutil.Process()
         memory_info = process.memory_info()
         cpu_percent = process.cpu_percent()
@@ -51,9 +52,12 @@ def get_system_resources():
             'cpu_percent': cpu_percent,
             'active_sessions': len(session_manager['active_sessions'])
         }
+    except ImportError:
+        print("psutilが利用できません。リソース監視機能は無効化されます。")
+        return {'memory_mb': 0, 'cpu_percent': 0, 'active_sessions': len(session_manager['active_sessions'])}
     except Exception as e:
         print(f"リソース監視エラー: {e}")
-        return {'memory_mb': 0, 'cpu_percent': 0, 'active_sessions': 0}
+        return {'memory_mb': 0, 'cpu_percent': 0, 'active_sessions': len(session_manager['active_sessions'])}
 
 def check_resource_limits():
     """リソース制限のチェック（警告のみ、処理は継続）"""
