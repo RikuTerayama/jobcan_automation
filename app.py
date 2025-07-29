@@ -552,7 +552,6 @@ try:
     print(f"🔧 Python バージョン: {os.sys.version}")
     print(f"🔧 ポート: {os.environ.get('PORT', '5000')}")
     print(f"🔧 作業ディレクトリ: {os.getcwd()}")
-    print(f"🔧 ファイル一覧: {os.listdir('.')}")
     print(f"🔧 環境変数: PORT={os.environ.get('PORT', 'N/A')}, RAILWAY_ENVIRONMENT={os.environ.get('RAILWAY_ENVIRONMENT', 'N/A')}")
     print(f"✅ アプリケーション初期化完了")
 except Exception as e:
