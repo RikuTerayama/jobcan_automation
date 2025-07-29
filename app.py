@@ -325,6 +325,59 @@ def get_status(job_id):
     except Exception as e:
         return jsonify({'error': f'ステータス取得エラー: {str(e)}'})
 
+@app.route('/sessions')
+def get_active_sessions():
+    """アクティブセッション情報を取得"""
+    try:
+        with session_manager['session_lock']:
+            active_sessions = session_manager['active_sessions'].copy()
+        
+        resources = get_system_resources()
+        warnings = check_resource_limits()
+        
+        return jsonify({
+            'active_sessions': len(active_sessions),
+            'sessions': [
+                {
+                    'session_id': session_id,
+                    'job_id': session_info['job_id'],
+                    'start_time': session_info['start_time'],
+                    'duration': time.time() - session_info['start_time']
+                }
+                for session_id, session_info in active_sessions.items()
+            ],
+            'resources': resources,
+            'warnings': warnings
+        })
+    except Exception as e:
+        return jsonify({'error': f'セッション情報取得エラー: {str(e)}'})
+
+@app.route('/cleanup-sessions')
+def cleanup_expired_sessions():
+    """期限切れセッションのクリーンアップ"""
+    try:
+        current_time = time.time()
+        expired_sessions = []
+        
+        with session_manager['session_lock']:
+            for session_id, session_info in list(session_manager['active_sessions'].items()):
+                # 30分以上経過したセッションを期限切れとする
+                if current_time - session_info['start_time'] > 1800:
+                    expired_sessions.append(session_id)
+                    del session_manager['active_sessions'][session_id]
+        
+        # 期限切れセッションのクリーンアップ
+        for session_id in expired_sessions:
+            cleanup_user_session(session_id)
+        
+        return jsonify({
+            'cleaned_sessions': len(expired_sessions),
+            'remaining_sessions': len(session_manager['active_sessions']),
+            'message': f'{len(expired_sessions)}個のセッションをクリーンアップしました'
+        })
+    except Exception as e:
+        return jsonify({'error': f'セッションクリーンアップエラー: {str(e)}'})
+
 def generate_user_message(status, login_status, login_message, progress):
     """ユーザー向けの詳細メッセージを生成"""
     
