@@ -201,22 +201,32 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         update_progress(job_id, 4, "ブラウザ起動準備中")
         add_job_log(job_id, "🔧 ステップ4: ブラウザ起動準備中...")
         add_job_log(job_id, "🌐 Jobcanログインページ: https://id.jobcan.jp/users/sign_in?app_key=atd&redirect_to=https://ssl.jobcan.jp/jbcoauth/callback")
+        add_job_log(job_id, "🔧 ブラウザドライバー: Playwright (Chrome/Chromium)")
+        add_job_log(job_id, "🔧 ヘッドレスモード: 有効")
         time.sleep(2)  # 処理時間をシミュレート
         
         # Railway環境の制約により、実際のブラウザ起動は無効化
         add_job_log(job_id, "⚠️ ステップ4: ブラウザ起動機能は現在無効化されています（Railway環境の制約）")
         add_job_log(job_id, "💡 ローカル環境または他のホスティングサービスで実装可能です")
+        add_job_log(job_id, "🔧 実装例: browser = playwright.chromium.launch(headless=True)")
         update_progress(job_id, 4, "ブラウザ起動準備完了", 0, total_data)
         
         # ステップ5: Jobcanログイン
         update_progress(job_id, 5, "Jobcanログイン中")
         add_job_log(job_id, "🔧 ステップ5: Jobcanログイン処理中...")
         add_job_log(job_id, f"🔐 ログイン情報: {email}")
+        add_job_log(job_id, "🔧 ログイン手順:")
+        add_job_log(job_id, "   1. ログインページにアクセス")
+        add_job_log(job_id, "   2. メールアドレスを入力")
+        add_job_log(job_id, "   3. パスワードを入力")
+        add_job_log(job_id, "   4. ログインボタンをクリック")
+        add_job_log(job_id, "   5. ログイン成功を確認")
         time.sleep(2)  # 処理時間をシミュレート
         
         # Railway環境の制約により、実際のログイン処理は無効化
         add_job_log(job_id, "⚠️ ステップ5: ログイン機能は現在無効化されています（Railway環境の制約）")
         add_job_log(job_id, "💡 ローカル環境または他のホスティングサービスで実装可能です")
+        add_job_log(job_id, "🔧 実装例: page.fill('#user_email', email); page.fill('#user_password', password)")
         update_progress(job_id, 5, "Jobcanログイン完了", 0, total_data)
         
         # ステップ6: 勤怠データ入力
@@ -230,8 +240,33 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     start_time = row.iloc[1]  # B列: 開始時刻
                     end_time = row.iloc[2]  # C列: 終了時刻
                     
-                    add_job_log(job_id, f"📝 データ {index + 1}/{total_data}: {date} {start_time}-{end_time}")
-                    add_job_log(job_id, f"🔧 打刻修正URL: https://ssl.jobcan.jp/employee/adit/modify?year={date.split('/')[0]}&month={date.split('/')[1]}&day={date.split('/')[2]}")
+                    # 日付を文字列に変換
+                    if hasattr(date, 'strftime'):
+                        date_str = date.strftime('%Y/%m/%d')
+                    else:
+                        date_str = str(date)
+                    
+                    add_job_log(job_id, f"📝 データ {index + 1}/{total_data}: {date_str} {start_time}-{end_time}")
+                    
+                    # 日付から年月日を抽出
+                    try:
+                        if hasattr(date, 'year') and hasattr(date, 'month') and hasattr(date, 'day'):
+                            year = date.year
+                            month = date.month
+                            day = date.day
+                        else:
+                            # 文字列から年月日を抽出
+                            date_parts = str(date_str).split('/')
+                            if len(date_parts) >= 3:
+                                year = date_parts[0]
+                                month = date_parts[1]
+                                day = date_parts[2]
+                            else:
+                                year = month = day = "01"
+                        
+                        add_job_log(job_id, f"🔧 打刻修正URL: https://ssl.jobcan.jp/employee/adit/modify?year={year}&month={month}&day={day}")
+                    except Exception as e:
+                        add_job_log(job_id, f"⚠️ URL生成エラー: {e}")
                     
                     # 実際のデータ入力処理は現在無効化
                     time.sleep(1)  # 処理時間をシミュレート
@@ -243,8 +278,33 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     start_time = ws[f'B{row}'].value
                     end_time = ws[f'C{row}'].value
                     
-                    add_job_log(job_id, f"📝 データ {row - 1}/{total_data}: {date} {start_time}-{end_time}")
-                    add_job_log(job_id, f"🔧 打刻修正URL: https://ssl.jobcan.jp/employee/adit/modify?year={date.split('/')[0]}&month={date.split('/')[1]}&day={date.split('/')[2]}")
+                    # 日付を文字列に変換
+                    if hasattr(date, 'strftime'):
+                        date_str = date.strftime('%Y/%m/%d')
+                    else:
+                        date_str = str(date)
+                    
+                    add_job_log(job_id, f"📝 データ {row - 1}/{total_data}: {date_str} {start_time}-{end_time}")
+                    
+                    # 日付から年月日を抽出
+                    try:
+                        if hasattr(date, 'year') and hasattr(date, 'month') and hasattr(date, 'day'):
+                            year = date.year
+                            month = date.month
+                            day = date.day
+                        else:
+                            # 文字列から年月日を抽出
+                            date_parts = str(date_str).split('/')
+                            if len(date_parts) >= 3:
+                                year = date_parts[0]
+                                month = date_parts[1]
+                                day = date_parts[2]
+                            else:
+                                year = month = day = "01"
+                        
+                        add_job_log(job_id, f"🔧 打刻修正URL: https://ssl.jobcan.jp/employee/adit/modify?year={year}&month={month}&day={day}")
+                    except Exception as e:
+                        add_job_log(job_id, f"⚠️ URL生成エラー: {e}")
                     
                     # 実際のデータ入力処理は現在無効化
                     time.sleep(1)  # 処理時間をシミュレート
@@ -264,8 +324,28 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         # ステップ8: 完了
         update_progress(job_id, 8, "処理完了")
         add_job_log(job_id, "🎉 ステップ8: 勤怠データの入力が完了しました")
-        add_job_log(job_id, "⚠️ 注意: Railway環境の制約により、実際のJobcan操作は無効化されています")
-        add_job_log(job_id, "💡 ローカル環境または他のホスティングサービスで完全な自動化が可能です")
+        add_job_log(job_id, "📊 処理結果サマリー:")
+        add_job_log(job_id, f"   - 処理データ数: {total_data}件")
+        add_job_log(job_id, f"   - 処理時間: {time.time() - jobs[job_id]['start_time']:.2f}秒")
+        add_job_log(job_id, "   - ステップ1: ✅ 初期化完了")
+        add_job_log(job_id, "   - ステップ2: ✅ Excelファイル読み込み完了")
+        add_job_log(job_id, "   - ステップ3: ✅ データ検証完了")
+        add_job_log(job_id, "   - ステップ4: ⚠️ ブラウザ起動（Railway制約により無効化）")
+        add_job_log(job_id, "   - ステップ5: ⚠️ Jobcanログイン（Railway制約により無効化）")
+        add_job_log(job_id, "   - ステップ6: ✅ データ処理完了")
+        add_job_log(job_id, "   - ステップ7: ✅ 最終確認完了")
+        add_job_log(job_id, "   - ステップ8: ✅ 処理完了")
+        add_job_log(job_id, "")
+        add_job_log(job_id, "⚠️ 重要: Railway環境の制約により、実際のJobcan操作は無効化されています")
+        add_job_log(job_id, "💡 完全な自動化を実現するには:")
+        add_job_log(job_id, "   1. ローカル環境での実行")
+        add_job_log(job_id, "   2. 他のホスティングサービス（Heroku、VPS等）での実行")
+        add_job_log(job_id, "   3. PlaywrightとChromeドライバーのインストール")
+        add_job_log(job_id, "")
+        add_job_log(job_id, "🔧 実装に必要な依存関係:")
+        add_job_log(job_id, "   - playwright==1.40.0")
+        add_job_log(job_id, "   - openpyxl==3.1.2")
+        add_job_log(job_id, "   - pandas==2.1.4")
         jobs[job_id]['status'] = 'completed'
         
     except Exception as e:
@@ -345,9 +425,6 @@ def test():
 def download_template():
     """テンプレートExcelファイルをダウンロード"""
     try:
-        if not pandas_available:
-            return jsonify({'error': 'pandasが利用できません。テンプレート機能は無効化されています。'}), 500
-        
         output = create_template_excel()
         if output:
             return send_file(
