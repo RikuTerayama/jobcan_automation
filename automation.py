@@ -8,6 +8,29 @@ from utils import (
     playwright_available
 )
 
+def convert_time_to_4digit(time_str):
+    """時刻を4桁の数字形式に変換"""
+    try:
+        # 時刻文字列を処理（例：09:00:00 → 0900）
+        if isinstance(time_str, str):
+            # コロンで分割して時と分を取得
+            parts = time_str.replace(':', '').replace('：', '').replace(' ', '')
+            if len(parts) >= 4:
+                # 最初の4文字を取得（時分）
+                return parts[:4]
+            elif len(parts) == 2:
+                # 時のみの場合、分を00で補完
+                return f"{parts}00"
+        elif hasattr(time_str, 'strftime'):
+            # datetimeオブジェクトの場合
+            return time_str.strftime('%H%M')
+        else:
+            # その他の場合、文字列に変換して処理
+            return convert_time_to_4digit(str(time_str))
+    except Exception as e:
+        # エラーの場合は元の値を返す
+        return str(time_str)
+
 def check_login_status(page, job_id, jobs):
     """ログイン状態を詳細にチェック"""
     try:
@@ -208,8 +231,12 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                 start_time = row.iloc[1]
                 end_time = row.iloc[2]
                 
+                # 時刻を4桁形式に変換
+                start_time_4digit = convert_time_to_4digit(start_time)
+                end_time_4digit = convert_time_to_4digit(end_time)
+                
                 date_str, year, month, day = extract_date_info(date)
-                add_job_log(job_id, f"📝 データ {index + 1}/{total_data}: {date_str} {start_time}-{end_time}", jobs)
+                add_job_log(job_id, f"📝 データ {index + 1}/{total_data}: {date_str} {start_time}→{start_time_4digit}, {end_time}→{end_time_4digit}", jobs)
                 
                 # 打刻修正ページにアクセス
                 modify_url = f"https://ssl.jobcan.jp/employee/adit/modify?year={year}&month={month}&day={day}"
@@ -219,42 +246,115 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                 page.wait_for_load_state('networkidle')
                 add_job_log(job_id, "✅ 打刻修正ページアクセス完了", jobs)
                 
-                # 始業時刻を入力
-                add_job_log(job_id, f"⏰ 始業時刻を入力: {start_time}", jobs)
-                time_input = page.query_selector('input[type="time"]')
-                if time_input:
-                    page.fill('input[type="time"]', str(start_time))
+                # 始業時刻を入力（複数のセレクターを試行）
+                add_job_log(job_id, f"⏰ 始業時刻を入力: {start_time_4digit}", jobs)
+                start_time_input = None
+                
+                # 様々なセレクターを試行
+                selectors_to_try = [
+                    'input[name="start_time"]',
+                    'input[placeholder*="始業"]',
+                    'input[placeholder*="開始"]',
+                    'input[type="text"]',
+                    'input[class*="time"]',
+                    'input[class*="start"]',
+                    'input[id*="start"]',
+                    'input[id*="time"]'
+                ]
+                
+                for selector in selectors_to_try:
+                    try:
+                        # 要素が表示されるまで待機
+                        page.wait_for_selector(selector, timeout=5000)
+                        start_time_input = page.query_selector(selector)
+                        if start_time_input:
+                            add_job_log(job_id, f"✅ 始業時刻入力フィールドを発見: {selector}", jobs)
+                            break
+                    except Exception as e:
+                        add_job_log(job_id, f"⚠️ セレクター {selector} でエラー: {e}", jobs)
+                        continue
+                
+                if start_time_input:
+                    page.fill(selector, start_time_4digit)
                     add_job_log(job_id, "✅ 始業時刻入力完了", jobs)
                 else:
-                    add_job_log(job_id, "⚠️ 時刻入力フィールドが見つかりません", jobs)
-                
-                # 打刻ボタンをクリック
-                add_job_log(job_id, "🔘 始業打刻ボタンをクリック中...", jobs)
-                punch_button = page.query_selector('button[type="submit"], input[type="submit"]')
-                if punch_button:
-                    page.click('button[type="submit"], input[type="submit"]')
-                    page.wait_for_load_state('networkidle')
-                    add_job_log(job_id, "✅ 始業打刻完了", jobs)
-                else:
-                    add_job_log(job_id, "⚠️ 打刻ボタンが見つかりません", jobs)
+                    add_job_log(job_id, "⚠️ 始業時刻入力フィールドが見つかりません", jobs)
                 
                 # 終業時刻を入力
-                add_job_log(job_id, f"⏰ 終業時刻を入力: {end_time}", jobs)
-                time_input = page.query_selector('input[type="time"]')
-                if time_input:
-                    page.fill('input[type="time"]', str(end_time))
+                add_job_log(job_id, f"⏰ 終業時刻を入力: {end_time_4digit}", jobs)
+                end_time_input = None
+                
+                # 様々なセレクターを試行
+                end_selectors_to_try = [
+                    'input[name="end_time"]',
+                    'input[placeholder*="終業"]',
+                    'input[placeholder*="終了"]',
+                    'input[type="text"]',
+                    'input[class*="time"]',
+                    'input[class*="end"]',
+                    'input[id*="end"]',
+                    'input[id*="time"]'
+                ]
+                
+                for selector in end_selectors_to_try:
+                    try:
+                        # 要素が表示されるまで待機
+                        page.wait_for_selector(selector, timeout=5000)
+                        end_time_input = page.query_selector(selector)
+                        if end_time_input:
+                            add_job_log(job_id, f"✅ 終業時刻入力フィールドを発見: {selector}", jobs)
+                            break
+                    except Exception as e:
+                        add_job_log(job_id, f"⚠️ セレクター {selector} でエラー: {e}", jobs)
+                        continue
+                
+                if end_time_input:
+                    page.fill(selector, end_time_4digit)
                     add_job_log(job_id, "✅ 終業時刻入力完了", jobs)
                 else:
-                    add_job_log(job_id, "⚠️ 時刻入力フィールドが見つかりません", jobs)
+                    add_job_log(job_id, "⚠️ 終業時刻入力フィールドが見つかりません", jobs)
                 
-                # 打刻ボタンをクリック
-                add_job_log(job_id, "🔘 終業打刻ボタンをクリック中...", jobs)
-                punch_button = page.query_selector('button[type="submit"], input[type="submit"]')
-                if punch_button:
-                    page.click('button[type="submit"], input[type="submit"]')
-                    page.wait_for_load_state('networkidle')
-                    add_job_log(job_id, "✅ 終業打刻完了", jobs)
-                else:
+                # 打刻ボタンをクリック（複数の方法を試行）
+                add_job_log(job_id, "🔘 打刻ボタンをクリック中...", jobs)
+                punch_button_clicked = False
+                
+                # 様々な方法で打刻ボタンを探す
+                button_selectors = [
+                    'button:has-text("打刻")',
+                    'input[value="打刻"]',
+                    'button[type="submit"]',
+                    'input[type="submit"]',
+                    'button[class*="submit"]',
+                    'button[class*="punch"]',
+                    'button[class*="time"]',
+                    'a:has-text("打刻")',
+                    '[onclick*="打刻"]'
+                ]
+                
+                for selector in button_selectors:
+                    try:
+                        button = page.query_selector(selector)
+                        if button:
+                            page.click(selector)
+                            page.wait_for_load_state('networkidle')
+                            add_job_log(job_id, f"✅ 打刻ボタンクリック完了: {selector}", jobs)
+                            punch_button_clicked = True
+                            break
+                    except Exception as e:
+                        add_job_log(job_id, f"⚠️ ボタンセレクター {selector} でエラー: {e}", jobs)
+                        continue
+                
+                # テキストベースでボタンを探す
+                if not punch_button_clicked:
+                    try:
+                        page.get_by_text("打刻").click()
+                        page.wait_for_load_state('networkidle')
+                        add_job_log(job_id, "✅ 打刻ボタンクリック完了（テキストベース）", jobs)
+                        punch_button_clicked = True
+                    except Exception as e:
+                        add_job_log(job_id, f"⚠️ テキストベースのボタンクリックでエラー: {e}", jobs)
+                
+                if not punch_button_clicked:
                     add_job_log(job_id, "⚠️ 打刻ボタンが見つかりません", jobs)
                 
                 # 出勤簿ページに戻る
@@ -273,8 +373,12 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                 start_time = ws[f'B{row}'].value
                 end_time = ws[f'C{row}'].value
                 
+                # 時刻を4桁形式に変換
+                start_time_4digit = convert_time_to_4digit(start_time)
+                end_time_4digit = convert_time_to_4digit(end_time)
+                
                 date_str, year, month, day = extract_date_info(date)
-                add_job_log(job_id, f"📝 データ {row - 1}/{total_data}: {date_str} {start_time}-{end_time}", jobs)
+                add_job_log(job_id, f"📝 データ {row - 1}/{total_data}: {date_str} {start_time}→{start_time_4digit}, {end_time}→{end_time_4digit}", jobs)
                 
                 # 打刻修正ページにアクセス
                 modify_url = f"https://ssl.jobcan.jp/employee/adit/modify?year={year}&month={month}&day={day}"
@@ -284,42 +388,115 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                 page.wait_for_load_state('networkidle')
                 add_job_log(job_id, "✅ 打刻修正ページアクセス完了", jobs)
                 
-                # 始業時刻を入力
-                add_job_log(job_id, f"⏰ 始業時刻を入力: {start_time}", jobs)
-                time_input = page.query_selector('input[type="time"]')
-                if time_input:
-                    page.fill('input[type="time"]', str(start_time))
+                # 始業時刻を入力（複数のセレクターを試行）
+                add_job_log(job_id, f"⏰ 始業時刻を入力: {start_time_4digit}", jobs)
+                start_time_input = None
+                
+                # 様々なセレクターを試行
+                selectors_to_try = [
+                    'input[name="start_time"]',
+                    'input[placeholder*="始業"]',
+                    'input[placeholder*="開始"]',
+                    'input[type="text"]',
+                    'input[class*="time"]',
+                    'input[class*="start"]',
+                    'input[id*="start"]',
+                    'input[id*="time"]'
+                ]
+                
+                for selector in selectors_to_try:
+                    try:
+                        # 要素が表示されるまで待機
+                        page.wait_for_selector(selector, timeout=5000)
+                        start_time_input = page.query_selector(selector)
+                        if start_time_input:
+                            add_job_log(job_id, f"✅ 始業時刻入力フィールドを発見: {selector}", jobs)
+                            break
+                    except Exception as e:
+                        add_job_log(job_id, f"⚠️ セレクター {selector} でエラー: {e}", jobs)
+                        continue
+                
+                if start_time_input:
+                    page.fill(selector, start_time_4digit)
                     add_job_log(job_id, "✅ 始業時刻入力完了", jobs)
                 else:
-                    add_job_log(job_id, "⚠️ 時刻入力フィールドが見つかりません", jobs)
-                
-                # 打刻ボタンをクリック
-                add_job_log(job_id, "🔘 始業打刻ボタンをクリック中...", jobs)
-                punch_button = page.query_selector('button[type="submit"], input[type="submit"]')
-                if punch_button:
-                    page.click('button[type="submit"], input[type="submit"]')
-                    page.wait_for_load_state('networkidle')
-                    add_job_log(job_id, "✅ 始業打刻完了", jobs)
-                else:
-                    add_job_log(job_id, "⚠️ 打刻ボタンが見つかりません", jobs)
+                    add_job_log(job_id, "⚠️ 始業時刻入力フィールドが見つかりません", jobs)
                 
                 # 終業時刻を入力
-                add_job_log(job_id, f"⏰ 終業時刻を入力: {end_time}", jobs)
-                time_input = page.query_selector('input[type="time"]')
-                if time_input:
-                    page.fill('input[type="time"]', str(end_time))
+                add_job_log(job_id, f"⏰ 終業時刻を入力: {end_time_4digit}", jobs)
+                end_time_input = None
+                
+                # 様々なセレクターを試行
+                end_selectors_to_try = [
+                    'input[name="end_time"]',
+                    'input[placeholder*="終業"]',
+                    'input[placeholder*="終了"]',
+                    'input[type="text"]',
+                    'input[class*="time"]',
+                    'input[class*="end"]',
+                    'input[id*="end"]',
+                    'input[id*="time"]'
+                ]
+                
+                for selector in end_selectors_to_try:
+                    try:
+                        # 要素が表示されるまで待機
+                        page.wait_for_selector(selector, timeout=5000)
+                        end_time_input = page.query_selector(selector)
+                        if end_time_input:
+                            add_job_log(job_id, f"✅ 終業時刻入力フィールドを発見: {selector}", jobs)
+                            break
+                    except Exception as e:
+                        add_job_log(job_id, f"⚠️ セレクター {selector} でエラー: {e}", jobs)
+                        continue
+                
+                if end_time_input:
+                    page.fill(selector, end_time_4digit)
                     add_job_log(job_id, "✅ 終業時刻入力完了", jobs)
                 else:
-                    add_job_log(job_id, "⚠️ 時刻入力フィールドが見つかりません", jobs)
+                    add_job_log(job_id, "⚠️ 終業時刻入力フィールドが見つかりません", jobs)
                 
-                # 打刻ボタンをクリック
-                add_job_log(job_id, "🔘 終業打刻ボタンをクリック中...", jobs)
-                punch_button = page.query_selector('button[type="submit"], input[type="submit"]')
-                if punch_button:
-                    page.click('button[type="submit"], input[type="submit"]')
-                    page.wait_for_load_state('networkidle')
-                    add_job_log(job_id, "✅ 終業打刻完了", jobs)
-                else:
+                # 打刻ボタンをクリック（複数の方法を試行）
+                add_job_log(job_id, "🔘 打刻ボタンをクリック中...", jobs)
+                punch_button_clicked = False
+                
+                # 様々な方法で打刻ボタンを探す
+                button_selectors = [
+                    'button:has-text("打刻")',
+                    'input[value="打刻"]',
+                    'button[type="submit"]',
+                    'input[type="submit"]',
+                    'button[class*="submit"]',
+                    'button[class*="punch"]',
+                    'button[class*="time"]',
+                    'a:has-text("打刻")',
+                    '[onclick*="打刻"]'
+                ]
+                
+                for selector in button_selectors:
+                    try:
+                        button = page.query_selector(selector)
+                        if button:
+                            page.click(selector)
+                            page.wait_for_load_state('networkidle')
+                            add_job_log(job_id, f"✅ 打刻ボタンクリック完了: {selector}", jobs)
+                            punch_button_clicked = True
+                            break
+                    except Exception as e:
+                        add_job_log(job_id, f"⚠️ ボタンセレクター {selector} でエラー: {e}", jobs)
+                        continue
+                
+                # テキストベースでボタンを探す
+                if not punch_button_clicked:
+                    try:
+                        page.get_by_text("打刻").click()
+                        page.wait_for_load_state('networkidle')
+                        add_job_log(job_id, "✅ 打刻ボタンクリック完了（テキストベース）", jobs)
+                        punch_button_clicked = True
+                    except Exception as e:
+                        add_job_log(job_id, f"⚠️ テキストベースのボタンクリックでエラー: {e}", jobs)
+                
+                if not punch_button_clicked:
                     add_job_log(job_id, "⚠️ 打刻ボタンが見つかりません", jobs)
                 
                 # 出勤簿ページに戻る
