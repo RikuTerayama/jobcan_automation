@@ -3,14 +3,14 @@
 
 import os
 import time
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template
 
-# 最小限のFlaskアプリケーション
+# Flaskアプリケーション
 app = Flask(__name__)
 
 # 起動ログ
 try:
-    print("🚀 シンプルアプリケーションを起動中...")
+    print("🚀 Jobcan自動化アプリケーションを起動中...")
     print(f"🔧 ポート: {os.environ.get('PORT', '5000')}")
     print(f"🔧 環境: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
     print(f"🔧 作業ディレクトリ: {os.getcwd()}")
@@ -19,21 +19,15 @@ except Exception as e:
     print(f"❌ 起動ログでエラー: {e}")
 
 @app.route('/')
-def root():
-    """ルートエンドポイント"""
+def index():
+    """メインページ"""
     try:
-        return jsonify({
-            'status': 'running',
-            'message': 'Simple Jobcan Service',
-            'timestamp': time.time(),
-            'port': os.environ.get('PORT', 'N/A'),
-            'environment': os.environ.get('RAILWAY_ENVIRONMENT', 'local')
-        })
+        return render_template('index.html')
     except Exception as e:
         return jsonify({
             'status': 'error',
             'error': str(e),
-            'timestamp': time.time()
+            'message': 'テンプレートの読み込みに失敗しました'
         }), 500
 
 @app.route('/ping')
@@ -50,6 +44,24 @@ def health():
     try:
         return jsonify({
             'status': 'healthy',
+            'timestamp': time.time(),
+            'port': os.environ.get('PORT', 'N/A'),
+            'environment': os.environ.get('RAILWAY_ENVIRONMENT', 'local')
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'timestamp': time.time()
+        }), 500
+
+@app.route('/api/status')
+def api_status():
+    """APIステータスエンドポイント"""
+    try:
+        return jsonify({
+            'status': 'running',
+            'message': 'Jobcan Automation Service',
             'timestamp': time.time(),
             'port': os.environ.get('PORT', 'N/A'),
             'environment': os.environ.get('RAILWAY_ENVIRONMENT', 'local')
