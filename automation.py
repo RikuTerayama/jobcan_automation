@@ -389,8 +389,8 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             try:
                 from playwright.sync_api import sync_playwright
                 with sync_playwright() as p:
-                    # headless=Falseでブラウザを表示（デバッグ用）
-                    browser = p.chromium.launch(headless=False)
+                    # headless=Trueでサーバー環境に対応
+                    browser = p.chromium.launch(headless=True)
                     page = browser.new_page()
                     add_job_log(job_id, "✅ ブラウザ起動成功", jobs)
                     
