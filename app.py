@@ -478,6 +478,26 @@ def get_status(job_id):
             'error': str(e)
         })
 
+@app.route('/')
+def root():
+    """ルートエンドポイント（起動確認用）"""
+    try:
+        return jsonify({
+            'status': 'running',
+            'message': 'Jobcan Automation Service',
+            'timestamp': time.time(),
+            'port': os.environ.get('PORT', 'N/A'),
+            'environment': os.environ.get('RAILWAY_ENVIRONMENT', 'local'),
+            'health_check': '/health',
+            'detailed_health': '/health/detailed'
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e),
+            'timestamp': time.time()
+        }), 500
+
 @app.route('/health')
 def health_check():
     """ヘルスチェックエンドポイント（最適化版）"""
@@ -489,24 +509,6 @@ def health_check():
             'timestamp': time.time(),
             'port': os.environ.get('PORT', '5000'),
             'environment': os.environ.get('RAILWAY_ENVIRONMENT', 'local')
-        })
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'error': str(e),
-            'timestamp': time.time()
-        }), 500
-
-@app.route('/')
-def root():
-    """ルートエンドポイント（起動確認用）"""
-    try:
-        return jsonify({
-            'status': 'running',
-            'message': 'Jobcan Automation Service',
-            'timestamp': time.time(),
-            'health_check': '/health',
-            'detailed_health': '/health/detailed'
         })
     except Exception as e:
         return jsonify({
@@ -551,11 +553,23 @@ try:
     print(f"🔧 ポート: {os.environ.get('PORT', '5000')}")
     print(f"🔧 作業ディレクトリ: {os.getcwd()}")
     print(f"🔧 ファイル一覧: {os.listdir('.')}")
+    print(f"🔧 環境変数: PORT={os.environ.get('PORT', 'N/A')}, RAILWAY_ENVIRONMENT={os.environ.get('RAILWAY_ENVIRONMENT', 'N/A')}")
     print(f"✅ アプリケーション初期化完了")
 except Exception as e:
     print(f"❌ アプリケーション初期化でエラー: {e}")
     import traceback
     traceback.print_exc()
+
+# アプリケーション起動確認
+@app.before_first_request
+def before_first_request():
+    """最初のリクエスト前の処理"""
+    try:
+        print(f"🌐 最初のリクエストを受信しました")
+        print(f"🔧 現在のポート: {os.environ.get('PORT', 'N/A')}")
+        print(f"🔧 アプリケーションが正常に起動しています")
+    except Exception as e:
+        print(f"❌ 最初のリクエスト処理でエラー: {e}")
 
 if __name__ == '__main__':
     try:
