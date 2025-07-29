@@ -9,13 +9,37 @@ from utils import (
     pandas_available,
     playwright_available
 )
+from datetime import datetime
 
 def convert_time_to_4digit(time_str):
-    """時刻を4桁の数字形式に変換"""
+    """時刻を4桁の数字形式に変換（HH:MM:SS形式にも対応）"""
     try:
-        # 時刻文字列を処理（例：09:00:00 → 0900）
+        # 時刻文字列を処理
         if isinstance(time_str, str):
-            # コロンで分割して時と分を取得
+            time_str = time_str.strip()
+            
+            # 複数の時刻形式に対応
+            time_formats = [
+                '%H:%M:%S',    # 09:00:00
+                '%H:%M',       # 09:00
+                '%H:%M:%S.%f', # 09:00:00.000
+                '%H:%M.%f',    # 09:00.000
+            ]
+            
+            # datetime.strptimeで解析を試行
+            parsed_time = None
+            for fmt in time_formats:
+                try:
+                    parsed_time = datetime.strptime(time_str, fmt)
+                    break
+                except ValueError:
+                    continue
+            
+            if parsed_time:
+                # HH:MM形式に変換してから4桁に
+                return parsed_time.strftime('%H%M')
+            
+            # 従来の方法（コロン除去）も試行
             parts = time_str.replace(':', '').replace('：', '').replace(' ', '')
             if len(parts) >= 4:
                 # 最初の4文字を取得（時分）
@@ -23,12 +47,20 @@ def convert_time_to_4digit(time_str):
             elif len(parts) == 2:
                 # 時のみの場合、分を00で補完
                 return f"{parts}00"
+            else:
+                # その他の形式の場合
+                return str(time_str)
+                
         elif hasattr(time_str, 'strftime'):
             # datetimeオブジェクトの場合
+            return time_str.strftime('%H%M')
+        elif hasattr(time_str, 'time'):
+            # datetime.timeオブジェクトの場合
             return time_str.strftime('%H%M')
         else:
             # その他の場合、文字列に変換して処理
             return convert_time_to_4digit(str(time_str))
+            
     except Exception as e:
         # エラーの場合は元の値を返す
         return str(time_str)
