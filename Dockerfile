@@ -50,5 +50,9 @@ ENV PORT=8000
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
+# ヘルスチェックを追加
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
 # アプリケーションを起動（Railway環境最適化）
 CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8000", "--timeout", "300", "--workers", "1", "--preload", "--max-requests", "1000", "--keep-alive", "2", "--log-level", "info", "--access-logfile", "-", "--error-logfile", "-"] 
