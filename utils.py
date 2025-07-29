@@ -285,10 +285,14 @@ def update_progress(job_id: str, step: int, step_name: str, jobs: dict, current_
 def create_template_excel():
     """今月の平日のテンプレートExcelファイルを作成"""
     try:
+        print("テンプレート作成開始")
+        
         # 今月の平日を取得
         weekdays = get_weekdays_in_current_month()
+        print(f"平日数: {len(weekdays)}")
         
         if not weekdays:
+            print("平日が見つかりませんでした")
             return None, "今月の平日が見つかりませんでした"
         
         # サンプルデータを作成
@@ -301,8 +305,11 @@ def create_template_excel():
                 '終了時刻': '18:00'
             })
         
+        print(f"サンプルデータ作成完了: {len(sample_data)}件")
+        
         # テンプレートファイルを作成
         if openpyxl_available:
+            print("openpyxlを使用してテンプレート作成")
             wb = Workbook()
             ws = wb.active
             ws.title = "勤怠データ"
@@ -321,6 +328,8 @@ def create_template_excel():
             # 本番環境に対応した一時ファイルの生成
             # /tmpディレクトリを使用（Renderなどの本番環境で安全）
             temp_dir = '/tmp' if os.path.exists('/tmp') else tempfile.gettempdir()
+            print(f"一時ディレクトリ: {temp_dir}")
+            
             temp_file = tempfile.NamedTemporaryFile(
                 delete=False, 
                 suffix='.xlsx',
@@ -328,16 +337,21 @@ def create_template_excel():
             )
             
             try:
+                print(f"ファイル保存開始: {temp_file.name}")
                 wb.save(temp_file.name)
                 temp_file.close()
                 
                 # ファイルが正常に作成されたか確認
                 if os.path.exists(temp_file.name) and os.path.getsize(temp_file.name) > 0:
+                    file_size = os.path.getsize(temp_file.name)
+                    print(f"テンプレートファイル作成成功: {temp_file.name} ({file_size} bytes)")
                     return temp_file.name, None
                 else:
+                    print("テンプレートファイルの保存に失敗しました")
                     return None, "テンプレートファイルの保存に失敗しました"
                     
             except Exception as save_error:
+                print(f"ファイル保存エラー: {save_error}")
                 # 一時ファイルのクリーンアップ
                 try:
                     if os.path.exists(temp_file.name):
@@ -346,9 +360,11 @@ def create_template_excel():
                     pass
                 return None, f"ファイル保存エラー: {str(save_error)}"
         else:
+            print("openpyxlが利用できません")
             return None, "openpyxlが利用できません"
     
     except Exception as e:
+        print(f"テンプレート作成例外: {e}")
         return None, f"テンプレート作成中にエラーが発生しました: {e}"
 
 def load_excel_data(file_path):
