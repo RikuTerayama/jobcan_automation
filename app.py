@@ -517,6 +517,11 @@ def health_check():
             'timestamp': time.time()
         }), 500
 
+@app.route('/ping')
+def ping():
+    """シンプルなpingエンドポイント"""
+    return "pong"
+
 @app.route('/health/detailed')
 def detailed_health_check():
     """詳細ヘルスチェックエンドポイント"""
@@ -553,6 +558,8 @@ try:
     print(f"🔧 ポート: {os.environ.get('PORT', '5000')}")
     print(f"🔧 作業ディレクトリ: {os.getcwd()}")
     print(f"🔧 環境変数: PORT={os.environ.get('PORT', 'N/A')}, RAILWAY_ENVIRONMENT={os.environ.get('RAILWAY_ENVIRONMENT', 'N/A')}")
+    print(f"🔧 プロセスID: {os.getpid()}")
+    print(f"🔧 メモリ使用量: {psutil.virtual_memory().percent}%")
     print(f"✅ アプリケーション初期化完了")
 except Exception as e:
     print(f"❌ アプリケーション初期化でエラー: {e}")
@@ -567,8 +574,21 @@ def before_first_request():
         print(f"🌐 最初のリクエストを受信しました")
         print(f"🔧 現在のポート: {os.environ.get('PORT', 'N/A')}")
         print(f"🔧 アプリケーションが正常に起動しています")
+        print(f"🔧 プロセスID: {os.getpid()}")
+        print(f"🔧 メモリ使用量: {psutil.virtual_memory().percent}%")
     except Exception as e:
         print(f"❌ 最初のリクエスト処理でエラー: {e}")
+        import traceback
+        traceback.print_exc()
+
+# アプリケーション起動時のログ
+@app.before_request
+def before_request():
+    """各リクエスト前の処理"""
+    try:
+        print(f"📝 リクエスト受信: {request.path}")
+    except Exception as e:
+        print(f"❌ リクエスト処理でエラー: {e}")
 
 if __name__ == '__main__':
     try:
