@@ -141,7 +141,7 @@ def get_status(job_id):
     login_message = job.get('login_message', 'ログイン状態が不明です')
     
     # ユーザー向けの詳細メッセージを生成
-    user_message = generate_user_message(job['status'], login_status, login_message)
+    user_message = generate_user_message(job['status'], login_status, login_message, job.get('progress', 0))
     
     return jsonify({
         'status': job['status'],
@@ -156,7 +156,7 @@ def get_status(job_id):
         'user_message': user_message
     })
 
-def generate_user_message(status, login_status, login_message):
+def generate_user_message(status, login_status, login_message, progress):
     """ユーザー向けの詳細メッセージを生成"""
     
     if status == 'error':
@@ -164,11 +164,11 @@ def generate_user_message(status, login_status, login_message):
     
     if status == 'completed':
         if login_status == 'success':
-            return "✅ 処理が正常に完了しました"
-        elif login_status in ['login_error', 'login_failed']:
-            return f"⚠️ ログインに失敗しました: {login_message}"
+            return "✅ ログイン成功 → 打刻実行 → 各日付完了"
         elif login_status == 'captcha_detected':
             return "⚠️ CAPTCHA（画像認証）が表示されています。手動でのログインが必要です"
+        elif login_status in ['login_error', 'login_failed']:
+            return f"⚠️ ログインに失敗しました: {login_message}"
         elif login_status == 'account_restricted':
             return f"⚠️ アカウントに制限があります: {login_message}"
         elif login_status == 'timeout_error':
@@ -180,13 +180,38 @@ def generate_user_message(status, login_status, login_message):
         else:
             return f"⚠️ 処理は完了しましたが、ログインに問題がありました: {login_message}"
     
-    # 処理中のメッセージ
-    if login_status == 'success':
-        return "🔄 処理中... ログインに成功しました"
-    elif login_status in ['login_error', 'login_failed']:
-        return f"🔄 処理中... ログインに失敗: {login_message}"
+    # 処理中のメッセージ（進捗に応じて詳細化）
+    if progress == 1:
+        return "🔄 初期化中..."
+    elif progress == 2:
+        return "🔄 Excelファイル読み込み中..."
+    elif progress == 3:
+        return "🔄 データ検証中..."
+    elif progress == 4:
+        return "🔄 ブラウザ起動中..."
+    elif progress == 5:
+        if login_status == 'success':
+            return "🔄 ログイン成功 → データ入力処理中..."
+        elif login_status in ['login_error', 'login_failed']:
+            return f"🔄 ログインに失敗: {login_message}"
+        else:
+            return "🔄 Jobcanログイン中..."
+    elif progress == 6:
+        if login_status == 'success':
+            return "🔄 ログイン成功 → 打刻データ入力中..."
+        else:
+            return "🔄 データ入力処理中（シミュレーションモード）..."
+    elif progress == 7:
+        return "🔄 最終確認中..."
+    elif progress == 8:
+        return "🔄 処理完了中..."
     else:
-        return "🔄 処理中..."
+        if login_status == 'success':
+            return "🔄 処理中... ログインに成功しました"
+        elif login_status in ['login_error', 'login_failed']:
+            return f"🔄 処理中... ログインに失敗: {login_message}"
+        else:
+            return "🔄 処理中..."
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000))) 
