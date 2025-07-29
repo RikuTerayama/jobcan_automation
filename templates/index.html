@@ -314,6 +314,42 @@
         .status-warning {
             border-left-color: #ed8936;
         }
+        
+        /* 注意書きセクションのスタイル */
+        .warning-notice {
+            background: #fff5f5;
+            border: 2px solid #fed7d7;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .warning-notice h4 {
+            margin: 0 0 15px 0;
+            color: #c53030;
+            font-size: 1.2em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .warning-notice p {
+            margin: 0 0 12px 0;
+            color: #742a2a;
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+        
+        .warning-notice p:last-child {
+            margin-bottom: 0;
+        }
+        
+        .warning-notice strong {
+            color: #c53030;
+            font-weight: 700;
+        }
     </style>
 </head>
 <body>
@@ -357,6 +393,14 @@
                     <a href="/download-template" class="submit-btn" style="display: inline-block; text-decoration: none; text-align: center; width: 100%; max-width: 300px; margin: 0 auto;">
                         テンプレートファイルをダウンロード
                     </a>
+                </div>
+                
+                <!-- 注意書きセクション -->
+                <div class="warning-notice">
+                    <h4>⚠️ 注意：</h4>
+                    <p>本アプリは、業務効率化を目的として提供されており、正確な勤怠情報の登録を前提としています。</p>
+                    <p>実際の勤務実態と異なる打刻、または会社の就業規則・セキュリティポリシーに反する利用は、法令・社内規定違反となる可能性があります。</p>
+                    <p><strong>自動入力の利用可否については、必ず所属企業の人事・上司等に確認してください。</strong></p>
                 </div>
             </div>
             
