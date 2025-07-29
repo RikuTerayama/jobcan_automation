@@ -3,7 +3,7 @@ from utils import (
     add_job_log, 
     update_progress, 
     load_excel_data, 
-    simulate_data_processing,
+    extract_date_info,
     pandas_available,
     playwright_available
 )
@@ -190,6 +190,152 @@ def perform_login(page, email, password, job_id, jobs):
         add_job_log(job_id, f"❌ ログイン処理でエラー: {e}", jobs)
         return False, "login_error", f"ログイン処理でエラーが発生しました: {e}"
 
+def perform_actual_data_input(page, data_source, total_data, pandas_available, job_id, jobs):
+    """実際のデータ入力処理を実行"""
+    try:
+        add_job_log(job_id, "🎯 実際のデータ入力処理を開始します", jobs)
+        
+        # 出勤簿ページに移動
+        add_job_log(job_id, "📋 出勤簿ページに移動中...", jobs)
+        page.goto("https://ssl.jobcan.jp/employee/attendance")
+        page.wait_for_load_state('networkidle')
+        add_job_log(job_id, "✅ 出勤簿ページアクセス完了", jobs)
+        
+        if pandas_available:
+            # pandasを使用したデータ処理
+            for index, row in data_source.iterrows():
+                date = row.iloc[0]
+                start_time = row.iloc[1]
+                end_time = row.iloc[2]
+                
+                date_str, year, month, day = extract_date_info(date)
+                add_job_log(job_id, f"📝 データ {index + 1}/{total_data}: {date_str} {start_time}-{end_time}", jobs)
+                
+                # 打刻修正ページにアクセス
+                modify_url = f"https://ssl.jobcan.jp/employee/adit/modify?year={year}&month={month}&day={day}"
+                add_job_log(job_id, f"🔧 打刻修正ページにアクセス: {modify_url}", jobs)
+                
+                page.goto(modify_url)
+                page.wait_for_load_state('networkidle')
+                add_job_log(job_id, "✅ 打刻修正ページアクセス完了", jobs)
+                
+                # 始業時刻を入力
+                add_job_log(job_id, f"⏰ 始業時刻を入力: {start_time}", jobs)
+                time_input = page.query_selector('input[type="time"]')
+                if time_input:
+                    page.fill('input[type="time"]', str(start_time))
+                    add_job_log(job_id, "✅ 始業時刻入力完了", jobs)
+                else:
+                    add_job_log(job_id, "⚠️ 時刻入力フィールドが見つかりません", jobs)
+                
+                # 打刻ボタンをクリック
+                add_job_log(job_id, "🔘 始業打刻ボタンをクリック中...", jobs)
+                punch_button = page.query_selector('button[type="submit"], input[type="submit"]')
+                if punch_button:
+                    page.click('button[type="submit"], input[type="submit"]')
+                    page.wait_for_load_state('networkidle')
+                    add_job_log(job_id, "✅ 始業打刻完了", jobs)
+                else:
+                    add_job_log(job_id, "⚠️ 打刻ボタンが見つかりません", jobs)
+                
+                # 終業時刻を入力
+                add_job_log(job_id, f"⏰ 終業時刻を入力: {end_time}", jobs)
+                time_input = page.query_selector('input[type="time"]')
+                if time_input:
+                    page.fill('input[type="time"]', str(end_time))
+                    add_job_log(job_id, "✅ 終業時刻入力完了", jobs)
+                else:
+                    add_job_log(job_id, "⚠️ 時刻入力フィールドが見つかりません", jobs)
+                
+                # 打刻ボタンをクリック
+                add_job_log(job_id, "🔘 終業打刻ボタンをクリック中...", jobs)
+                punch_button = page.query_selector('button[type="submit"], input[type="submit"]')
+                if punch_button:
+                    page.click('button[type="submit"], input[type="submit"]')
+                    page.wait_for_load_state('networkidle')
+                    add_job_log(job_id, "✅ 終業打刻完了", jobs)
+                else:
+                    add_job_log(job_id, "⚠️ 打刻ボタンが見つかりません", jobs)
+                
+                # 出勤簿ページに戻る
+                add_job_log(job_id, "🔄 出勤簿ページに戻ります", jobs)
+                page.goto("https://ssl.jobcan.jp/employee/attendance")
+                page.wait_for_load_state('networkidle')
+                
+                update_progress(job_id, 6, f"勤怠データ入力中 ({index + 1}/{total_data})", jobs, index + 1, total_data)
+                time.sleep(2)  # 処理間隔
+                
+        else:
+            # openpyxlを使用したデータ処理
+            ws = data_source.active
+            for row in range(2, ws.max_row + 1):
+                date = ws[f'A{row}'].value
+                start_time = ws[f'B{row}'].value
+                end_time = ws[f'C{row}'].value
+                
+                date_str, year, month, day = extract_date_info(date)
+                add_job_log(job_id, f"📝 データ {row - 1}/{total_data}: {date_str} {start_time}-{end_time}", jobs)
+                
+                # 打刻修正ページにアクセス
+                modify_url = f"https://ssl.jobcan.jp/employee/adit/modify?year={year}&month={month}&day={day}"
+                add_job_log(job_id, f"🔧 打刻修正ページにアクセス: {modify_url}", jobs)
+                
+                page.goto(modify_url)
+                page.wait_for_load_state('networkidle')
+                add_job_log(job_id, "✅ 打刻修正ページアクセス完了", jobs)
+                
+                # 始業時刻を入力
+                add_job_log(job_id, f"⏰ 始業時刻を入力: {start_time}", jobs)
+                time_input = page.query_selector('input[type="time"]')
+                if time_input:
+                    page.fill('input[type="time"]', str(start_time))
+                    add_job_log(job_id, "✅ 始業時刻入力完了", jobs)
+                else:
+                    add_job_log(job_id, "⚠️ 時刻入力フィールドが見つかりません", jobs)
+                
+                # 打刻ボタンをクリック
+                add_job_log(job_id, "🔘 始業打刻ボタンをクリック中...", jobs)
+                punch_button = page.query_selector('button[type="submit"], input[type="submit"]')
+                if punch_button:
+                    page.click('button[type="submit"], input[type="submit"]')
+                    page.wait_for_load_state('networkidle')
+                    add_job_log(job_id, "✅ 始業打刻完了", jobs)
+                else:
+                    add_job_log(job_id, "⚠️ 打刻ボタンが見つかりません", jobs)
+                
+                # 終業時刻を入力
+                add_job_log(job_id, f"⏰ 終業時刻を入力: {end_time}", jobs)
+                time_input = page.query_selector('input[type="time"]')
+                if time_input:
+                    page.fill('input[type="time"]', str(end_time))
+                    add_job_log(job_id, "✅ 終業時刻入力完了", jobs)
+                else:
+                    add_job_log(job_id, "⚠️ 時刻入力フィールドが見つかりません", jobs)
+                
+                # 打刻ボタンをクリック
+                add_job_log(job_id, "🔘 終業打刻ボタンをクリック中...", jobs)
+                punch_button = page.query_selector('button[type="submit"], input[type="submit"]')
+                if punch_button:
+                    page.click('button[type="submit"], input[type="submit"]')
+                    page.wait_for_load_state('networkidle')
+                    add_job_log(job_id, "✅ 終業打刻完了", jobs)
+                else:
+                    add_job_log(job_id, "⚠️ 打刻ボタンが見つかりません", jobs)
+                
+                # 出勤簿ページに戻る
+                add_job_log(job_id, "🔄 出勤簿ページに戻ります", jobs)
+                page.goto("https://ssl.jobcan.jp/employee/attendance")
+                page.wait_for_load_state('networkidle')
+                
+                update_progress(job_id, 6, f"勤怠データ入力中 ({row - 1}/{total_data})", jobs, row - 1, total_data)
+                time.sleep(2)  # 処理間隔
+        
+        add_job_log(job_id, "🎉 実際のデータ入力処理が完了しました", jobs)
+        
+    except Exception as e:
+        add_job_log(job_id, f"❌ 実際のデータ入力処理でエラー: {e}", jobs)
+        raise e
+
 def process_jobcan_automation(job_id: str, email: str, password: str, file_path: str, jobs: dict):
     """Jobcan自動化処理のメイン関数"""
     try:
@@ -243,7 +389,8 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             try:
                 from playwright.sync_api import sync_playwright
                 with sync_playwright() as p:
-                    browser = p.chromium.launch(headless=True)
+                    # headless=Falseでブラウザを表示（デバッグ用）
+                    browser = p.chromium.launch(headless=False)
                     page = browser.new_page()
                     add_job_log(job_id, "✅ ブラウザ起動成功", jobs)
                     
@@ -256,6 +403,25 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     
                     # ログイン結果を記録
                     add_job_log(job_id, f"📊 ログイン結果: {login_status} - {login_message}", jobs)
+                    
+                    # ステップ6: データ入力処理
+                    update_progress(job_id, 6, "データ入力処理中", jobs)
+                    add_job_log(job_id, "🔧 データ入力処理を開始...", jobs)
+                    
+                    # ログイン失敗時の処理中断
+                    if not login_success:
+                        if login_status == "captcha_detected":
+                            add_job_log(job_id, "⚠️ CAPTCHAが検出されたため、データ入力処理を中断します", jobs)
+                            add_job_log(job_id, "💡 手動でログインしてから再実行してください", jobs)
+                        elif login_status in ["login_error", "login_failed", "account_restricted"]:
+                            add_job_log(job_id, "⚠️ ログインに失敗したため、データ入力処理を中断します", jobs)
+                            add_job_log(job_id, "💡 ログイン情報を確認してから再実行してください", jobs)
+                        else:
+                            add_job_log(job_id, "⚠️ ログインが成功していないため、データ入力処理をスキップします", jobs)
+                    else:
+                        add_job_log(job_id, "🔧 ログイン成功のため、実際のデータ入力を実行します", jobs)
+                        # 実際のデータ入力処理を実行
+                        perform_actual_data_input(page, data_source, total_data, pandas_available, job_id, jobs)
                     
                     browser.close()
                     
@@ -282,28 +448,6 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         jobs[job_id]['login_status'] = login_status
         jobs[job_id]['login_message'] = login_message
         
-        # ステップ6: データ入力処理
-        update_progress(job_id, 6, "データ入力処理中", jobs)
-        add_job_log(job_id, "🔧 データ入力処理を開始...", jobs)
-        
-        # ログイン失敗時の処理中断
-        if not login_success:
-            if login_status == "captcha_detected":
-                add_job_log(job_id, "⚠️ CAPTCHAが検出されたため、データ入力処理を中断します", jobs)
-                add_job_log(job_id, "💡 手動でログインしてから再実行してください", jobs)
-            elif login_status in ["login_error", "login_failed", "account_restricted"]:
-                add_job_log(job_id, "⚠️ ログインに失敗したため、データ入力処理を中断します", jobs)
-                add_job_log(job_id, "💡 ログイン情報を確認してから再実行してください", jobs)
-            else:
-                add_job_log(job_id, "⚠️ ログインが成功していないため、データ入力処理をスキップします", jobs)
-            
-            # シミュレーション処理のみ実行
-            simulate_data_processing(job_id, data_source, total_data, pandas_available, jobs)
-        else:
-            add_job_log(job_id, "🔧 ログイン成功のため、実際のデータ入力を試行します", jobs)
-            # 実際のデータ入力処理は複雑なため、シミュレーションに留める
-            simulate_data_processing(job_id, data_source, total_data, pandas_available, jobs)
-        
         # ステップ7: 最終確認
         update_progress(job_id, 7, "最終確認中", jobs)
         add_job_log(job_id, "🔧 ステップ7: 最終確認中...", jobs)
@@ -324,7 +468,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         if login_success:
             add_job_log(job_id, "   - ステップ4: ✅ ブラウザ起動成功", jobs)
             add_job_log(job_id, "   - ステップ5: ✅ Jobcanログイン成功", jobs)
-            add_job_log(job_id, "   - ステップ6: ✅ データ入力処理完了", jobs)
+            add_job_log(job_id, "   - ステップ6: ✅ 実際のデータ入力処理完了", jobs)
         else:
             add_job_log(job_id, "   - ステップ4: ⚠️ ブラウザ起動失敗", jobs)
             add_job_log(job_id, f"   - ステップ5: ❌ Jobcanログイン失敗 ({login_status})", jobs)
