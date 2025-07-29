@@ -11,7 +11,7 @@ import io
 # pandasは必要時にインポート
 pandas_available = False
 try:
-import pandas as pd
+    import pandas as pd
     pandas_available = True
 except ImportError:
     print("⚠️ pandasが利用できません。Excel処理機能は無効化されます。")
@@ -24,7 +24,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
 
 # アップロードフォルダが存在しない場合は作成
 try:
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 except Exception as e:
     print(f"⚠️ アップロードフォルダ作成エラー: {e}")
 
