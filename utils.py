@@ -4,6 +4,8 @@ from datetime import datetime, date
 import calendar
 import re
 import os # 追加: ファイルシステム操作のため
+import uuid
+from typing import Tuple, List, Optional
 
 # ライブラリの利用可能性をチェック
 try:
@@ -129,41 +131,23 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                 start_time = row.iloc[1]
                 end_time = row.iloc[2]
                 
-                if pd.isna(start_time):
-                    errors.append(f"{row_num}行目の「開始時刻」が空白です")
+                # 開始時刻の検証と正規化
+                normalized_start_time, start_error = validate_time_value(start_time, row_num, "開始時刻")
+                if start_error:
+                    errors.append(start_error)
                     continue
                 
-                if pd.isna(end_time):
-                    errors.append(f"{row_num}行目の「終了時刻」が空白です")
+                # 終了時刻の検証と正規化
+                normalized_end_time, end_error = validate_time_value(end_time, row_num, "終了時刻")
+                if end_error:
+                    errors.append(end_error)
                     continue
-                
-                # 時刻形式の検証
-                for time_value, time_name, time_col in [(start_time, "開始時刻", "B"), (end_time, "終了時刻", "C")]:
-                    try:
-                        if isinstance(time_value, str):
-                            # 時刻形式の正規化
-                            time_str = str(time_value).strip()
-                            if not re.match(r'^\d{1,2}:\d{2}(:\d{2})?$', time_str):
-                                errors.append(f"{row_num}行目の「{time_name}」の形式が無効です: {time_value} (期待形式: HH:MM)")
-                                continue
-                        elif hasattr(time_value, 'time'):
-                            # datetimeオブジェクトの場合
-                            pass
-                        else:
-                            errors.append(f"{row_num}行目の「{time_name}」の形式が無効です: {time_value}")
-                            continue
-                    except Exception as e:
-                        errors.append(f"{row_num}行目の「{time_name}」の解析に失敗しました: {time_value}")
-                        continue
                 
                 # 勤務時間の妥当性チェック
                 try:
-                    start_str = str(start_time)
-                    end_str = str(end_time)
-                    
-                    # 時刻を分に変換
-                    start_parts = start_str.split(':')
-                    end_parts = end_str.split(':')
+                    # 正規化された時刻を使用
+                    start_parts = normalized_start_time.split(':')
+                    end_parts = normalized_end_time.split(':')
                     
                     if len(start_parts) >= 2 and len(end_parts) >= 2:
                         start_minutes = int(start_parts[0]) * 60 + int(start_parts[1])
@@ -178,7 +162,7 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                         
                         # 開始時刻が終了時刻より後の場合
                         if start_minutes >= end_minutes:
-                            errors.append(f"{row_num}行目: 「開始時刻」が「終了時刻」より後です: {start_time} > {end_time}")
+                            errors.append(f"{row_num}行目: 「開始時刻」が「終了時刻」より後です: {normalized_start_time} > {normalized_end_time}")
                     
                 except Exception as e:
                     warnings.append(f"{row_num}行目: 勤務時間の計算に失敗しました: {e}")
@@ -465,3 +449,77 @@ def simulate_data_processing(job_id, data_source, total_data, pandas_available, 
         progress = int((i + 1) / total_data * 100)
         update_progress(job_id, 6, f"データ処理中... ({i + 1}/{total_data})", jobs, i + 1, total_data)
         add_job_log(job_id, f"データ処理進捗: {progress}%", jobs)
+
+def normalize_time_format(time_value) -> Tuple[str, Optional[str]]:
+    """
+    時刻値を正規化してHH:MM形式に変換
+    
+    Args:
+        time_value: 時刻値（文字列、datetime.time、その他）
+    
+    Returns:
+        Tuple[str, Optional[str]]: (正規化された時刻文字列, エラーメッセージ)
+    """
+    try:
+        if isinstance(time_value, str):
+            time_str = str(time_value).strip()
+            
+            # 複数の時刻形式を試行
+            time_formats = [
+                '%H:%M:%S',    # 09:00:00
+                '%H:%M',       # 09:00
+                '%H:%M:%S.%f', # 09:00:00.000
+                '%H:%M.%f',    # 09:00.000
+            ]
+            
+            parsed_time = None
+            for fmt in time_formats:
+                try:
+                    parsed_time = datetime.strptime(time_str, fmt).time()
+                    break
+                except ValueError:
+                    continue
+            
+            if parsed_time is None:
+                return None, f"時刻形式が無効です: {time_value} (期待形式: HH:MM または HH:MM:SS)"
+            
+            # HH:MM形式に正規化
+            normalized_time = parsed_time.strftime('%H:%M')
+            return normalized_time, None
+            
+        elif hasattr(time_value, 'time'):
+            # datetime.timeオブジェクトの場合
+            normalized_time = time_value.strftime('%H:%M')
+            return normalized_time, None
+            
+        elif hasattr(time_value, 'strftime'):
+            # datetimeオブジェクトの場合
+            normalized_time = time_value.strftime('%H:%M')
+            return normalized_time, None
+            
+        else:
+            return None, f"時刻形式が無効です: {time_value}"
+            
+    except Exception as e:
+        return None, f"時刻の解析に失敗しました: {time_value} - {str(e)}"
+
+def validate_time_value(time_value, row_num: int, time_name: str) -> Tuple[str, Optional[str]]:
+    """
+    時刻値を検証して正規化
+    
+    Args:
+        time_value: 時刻値
+        row_num: 行番号
+        time_name: 時刻名（開始時刻/終了時刻）
+    
+    Returns:
+        Tuple[str, Optional[str]]: (正規化された時刻文字列, エラーメッセージ)
+    """
+    if time_value is None or (isinstance(time_value, str) and time_value.strip() == ''):
+        return None, f"{row_num}行目の「{time_name}」が空白です"
+    
+    normalized_time, error = normalize_time_format(time_value)
+    if error:
+        return None, f"{row_num}行目の「{time_name}」{error}"
+    
+    return normalized_time, None
