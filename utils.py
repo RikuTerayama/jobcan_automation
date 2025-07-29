@@ -6,7 +6,7 @@ import re
 
 # ライブラリの利用可能性をチェック
 try:
-    import pandas as pd
+import pandas as pd
     pandas_available = True
 except ImportError:
     pandas_available = False
@@ -103,7 +103,7 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                         if parsed_date is None:
                             errors.append(f"行{row_num}: 日付形式が無効です: {date_value}")
                             continue
-        else:
+                    else:
                         parsed_date = pd.to_datetime(date_value).date()
                     
                     # 未来日チェック
