@@ -6,10 +6,17 @@ import time
 import sys
 import uuid
 import threading
-import pandas as pd
 from datetime import datetime
 from flask import Flask, jsonify, request, render_template
 from werkzeug.utils import secure_filename
+
+# pandasは必要時にインポート
+pandas_available = False
+try:
+    import pandas as pd
+    pandas_available = True
+except ImportError:
+    print("⚠️ pandasが利用できません。Excel処理機能は無効化されます。")
 
 # Flaskアプリケーション
 app = Flask(__name__)
@@ -24,17 +31,26 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 jobs = {}
 
 # 起動ログ
-print("🚀 最小限のJobcanアプリケーションを起動中...")
-print(f"🔧 ポート: {os.environ.get('PORT', '5000')}")
-print(f"🔧 環境: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
-print(f"🔧 作業ディレクトリ: {os.getcwd()}")
-print(f"🔧 Python バージョン: {sys.version}")
-print("✅ アプリケーション起動完了")
+try:
+    print("🚀 最小限のJobcanアプリケーションを起動中...")
+    print(f"🔧 ポート: {os.environ.get('PORT', '5000')}")
+    print(f"🔧 環境: {os.environ.get('RAILWAY_ENVIRONMENT', 'local')}")
+    print(f"🔧 作業ディレクトリ: {os.getcwd()}")
+    print(f"🔧 Python バージョン: {sys.version}")
+    print(f"🔧 pandas利用可能: {pandas_available}")
+    print("✅ アプリケーション起動完了")
+except Exception as e:
+    print(f"❌ 起動ログでエラー: {e}")
+    import traceback
+    traceback.print_exc()
 
 # 起動確認
 @app.before_request
 def before_request():
-    print(f"🌐 リクエスト受信: {request.method} {request.path}")
+    try:
+        print(f"🌐 リクエスト受信: {request.method} {request.path}")
+    except Exception as e:
+        print(f"❌ before_requestでエラー: {e}")
 
 def allowed_file(filename):
     """許可されたファイル形式かチェック"""
@@ -77,6 +93,12 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         add_job_log(job_id, "🚀 Jobcan自動化処理を開始")
         add_job_log(job_id, f"📧 メールアドレス: {email}")
         add_job_log(job_id, f"📁 ファイルパス: {file_path}")
+        
+        # pandasが利用できない場合の処理
+        if not pandas_available:
+            add_job_log(job_id, "❌ pandasが利用できません。Excel処理機能は無効化されています。")
+            jobs[job_id]['status'] = 'error'
+            return
         
         # ステップ2: Excelファイルの読み込み
         update_progress(job_id, 2, "Excelファイル読み込み中")
@@ -179,6 +201,7 @@ def index():
 def ping():
     """シンプルなpingエンドポイント"""
     try:
+        # 最小限の処理のみ実行
         return "pong"
     except Exception as e:
         print(f"❌ pingエンドポイントでエラー: {e}")
@@ -188,11 +211,13 @@ def ping():
 def health():
     """ヘルスチェックエンドポイント"""
     try:
+        # 最小限のチェックのみ実行
         return jsonify({
             'status': 'healthy',
             'timestamp': time.time(),
             'port': os.environ.get('PORT', 'N/A'),
-            'environment': os.environ.get('RAILWAY_ENVIRONMENT', 'local')
+            'environment': os.environ.get('RAILWAY_ENVIRONMENT', 'local'),
+            'pandas_available': pandas_available
         })
     except Exception as e:
         print(f"❌ healthエンドポイントでエラー: {e}")
@@ -206,9 +231,11 @@ def health():
 def ready():
     """起動確認エンドポイント"""
     try:
+        # 最小限のチェックのみ実行
         return jsonify({
             'status': 'ready',
-            'timestamp': time.time()
+            'timestamp': time.time(),
+            'pandas_available': pandas_available
         })
     except Exception as e:
         print(f"❌ readyエンドポイントでエラー: {e}")
@@ -222,6 +249,7 @@ def ready():
 def test():
     """テストエンドポイント"""
     try:
+        # 最小限の処理のみ実行
         return "OK"
     except Exception as e:
         print(f"❌ testエンドポイントでエラー: {e}")
