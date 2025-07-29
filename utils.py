@@ -6,7 +6,7 @@ import re
 
 # ライブラリの利用可能性をチェック
 try:
-    import pandas as pd
+import pandas as pd
     pandas_available = True
 except ImportError:
     pandas_available = False
@@ -103,7 +103,7 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                         if parsed_date is None:
                             errors.append(f"行{row_num}: 日付形式が無効です: {date_value}")
                             continue
-                    else:
+        else:
                         parsed_date = pd.to_datetime(date_value).date()
                     
                     # 未来日チェック
@@ -203,7 +203,7 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                     time_str = str(time_value).strip()
                     if not re.match(r'^\d{1,2}:\d{2}(:\d{2})?$', time_str):
                         errors.append(f"行{row_num}: {time_name}の形式が無効です: {time_value}")
-                        continue
+                continue
         
         # 検証結果をログに記録
         if errors:
@@ -314,7 +314,7 @@ def create_template_excel():
         # エラーが発生した場合は従来のサンプルデータを使用
         if pandas_available:
             df = pd.DataFrame({
-                '日付': ['2025/01/01', '2025/01/02', '2025/01/03'],
+                '日付': ['2025-01-01', '2025-01-02', '2025-01-03'],
                 '開始時刻': ['09:00', '09:00', '09:00'],
                 '終了時刻': ['18:00', '18:00', '18:00']
             })
@@ -332,9 +332,9 @@ def create_template_excel():
             ws['C1'] = '終了時刻'
             
             sample_data = [
-                ['2025/01/01', '09:00', '18:00'],
-                ['2025/01/02', '09:00', '18:00'],
-                ['2025/01/03', '09:00', '18:00']
+                ['2025-01-01', '09:00', '18:00'],
+                ['2025-01-02', '09:00', '18:00'],
+                ['2025-01-03', '09:00', '18:00']
             ]
             
             for row, data in enumerate(sample_data, start=2):
@@ -362,9 +362,9 @@ def load_excel_data(file_path):
         raise Exception("Excelファイルを読み込むためのライブラリが利用できません")
 
 def extract_date_info(date):
-    """日付から年月日を抽出"""
+    """日付から年月日を抽出（複数フォーマット対応）"""
     if hasattr(date, 'strftime'):
-        date_str = date.strftime('%Y/%m/%d')
+        date_str = date.strftime('%Y-%m-%d')
     else:
         date_str = str(date)
     
@@ -373,13 +373,38 @@ def extract_date_info(date):
         month = date.month
         day = date.day
     else:
-        # 文字列から年月日を抽出
-        date_parts = str(date_str).split('/')
-        if len(date_parts) >= 3:
+        # 文字列から年月日を抽出（複数フォーマット対応）
+        date_str_clean = str(date_str).strip()
+        
+        # 複数の区切り文字に対応
+        separators = ['-', '/', '年', '月', '日']
+        date_parts = None
+        
+        for sep in separators:
+            if sep in date_str_clean:
+                parts = date_str_clean.split(sep)
+                if len(parts) >= 3:
+                    # 年月日の順序を確認（YYYY-MM-DD形式を想定）
+                    try:
+                        year_part = parts[0].strip()
+                        month_part = parts[1].strip()
+                        day_part = parts[2].strip()
+                        
+                        # 数値として有効かチェック
+                        if (year_part.isdigit() and len(year_part) == 4 and
+                            month_part.isdigit() and 1 <= int(month_part) <= 12 and
+                            day_part.isdigit() and 1 <= int(day_part) <= 31):
+                            date_parts = [year_part, month_part, day_part]
+                            break
+                    except (ValueError, IndexError):
+                        continue
+        
+        if date_parts:
             year = date_parts[0]
             month = date_parts[1]
             day = date_parts[2]
         else:
+            # フォールバック: デフォルト値
             year = month = day = "01"
     
     return date_str, year, month, day
