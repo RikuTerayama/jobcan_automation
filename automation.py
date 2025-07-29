@@ -529,11 +529,15 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
         add_job_log(job_id, f"❌ 実際のデータ入力処理でエラー: {e}", jobs)
         raise e
 
-def process_jobcan_automation(job_id: str, email: str, password: str, file_path: str, jobs: dict, session_dir: str = None):
-    """Jobcan自動化処理のメイン関数"""
+def process_jobcan_automation(job_id: str, email: str, password: str, file_path: str, jobs: dict, session_dir: str = None, session_id: str = None):
+    """Jobcan自動化処理のメイン関数（セッション固有のブラウザ環境）"""
     try:
         add_job_log(job_id, "🚀 Jobcan自動化処理を開始", jobs)
         update_progress(job_id, 1, "初期化中...", jobs)
+        
+        # セッション固有のログ
+        if session_id:
+            add_job_log(job_id, f"🔑 セッションID: {session_id}", jobs)
         
         # ステップ1: Excelファイルの読み込み
         add_job_log(job_id, "📊 Excelファイルを読み込み中...", jobs)
@@ -581,7 +585,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             jobs[job_id]['login_message'] = 'ブラウザ自動化機能が利用できません'
             return
         
-        # ステップ4: ブラウザの起動
+        # ステップ4: ブラウザの起動（セッション固有）
         add_job_log(job_id, "🌐 ブラウザを起動中...", jobs)
         update_progress(job_id, 4, "ブラウザ起動中...", jobs)
         
@@ -589,30 +593,46 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             from playwright.sync_api import sync_playwright
             
             with sync_playwright() as p:
-                # ユーザーデータディレクトリを設定（セッション分離）
-                user_data_dir = os.path.join(session_dir, 'browser_data') if session_dir else None
+                # セッション固有のユーザーデータディレクトリを設定
+                user_data_dir = None
+                if session_dir:
+                    user_data_dir = os.path.join(session_dir, 'browser_data')
+                    os.makedirs(user_data_dir, exist_ok=True)
                 
-                browser = p.chromium.launch(
-                    headless=True,
-                    args=[
+                # セッション固有のブラウザ起動オプション
+                browser_options = {
+                    'headless': True,
+                    'args': [
                         '--no-sandbox',
                         '--disable-setuid-sandbox',
                         '--disable-dev-shm-usage',
                         '--disable-accelerated-2d-canvas',
                         '--no-first-run',
                         '--no-zygote',
-                        '--disable-gpu'
-                    ],
-                    user_data_dir=user_data_dir
-                )
+                        '--disable-gpu',
+                        '--disable-background-timer-throttling',
+                        '--disable-backgrounding-occluded-windows',
+                        '--disable-renderer-backgrounding'
+                    ]
+                }
                 
-                context = browser.new_context(
-                    viewport={'width': 1280, 'height': 720},
-                    user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-                )
+                if user_data_dir:
+                    browser_options['user_data_dir'] = user_data_dir
                 
+                browser = p.chromium.launch(**browser_options)
+                
+                # セッション固有のコンテキスト設定
+                context_options = {
+                    'viewport': {'width': 1280, 'height': 720},
+                    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                }
+                
+                context = browser.new_context(**context_options)
                 page = context.new_page()
+                
                 add_job_log(job_id, "✅ ブラウザ起動完了", jobs)
+                if session_id:
+                    add_job_log(job_id, f"🔑 セッション固有ブラウザ環境: {session_id}", jobs)
                 
                 # ステップ5: ログイン処理
                 add_job_log(job_id, "🔐 Jobcanにログイン中...", jobs)
@@ -647,6 +667,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 
                 # ブラウザを閉じる
                 browser.close()
+                add_job_log(job_id, "🔒 ブラウザセッションを終了しました", jobs)
                 
         except Exception as e:
             add_job_log(job_id, f"❌ ブラウザ処理でエラーが発生しました: {e}", jobs)
