@@ -75,8 +75,13 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
             actual_columns = list(data_source.columns)
             
             if not all(col in actual_columns for col in expected_columns):
-                errors.append(f"必要な列が見つかりません。期待: {expected_columns}, 実際: {actual_columns}")
+                missing_columns = [col for col in expected_columns if col not in actual_columns]
+                errors.append(f"必要な列が見つかりません。不足している列: {missing_columns}")
                 return errors, warnings
+            
+            # データ件数をログに記録
+            total_rows = len(data_source)
+            add_job_log(job_id, f"✅ Excelファイル読み込み完了: {total_rows}件のデータ", jobs)
             
             # 各行のデータを検証
             for index, row in data_source.iterrows():
@@ -85,7 +90,7 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                 # 日付の検証
                 date_value = row.iloc[0]
                 if pd.isna(date_value):
-                    errors.append(f"行{row_num}: 日付が空です")
+                    errors.append(f"{row_num}行目の「日付」が空白です")
                     continue
                 
                 # 日付形式の検証
@@ -102,49 +107,53 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                                 continue
                         
                         if parsed_date is None:
-                            errors.append(f"行{row_num}: 日付形式が無効です: {date_value}")
+                            errors.append(f"{row_num}行目の「日付」の形式が無効です: {date_value} (期待形式: YYYY-MM-DD, YYYY/MM/DD, YYYY年MM月DD日)")
                             continue
                     else:
                         parsed_date = pd.to_datetime(date_value).date()
                     
                     # 未来日チェック
                     if parsed_date > date.today():
-                        warnings.append(f"行{row_num}: 未来の日付です: {parsed_date}")
+                        warnings.append(f"{row_num}行目の「日付」が未来の日付です: {parsed_date}")
                     
                     # 過去すぎる日付チェック（1年前まで）
                     one_year_ago = date.today().replace(year=date.today().year - 1)
                     if parsed_date < one_year_ago:
-                        warnings.append(f"行{row_num}: 過去すぎる日付です: {parsed_date}")
+                        warnings.append(f"{row_num}行目の「日付」が過去すぎます: {parsed_date}")
                     
                 except Exception as e:
-                    errors.append(f"行{row_num}: 日付の解析に失敗しました: {date_value}")
+                    errors.append(f"{row_num}行目の「日付」の解析に失敗しました: {date_value}")
                     continue
                 
                 # 時刻の検証
                 start_time = row.iloc[1]
                 end_time = row.iloc[2]
                 
-                if pd.isna(start_time) or pd.isna(end_time):
-                    errors.append(f"行{row_num}: 開始時刻または終了時刻が空です")
+                if pd.isna(start_time):
+                    errors.append(f"{row_num}行目の「開始時刻」が空白です")
+                    continue
+                
+                if pd.isna(end_time):
+                    errors.append(f"{row_num}行目の「終了時刻」が空白です")
                     continue
                 
                 # 時刻形式の検証
-                for time_value, time_name in [(start_time, "開始時刻"), (end_time, "終了時刻")]:
+                for time_value, time_name, time_col in [(start_time, "開始時刻", "B"), (end_time, "終了時刻", "C")]:
                     try:
                         if isinstance(time_value, str):
                             # 時刻形式の正規化
                             time_str = str(time_value).strip()
                             if not re.match(r'^\d{1,2}:\d{2}(:\d{2})?$', time_str):
-                                errors.append(f"行{row_num}: {time_name}の形式が無効です: {time_value}")
+                                errors.append(f"{row_num}行目の「{time_name}」の形式が無効です: {time_value} (期待形式: HH:MM)")
                                 continue
                         elif hasattr(time_value, 'time'):
                             # datetimeオブジェクトの場合
                             pass
                         else:
-                            errors.append(f"行{row_num}: {time_name}の形式が無効です: {time_value}")
+                            errors.append(f"{row_num}行目の「{time_name}」の形式が無効です: {time_value}")
                             continue
                     except Exception as e:
-                        errors.append(f"行{row_num}: {time_name}の解析に失敗しました: {time_value}")
+                        errors.append(f"{row_num}行目の「{time_name}」の解析に失敗しました: {time_value}")
                         continue
                 
                 # 勤務時間の妥当性チェック
@@ -163,16 +172,16 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                         # 勤務時間が短すぎる場合
                         work_hours = (end_minutes - start_minutes) / 60
                         if work_hours < 0.5:  # 30分未満
-                            warnings.append(f"行{row_num}: 勤務時間が短すぎます: {work_hours:.1f}時間")
+                            warnings.append(f"{row_num}行目: 勤務時間が短すぎます: {work_hours:.1f}時間")
                         elif work_hours > 24:  # 24時間超過
-                            warnings.append(f"行{row_num}: 勤務時間が長すぎます: {work_hours:.1f}時間")
+                            warnings.append(f"{row_num}行目: 勤務時間が長すぎます: {work_hours:.1f}時間")
                         
                         # 開始時刻が終了時刻より後の場合
                         if start_minutes >= end_minutes:
-                            errors.append(f"行{row_num}: 開始時刻が終了時刻より後です: {start_time} > {end_time}")
+                            errors.append(f"{row_num}行目: 「開始時刻」が「終了時刻」より後です: {start_time} > {end_time}")
                     
                 except Exception as e:
-                    warnings.append(f"行{row_num}: 勤務時間の計算に失敗しました: {e}")
+                    warnings.append(f"{row_num}行目: 勤務時間の計算に失敗しました: {e}")
             
         else:
             # openpyxlを使用した検証
@@ -181,6 +190,10 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                 errors.append("Excelファイルにデータが含まれていません")
                 return errors, warnings
             
+            # データ件数をログに記録
+            total_rows = ws.max_row - 1  # ヘッダー行を除く
+            add_job_log(job_id, f"✅ Excelファイル読み込み完了: {total_rows}件のデータ", jobs)
+            
             # 各行のデータを検証
             for row in range(2, ws.max_row + 1):
                 row_num = row
@@ -188,34 +201,38 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                 # 日付の検証
                 date_value = ws[f'A{row}'].value
                 if date_value is None:
-                    errors.append(f"行{row_num}: 日付が空です")
+                    errors.append(f"{row_num}行目の「日付」が空白です")
                     continue
                 
                 # 時刻の検証
                 start_time = ws[f'B{row}'].value
                 end_time = ws[f'C{row}'].value
                 
-                if start_time is None or end_time is None:
-                    errors.append(f"行{row_num}: 開始時刻または終了時刻が空です")
+                if start_time is None:
+                    errors.append(f"{row_num}行目の「開始時刻」が空白です")
+                    continue
+                
+                if end_time is None:
+                    errors.append(f"{row_num}行目の「終了時刻」が空白です")
                     continue
                 
                 # 時刻形式の検証
-                for time_value, time_name in [(start_time, "開始時刻"), (end_time, "終了時刻")]:
+                for time_value, time_name, time_col in [(start_time, "開始時刻", "B"), (end_time, "終了時刻", "C")]:
                     try:
                         if isinstance(time_value, str):
                             # 時刻形式の正規化
                             time_str = str(time_value).strip()
                             if not re.match(r'^\d{1,2}:\d{2}(:\d{2})?$', time_str):
-                                errors.append(f"行{row_num}: {time_name}の形式が無効です: {time_value}")
+                                errors.append(f"{row_num}行目の「{time_name}」の形式が無効です: {time_value} (期待形式: HH:MM)")
                                 continue
                         elif hasattr(time_value, 'time'):
                             # datetimeオブジェクトの場合
                             pass
                         else:
-                            errors.append(f"行{row_num}: {time_name}の形式が無効です: {time_value}")
+                            errors.append(f"{row_num}行目の「{time_name}」の形式が無効です: {time_value}")
                             continue
                     except Exception as e:
-                        errors.append(f"行{row_num}: {time_name}の解析に失敗しました: {time_value}")
+                        errors.append(f"{row_num}行目の「{time_name}」の解析に失敗しました: {time_value}")
                         continue
                 
                 # 勤務時間の妥当性チェック
@@ -234,19 +251,34 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                         # 勤務時間が短すぎる場合
                         work_hours = (end_minutes - start_minutes) / 60
                         if work_hours < 0.5:  # 30分未満
-                            warnings.append(f"行{row_num}: 勤務時間が短すぎます: {work_hours:.1f}時間")
+                            warnings.append(f"{row_num}行目: 勤務時間が短すぎます: {work_hours:.1f}時間")
                         elif work_hours > 24:  # 24時間超過
-                            warnings.append(f"行{row_num}: 勤務時間が長すぎます: {work_hours:.1f}時間")
+                            warnings.append(f"{row_num}行目: 勤務時間が長すぎます: {work_hours:.1f}時間")
                         
                         # 開始時刻が終了時刻より後の場合
                         if start_minutes >= end_minutes:
-                            errors.append(f"行{row_num}: 開始時刻が終了時刻より後です: {start_time} > {end_time}")
+                            errors.append(f"{row_num}行目: 「開始時刻」が「終了時刻」より後です: {start_time} > {end_time}")
                     
                 except Exception as e:
-                    warnings.append(f"行{row_num}: 勤務時間の計算に失敗しました: {e}")
+                    warnings.append(f"{row_num}行目: 勤務時間の計算に失敗しました: {e}")
     
     except Exception as e:
         errors.append(f"データ検証中にエラーが発生しました: {e}")
+    
+    # 検証結果をログに記録
+    if errors:
+        add_job_log(job_id, f"❌ データ検証エラー: {len(errors)}件", jobs)
+        for error in errors[:10]:  # 最初の10件のみ表示
+            add_job_log(job_id, f"  - {error}", jobs)
+        if len(errors) > 10:
+            add_job_log(job_id, f"  - 他{len(errors) - 10}件のエラーがあります", jobs)
+    
+    if warnings:
+        add_job_log(job_id, f"⚠️ データ検証警告: {len(warnings)}件", jobs)
+        for warning in warnings[:5]:  # 最初の5件のみ表示
+            add_job_log(job_id, f"  - {warning}", jobs)
+        if len(warnings) > 5:
+            add_job_log(job_id, f"  - 他{len(warnings) - 5}件の警告があります", jobs)
     
     return errors, warnings
 
