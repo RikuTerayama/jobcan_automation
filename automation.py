@@ -14,26 +14,29 @@ def check_login_status(page, job_id, jobs):
         current_url = page.url
         add_job_log(job_id, f"🔍 現在のURL: {current_url}", jobs)
         
-        # 1. ログイン成功の判定（リダイレクト先URLで判定）
-        if "ssl.jobcan.jp" in current_url and "jbcoauth" in current_url:
-            add_job_log(job_id, "✅ ログイン成功: 正常にリダイレクトされました", jobs)
-            return True, "success", "ログインに成功しました"
+        # 1. ログイン成功の判定（複数の成功パターンをチェック）
+        success_urls = [
+            "ssl.jobcan.jp/employee",
+            "ssl.jobcan.jp/jbcoauth",
+            "ssl.jobcan.jp/employee/attendance"
+        ]
+        
+        for success_url in success_urls:
+            if success_url in current_url:
+                add_job_log(job_id, f"✅ ログイン成功: {success_url} にアクセスできました", jobs)
+                return True, "success", "ログインに成功しました"
         
         # 2. ログインページに留まっている場合の詳細チェック
         if "id.jobcan.jp/users/sign_in" in current_url:
             add_job_log(job_id, "⚠️ ログインページに留まっています。詳細を確認中...", jobs)
             
-            # エラーメッセージの検索
+            # エラーメッセージの検索（有効なセレクタのみ）
             error_selectors = [
                 '.alert-danger',
                 '.error-message',
                 '.login-error',
                 '[class*="error"]',
-                '[class*="alert"]',
-                'p:contains("正しくありません")',
-                'p:contains("ログイン")',
-                'div:contains("エラー")',
-                'span:contains("失敗")'
+                '[class*="alert"]'
             ]
             
             error_message = None
@@ -49,21 +52,36 @@ def check_login_status(page, job_id, jobs):
                 except Exception as e:
                     add_job_log(job_id, f"⚠️ セレクタ {selector} でエラー: {e}", jobs)
             
+            # テキストベースのエラーメッセージ検索
+            error_keywords = ["正しくありません", "ログイン", "エラー", "失敗"]
+            for keyword in error_keywords:
+                try:
+                    elements = page.locator("div, p, span").filter(has_text=keyword).all()
+                    if elements:
+                        for element in elements:
+                            text = element.text_content().strip()
+                            if text and keyword in text:
+                                error_message = text
+                                add_job_log(job_id, f"❌ エラーメッセージ検出: {text}", jobs)
+                                break
+                        if error_message:
+                            break
+                except Exception as e:
+                    add_job_log(job_id, f"⚠️ キーワード '{keyword}' 検索でエラー: {e}", jobs)
+            
             if error_message:
                 return False, "login_error", f"ログインに失敗しました: {error_message}"
             else:
                 return False, "login_failed", "ログインに失敗しました（エラーメッセージが検出されませんでした）"
         
-        # 3. CAPTCHAの検出
+        # 3. CAPTCHAの検出（有効なセレクタのみ）
         captcha_selectors = [
             'img[src*="captcha"]',
             'img[alt*="captcha"]',
             'img[alt*="CAPTCHA"]',
             '.captcha',
             '[class*="captcha"]',
-            'iframe[src*="captcha"]',
-            'div:contains("画像認証")',
-            'div:contains("CAPTCHA")'
+            'iframe[src*="captcha"]'
         ]
         
         captcha_found = False
@@ -77,31 +95,55 @@ def check_login_status(page, job_id, jobs):
             except Exception as e:
                 add_job_log(job_id, f"⚠️ CAPTCHA検索でエラー: {e}", jobs)
         
+        # テキストベースのCAPTCHA検索
+        captcha_keywords = ["画像認証", "CAPTCHA", "captcha"]
+        for keyword in captcha_keywords:
+            try:
+                elements = page.locator("div, p, span").filter(has_text=keyword).all()
+                if elements:
+                    add_job_log(job_id, f"⚠️ CAPTCHA要素を検出: {keyword}", jobs)
+                    captcha_found = True
+                    break
+            except Exception as e:
+                add_job_log(job_id, f"⚠️ CAPTCHAキーワード '{keyword}' 検索でエラー: {e}", jobs)
+        
         if captcha_found:
             return False, "captcha_detected", "CAPTCHA（画像認証）が表示されています。手動でのログインが必要です"
         
-        # 4. アカウント制限の検出
-        restriction_selectors = [
-            'div:contains("アカウント")',
-            'div:contains("ロック")',
-            'div:contains("無効")',
-            'div:contains("制限")',
-            'div:contains("一時停止")',
-            'p:contains("ロック")',
-            'p:contains("無効")'
+        # 4. アカウント制限の検出（テキストベース）
+        restriction_keywords = ["アカウント", "ロック", "無効", "制限", "一時停止"]
+        for keyword in restriction_keywords:
+            try:
+                elements = page.locator("div, p, span").filter(has_text=keyword).all()
+                if elements:
+                    for element in elements:
+                        restriction_text = element.text_content().strip()
+                        if restriction_text and keyword in restriction_text:
+                            add_job_log(job_id, f"⚠️ アカウント制限を検出: {restriction_text}", jobs)
+                            return False, "account_restricted", f"アカウントに制限があります: {restriction_text}"
+            except Exception as e:
+                add_job_log(job_id, f"⚠️ 制限キーワード '{keyword}' 検索でエラー: {e}", jobs)
+        
+        # 5. ログイン成功の追加チェック（DOM要素ベース）
+        success_indicators = [
+            '#header_user_name',
+            '.user-name',
+            '[class*="user"]',
+            '[class*="profile"]',
+            'a[href*="logout"]',
+            'a[href*="sign_out"]'
         ]
         
-        for selector in restriction_selectors:
+        for selector in success_indicators:
             try:
                 element = page.query_selector(selector)
                 if element:
-                    restriction_text = element.text_content().strip()
-                    add_job_log(job_id, f"⚠️ アカウント制限を検出: {restriction_text}", jobs)
-                    return False, "account_restricted", f"アカウントに制限があります: {restriction_text}"
+                    add_job_log(job_id, f"✅ ログイン成功指標を検出: {selector}", jobs)
+                    return True, "success", "ログインに成功しました（DOM要素で確認）"
             except Exception as e:
-                add_job_log(job_id, f"⚠️ 制限検索でエラー: {e}", jobs)
+                add_job_log(job_id, f"⚠️ 成功指標 {selector} でエラー: {e}", jobs)
         
-        # 5. その他の不明な状態
+        # 6. その他の不明な状態（fallback）
         add_job_log(job_id, "❓ ログイン状態が不明です", jobs)
         return False, "unknown_status", "ログイン状態を判定できませんでした"
         
@@ -244,12 +286,22 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         update_progress(job_id, 6, "データ入力処理中", jobs)
         add_job_log(job_id, "🔧 データ入力処理を開始...", jobs)
         
-        if login_success and playwright_available:
-            add_job_log(job_id, "🔧 ログイン成功のため、実際のデータ入力を試行します", jobs)
-            # 実際のデータ入力処理は複雑なため、シミュレーションに留める
+        # ログイン失敗時の処理中断
+        if not login_success:
+            if login_status == "captcha_detected":
+                add_job_log(job_id, "⚠️ CAPTCHAが検出されたため、データ入力処理を中断します", jobs)
+                add_job_log(job_id, "💡 手動でログインしてから再実行してください", jobs)
+            elif login_status in ["login_error", "login_failed", "account_restricted"]:
+                add_job_log(job_id, "⚠️ ログインに失敗したため、データ入力処理を中断します", jobs)
+                add_job_log(job_id, "💡 ログイン情報を確認してから再実行してください", jobs)
+            else:
+                add_job_log(job_id, "⚠️ ログインが成功していないため、データ入力処理をスキップします", jobs)
+            
+            # シミュレーション処理のみ実行
             simulate_data_processing(job_id, data_source, total_data, pandas_available, jobs)
         else:
-            add_job_log(job_id, "⚠️ ログインが成功していないため、データ入力処理をスキップします", jobs)
+            add_job_log(job_id, "🔧 ログイン成功のため、実際のデータ入力を試行します", jobs)
+            # 実際のデータ入力処理は複雑なため、シミュレーションに留める
             simulate_data_processing(job_id, data_source, total_data, pandas_available, jobs)
         
         # ステップ7: 最終確認
