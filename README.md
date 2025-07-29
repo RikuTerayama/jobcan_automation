@@ -64,9 +64,23 @@ jobcan_automation-main/
    - GitHubリポジトリを選択
    - 環境変数を設定（必要に応じて）
 
-2. **自動デプロイ**
+2. **Start Commandの設定**
+   - RenderのWeb Service設定で「Start Command」を以下に設定：
+   ```bash
+   gunicorn app:app
+   ```
+
+3. **自動デプロイ**
    - プッシュ時に自動的にデプロイされます
    - 構文チェックがGitHub Actionsで実行されます
+
+### 重要な依存関係
+
+- **gunicorn**: WSGI HTTPサーバー（本番環境用）
+- **Flask**: Webフレームワーク
+- **Playwright**: ブラウザ自動化
+- **openpyxl**: Excelファイル処理
+- **psutil**: システムリソース監視
 
 ## 📋 使用方法
 
