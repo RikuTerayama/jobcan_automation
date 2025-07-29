@@ -188,7 +188,14 @@ def test():
 @app.route('/download-template')
 def download_template():
     try:
-        template_file = create_template_excel()
+        template_file, error_message = create_template_excel()
+        
+        if error_message:
+            return jsonify({'error': f'テンプレートファイルの作成に失敗しました: {error_message}'}), 500
+        
+        if not template_file or not os.path.exists(template_file):
+            return jsonify({'error': 'テンプレートファイルの生成に失敗しました'}), 500
+        
         return send_file(
             template_file,
             as_attachment=True,
@@ -196,7 +203,7 @@ def download_template():
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
     except Exception as e:
-        return jsonify({'error': f'テンプレートファイルの作成に失敗しました: {str(e)}'})
+        return jsonify({'error': f'テンプレートファイルの作成に失敗しました: {str(e)}'}), 500
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
