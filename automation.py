@@ -8,6 +8,146 @@ from utils import (
     playwright_available
 )
 
+def check_login_status(page, job_id, jobs):
+    """ログイン状態を詳細にチェック"""
+    try:
+        current_url = page.url
+        add_job_log(job_id, f"🔍 現在のURL: {current_url}", jobs)
+        
+        # 1. ログイン成功の判定（リダイレクト先URLで判定）
+        if "ssl.jobcan.jp" in current_url and "jbcoauth" in current_url:
+            add_job_log(job_id, "✅ ログイン成功: 正常にリダイレクトされました", jobs)
+            return True, "success", "ログインに成功しました"
+        
+        # 2. ログインページに留まっている場合の詳細チェック
+        if "id.jobcan.jp/users/sign_in" in current_url:
+            add_job_log(job_id, "⚠️ ログインページに留まっています。詳細を確認中...", jobs)
+            
+            # エラーメッセージの検索
+            error_selectors = [
+                '.alert-danger',
+                '.error-message',
+                '.login-error',
+                '[class*="error"]',
+                '[class*="alert"]',
+                'p:contains("正しくありません")',
+                'p:contains("ログイン")',
+                'div:contains("エラー")',
+                'span:contains("失敗")'
+            ]
+            
+            error_message = None
+            for selector in error_selectors:
+                try:
+                    element = page.query_selector(selector)
+                    if element:
+                        error_text = element.text_content().strip()
+                        if error_text:
+                            error_message = error_text
+                            add_job_log(job_id, f"❌ エラーメッセージ検出: {error_text}", jobs)
+                            break
+                except Exception as e:
+                    add_job_log(job_id, f"⚠️ セレクタ {selector} でエラー: {e}", jobs)
+            
+            if error_message:
+                return False, "login_error", f"ログインに失敗しました: {error_message}"
+            else:
+                return False, "login_failed", "ログインに失敗しました（エラーメッセージが検出されませんでした）"
+        
+        # 3. CAPTCHAの検出
+        captcha_selectors = [
+            'img[src*="captcha"]',
+            'img[alt*="captcha"]',
+            'img[alt*="CAPTCHA"]',
+            '.captcha',
+            '[class*="captcha"]',
+            'iframe[src*="captcha"]',
+            'div:contains("画像認証")',
+            'div:contains("CAPTCHA")'
+        ]
+        
+        captcha_found = False
+        for selector in captcha_selectors:
+            try:
+                element = page.query_selector(selector)
+                if element:
+                    add_job_log(job_id, f"⚠️ CAPTCHA要素を検出: {selector}", jobs)
+                    captcha_found = True
+                    break
+            except Exception as e:
+                add_job_log(job_id, f"⚠️ CAPTCHA検索でエラー: {e}", jobs)
+        
+        if captcha_found:
+            return False, "captcha_detected", "CAPTCHA（画像認証）が表示されています。手動でのログインが必要です"
+        
+        # 4. アカウント制限の検出
+        restriction_selectors = [
+            'div:contains("アカウント")',
+            'div:contains("ロック")',
+            'div:contains("無効")',
+            'div:contains("制限")',
+            'div:contains("一時停止")',
+            'p:contains("ロック")',
+            'p:contains("無効")'
+        ]
+        
+        for selector in restriction_selectors:
+            try:
+                element = page.query_selector(selector)
+                if element:
+                    restriction_text = element.text_content().strip()
+                    add_job_log(job_id, f"⚠️ アカウント制限を検出: {restriction_text}", jobs)
+                    return False, "account_restricted", f"アカウントに制限があります: {restriction_text}"
+            except Exception as e:
+                add_job_log(job_id, f"⚠️ 制限検索でエラー: {e}", jobs)
+        
+        # 5. その他の不明な状態
+        add_job_log(job_id, "❓ ログイン状態が不明です", jobs)
+        return False, "unknown_status", "ログイン状態を判定できませんでした"
+        
+    except Exception as e:
+        add_job_log(job_id, f"❌ ログイン状態チェックでエラー: {e}", jobs)
+        return False, "check_error", f"ログイン状態の確認でエラーが発生しました: {e}"
+
+def perform_login(page, email, password, job_id, jobs):
+    """詳細なログイン処理を実行"""
+    try:
+        add_job_log(job_id, "🔐 ログインページにアクセス中...", jobs)
+        page.goto("https://id.jobcan.jp/users/sign_in?app_key=atd&redirect_to=https://ssl.jobcan.jp/jbcoauth/callback")
+        
+        # ページ読み込み完了を待機
+        page.wait_for_load_state('networkidle')
+        add_job_log(job_id, "✅ ログインページアクセス完了", jobs)
+        
+        # ログインフォームの存在確認
+        email_field = page.query_selector('#user_email')
+        password_field = page.query_selector('#user_password')
+        submit_button = page.query_selector('input[type="submit"]')
+        
+        if not email_field or not password_field or not submit_button:
+            add_job_log(job_id, "❌ ログインフォームが見つかりません", jobs)
+            return False, "form_not_found", "ログインフォームが見つかりません"
+        
+        # ログイン情報を入力
+        add_job_log(job_id, "📝 ログイン情報を入力中...", jobs)
+        page.fill('#user_email', email)
+        page.fill('#user_password', password)
+        
+        # ログインボタンをクリック
+        add_job_log(job_id, "🔘 ログインボタンをクリック中...", jobs)
+        page.click('input[type="submit"]')
+        
+        # ページ遷移を待機
+        page.wait_for_load_state('networkidle')
+        add_job_log(job_id, "✅ ログイン処理完了", jobs)
+        
+        # ログイン結果をチェック
+        return check_login_status(page, job_id, jobs)
+        
+    except Exception as e:
+        add_job_log(job_id, f"❌ ログイン処理でエラー: {e}", jobs)
+        return False, "login_error", f"ログイン処理でエラーが発生しました: {e}"
+
 def process_jobcan_automation(job_id: str, email: str, password: str, file_path: str, jobs: dict):
     """Jobcan自動化処理のメイン関数"""
     try:
@@ -54,6 +194,9 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         add_job_log(job_id, "🌐 ブラウザ起動を開始...", jobs)
         
         login_success = False
+        login_status = "not_attempted"
+        login_message = "ログイン処理が実行されませんでした"
+        
         if playwright_available:
             try:
                 from playwright.sync_api import sync_playwright
@@ -66,27 +209,36 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     update_progress(job_id, 5, "Jobcanログイン中", jobs)
                     add_job_log(job_id, "🔐 Jobcanログインを開始...", jobs)
                     
-                    page.goto("https://id.jobcan.jp/users/sign_in?app_key=atd&redirect_to=https://ssl.jobcan.jp/jbcoauth/callback")
-                    page.fill('#user_email', email)
-                    page.fill('#user_password', password)
-                    page.click('input[type="submit"]')
-                    page.wait_for_load_state('networkidle')
+                    # 詳細なログイン処理を実行
+                    login_success, login_status, login_message = perform_login(page, email, password, job_id, jobs)
                     
-                    # ログイン成功の確認
-                    current_url = page.url
-                    if "ssl.jobcan.jp" in current_url:
-                        login_success = True
-                        add_job_log(job_id, "✅ Jobcanログイン成功", jobs)
-                    else:
-                        add_job_log(job_id, "❌ Jobcanログイン失敗", jobs)
+                    # ログイン結果を記録
+                    add_job_log(job_id, f"📊 ログイン結果: {login_status} - {login_message}", jobs)
                     
                     browser.close()
                     
             except Exception as e:
-                add_job_log(job_id, f"❌ ブラウザ操作エラー: {e}", jobs)
+                error_type = "browser_error"
+                if "TimeoutError" in str(e):
+                    error_type = "timeout_error"
+                    login_message = "ページの読み込みがタイムアウトしました"
+                elif "browser launch" in str(e).lower():
+                    error_type = "browser_launch_error"
+                    login_message = "ブラウザの起動に失敗しました"
+                else:
+                    login_message = f"ブラウザ操作でエラーが発生しました: {e}"
+                
+                add_job_log(job_id, f"❌ {login_message}", jobs)
                 login_success = False
+                login_status = error_type
         else:
             add_job_log(job_id, "⚠️ Playwrightが利用できないため、ブラウザ操作をスキップします", jobs)
+            login_status = "playwright_unavailable"
+            login_message = "Playwrightが利用できないため、ログイン処理をスキップしました"
+        
+        # ログイン結果をジョブ情報に保存
+        jobs[job_id]['login_status'] = login_status
+        jobs[job_id]['login_message'] = login_message
         
         # ステップ6: データ入力処理
         update_progress(job_id, 6, "データ入力処理中", jobs)
@@ -123,7 +275,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             add_job_log(job_id, "   - ステップ6: ✅ データ入力処理完了", jobs)
         else:
             add_job_log(job_id, "   - ステップ4: ⚠️ ブラウザ起動失敗", jobs)
-            add_job_log(job_id, "   - ステップ5: ❌ Jobcanログイン失敗", jobs)
+            add_job_log(job_id, f"   - ステップ5: ❌ Jobcanログイン失敗 ({login_status})", jobs)
             add_job_log(job_id, "   - ステップ6: ⚠️ データ入力処理スキップ", jobs)
         
         add_job_log(job_id, "   - ステップ7: ✅ 最終確認完了", jobs)
