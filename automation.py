@@ -1,15 +1,39 @@
-import time
 import os
-from utils import (
-    add_job_log, 
-    update_progress, 
-    load_excel_data, 
-    extract_date_info,
-    validate_excel_data,
-    pandas_available,
-    playwright_available
-)
+import time
+import random
+import tempfile
 from datetime import datetime
+from typing import Tuple, List, Optional
+
+# ライブラリの利用可能性をチェック
+try:
+    from playwright.sync_api import sync_playwright
+    playwright_available = True
+except ImportError:
+    playwright_available = False
+
+try:
+    import pandas as pd
+    pandas_available = True
+except ImportError:
+    pandas_available = False
+
+try:
+    from openpyxl import load_workbook
+    openpyxl_available = True
+except ImportError:
+    openpyxl_available = False
+
+# 他のモジュールから関数をインポート
+from utils import (
+    load_excel_data,
+    validate_excel_data,
+    extract_date_info,
+    add_job_log,
+    update_progress,
+    pandas_available,
+    openpyxl_available
+)
 
 def convert_time_to_4digit(time_str):
     """時刻を4桁の数字形式に変換（HH:MM:SS形式にも対応）"""
@@ -235,7 +259,7 @@ def handle_captcha(page, job_id, jobs):
         return False
 
 def perform_login(page, email, password, job_id, jobs):
-    """ログイン処理を実行"""
+    """ログイン処理を実行（人間らしい操作）"""
     try:
         # ログイン処理開始時の状態更新
         jobs[job_id]['login_status'] = 'processing'
@@ -244,21 +268,35 @@ def perform_login(page, email, password, job_id, jobs):
         add_job_log(job_id, "🔐 Jobcanログインページにアクセス中...", jobs)
         page.goto("https://id.jobcan.jp/users/sign_in")
         page.wait_for_load_state('networkidle', timeout=30000)
+        
+        # 人間らしい待機
+        human_like_wait()
         add_job_log(job_id, "✅ ログインページアクセス完了", jobs)
         
-        # メールアドレスを入力
+        # メールアドレスを人間らしく入力
         add_job_log(job_id, "📧 メールアドレスを入力中...", jobs)
-        page.fill('input[name="user[email]"]', email)
-        add_job_log(job_id, "✅ メールアドレス入力完了", jobs)
+        if not human_like_typing(page, 'input[name="user[email]"]', email, job_id, jobs):
+            return False, "typing_error", "❌ メールアドレス入力に失敗しました"
         
-        # パスワードを入力
+        # 人間らしい待機
+        human_like_wait()
+        
+        # パスワードを人間らしく入力
         add_job_log(job_id, "🔑 パスワードを入力中...", jobs)
-        page.fill('input[name="user[password]"]', password)
-        add_job_log(job_id, "✅ パスワード入力完了", jobs)
+        if not human_like_typing(page, 'input[name="user[password]"]', password, job_id, jobs):
+            return False, "typing_error", "❌ パスワード入力に失敗しました"
         
-        # ログインボタンをクリック
+        # 人間らしい待機
+        human_like_wait()
+        
+        # ログインボタンを人間らしくクリック
         add_job_log(job_id, "🔘 ログインボタンをクリック中...", jobs)
-        page.click('input[type="submit"]')
+        login_button = page.locator('input[type="submit"]').first
+        login_button.click()
+        
+        # 人間らしい待機
+        human_like_wait()
+        
         page.wait_for_load_state('networkidle', timeout=30000)
         add_job_log(job_id, "✅ ログインボタンクリック完了", jobs)
         
@@ -267,20 +305,10 @@ def perform_login(page, email, password, job_id, jobs):
         
         # CAPTCHAが検出された場合の処理
         if status == "captcha_detected":
-            add_job_log(job_id, "🔄 CAPTCHAが検出されました。処理を試行します", jobs)
+            add_job_log(job_id, "🔄 CAPTCHAが検出されました。リトライ処理を開始します", jobs)
             
-            # CAPTCHA処理を試行
-            captcha_success = handle_captcha(page, job_id, jobs)
-            
-            if captcha_success:
-                add_job_log(job_id, "✅ CAPTCHA処理に成功しました", jobs)
-                # 再度ログイン状態をチェック
-                login_success, status, message = check_login_status(page, job_id, jobs)
-            else:
-                add_job_log(job_id, "❌ CAPTCHA処理に失敗しました", jobs)
-                jobs[job_id]['login_status'] = 'captcha_failed'
-                jobs[job_id]['login_message'] = '❌ 画像認証に失敗しました'
-                return False, 'captcha_failed', '❌ 画像認証に失敗しました'
+            # CAPTCHAリトライロジックを実行
+            login_success, status, message = retry_on_captcha(page, email, password, job_id, jobs)
         
         # ログイン結果をジョブ情報に保存
         jobs[job_id]['login_status'] = status
@@ -334,6 +362,9 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                 try:
                     page.goto(modify_url, timeout=30000)
                     page.wait_for_load_state('networkidle', timeout=30000)
+                    
+                    # 人間らしい待機
+                    human_like_wait()
                     add_job_log(job_id, "✅ 打刻修正ページアクセス完了", jobs)
                 except Exception as e:
                     add_job_log(job_id, f"❌ 打刻修正ページアクセスエラー: {e}", jobs)
@@ -350,18 +381,27 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                 # 1つの入力フィールドを取得
                 time_input = page.locator('input[type="text"]').first
                 
-                # 1回目: 始業時刻を入力して打刻
+                # 1回目: 始業時刻を人間らしく入力して打刻
                 add_job_log(job_id, f"⏰ 1回目: 始業時刻を入力: {start_time_4digit}", jobs)
                 try:
-                    time_input.fill(start_time_4digit)
+                    # 人間らしいタイピングで入力
+                    if not human_like_typing(page, 'input[type="text"]', start_time_4digit, job_id, jobs):
+                        add_job_log(job_id, "❌ 始業時刻入力に失敗しました", jobs)
+                        continue
+                    
+                    # 人間らしい待機
+                    human_like_wait()
                     add_job_log(job_id, "✅ 始業時刻入力完了", jobs)
                 except Exception as e:
                     add_job_log(job_id, f"❌ 始業時刻入力エラー: {e}", jobs)
                     continue  # 始業時刻入力に失敗した場合は次のデータへ
                 
-                # 1回目の打刻ボタンをクリック
+                # 1回目の打刻ボタンを人間らしくクリック
                 add_job_log(job_id, "🔘 1回目: 打刻ボタンをクリック中...", jobs)
                 first_punch_success = False
+                
+                # 人間らしい待機
+                human_like_wait()
                 
                 # 打刻ボタンを探してクリック (prioritized methods)
                 try:
@@ -412,10 +452,19 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                     add_job_log(job_id, "❌ 1回目: 打刻ボタンが見つかりません", jobs)
                     continue # 1回目の打刻に失敗した場合は次のデータへ
                 
-                # 2回目: 終業時刻を入力して打刻
+                # 人間らしい待機
+                human_like_wait()
+                
+                # 2回目: 終業時刻を人間らしく入力して打刻
                 add_job_log(job_id, f"⏰ 2回目: 終業時刻を入力: {end_time_4digit}", jobs)
                 try:
-                    time_input.fill(end_time_4digit)
+                    # 人間らしいタイピングで入力
+                    if not human_like_typing(page, 'input[type="text"]', end_time_4digit, job_id, jobs):
+                        add_job_log(job_id, "❌ 終業時刻入力に失敗しました", jobs)
+                        continue
+                    
+                    # 人間らしい待機
+                    human_like_wait()
                     add_job_log(job_id, "✅ 終業時刻入力完了", jobs)
                 except Exception as e:
                     add_job_log(job_id, f"⚠️ 終業時刻入力エラー（想定通りの処理構造です）: {e}", jobs)
@@ -503,6 +552,9 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                 try:
                     page.goto(modify_url, timeout=30000)
                     page.wait_for_load_state('networkidle', timeout=30000)
+                    
+                    # 人間らしい待機
+                    human_like_wait()
                     add_job_log(job_id, "✅ 打刻修正ページアクセス完了", jobs)
                 except Exception as e:
                     add_job_log(job_id, f"❌ 打刻修正ページアクセスエラー: {e}", jobs)
@@ -519,10 +571,16 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                 # 1つの入力フィールドを取得
                 time_input = page.locator('input[type="text"]').first
                 
-                # 1回目: 始業時刻を入力して打刻
+                # 1回目: 始業時刻を人間らしく入力して打刻
                 add_job_log(job_id, f"⏰ 1回目: 始業時刻を入力: {start_time_4digit}", jobs)
                 try:
-                    time_input.fill(start_time_4digit)
+                    # 人間らしいタイピングで入力
+                    if not human_like_typing(page, 'input[type="text"]', start_time_4digit, job_id, jobs):
+                        add_job_log(job_id, "❌ 始業時刻入力に失敗しました", jobs)
+                        continue
+                    
+                    # 人間らしい待機
+                    human_like_wait()
                     add_job_log(job_id, "✅ 始業時刻入力完了", jobs)
                 except Exception as e:
                     add_job_log(job_id, f"❌ 始業時刻入力エラー: {e}", jobs)
@@ -581,10 +639,19 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                     add_job_log(job_id, "❌ 1回目: 打刻ボタンが見つかりません", jobs)
                     continue # 1回目の打刻に失敗した場合は次のデータへ
                 
-                # 2回目: 終業時刻を入力して打刻
+                # 人間らしい待機
+                human_like_wait()
+                
+                # 2回目: 終業時刻を人間らしく入力して打刻
                 add_job_log(job_id, f"⏰ 2回目: 終業時刻を入力: {end_time_4digit}", jobs)
                 try:
-                    time_input.fill(end_time_4digit)
+                    # 人間らしいタイピングで入力
+                    if not human_like_typing(page, 'input[type="text"]', end_time_4digit, job_id, jobs):
+                        add_job_log(job_id, "❌ 終業時刻入力に失敗しました", jobs)
+                        continue
+                    
+                    # 人間らしい待機
+                    human_like_wait()
                     add_job_log(job_id, "✅ 終業時刻入力完了", jobs)
                 except Exception as e:
                     add_job_log(job_id, f"⚠️ 終業時刻入力エラー（想定通りの処理構造です）: {e}", jobs)
@@ -656,6 +723,110 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
     except Exception as e:
         add_job_log(job_id, f"❌ 実際のデータ入力処理でエラー: {e}", jobs)
         raise e
+
+def human_like_typing(page, selector, text, job_id, jobs):
+    """人間らしいタイピングを実行"""
+    try:
+        add_job_log(job_id, f"⌨️ 人間らしいタイピングを実行: {selector}", jobs)
+        
+        # 要素を取得
+        element = page.locator(selector).first
+        element.click()
+        
+        # 既存のテキストをクリア
+        element.fill("")
+        
+        # 文字ごとにランダムな遅延でタイピング
+        for char in text:
+            element.type(char, delay=random.uniform(50, 250))  # 50-250msの遅延
+            time.sleep(random.uniform(0.05, 0.15))  # 追加の遅延
+        
+        add_job_log(job_id, "✅ タイピング完了", jobs)
+        return True
+        
+    except Exception as e:
+        add_job_log(job_id, f"❌ タイピングエラー: {e}", jobs)
+        return False
+
+def human_like_wait():
+    """人間らしい待機時間"""
+    time.sleep(random.uniform(0.5, 2.0))
+
+def setup_stealth_mode(page, job_id, jobs):
+    """ステルスモードの設定（Bot検知回避）"""
+    try:
+        add_job_log(job_id, "🕵️ ステルスモードを設定中...", jobs)
+        
+        # navigator.webdriverを無効化
+        page.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined,
+            });
+        """)
+        
+        # その他のBot検知回避設定
+        page.add_init_script("""
+            // Chromeの自動化フラグを無効化
+            delete window.cdc_adoQpoasnfa76pfcZLmcfl_Array;
+            delete window.cdc_adoQpoasnfa76pfcZLmcfl_Promise;
+            delete window.cdc_adoQpoasnfa76pfcZLmcfl_Symbol;
+            
+            // WebDriverプロパティを隠す
+            Object.defineProperty(navigator, 'plugins', {
+                get: () => [1, 2, 3, 4, 5],
+            });
+            
+            Object.defineProperty(navigator, 'languages', {
+                get: () => ['ja-JP', 'ja', 'en-US', 'en'],
+            });
+        """)
+        
+        add_job_log(job_id, "✅ ステルスモード設定完了", jobs)
+        return True
+        
+    except Exception as e:
+        add_job_log(job_id, f"⚠️ ステルスモード設定エラー: {e}", jobs)
+        return False
+
+def retry_on_captcha(page, email, password, job_id, jobs, max_retries=3):
+    """CAPTCHA発生時のリトライロジック"""
+    for attempt in range(max_retries):
+        try:
+            add_job_log(job_id, f"🔄 CAPTCHAリトライ試行 {attempt + 1}/{max_retries}", jobs)
+            
+            # ページをリロード
+            page.reload()
+            page.wait_for_load_state('networkidle', timeout=30000)
+            
+            # 人間らしい待機
+            human_like_wait()
+            
+            # ログイン処理を再実行
+            login_success, status, message = perform_login(page, email, password, job_id, jobs)
+            
+            if login_success:
+                add_job_log(job_id, f"✅ リトライ {attempt + 1} でログイン成功", jobs)
+                return True, status, message
+            elif status == "captcha_detected":
+                add_job_log(job_id, f"⚠️ リトライ {attempt + 1} でもCAPTCHAが発生", jobs)
+                if attempt < max_retries - 1:
+                    # 次のリトライ前に待機
+                    wait_time = random.uniform(5, 10)
+                    add_job_log(job_id, f"⏳ {wait_time:.1f}秒待機してから再試行", jobs)
+                    time.sleep(wait_time)
+                continue
+            else:
+                add_job_log(job_id, f"❌ リトライ {attempt + 1} でログイン失敗: {message}", jobs)
+                return False, status, message
+                
+        except Exception as e:
+            add_job_log(job_id, f"❌ リトライ {attempt + 1} でエラー: {e}", jobs)
+            if attempt < max_retries - 1:
+                time.sleep(random.uniform(2, 5))
+            continue
+    
+    add_job_log(job_id, f"❌ 最大リトライ回数 {max_retries} に達しました", jobs)
+    return False, "captcha_failed", "❌ 画像認証に失敗しました（最大リトライ回数に達しました）"
 
 def process_jobcan_automation(job_id: str, email: str, password: str, file_path: str, jobs: dict, session_dir: str = None, session_id: str = None):
     """Jobcan自動化処理のメイン関数（セッション固有のブラウザ環境）"""
@@ -749,30 +920,52 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     '--disable-gpu',
                     '--disable-background-timer-throttling',
                     '--disable-backgrounding-occluded-windows',
-                    '--disable-renderer-backgrounding'
+                    '--disable-renderer-backgrounding',
+                    '--disable-blink-features=AutomationControlled',
+                    '--disable-extensions-except',
+                    '--disable-plugins-discovery',
+                    '--disable-default-apps',
+                    '--disable-sync',
+                    '--disable-translate',
+                    '--hide-scrollbars',
+                    '--mute-audio',
+                    '--no-default-browser-check',
+                    '--no-pings',
+                    '--no-zygote',
+                    '--disable-web-security',
+                    '--disable-features=VizDisplayCompositor'
                 ]
+                
+                # より人間らしいUser-Agent
+                user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                 
                 # user_data_dirがある場合はlaunch_persistent_contextを使用
                 if user_data_dir:
                     context = p.chromium.launch_persistent_context(
                         user_data_dir=user_data_dir,
-                        headless=True,
+                        headless=False,  # ヘッドレスモードを無効化
                         args=browser_args,
                         viewport={'width': 1280, 'height': 720},
-                        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                        user_agent=user_agent,
+                        ignore_https_errors=True,
+                        java_script_enabled=True,
+                        accept_downloads=True
                     )
                     page = context.new_page()
                 else:
                     # user_data_dirがない場合は通常のlaunchを使用
                     browser = p.chromium.launch(
-                        headless=True,
+                        headless=False,  # ヘッドレスモードを無効化
                         args=browser_args
                     )
                     
                     # セッション固有のコンテキスト設定
                     context_options = {
                         'viewport': {'width': 1280, 'height': 720},
-                        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                        'user_agent': user_agent,
+                        'ignore_https_errors': True,
+                        'java_script_enabled': True,
+                        'accept_downloads': True
                     }
                     
                     context = browser.new_context(**context_options)
@@ -781,6 +974,9 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 add_job_log(job_id, "✅ ブラウザ起動完了", jobs)
                 if session_id:
                     add_job_log(job_id, f"🔑 セッション固有ブラウザ環境: {session_id}", jobs)
+                
+                # ステルスモードを設定
+                setup_stealth_mode(page, job_id, jobs)
                 
                 # ステップ5: ログイン処理
                 add_job_log(job_id, "🔐 Jobcanにログイン中...", jobs)
