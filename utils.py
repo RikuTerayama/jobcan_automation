@@ -6,7 +6,7 @@ import re
 
 # ライブラリの利用可能性をチェック
 try:
-import pandas as pd
+    import pandas as pd
     pandas_available = True
 except ImportError:
     pandas_available = False
