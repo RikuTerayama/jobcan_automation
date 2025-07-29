@@ -22,7 +22,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpango-1.0-0 \
     libcairo2 \
     fonts-liberation \
-    && rm -rf /var/lib/apt/lists/*
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/cache/apt/*
 
 # Google Chromeをインストール（最適化版）
 RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
