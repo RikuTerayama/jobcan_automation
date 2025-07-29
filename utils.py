@@ -3,6 +3,7 @@ import tempfile
 from datetime import datetime, date
 import calendar
 import re
+import os # 追加: ファイルシステム操作のため
 
 # ライブラリの利用可能性をチェック
 try:
@@ -317,12 +318,33 @@ def create_template_excel():
                 ws[f'B{i}'] = data['開始時刻']
                 ws[f'C{i}'] = data['終了時刻']
             
-            # ファイルを保存
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx')
-            wb.save(temp_file.name)
-            temp_file.close()
+            # 本番環境に対応した一時ファイルの生成
+            # /tmpディレクトリを使用（Renderなどの本番環境で安全）
+            temp_dir = '/tmp' if os.path.exists('/tmp') else tempfile.gettempdir()
+            temp_file = tempfile.NamedTemporaryFile(
+                delete=False, 
+                suffix='.xlsx',
+                dir=temp_dir
+            )
             
-            return temp_file.name, None
+            try:
+                wb.save(temp_file.name)
+                temp_file.close()
+                
+                # ファイルが正常に作成されたか確認
+                if os.path.exists(temp_file.name) and os.path.getsize(temp_file.name) > 0:
+                    return temp_file.name, None
+                else:
+                    return None, "テンプレートファイルの保存に失敗しました"
+                    
+            except Exception as save_error:
+                # 一時ファイルのクリーンアップ
+                try:
+                    if os.path.exists(temp_file.name):
+                        os.remove(temp_file.name)
+                except:
+                    pass
+                return None, f"ファイル保存エラー: {str(save_error)}"
         else:
             return None, "openpyxlが利用できません"
     
