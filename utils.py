@@ -192,41 +192,23 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                 start_time = ws[f'B{row}'].value
                 end_time = ws[f'C{row}'].value
                 
-                if start_time is None:
-                    errors.append(f"{row_num}行目の「開始時刻」が空白です")
+                # 開始時刻の検証と正規化
+                normalized_start_time, start_error = validate_time_value(start_time, row_num, "開始時刻")
+                if start_error:
+                    errors.append(start_error)
                     continue
                 
-                if end_time is None:
-                    errors.append(f"{row_num}行目の「終了時刻」が空白です")
+                # 終了時刻の検証と正規化
+                normalized_end_time, end_error = validate_time_value(end_time, row_num, "終了時刻")
+                if end_error:
+                    errors.append(end_error)
                     continue
-                
-                # 時刻形式の検証
-                for time_value, time_name, time_col in [(start_time, "開始時刻", "B"), (end_time, "終了時刻", "C")]:
-                    try:
-                        if isinstance(time_value, str):
-                            # 時刻形式の正規化
-                            time_str = str(time_value).strip()
-                            if not re.match(r'^\d{1,2}:\d{2}(:\d{2})?$', time_str):
-                                errors.append(f"{row_num}行目の「{time_name}」の形式が無効です: {time_value} (期待形式: HH:MM)")
-                                continue
-                        elif hasattr(time_value, 'time'):
-                            # datetimeオブジェクトの場合
-                            pass
-                        else:
-                            errors.append(f"{row_num}行目の「{time_name}」の形式が無効です: {time_value}")
-                            continue
-                    except Exception as e:
-                        errors.append(f"{row_num}行目の「{time_name}」の解析に失敗しました: {time_value}")
-                        continue
                 
                 # 勤務時間の妥当性チェック
                 try:
-                    start_str = str(start_time)
-                    end_str = str(end_time)
-                    
-                    # 時刻を分に変換
-                    start_parts = start_str.split(':')
-                    end_parts = end_str.split(':')
+                    # 正規化された時刻を使用
+                    start_parts = normalized_start_time.split(':')
+                    end_parts = normalized_end_time.split(':')
                     
                     if len(start_parts) >= 2 and len(end_parts) >= 2:
                         start_minutes = int(start_parts[0]) * 60 + int(start_parts[1])
@@ -241,7 +223,7 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                         
                         # 開始時刻が終了時刻より後の場合
                         if start_minutes >= end_minutes:
-                            errors.append(f"{row_num}行目: 「開始時刻」が「終了時刻」より後です: {start_time} > {end_time}")
+                            errors.append(f"{row_num}行目: 「開始時刻」が「終了時刻」より後です: {normalized_start_time} > {normalized_end_time}")
                     
                 except Exception as e:
                     warnings.append(f"{row_num}行目: 勤務時間の計算に失敗しました: {e}")
