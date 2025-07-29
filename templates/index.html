@@ -38,34 +38,55 @@
         }
         
         .header {
-            background: linear-gradient(135deg, #2A2A2A 0%, #1E1E1E 100%);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             color: #FFFFFF;
-            padding: 40px 30px;
+            padding: 50px 40px;
             text-align: center;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             position: relative;
+            border-radius: 16px;
+            box-shadow: 
+                0 12px 40px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 0 0 1px rgba(255, 255, 255, 0.05);
+            margin-bottom: 35px;
         }
         
         .header::before {
             content: '';
             position: absolute;
             top: 0;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.3), transparent);
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.9), transparent);
+            border-radius: 2px;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
         }
         
         .header h1 {
             margin: 0;
-            font-size: 2.8em;
-            font-weight: 300;
-            letter-spacing: 0.1em;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-            background: linear-gradient(135deg, #FFFFFF 0%, #E0E0E0 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 3.2em;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', 'Arial', sans-serif;
+            text-shadow: 
+                0 2px 4px rgba(0, 0, 0, 0.3),
+                0 0 20px rgba(255, 255, 255, 0.1);
+            position: relative;
+            color: #FFFFFF;
+        }
+        
+        .header h1::before {
+            content: '🕒';
+            position: absolute;
+            left: -50px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.6em;
+            opacity: 0.8;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
         }
         
         .header p {
@@ -481,11 +502,16 @@
             }
             
             .header {
-                padding: 30px 20px;
+                padding: 40px 25px;
             }
             
             .header h1 {
-                font-size: 2.2em;
+                font-size: 2.8em;
+            }
+            
+            .header h1::before {
+                left: -40px;
+                font-size: 0.5em;
             }
             
             .content {
