@@ -652,40 +652,8 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                                 else:
                                     year = month = day = "01"
                             
-                                                        add_job_log(job_id, f"🔧 打刻修正URL: https://ssl.jobcan.jp/employee/adit/modify?year={year}&month={month}&day={day}")
+                            add_job_log(job_id, f"🔧 打刻修正URL: https://ssl.jobcan.jp/employee/adit/modify?year={year}&month={month}&day={day}")
                             add_job_log(job_id, "⚠️ 実際のデータ入力はスキップされました（シミュレーションモード）")
-                                    add_job_log(job_id, f"📝 シミュレーション: {date_str} {start_time}-{end_time}")
-                                    add_job_log(job_id, f"🔧 打刻修正URL: https://ssl.jobcan.jp/employee/adit/modify?year={year}&month={month}&day={day}")
-                                    add_job_log(job_id, "⚠️ 実際のデータ入力はスキップされました（ログイン失敗またはPlaywright未利用）")
-                                                        add_job_log(job_id, f"   {i+1}. text={button_text}, type={button_type}")
-                                                    except:
-                                                        pass
-                                            
-                                            # 処理結果の確認
-                                            if start_time_found and end_time_found and save_found:
-                                                add_job_log(job_id, f"✅ データ入力処理完了: {date_str}")
-                                            else:
-                                                add_job_log(job_id, f"⚠️ データ入力処理部分完了: {date_str}")
-                                                add_job_log(job_id, f"   - 開始時刻入力: {'✅' if start_time_found else '❌'}")
-                                                add_job_log(job_id, f"   - 終了時刻入力: {'✅' if end_time_found else '❌'}")
-                                                add_job_log(job_id, f"   - 保存ボタン: {'✅' if save_found else '❌'}")
-                                            
-                                        except Exception as e:
-                                            add_job_log(job_id, f"❌ データ入力処理でエラー: {e}")
-                                            add_job_log(job_id, "🔍 エラーの詳細:")
-                                            add_job_log(job_id, f"   - エラータイプ: {type(e).__name__}")
-                                            add_job_log(job_id, f"   - エラーメッセージ: {str(e)}")
-                                            add_job_log(job_id, "💡 解決策:")
-                                            add_job_log(job_id, "   1. Jobcanサイトの構造を確認")
-                                            add_job_log(job_id, "   2. セレクタの調整が必要")
-                                            add_job_log(job_id, "   3. ページの読み込み待機時間の調整")
-                                        
-                                        browser.close()
-                                        
-                                except Exception as e:
-                                    add_job_log(job_id, f"❌ ステップ6: データ入力エラー - {e}")
-                            else:
-                                add_job_log(job_id, "⚠️ ログインが成功していないため、データ入力処理をスキップします")
                             
                         except Exception as e:
                             add_job_log(job_id, f"⚠️ URL生成エラー: {e}")
