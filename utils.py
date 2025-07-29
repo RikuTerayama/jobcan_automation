@@ -2,6 +2,7 @@ import time
 import tempfile
 from datetime import datetime, date
 import calendar
+import re
 
 # ライブラリの利用可能性をチェック
 try:
@@ -56,20 +57,209 @@ def get_weekdays_in_current_month():
     
     return weekdays
 
+def validate_excel_data(data_source, pandas_available, job_id, jobs):
+    """Excelデータの内容を検証"""
+    errors = []
+    warnings = []
+    
+    try:
+        if pandas_available:
+            # pandasを使用した検証
+            if len(data_source) == 0:
+                errors.append("Excelファイルにデータが含まれていません")
+                return errors, warnings
+            
+            # ヘッダー行の確認
+            expected_columns = ['日付', '開始時刻', '終了時刻']
+            actual_columns = list(data_source.columns)
+            
+            if not all(col in actual_columns for col in expected_columns):
+                errors.append(f"必要な列が見つかりません。期待: {expected_columns}, 実際: {actual_columns}")
+                return errors, warnings
+            
+            # 各行のデータを検証
+            for index, row in data_source.iterrows():
+                row_num = index + 2  # ヘッダー行を考慮
+                
+                # 日付の検証
+                date_value = row.iloc[0]
+                if pd.isna(date_value):
+                    errors.append(f"行{row_num}: 日付が空です")
+                    continue
+                
+                # 日付形式の検証
+                try:
+                    if isinstance(date_value, str):
+                        # 文字列の場合、複数の形式を試行
+                        date_formats = ['%Y-%m-%d', '%Y/%m/%d', '%Y年%m月%d日']
+                        parsed_date = None
+                        for fmt in date_formats:
+                            try:
+                                parsed_date = datetime.strptime(date_value, fmt).date()
+                                break
+                            except ValueError:
+                                continue
+                        
+                        if parsed_date is None:
+                            errors.append(f"行{row_num}: 日付形式が無効です: {date_value}")
+                            continue
+                    else:
+                        parsed_date = pd.to_datetime(date_value).date()
+                    
+                    # 未来日チェック
+                    if parsed_date > date.today():
+                        warnings.append(f"行{row_num}: 未来の日付です: {parsed_date}")
+                    
+                    # 過去すぎる日付チェック（1年前まで）
+                    one_year_ago = date.today().replace(year=date.today().year - 1)
+                    if parsed_date < one_year_ago:
+                        warnings.append(f"行{row_num}: 過去すぎる日付です: {parsed_date}")
+                    
+                except Exception as e:
+                    errors.append(f"行{row_num}: 日付の解析に失敗しました: {date_value}")
+                    continue
+                
+                # 時刻の検証
+                start_time = row.iloc[1]
+                end_time = row.iloc[2]
+                
+                if pd.isna(start_time) or pd.isna(end_time):
+                    errors.append(f"行{row_num}: 開始時刻または終了時刻が空です")
+                    continue
+                
+                # 時刻形式の検証
+                for time_value, time_name in [(start_time, "開始時刻"), (end_time, "終了時刻")]:
+                    try:
+                        if isinstance(time_value, str):
+                            # 時刻形式の正規化
+                            time_str = str(time_value).strip()
+                            if not re.match(r'^\d{1,2}:\d{2}(:\d{2})?$', time_str):
+                                errors.append(f"行{row_num}: {time_name}の形式が無効です: {time_value}")
+                                continue
+                        elif hasattr(time_value, 'time'):
+                            # datetimeオブジェクトの場合
+                            pass
+                        else:
+                            errors.append(f"行{row_num}: {time_name}の形式が無効です: {time_value}")
+                            continue
+                    except Exception as e:
+                        errors.append(f"行{row_num}: {time_name}の解析に失敗しました: {time_value}")
+                        continue
+                
+                # 勤務時間の妥当性チェック
+                try:
+                    start_str = str(start_time)
+                    end_str = str(end_time)
+                    
+                    # 時刻を分に変換
+                    start_parts = start_str.split(':')
+                    end_parts = end_str.split(':')
+                    
+                    if len(start_parts) >= 2 and len(end_parts) >= 2:
+                        start_minutes = int(start_parts[0]) * 60 + int(start_parts[1])
+                        end_minutes = int(end_parts[0]) * 60 + int(end_parts[1])
+                        
+                        # 勤務時間が短すぎる場合
+                        work_hours = (end_minutes - start_minutes) / 60
+                        if work_hours < 0.5:  # 30分未満
+                            warnings.append(f"行{row_num}: 勤務時間が短すぎます: {work_hours:.1f}時間")
+                        elif work_hours > 24:  # 24時間超過
+                            warnings.append(f"行{row_num}: 勤務時間が長すぎます: {work_hours:.1f}時間")
+                        
+                        # 開始時刻が終了時刻より後の場合
+                        if start_minutes >= end_minutes:
+                            errors.append(f"行{row_num}: 開始時刻が終了時刻より後です: {start_time} > {end_time}")
+                    
+                except Exception as e:
+                    warnings.append(f"行{row_num}: 勤務時間の計算に失敗しました: {e}")
+            
+        else:
+            # openpyxlを使用した検証
+            ws = data_source.active
+            if ws.max_row <= 1:
+                errors.append("Excelファイルにデータが含まれていません")
+                return errors, warnings
+            
+            # 各行のデータを検証
+            for row in range(2, ws.max_row + 1):
+                row_num = row
+                
+                # 日付の検証
+                date_value = ws[f'A{row}'].value
+                if date_value is None:
+                    errors.append(f"行{row_num}: 日付が空です")
+                    continue
+                
+                # 時刻の検証
+                start_time = ws[f'B{row}'].value
+                end_time = ws[f'C{row}'].value
+                
+                if start_time is None or end_time is None:
+                    errors.append(f"行{row_num}: 開始時刻または終了時刻が空です")
+                    continue
+                
+                # 時刻形式の検証
+                for time_value, time_name in [(start_time, "開始時刻"), (end_time, "終了時刻")]:
+                    time_str = str(time_value).strip()
+                    if not re.match(r'^\d{1,2}:\d{2}(:\d{2})?$', time_str):
+                        errors.append(f"行{row_num}: {time_name}の形式が無効です: {time_value}")
+                        continue
+        
+        # 検証結果をログに記録
+        if errors:
+            add_job_log(job_id, f"❌ データ検証エラー: {len(errors)}件", jobs)
+            for error in errors[:5]:  # 最初の5件のみ表示
+                add_job_log(job_id, f"  - {error}", jobs)
+            if len(errors) > 5:
+                add_job_log(job_id, f"  - 他{len(errors) - 5}件のエラーがあります", jobs)
+        
+        if warnings:
+            add_job_log(job_id, f"⚠️ データ検証警告: {len(warnings)}件", jobs)
+            for warning in warnings[:3]:  # 最初の3件のみ表示
+                add_job_log(job_id, f"  - {warning}", jobs)
+            if len(warnings) > 3:
+                add_job_log(job_id, f"  - 他{len(warnings) - 3}件の警告があります", jobs)
+        
+        return errors, warnings
+        
+    except Exception as e:
+        error_msg = f"データ検証中にエラーが発生しました: {str(e)}"
+        add_job_log(job_id, f"❌ {error_msg}", jobs)
+        return [error_msg], []
+
 def allowed_file(filename):
     """アップロードされたファイルの拡張子をチェック"""
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in {'xlsx', 'xls'}
 
 def add_job_log(job_id: str, message: str, jobs: dict):
-    """ジョブログにメッセージを追加"""
+    """ジョブログにメッセージを追加（個人情報を除去）"""
     if job_id not in jobs:
         jobs[job_id] = {'logs': [], 'status': 'running', 'progress': 0, 'start_time': time.time()}
+    
+    # 個人情報を除去したメッセージ
+    sanitized_message = sanitize_log_message(message)
+    
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    log_entry = f"[{timestamp}] {message}"
+    log_entry = f"[{timestamp}] {sanitized_message}"
     jobs[job_id]['logs'].append(log_entry)
+    
+    # ログサイズの制限（最新100件まで保持）
     if len(jobs[job_id]['logs']) > 100:
         jobs[job_id]['logs'] = jobs[job_id]['logs'][-50:]
+
+def sanitize_log_message(message):
+    """ログメッセージから個人情報を除去"""
+    # メールアドレスの除去
+    message = re.sub(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', '[EMAIL]', message)
+    
+    # パスワードの除去
+    message = re.sub(r'password[:\s]*[^\s]+', 'password: [HIDDEN]', message, flags=re.IGNORECASE)
+    
+    # その他の個人情報パターン
+    message = re.sub(r'[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{4}', '[CARD_NUMBER]', message)  # クレジットカード番号
+    
+    return message
 
 def update_progress(job_id: str, step: int, step_name: str, jobs: dict, current_data: int = 0, total_data: int = 0):
     """進捗状況を更新"""
