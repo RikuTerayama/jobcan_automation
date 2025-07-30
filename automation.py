@@ -427,12 +427,48 @@ def perform_login(page, email, password, job_id, jobs):
         # 人間らしい待機
         human_like_wait(1.0, 2.0)
         
-        # パスワードフィールドが表示されるまで待機
-        page.wait_for_selector('input[name="user[password]"]', state='visible', timeout=10000)
-        
-        # パスワードを人間らしく入力
+        # パスワード入力（改善版）
         add_job_log(job_id, "🔑 パスワードを入力中...", jobs)
-        if not human_like_typing(page, 'input[name="user[password]"]', password, job_id, jobs):
+        
+        # 複数のセレクタを試行
+        password_selectors = [
+            'input[name="user[password]"]',
+            'input[type="password"]',
+            'input[name="password"]',
+            '#user_password',
+            'input[placeholder*="パスワード"]'
+        ]
+        
+        password_input_found = False
+        for selector in password_selectors:
+            try:
+                page.wait_for_selector(selector, state='visible', timeout=5000)
+                add_job_log(job_id, f"✅ パスワード入力フィールド発見: {selector}", jobs)
+                
+                # 要素が有効かチェック
+                element = page.locator(selector)
+                if element.is_disabled():
+                    add_job_log(job_id, f"⚠️ 要素が無効: {selector}", jobs)
+                    continue
+                
+                # フォーカスしてから入力
+                element.click()
+                element.fill("")  # 既存の値をクリア
+                
+                # 人間らしいタイピングを試行
+                if human_like_typing(page, selector, password, job_id, jobs):
+                    password_input_found = True
+                    add_job_log(job_id, "✅ パスワード入力成功", jobs)
+                    break
+                else:
+                    add_job_log(job_id, f"⚠️ タイピング失敗: {selector}", jobs)
+                    
+            except Exception as e:
+                add_job_log(job_id, f"⚠️ セレクタ {selector} でエラー: {e}", jobs)
+                continue
+        
+        if not password_input_found:
+            add_job_log(job_id, "❌ パスワード入力に失敗しました", jobs)
             return False, "typing_error", "❌ パスワード入力に失敗しました"
         
         # 人間らしい待機
@@ -1312,9 +1348,11 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 context = browser.new_context(**context_options)
                 page = context.new_page()
                 
-                # リダイレクト制御を追加
-                page.on('request', lambda request: request.continue_())
-                page.on('response', lambda response: None)
+                # リダイレクト制御を追加（修正版）
+                def handle_request(route):
+                    route.continue_()
+                
+                page.route("**/*", handle_request)
                 
                 add_job_log(job_id, "✅ ブラウザ起動完了", jobs)
                 if session_id:
@@ -1376,25 +1414,34 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         return 
 
 def human_like_mouse_movement(page, job_id, jobs):
-    """人間らしいマウス移動を実行"""
+    """人間らしいマウス移動を実行（修正版）"""
     try:
-        # ランダムな位置にマウスを移動
-        x = random.randint(100, 800)
-        y = random.randint(100, 600)
+        # 現在のビューポートサイズを取得
+        viewport = page.viewport_size
+        if not viewport:
+            viewport = {'width': 1920, 'height': 1080}
+        
+        # ランダムな位置にマウスを移動（ビューポート内）
+        x = random.randint(100, min(800, viewport['width'] - 100))
+        y = random.randint(100, min(600, viewport['height'] - 100))
+        
+        # マウス移動を実行
         page.mouse.move(x, y)
         human_like_wait(0.1, 0.3)
         
-        # スクロール処理
-        scroll_amount = random.randint(-100, 100)
-        page.mouse.wheel(0, scroll_amount)
-        human_like_wait(0.2, 0.5)
+        # 軽いスクロール処理（オプション）
+        if random.choice([True, False]):
+            scroll_amount = random.randint(-50, 50)
+            page.mouse.wheel(0, scroll_amount)
+            human_like_wait(0.2, 0.5)
         
-        add_job_log(job_id, f"🖱️ マウス移動実行: ({x}, {y}), スクロール: {scroll_amount}", jobs)
+        add_job_log(job_id, f"🖱️ マウス移動実行: ({x}, {y})", jobs)
         return True
         
     except Exception as e:
         add_job_log(job_id, f"⚠️ マウス移動エラー: {e}", jobs)
-        return False
+        # エラーが発生しても処理を続行
+        return True
 
 def perform_login_with_captcha_retry(page, email, password, job_id, jobs, max_captcha_retries=3):
     """CAPTCHA対策付きログイン処理（無限ループ防止）"""
