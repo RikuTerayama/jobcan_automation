@@ -9,7 +9,7 @@ from typing import Tuple, List, Optional
 
 # ライブラリの利用可能性をチェック
 try:
-    import pandas as pd
+import pandas as pd
     pandas_available = True
 except ImportError:
     pandas_available = False
@@ -61,7 +61,7 @@ def get_weekdays_in_current_month():
     return weekdays
 
 def validate_excel_data(data_source, pandas_available, job_id, jobs):
-    """Excelデータの内容を検証"""
+    """Excelデータの内容を検証（空白行スキップ対応）"""
     errors = []
     warnings = []
     
@@ -81,18 +81,34 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                 errors.append(f"必要な列が見つかりません。不足している列: {missing_columns}")
                 return errors, warnings
             
-            # データ件数をログに記録
-            total_rows = len(data_source)
-            add_job_log(job_id, f"✅ Excelファイル読み込み完了: {total_rows}件のデータ", jobs)
+            # 空白行をスキップするためのフィルタ処理
+            add_job_log(job_id, "🔍 空白行のスキップ処理を実行中...", jobs)
             
-            # 各行のデータを検証
-            for index, row in data_source.iterrows():
+            # 日付列が空の行を除外
+            filtered_data = data_source.dropna(subset=['日付'], how='all')
+            
+            # 主要カラムがすべて空の行も除外
+            key_columns = ['日付', '開始時刻', '終了時刻']
+            filtered_data = filtered_data.dropna(subset=key_columns, how='all')
+            
+            # スキップされた行数を計算
+            skipped_rows = len(data_source) - len(filtered_data)
+            if skipped_rows > 0:
+                add_job_log(job_id, f"✅ 空白行 {skipped_rows} 行をスキップしました", jobs)
+            
+            # フィルタ後のデータ件数をログに記録
+            total_rows = len(filtered_data)
+            add_job_log(job_id, f"✅ Excelファイル読み込み完了: {total_rows}件の有効データ", jobs)
+            
+            # フィルタ後のデータで各行を検証
+            for index, row in filtered_data.iterrows():
                 row_num = index + 2  # ヘッダー行を考慮
                 
-                # 日付の検証
+                # 日付の検証（空白行は既にスキップ済み）
                 date_value = row.iloc[0]
                 if pd.isna(date_value):
-                    errors.append(f"{row_num}行目の「日付」が空白です")
+                    # この時点で空白行がある場合は、データ構造の問題
+                    errors.append(f"{row_num}行目の「日付」が空白です（データ構造エラー）")
                     continue
                 
                 # 日付形式の検証
@@ -111,7 +127,7 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                         if parsed_date is None:
                             errors.append(f"{row_num}行目の「日付」の形式が無効です: {date_value} (期待形式: YYYY-MM-DD, YYYY/MM/DD, YYYY年MM月DD日)")
                             continue
-                    else:
+        else:
                         parsed_date = pd.to_datetime(date_value).date()
                     
                     # 未来日チェック
@@ -174,18 +190,44 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                 errors.append("Excelファイルにデータが含まれていません")
                 return errors, warnings
             
-            # データ件数をログに記録
-            total_rows = ws.max_row - 1  # ヘッダー行を除く
-            add_job_log(job_id, f"✅ Excelファイル読み込み完了: {total_rows}件のデータ", jobs)
+            # 空白行をスキップするためのフィルタ処理
+            add_job_log(job_id, "🔍 空白行のスキップ処理を実行中...", jobs)
             
-            # 各行のデータを検証
+            # 有効な行のみを収集
+            valid_rows = []
+            skipped_count = 0
+            
             for row in range(2, ws.max_row + 1):
+                # 主要カラムの値を取得
+                date_value = ws[f'A{row}'].value
+                start_time_value = ws[f'B{row}'].value
+                end_time_value = ws[f'C{row}'].value
+                
+                # すべての主要カラムが空の場合はスキップ
+                if (date_value is None or str(date_value).strip() == '') and \
+                   (start_time_value is None or str(start_time_value).strip() == '') and \
+                   (end_time_value is None or str(end_time_value).strip() == ''):
+                    skipped_count += 1
+                    continue
+                
+                valid_rows.append(row)
+            
+            if skipped_count > 0:
+                add_job_log(job_id, f"✅ 空白行 {skipped_count} 行をスキップしました", jobs)
+            
+            # フィルタ後のデータ件数をログに記録
+            total_rows = len(valid_rows)
+            add_job_log(job_id, f"✅ Excelファイル読み込み完了: {total_rows}件の有効データ", jobs)
+            
+            # 有効な行のみを検証
+            for row in valid_rows:
                 row_num = row
                 
-                # 日付の検証
+                # 日付の検証（空白行は既にスキップ済み）
                 date_value = ws[f'A{row}'].value
-                if date_value is None:
-                    errors.append(f"{row_num}行目の「日付」が空白です")
+                if date_value is None or str(date_value).strip() == '':
+                    # この時点で空白行がある場合は、データ構造の問題
+                    errors.append(f"{row_num}行目の「日付」が空白です（データ構造エラー）")
                     continue
                 
                 # 時刻の検証
@@ -202,8 +244,8 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                 normalized_end_time, end_error = validate_time_value(end_time, row_num, "終了時刻")
                 if end_error:
                     errors.append(end_error)
-                    continue
-                
+                continue
+        
                 # 勤務時間の妥当性チェック
                 try:
                     # 正規化された時刻を使用
@@ -227,7 +269,7 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                     
                 except Exception as e:
                     warnings.append(f"{row_num}行目: 勤務時間の計算に失敗しました: {e}")
-    
+        
     except Exception as e:
         errors.append(f"データ検証中にエラーが発生しました: {e}")
     
@@ -481,7 +523,7 @@ def normalize_time_format(time_value) -> Tuple[str, Optional[str]]:
             
         else:
             return None, f"時刻形式が無効です: {time_value}"
-            
+        
     except Exception as e:
         return None, f"時刻の解析に失敗しました: {time_value} - {str(e)}"
 
