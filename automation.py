@@ -568,14 +568,21 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
         add_job_log(job_id, "✅ 出勤簿ページアクセス完了", jobs)
         
         if pandas_available:
-            # pandasを使用した処理
+            # pandasを使用した処理（空白行スキップ済み）
+            processed_count = 0
             for index, row in data_source.iterrows():
+                # 空白行チェック（念のため）
                 date = row.iloc[0]
+                if pd.isna(date) or str(date).strip() == '':
+                    add_job_log(job_id, f"⏭️ 空白行をスキップ: {index + 1}行目", jobs)
+                    continue
+                
                 start_time = row.iloc[1]
                 end_time = row.iloc[2]
                 
                 date_str, year, month, day = extract_date_info(date)
-                add_job_log(job_id, f"📝 データ {index + 1}/{total_data}: {date_str} {start_time}-{end_time}", jobs)
+                processed_count += 1
+                add_job_log(job_id, f"📝 データ {processed_count}/{total_data}: {date_str} {start_time}-{end_time}", jobs)
                 
                 # 時刻を4桁形式に変換
                 start_time_4digit = convert_time_to_4digit(start_time)
@@ -757,15 +764,25 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                 update_progress(job_id, 6, f"勤怠データ入力中 ({index + 1}/{total_data})", jobs, index + 1, total_data)
                 time.sleep(2)  # 処理間隔
         else:
-            # openpyxlを使用した処理
+            # openpyxlを使用した処理（空白行スキップ済み）
             ws = data_source.active
+            processed_count = 0
+            
+            # 有効な行のみを処理
             for row in range(2, ws.max_row + 1):
                 date = ws[f'A{row}'].value
+                
+                # 空白行チェック（念のため）
+                if date is None or str(date).strip() == '':
+                    add_job_log(job_id, f"⏭️ 空白行をスキップ: {row}行目", jobs)
+                    continue
+                
                 start_time = ws[f'B{row}'].value
                 end_time = ws[f'C{row}'].value
                 
                 date_str, year, month, day = extract_date_info(date)
-                add_job_log(job_id, f"📝 データ {row - 1}/{total_data}: {date_str} {start_time}-{end_time}", jobs)
+                processed_count += 1
+                add_job_log(job_id, f"📝 データ {processed_count}/{total_data}: {date_str} {start_time}-{end_time}", jobs)
                 
                 # 時刻を4桁形式に変換
                 start_time_4digit = convert_time_to_4digit(start_time)
