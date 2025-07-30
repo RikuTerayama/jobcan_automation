@@ -268,20 +268,37 @@ def check_login_status(page, job_id, jobs):
         except Exception as e:
             add_job_log(job_id, f"⚠️ 要素判定エラー: {e}", jobs)
         
-        # 3. CAPTCHAの検出
+        # 3. CAPTCHAの検出（改善版）
+        page_content = page.content().lower()
         captcha_indicators = [
             "captcha",
             "recaptcha",
             "画像認証",
             "人間確認",
             "robot",
-            "bot"
+            "bot",
+            "security check",
+            "verify you are human",
+            "prove you are human",
+            "automation detected"
         ]
         
-        page_content = page.content().lower()
         for indicator in captcha_indicators:
             if indicator in page_content:
                 add_job_log(job_id, f"🔄 CAPTCHA検出: {indicator}", jobs)
+                return False, "captcha_detected", "🔄 CAPTCHAが検出されました"
+        
+        # URLベースのCAPTCHA検出
+        captcha_url_indicators = [
+            "robot",
+            "captcha",
+            "security",
+            "verify"
+        ]
+        
+        for indicator in captcha_url_indicators:
+            if indicator in current_url.lower():
+                add_job_log(job_id, f"🔄 URLベースCAPTCHA検出: {indicator}", jobs)
                 return False, "captcha_detected", "🔄 CAPTCHAが検出されました"
         
         # 4. ログインエラーの検出
@@ -1051,52 +1068,7 @@ def setup_stealth_mode(page, job_id, jobs):
         add_job_log(job_id, f"⚠️ ステルスモード設定エラー: {e}", jobs)
         return False
 
-def retry_on_captcha(page, email, password, job_id, jobs, max_retries=3):
-    """CAPTCHA発生時のリトライロジック"""
-    for attempt in range(max_retries):
-        try:
-            add_job_log(job_id, f"🔄 CAPTCHAリトライ試行 {attempt + 1}/{max_retries}", jobs)
-            
-            # セッションクリアを実行
-            clear_session(page, job_id, jobs)
-            
-            # ページをリロード
-            page.reload()
-            page.wait_for_load_state('networkidle', timeout=30000)
-            
-            # 人間らしい待機（CAPTCHA対策のため長め）
-            wait_time = random.uniform(5.0, 10.0)
-            add_job_log(job_id, f"⏳ {wait_time:.1f}秒待機中...", jobs)
-            human_like_wait(wait_time, wait_time + 3.0)
-            
-            # ログイン処理を再実行
-            login_success, status, message = perform_login(page, email, password, job_id, jobs)
-            
-            if login_success:
-                add_job_log(job_id, f"✅ リトライ {attempt + 1} でログイン成功", jobs)
-                return True, status, message
-            elif status == "captcha_detected":
-                add_job_log(job_id, f"⚠️ リトライ {attempt + 1} でもCAPTCHAが発生", jobs)
-                if attempt < max_retries - 1:
-                    # 次のリトライ前に待機（CAPTCHA対策のため長め）
-                    wait_time = random.uniform(15.0, 30.0)
-                    add_job_log(job_id, f"⏳ {wait_time:.1f}秒待機してから再試行", jobs)
-                    time.sleep(wait_time)
-                continue
-            else:
-                add_job_log(job_id, f"❌ リトライ {attempt + 1} でログイン失敗: {message}", jobs)
-                return False, status, message
-                
-        except Exception as e:
-            add_job_log(job_id, f"❌ CAPTCHAリトライ {attempt + 1} でエラー: {e}", jobs)
-            if attempt < max_retries - 1:
-                wait_time = random.uniform(10.0, 20.0)
-                add_job_log(job_id, f"⏳ {wait_time:.1f}秒待機してから再試行", jobs)
-                time.sleep(wait_time)
-            continue
-    
-    add_job_log(job_id, f"❌ CAPTCHAリトライ {max_retries} 回すべて失敗", jobs)
-    return False, "captcha_failed", "❌ CAPTCHAが解決できませんでした。手動でログインしてください。"
+
 
 def clear_session(page, job_id, jobs):
     """セッションをクリアしてログアウト状態にする"""
@@ -1336,9 +1308,10 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 jobs[job_id]['login_status'] = 'processing'
                 jobs[job_id]['login_message'] = '🔄 ログイン処理中...'
                 
-                login_success, login_status, login_message = perform_login(page, email, password, job_id, jobs)
+                # 新しいCAPTCHA対策ロジックを使用
+                login_success, login_status, login_message = perform_login_with_captcha_retry(page, email, password, job_id, jobs, max_captcha_retries=3)
                 
-                # ログイン結果をジョブ情報に保存（perform_login内で既に更新されているが、念のため）
+                # ログイン結果をジョブ情報に保存
                 jobs[job_id]['login_status'] = login_status
                 jobs[job_id]['login_message'] = login_message
                 
@@ -1399,3 +1372,51 @@ def human_like_mouse_movement(page, job_id, jobs):
     except Exception as e:
         add_job_log(job_id, f"⚠️ マウス移動エラー: {e}", jobs)
         return False
+
+def perform_login_with_captcha_retry(page, email, password, job_id, jobs, max_captcha_retries=3):
+    """CAPTCHA対策付きログイン処理（無限ループ防止）"""
+    captcha_retry_count = 0
+    
+    while captcha_retry_count < max_captcha_retries:
+        try:
+            add_job_log(job_id, f"🔐 ログイン試行 {captcha_retry_count + 1}/{max_captcha_retries + 1}", jobs)
+            
+            # ログイン処理を実行
+            login_success, status, message = perform_login(page, email, password, job_id, jobs)
+            
+            if login_success:
+                add_job_log(job_id, f"✅ ログイン成功（試行 {captcha_retry_count + 1}）", jobs)
+                return True, status, message
+            elif status == "captcha_detected":
+                captcha_retry_count += 1
+                add_job_log(job_id, f"🔄 CAPTCHA検出 - 再試行 {captcha_retry_count}/{max_captcha_retries}", jobs)
+                
+                if captcha_retry_count >= max_captcha_retries:
+                    add_job_log(job_id, f"❌ CAPTCHAリトライ上限に達しました（{max_captcha_retries}回）", jobs)
+                    return False, "captcha_failed", f"❌ CAPTCHAが繰り返し検出されたため、処理を中断します（リトライ上限: {max_captcha_retries}回）"
+                
+                # セッションクリアを実行
+                clear_session(page, job_id, jobs)
+                
+                # ランダムな待機時間
+                wait_time = random.uniform(5.0, 15.0)
+                add_job_log(job_id, f"⏳ {wait_time:.1f}秒待機してから再試行", jobs)
+                time.sleep(wait_time)
+                
+                # ページをリロード
+                page.reload()
+                page.wait_for_load_state('networkidle', timeout=30000)
+                
+                continue
+            else:
+                # CAPTCHA以外のエラーの場合
+                add_job_log(job_id, f"❌ ログイン失敗（その他の原因）: {message}", jobs)
+                return False, status, message
+                
+        except Exception as e:
+            add_job_log(job_id, f"❌ ログイン処理でエラー: {e}", jobs)
+            return False, "login_error", f"❌ ログイン処理でエラーが発生しました: {str(e)}"
+    
+    # ここに到達した場合はCAPTCHAリトライ上限に達した
+    add_job_log(job_id, f"❌ CAPTCHAリトライ {max_captcha_retries} 回すべて失敗", jobs)
+    return False, "captcha_failed", f"❌ CAPTCHAが解決できませんでした。手動でログインしてください。（リトライ上限: {max_captcha_retries}回）"
