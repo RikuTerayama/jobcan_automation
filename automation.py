@@ -1105,10 +1105,11 @@ def clear_session(page, job_id, jobs):
         
         # 1. Jobcanのログアウトページにアクセス
         try:
-            page.goto("https://id.jobcan.jp/users/sign_out", timeout=10000)
+            page.goto("https://id.jobcan.jp/users/sign_out", timeout=20000)
             add_job_log(job_id, "✅ Jobcanログアウトページにアクセス", jobs)
         except Exception as e:
             add_job_log(job_id, f"⚠️ ログアウトページアクセスエラー: {e}", jobs)
+            # ログアウトページアクセスに失敗しても処理を続行
         
         # 2. すべてのクッキーをクリア
         try:
@@ -1377,3 +1378,24 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         jobs[job_id]['status'] = 'error'
         jobs[job_id]['login_message'] = f'予期しないエラーが発生しました: {str(e)}'
         return 
+
+def human_like_mouse_movement(page, job_id, jobs):
+    """人間らしいマウス移動を実行"""
+    try:
+        # ランダムな位置にマウスを移動
+        x = random.randint(100, 800)
+        y = random.randint(100, 600)
+        page.mouse.move(x, y)
+        human_like_wait(0.1, 0.3)
+        
+        # スクロール処理
+        scroll_amount = random.randint(-100, 100)
+        page.mouse.wheel(0, scroll_amount)
+        human_like_wait(0.2, 0.5)
+        
+        add_job_log(job_id, f"🖱️ マウス移動実行: ({x}, {y}), スクロール: {scroll_amount}", jobs)
+        return True
+        
+    except Exception as e:
+        add_job_log(job_id, f"⚠️ マウス移動エラー: {e}", jobs)
+        return False
