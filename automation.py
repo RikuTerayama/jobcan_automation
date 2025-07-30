@@ -406,7 +406,7 @@ def perform_login(page, email, password, job_id, jobs):
         clear_session(page, job_id, jobs)
         
         add_job_log(job_id, "🔐 Jobcanログインページにアクセス中...", jobs)
-        page.goto("https://id.jobcan.jp/users/sign_in")
+        page.goto("https://id.jobcan.jp/users/sign_in?app_key=atd")
         page.wait_for_load_state('networkidle', timeout=30000)
         
         # 人間らしい待機
@@ -463,6 +463,25 @@ def perform_login(page, email, password, job_id, jobs):
         
         # ログイン状態をチェック
         login_success, status, message = check_login_status(page, job_id, jobs)
+        
+        # ログイン成功時は適切なページに遷移
+        if login_success:
+            add_job_log(job_id, "🔄 ログイン成功。適切なページに遷移中...", jobs)
+            try:
+                # 現在のURLを確認
+                current_url = page.url
+                add_job_log(job_id, f"📍 現在のURL: {current_url}", jobs)
+                
+                # 意図しないページにいる場合は適切なページに遷移
+                if "id.jobcan.jp/account/profile" in current_url or "id.jobcan.jp" in current_url:
+                    add_job_log(job_id, "🔄 意図しないページに遷移しました。適切なページにリダイレクト中...", jobs)
+                    page.goto("https://ssl.jobcan.jp/employee", timeout=30000)
+                    page.wait_for_load_state('networkidle', timeout=30000)
+                    add_job_log(job_id, "✅ 適切なページに遷移完了", jobs)
+                else:
+                    add_job_log(job_id, "✅ 既に適切なページにいます", jobs)
+            except Exception as e:
+                add_job_log(job_id, f"⚠️ ページ遷移エラー: {e}", jobs)
         
         # CAPTCHAが検出された場合の処理
         if status == "captcha_detected":
@@ -1292,6 +1311,10 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 
                 context = browser.new_context(**context_options)
                 page = context.new_page()
+                
+                # リダイレクト制御を追加
+                page.on('request', lambda request: request.continue_())
+                page.on('response', lambda response: None)
                 
                 add_job_log(job_id, "✅ ブラウザ起動完了", jobs)
                 if session_id:
