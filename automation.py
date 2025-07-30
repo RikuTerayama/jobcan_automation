@@ -1420,3 +1420,58 @@ def perform_login_with_captcha_retry(page, email, password, job_id, jobs, max_ca
     # ここに到達した場合はCAPTCHAリトライ上限に達した
     add_job_log(job_id, f"❌ CAPTCHAリトライ {max_captcha_retries} 回すべて失敗", jobs)
     return False, "captcha_failed", f"❌ CAPTCHAが解決できませんでした。手動でログインしてください。（リトライ上限: {max_captcha_retries}回）"
+
+def retry_on_captcha(page, email, password, job_id, jobs, max_retries=3):
+    """
+    CAPTCHAが検出された際にリトライを行う共通処理。
+    page: Playwrightのページインスタンス
+    email: メールアドレス
+    password: パスワード
+    job_id: ジョブID
+    jobs: ジョブ辞書
+    max_retries: リトライ最大回数
+    """
+    for retry in range(1, max_retries + 1):
+        try:
+            add_job_log(job_id, f"🔄 CAPTCHAリトライ試行 {retry}/{max_retries}", jobs)
+            
+            # セッションクリアを実行
+            clear_session(page, job_id, jobs)
+            
+            # ページをリロード
+            page.reload()
+            page.wait_for_load_state('networkidle', timeout=30000)
+            
+            # 人間らしい待機（CAPTCHA対策のため長め）
+            wait_time = random.uniform(5.0, 10.0)
+            add_job_log(job_id, f"⏳ {wait_time:.1f}秒待機中...", jobs)
+            human_like_wait(wait_time, wait_time + 3.0)
+            
+            # ログイン処理を再実行
+            login_success, status, message = perform_login(page, email, password, job_id, jobs)
+            
+            if login_success:
+                add_job_log(job_id, f"✅ リトライ {retry} でログイン成功", jobs)
+                return True, status, message
+            elif status == "captcha_detected":
+                add_job_log(job_id, f"⚠️ リトライ {retry} でもCAPTCHAが発生", jobs)
+                if retry < max_retries:
+                    # 次のリトライ前に待機（CAPTCHA対策のため長め）
+                    wait_time = random.uniform(15.0, 30.0)
+                    add_job_log(job_id, f"⏳ {wait_time:.1f}秒待機してから再試行", jobs)
+                    time.sleep(wait_time)
+                continue
+            else:
+                add_job_log(job_id, f"❌ リトライ {retry} でログイン失敗: {message}", jobs)
+                return False, status, message
+                
+        except Exception as e:
+            add_job_log(job_id, f"❌ CAPTCHAリトライ {retry} でエラー: {e}", jobs)
+            if retry < max_retries:
+                wait_time = random.uniform(10.0, 20.0)
+                add_job_log(job_id, f"⏳ {wait_time:.1f}秒待機してから再試行", jobs)
+                time.sleep(wait_time)
+            continue
+    
+    add_job_log(job_id, f"❌ CAPTCHAリトライ {max_retries} 回すべて失敗", jobs)
+    return False, "captcha_failed", "❌ CAPTCHAが解決できませんでした。手動でログインしてください。"
