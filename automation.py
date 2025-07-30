@@ -385,29 +385,44 @@ def perform_login(page, email, password, job_id, jobs):
         jobs[job_id]['login_status'] = 'processing'
         jobs[job_id]['login_message'] = '🔄 ログイン処理中...'
         
+        # セッションクリアを実行
+        clear_session(page, job_id, jobs)
+        
         add_job_log(job_id, "🔐 Jobcanログインページにアクセス中...", jobs)
         page.goto("https://id.jobcan.jp/users/sign_in")
         page.wait_for_load_state('networkidle', timeout=30000)
         
         # 人間らしい待機
-        human_like_wait(2.0, 4.0)
+        human_like_wait(3.0, 5.0)
         add_job_log(job_id, "✅ ログインページアクセス完了", jobs)
         
-        # メールアドレスを信頼性の高い方法で入力
+        # 人間らしいマウス移動
+        human_like_mouse_movement(page, job_id, jobs)
+        
+        # メールアドレスフィールドが表示されるまで待機
+        page.wait_for_selector('input[name="user[email]"]', state='visible', timeout=10000)
+        
+        # メールアドレスを人間らしく入力
         add_job_log(job_id, "📧 メールアドレスを入力中...", jobs)
-        if not reliable_fill(page, 'input[name="user[email]"]', email, job_id, jobs):
+        if not human_like_typing(page, 'input[name="user[email]"]', email, job_id, jobs):
             return False, "typing_error", "❌ メールアドレス入力に失敗しました"
         
         # 人間らしい待機
         human_like_wait(1.0, 2.0)
         
-        # パスワードを信頼性の高い方法で入力
+        # パスワードフィールドが表示されるまで待機
+        page.wait_for_selector('input[name="user[password]"]', state='visible', timeout=10000)
+        
+        # パスワードを人間らしく入力
         add_job_log(job_id, "🔑 パスワードを入力中...", jobs)
-        if not reliable_fill(page, 'input[name="user[password]"]', password, job_id, jobs):
+        if not human_like_typing(page, 'input[name="user[password]"]', password, job_id, jobs):
             return False, "typing_error", "❌ パスワード入力に失敗しました"
         
         # 人間らしい待機
         human_like_wait(1.0, 2.0)
+        
+        # ログインボタンが表示されるまで待機
+        page.wait_for_selector('input[type="submit"]', state='visible', timeout=10000)
         
         # ログインボタンを人間らしくクリック
         add_job_log(job_id, "🔘 ログインボタンをクリック中...", jobs)
@@ -424,7 +439,7 @@ def perform_login(page, email, password, job_id, jobs):
                 return False, "button_error", "❌ ログインボタンクリックに失敗しました"
         
         # 人間らしい待機
-        human_like_wait(2.0, 4.0)
+        human_like_wait(3.0, 5.0)
         
         page.wait_for_load_state('networkidle', timeout=30000)
         add_job_log(job_id, "✅ ログインボタンクリック完了", jobs)
@@ -854,25 +869,36 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
         raise e
 
 def human_like_typing(page, selector, text, job_id, jobs):
-    """人間らしいタイピングを実行"""
+    """人間らしいタイピングを実行（強化版）"""
     try:
         add_job_log(job_id, f"⌨️ 人間らしいタイピングを実行: {selector}", jobs)
         
-        # 要素を取得
+        # 要素が表示されるまで待機
+        page.wait_for_selector(selector, state='visible', timeout=5000)
+        
+        # 要素をクリックしてフォーカス
         element = page.locator(selector).first
         element.click()
+        human_like_wait(0.5, 1.0)
         
-        # 既存のテキストをクリア
-        element.fill("")
+        # 既存の内容をクリア
+        page.fill(selector, "")
+        human_like_wait(0.3, 0.8)
         
-        # 文字ごとにランダムな遅延でタイピング
+        # 人間らしいタイピング（ランダムな遅延）
         for char in text:
-            element.type(char, delay=random.uniform(50, 250))  # 50-250msの遅延
-            time.sleep(random.uniform(0.05, 0.15))  # 追加の遅延
+            page.type(selector, char, delay=random.uniform(50, 200))
+            human_like_wait(0.05, 0.15)
         
-        add_job_log(job_id, "✅ タイピング完了", jobs)
-        return True
-        
+        # 入力内容の確認
+        actual_value = page.input_value(selector)
+        if actual_value == text:
+            add_job_log(job_id, f"✅ タイピング成功: {selector}", jobs)
+            return True
+        else:
+            add_job_log(job_id, f"⚠️ タイピング内容不一致: 期待={text}, 実際={actual_value}", jobs)
+            return False
+            
     except Exception as e:
         add_job_log(job_id, f"❌ タイピングエラー: {e}", jobs)
         return False
@@ -982,6 +1008,40 @@ def setup_stealth_mode(page, job_id, jobs):
                     domContentLoadedEventEnd: Date.now() - Math.random() * 500
                 })
             });
+            
+            // 追加のCAPTCHA対策
+            Object.defineProperty(navigator, 'maxTouchPoints', {
+                get: () => 10,
+            });
+            
+            Object.defineProperty(navigator, 'connection', {
+                get: () => ({
+                    effectiveType: '4g',
+                    rtt: 50,
+                    downlink: 10,
+                    saveData: false
+                })
+            });
+            
+            // 自動化検知の回避
+            Object.defineProperty(window, 'chrome', {
+                get: () => ({
+                    runtime: {},
+                    loadTimes: function() {},
+                    csi: function() {},
+                    app: {}
+                })
+            });
+            
+            // セキュリティコンテキストの偽装
+            Object.defineProperty(window, 'isSecureContext', {
+                get: () => true
+            });
+            
+            // ユーザーエージェントの偽装
+            Object.defineProperty(navigator, 'userAgent', {
+                get: () => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            });
         """)
         
         add_job_log(job_id, "✅ ステルスモード設定完了", jobs)
@@ -997,14 +1057,17 @@ def retry_on_captcha(page, email, password, job_id, jobs, max_retries=3):
         try:
             add_job_log(job_id, f"🔄 CAPTCHAリトライ試行 {attempt + 1}/{max_retries}", jobs)
             
+            # セッションクリアを実行
+            clear_session(page, job_id, jobs)
+            
             # ページをリロード
             page.reload()
             page.wait_for_load_state('networkidle', timeout=30000)
             
             # 人間らしい待機（CAPTCHA対策のため長め）
-            wait_time = random.uniform(3.0, 6.0)
+            wait_time = random.uniform(5.0, 10.0)
             add_job_log(job_id, f"⏳ {wait_time:.1f}秒待機中...", jobs)
-            human_like_wait(wait_time, wait_time + 2.0)
+            human_like_wait(wait_time, wait_time + 3.0)
             
             # ログイン処理を再実行
             login_success, status, message = perform_login(page, email, password, job_id, jobs)
@@ -1016,7 +1079,7 @@ def retry_on_captcha(page, email, password, job_id, jobs, max_retries=3):
                 add_job_log(job_id, f"⚠️ リトライ {attempt + 1} でもCAPTCHAが発生", jobs)
                 if attempt < max_retries - 1:
                     # 次のリトライ前に待機（CAPTCHA対策のため長め）
-                    wait_time = random.uniform(10.0, 20.0)
+                    wait_time = random.uniform(15.0, 30.0)
                     add_job_log(job_id, f"⏳ {wait_time:.1f}秒待機してから再試行", jobs)
                     time.sleep(wait_time)
                 continue
@@ -1027,13 +1090,52 @@ def retry_on_captcha(page, email, password, job_id, jobs, max_retries=3):
         except Exception as e:
             add_job_log(job_id, f"❌ CAPTCHAリトライ {attempt + 1} でエラー: {e}", jobs)
             if attempt < max_retries - 1:
-                wait_time = random.uniform(5.0, 10.0)
+                wait_time = random.uniform(10.0, 20.0)
                 add_job_log(job_id, f"⏳ {wait_time:.1f}秒待機してから再試行", jobs)
                 time.sleep(wait_time)
             continue
     
     add_job_log(job_id, f"❌ CAPTCHAリトライ {max_retries} 回すべて失敗", jobs)
     return False, "captcha_failed", "❌ CAPTCHAが解決できませんでした。手動でログインしてください。"
+
+def clear_session(page, job_id, jobs):
+    """セッションをクリアしてログアウト状態にする"""
+    try:
+        add_job_log(job_id, "🧹 セッションクリアを実行中...", jobs)
+        
+        # 1. Jobcanのログアウトページにアクセス
+        try:
+            page.goto("https://id.jobcan.jp/users/sign_out", timeout=10000)
+            add_job_log(job_id, "✅ Jobcanログアウトページにアクセス", jobs)
+        except Exception as e:
+            add_job_log(job_id, f"⚠️ ログアウトページアクセスエラー: {e}", jobs)
+        
+        # 2. すべてのクッキーをクリア
+        try:
+            page.context.clear_cookies()
+            add_job_log(job_id, "✅ クッキーをクリアしました", jobs)
+        except Exception as e:
+            add_job_log(job_id, f"⚠️ クッキークリアエラー: {e}", jobs)
+        
+        # 3. ローカルストレージとセッションストレージをクリア
+        try:
+            page.evaluate("""
+                localStorage.clear();
+                sessionStorage.clear();
+            """)
+            add_job_log(job_id, "✅ ローカルストレージとセッションストレージをクリアしました", jobs)
+        except Exception as e:
+            add_job_log(job_id, f"⚠️ ストレージクリアエラー: {e}", jobs)
+        
+        # 4. 人間らしい待機
+        human_like_wait(2.0, 4.0)
+        
+        add_job_log(job_id, "✅ セッションクリア完了", jobs)
+        return True
+        
+    except Exception as e:
+        add_job_log(job_id, f"❌ セッションクリアでエラー: {e}", jobs)
+        return False
 
 def process_jobcan_automation(job_id: str, email: str, password: str, file_path: str, jobs: dict, session_dir: str = None, session_id: str = None):
     """Jobcan自動化処理のメイン関数（セッション固有のブラウザ環境）"""
@@ -1146,6 +1248,23 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     '--disable-prompt-on-repost',
                     '--disable-domain-reliability',
                     '--disable-component-update',
+                    # CAPTCHA対策の追加オプション
+                    '--disable-blink-features=AutomationControlled',
+                    '--disable-automation',
+                    '--disable-web-security',
+                    '--disable-features=VizDisplayCompositor',
+                    '--disable-background-networking',
+                    '--disable-component-extensions-with-background-pages',
+                    '--disable-background-timer-throttling',
+                    '--disable-backgrounding-occluded-windows',
+                    '--disable-renderer-backgrounding',
+                    '--disable-features=TranslateUI',
+                    '--disable-ipc-flooding-protection',
+                    '--disable-client-side-phishing-detection',
+                    '--disable-hang-monitor',
+                    '--disable-prompt-on-repost',
+                    '--disable-domain-reliability',
+                    '--disable-component-update',
                     '--disable-default-apps',
                     '--disable-sync',
                     '--disable-translate',
@@ -1170,22 +1289,32 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     '--disable-component-update'
                 ]
                 
-                # より人間らしいUser-Agent
+                # 最新のChrome User-Agent（CAPTCHA対策）
                 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                 
                 # サーバー環境対応のため、通常のlaunchを使用
                 browser = p.chromium.launch(
-                    headless=True,  # サーバー環境対応のためヘッドレスモードを有効化
+                    headless=True,  # CAPTCHA対策のためヘッドレスモードを有効化
                     args=browser_args
                 )
                 
                 # セッション固有のコンテキスト設定
                 context_options = {
-                    'viewport': {'width': 1280, 'height': 720},
+                    'viewport': {'width': 1920, 'height': 1080},  # より大きなビューポート
                     'user_agent': user_agent,
                     'ignore_https_errors': True,
                     'java_script_enabled': True,
-                    'accept_downloads': True
+                    'accept_downloads': True,
+                    'locale': 'ja-JP',  # 日本語ロケール
+                    'timezone_id': 'Asia/Tokyo',  # 日本時間
+                    'permissions': ['geolocation'],  # 位置情報許可
+                    'extra_http_headers': {
+                        'Accept-Language': 'ja-JP,ja;q=0.9,en;q=0.8',
+                        'Accept-Encoding': 'gzip, deflate, br',
+                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
                 }
                 
                 context = browser.new_context(**context_options)
