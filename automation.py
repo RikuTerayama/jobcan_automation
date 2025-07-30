@@ -511,9 +511,19 @@ def perform_login(page, email, password, job_id, jobs):
                 # 意図しないページにいる場合は適切なページに遷移
                 if "id.jobcan.jp/account/profile" in current_url or "id.jobcan.jp" in current_url:
                     add_job_log(job_id, "🔄 意図しないページに遷移しました。適切なページにリダイレクト中...", jobs)
+                    
+                    # 明示的に適切なページに遷移
                     page.goto("https://ssl.jobcan.jp/employee", timeout=30000)
                     page.wait_for_load_state('networkidle', timeout=30000)
-                    add_job_log(job_id, "✅ 適切なページに遷移完了", jobs)
+                    
+                    # 遷移後のURLを確認
+                    new_url = page.url
+                    add_job_log(job_id, f"📍 遷移後のURL: {new_url}", jobs)
+                    
+                    if "ssl.jobcan.jp/employee" in new_url:
+                        add_job_log(job_id, "✅ 適切なページに遷移完了", jobs)
+                    else:
+                        add_job_log(job_id, f"⚠️ 期待しないページに遷移: {new_url}", jobs)
                 else:
                     add_job_log(job_id, "✅ 既に適切なページにいます", jobs)
             except Exception as e:
