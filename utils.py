@@ -9,7 +9,7 @@ from typing import Tuple, List, Optional
 
 # ライブラリの利用可能性をチェック
 try:
-import pandas as pd
+    import pandas as pd
     pandas_available = True
 except ImportError:
     pandas_available = False
@@ -127,7 +127,7 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                         if parsed_date is None:
                             errors.append(f"{row_num}行目の「日付」の形式が無効です: {date_value} (期待形式: YYYY-MM-DD, YYYY/MM/DD, YYYY年MM月DD日)")
                             continue
-        else:
+                    else:
                         parsed_date = pd.to_datetime(date_value).date()
                     
                     # 未来日チェック
@@ -244,8 +244,8 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                 normalized_end_time, end_error = validate_time_value(end_time, row_num, "終了時刻")
                 if end_error:
                     errors.append(end_error)
-                continue
-        
+                    continue
+                
                 # 勤務時間の妥当性チェック
                 try:
                     # 正規化された時刻を使用
