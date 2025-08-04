@@ -395,7 +395,7 @@ def handle_captcha(page, job_id, jobs):
         add_job_log(job_id, f"❌ CAPTCHA処理でエラー: {e}", jobs)
         return False
 
-def perform_login(page, email, password, job_id, jobs):
+def perform_login(page, email, password, job_id, jobs, company_id=None):
     """ログイン処理を実行（人間らしい操作）"""
     try:
         # ログイン処理開始時の状態更新
@@ -415,6 +415,74 @@ def perform_login(page, email, password, job_id, jobs):
         
         # 人間らしいマウス移動
         human_like_mouse_movement(page, job_id, jobs)
+        
+        # 会社IDが入力されている場合の処理
+        if company_id and company_id.strip():
+            add_job_log(job_id, f"🏢 会社IDが指定されています: {company_id}", jobs)
+            
+            # 「複数の会社に登録されていますか？」ボタンをクリック
+            try:
+                # 複数会社ボタンのセレクターを試行
+                multi_company_selectors = [
+                    'text=複数の会社に登録されていますか？',
+                    'text=複数の会社',
+                    'text=会社を選択',
+                    '[data-testid="multi-company-button"]',
+                    '.multi-company-button',
+                    'button:has-text("複数")'
+                ]
+                
+                company_button_clicked = False
+                for selector in multi_company_selectors:
+                    try:
+                        add_job_log(job_id, f"🔍 複数会社ボタンを検索中: {selector}", jobs)
+                        page.wait_for_selector(selector, timeout=5000)
+                        page.click(selector)
+                        add_job_log(job_id, "✅ 複数会社ボタンをクリックしました", jobs)
+                        company_button_clicked = True
+                        human_like_wait(2.0, 4.0)
+                        break
+                    except Exception as e:
+                        add_job_log(job_id, f"⚠️ セレクター {selector} でボタンが見つかりませんでした: {e}", jobs)
+                        continue
+                
+                if not company_button_clicked:
+                    add_job_log(job_id, "⚠️ 複数会社ボタンが見つかりませんでした。通常のログインを続行します", jobs)
+                
+                # 会社ID入力フィールドを探して入力
+                company_id_selectors = [
+                    'input[placeholder*="会社ID"]',
+                    'input[placeholder*="company"]',
+                    'input[name="company_id"]',
+                    'input[id="company_id"]',
+                    'input[type="text"]:not([name="email"]):not([name="password"])',
+                    '[data-testid="company-id-input"]'
+                ]
+                
+                company_id_entered = False
+                for selector in company_id_selectors:
+                    try:
+                        add_job_log(job_id, f"🔍 会社ID入力フィールドを検索中: {selector}", jobs)
+                        page.wait_for_selector(selector, timeout=5000)
+                        
+                        # 会社IDを入力
+                        if reliable_fill(page, selector, company_id, job_id, jobs):
+                            add_job_log(job_id, f"✅ 会社IDを入力しました: {company_id}", jobs)
+                            company_id_entered = True
+                            human_like_wait(1.0, 2.0)
+                            break
+                        else:
+                            add_job_log(job_id, f"⚠️ 会社ID入力に失敗: {selector}", jobs)
+                    except Exception as e:
+                        add_job_log(job_id, f"⚠️ セレクター {selector} で会社IDフィールドが見つかりませんでした: {e}", jobs)
+                        continue
+                
+                if not company_id_entered:
+                    add_job_log(job_id, "⚠️ 会社ID入力フィールドが見つかりませんでした。通常のログインを続行します", jobs)
+                
+            except Exception as e:
+                add_job_log(job_id, f"⚠️ 会社ID処理でエラーが発生しました: {e}", jobs)
+                add_job_log(job_id, "通常のログイン処理を続行します", jobs)
         
         # メールアドレスフィールドが表示されるまで待機
         page.wait_for_selector('input[name="user[email]"]', state='visible', timeout=10000)
@@ -1208,7 +1276,7 @@ def clear_session(page, job_id, jobs):
         add_job_log(job_id, f"❌ セッションクリアでエラー: {e}", jobs)
         return False
 
-def process_jobcan_automation(job_id: str, email: str, password: str, file_path: str, jobs: dict, session_dir: str = None, session_id: str = None):
+def process_jobcan_automation(job_id: str, email: str, password: str, file_path: str, jobs: dict, session_dir: str = None, session_id: str = None, company_id: str = None):
     """Jobcan自動化処理のメイン関数（セッション固有のブラウザ環境）"""
     try:
         add_job_log(job_id, "🚀 Jobcan自動化処理を開始", jobs)
@@ -1413,7 +1481,9 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 jobs[job_id]['login_message'] = '🔄 ログイン処理中...'
                 
                 # 新しいCAPTCHA対策ロジックを使用
-                login_success, login_status, login_message = perform_login_with_captcha_retry(page, email, password, job_id, jobs, max_captcha_retries=3)
+                login_success, login_status, login_message = perform_login_with_captcha_retry(
+                    page, email, password, job_id, jobs, max_captcha_retries=3, company_id=company_id
+                )
                 
                 # ログイン結果をジョブ情報に保存
                 jobs[job_id]['login_status'] = login_status
@@ -1486,53 +1556,70 @@ def human_like_mouse_movement(page, job_id, jobs):
         # エラーが発生しても処理を続行
         return True
 
-def perform_login_with_captcha_retry(page, email, password, job_id, jobs, max_captcha_retries=3):
-    """CAPTCHA対策付きログイン処理（無限ループ防止）"""
-    captcha_retry_count = 0
-    
-    while captcha_retry_count < max_captcha_retries:
-        try:
-            add_job_log(job_id, f"🔐 ログイン試行 {captcha_retry_count + 1}/{max_captcha_retries + 1}", jobs)
+def perform_login_with_captcha_retry(page, email, password, job_id, jobs, max_captcha_retries=3, company_id=None):
+    """CAPTCHA対策付きログイン処理"""
+    try:
+        add_job_log(job_id, "🔐 ログイン処理を開始します", jobs)
+        
+        # 無限ループ防止カウンター
+        attempt_count = 0
+        max_total_attempts = 10
+        
+        for captcha_attempt in range(max_captcha_retries):
+            attempt_count += 1
+            
+            if attempt_count > max_total_attempts:
+                add_job_log(job_id, "❌ 無限ループを防止するため、ログイン処理を停止します", jobs)
+                return False, "max_attempts_exceeded", "❌ ログイン試行回数が上限に達しました"
+            
+            add_job_log(job_id, f"🔄 ログイン試行 {captcha_attempt + 1}/{max_captcha_retries}", jobs)
             
             # ログイン処理を実行
-            login_success, status, message = perform_login(page, email, password, job_id, jobs)
+            login_success = perform_login(page, email, password, job_id, jobs, company_id)
             
             if login_success:
-                add_job_log(job_id, f"✅ ログイン成功（試行 {captcha_retry_count + 1}）", jobs)
-                return True, status, message
-            elif status == "captcha_detected":
-                captcha_retry_count += 1
-                add_job_log(job_id, f"🔄 CAPTCHA検出 - 再試行 {captcha_retry_count}/{max_captcha_retries}", jobs)
+                add_job_log(job_id, "✅ ログイン処理が成功しました", jobs)
+                return True, "success", "✅ ログインに成功しました"
+            
+            # ログイン状態をチェック
+            is_logged_in, login_status, login_message = check_login_status(page, job_id, jobs)
+            
+            if is_logged_in:
+                add_job_log(job_id, "✅ ログイン状態を確認しました", jobs)
+                return True, "success", "✅ ログインに成功しました"
+            
+            # CAPTCHAの確認
+            if "CAPTCHA" in login_message or "画像認証" in login_message:
+                add_job_log(job_id, f"🔄 CAPTCHA検出: 試行 {captcha_attempt + 1}", jobs)
                 
-                if captcha_retry_count >= max_captcha_retries:
-                    add_job_log(job_id, f"❌ CAPTCHAリトライ上限に達しました（{max_captcha_retries}回）", jobs)
-                    return False, "captcha_failed", f"❌ CAPTCHAが繰り返し検出されたため、処理を中断します（リトライ上限: {max_captcha_retries}回）"
-                
-                # セッションクリアを実行
+                # セッションをクリアして再試行
                 clear_session(page, job_id, jobs)
+                human_like_wait(5.0, 10.0)  # 長めの待機
                 
-                # ランダムな待機時間
-                wait_time = random.uniform(5.0, 15.0)
-                add_job_log(job_id, f"⏳ {wait_time:.1f}秒待機してから再試行", jobs)
-                time.sleep(wait_time)
-                
-                # ページをリロード
-                page.reload()
-                page.wait_for_load_state('networkidle', timeout=30000)
-                
+                if captcha_attempt < max_captcha_retries - 1:
+                    add_job_log(job_id, f"🔄 CAPTCHA再試行: {captcha_attempt + 2}/{max_captcha_retries}", jobs)
+                    continue
+                else:
+                    add_job_log(job_id, "❌ CAPTCHA再試行回数が上限に達しました", jobs)
+                    return False, "captcha_failed", "❌ 画像認証の処理に失敗しました"
+            
+            # その他のエラーの場合
+            if captcha_attempt < max_captcha_retries - 1:
+                add_job_log(job_id, f"🔄 ログイン再試行: {captcha_attempt + 2}/{max_captcha_retries}", jobs)
+                clear_session(page, job_id, jobs)
+                human_like_wait(3.0, 6.0)
                 continue
             else:
-                # CAPTCHA以外のエラーの場合
-                add_job_log(job_id, f"❌ ログイン失敗（その他の原因）: {message}", jobs)
-                return False, status, message
-                
-        except Exception as e:
-            add_job_log(job_id, f"❌ ログイン処理でエラー: {e}", jobs)
-            return False, "login_error", f"❌ ログイン処理でエラーが発生しました: {str(e)}"
-    
-    # ここに到達した場合はCAPTCHAリトライ上限に達した
-    add_job_log(job_id, f"❌ CAPTCHAリトライ {max_captcha_retries} 回すべて失敗", jobs)
-    return False, "captcha_failed", f"❌ CAPTCHAが解決できませんでした。手動でログインしてください。（リトライ上限: {max_captcha_retries}回）"
+                add_job_log(job_id, "❌ ログイン再試行回数が上限に達しました", jobs)
+                return False, "login_failed", login_message
+        
+        # すべての試行が失敗
+        add_job_log(job_id, "❌ すべてのログイン試行が失敗しました", jobs)
+        return False, "all_attempts_failed", "❌ ログインに失敗しました"
+        
+    except Exception as e:
+        add_job_log(job_id, f"❌ ログイン処理で例外が発生: {e}", jobs)
+        return False, "exception", f"❌ ログイン処理でエラーが発生しました: {str(e)}"
 
 def retry_on_captcha(page, email, password, job_id, jobs, max_retries=3):
     """
