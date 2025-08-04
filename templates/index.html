@@ -142,6 +142,7 @@
         
         .form-group input[type="email"],
         .form-group input[type="password"],
+        .form-group input[type="text"],
         .form-group input[type="file"] {
             width: 100%;
             padding: 18px 20px;
@@ -158,6 +159,7 @@
         
         .form-group input[type="email"]:focus,
         .form-group input[type="password"]:focus,
+        .form-group input[type="text"]:focus,
         .form-group input[type="file"]:focus {
             outline: none;
             border-color: var(--primary-blue-transparent);
@@ -168,7 +170,8 @@
         }
         
         .form-group input[type="email"]::placeholder,
-        .form-group input[type="password"]::placeholder {
+        .form-group input[type="password"]::placeholder,
+        .form-group input[type="text"]::placeholder {
             color: rgba(255, 255, 255, 0.5);
         }
         
@@ -598,10 +601,7 @@
                 
                 <div class="form-group">
                     <label for="company_id">会社ID（任意）</label>
-                    <input type="text" id="company_id" name="company_id" placeholder="複数会社の場合は入力してください">
-                    <small style="color: rgba(255, 255, 255, 0.7); font-size: 0.9em; margin-top: 5px; display: block;">
-                        複数の会社に登録されている場合のみ入力してください
-                    </small>
+                    <input type="text" id="company_id" name="company_id" placeholder="会社ID（任意）を入力">
                 </div>
                 
                 <div class="form-group">
