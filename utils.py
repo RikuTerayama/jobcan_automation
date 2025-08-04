@@ -60,6 +60,39 @@ def get_weekdays_in_current_month():
     
     return weekdays
 
+def get_weekdays_in_previous_month():
+    """先月の平日（土日・祝日を除く）を取得"""
+    today = date.today()
+    
+    # 先月の年月を計算
+    if today.month == 1:
+        prev_year = today.year - 1
+        prev_month = 12
+    else:
+        prev_year = today.year
+        prev_month = today.month - 1
+    
+    # 先月の1日から末日までを取得
+    _, last_day = calendar.monthrange(prev_year, prev_month)
+    weekdays = []
+    
+    for day in range(1, last_day + 1):
+        current_date = date(prev_year, prev_month, day)
+        
+        # 土日チェック（0=月曜日, 6=日曜日）
+        if current_date.weekday() >= 5:  # 土曜日(5)または日曜日(6)
+            continue
+        
+        # 祝日チェック
+        if jpholiday_available:
+            if jpholiday.is_holiday(current_date):
+                continue
+        
+        # 平日の場合、YYYY-MM-DD形式で追加
+        weekdays.append(current_date.strftime('%Y-%m-%d'))
+    
+    return weekdays
+
 def validate_excel_data(data_source, pandas_available, job_id, jobs):
     """Excelデータの内容を検証（空白行スキップ対応）"""
     errors = []
@@ -406,6 +439,90 @@ def create_template_excel():
     except Exception as e:
         print(f"テンプレート作成例外: {e}")
         return None, f"テンプレート作成中にエラーが発生しました: {e}"
+
+def create_previous_month_template_excel():
+    """先月の平日のテンプレートExcelファイルを作成"""
+    try:
+        print("先月テンプレート作成開始")
+        
+        # 先月の平日を取得
+        weekdays = get_weekdays_in_previous_month()
+        print(f"先月平日数: {len(weekdays)}")
+        
+        if not weekdays:
+            print("先月の平日が見つかりませんでした")
+            return None, "先月の平日が見つかりませんでした"
+        
+        # サンプルデータを作成
+        sample_data = []
+        for weekday in weekdays:
+            # 9:00-18:00の勤務時間をサンプルとして設定
+            sample_data.append({
+                '日付': weekday,
+                '開始時刻': '09:00',
+                '終了時刻': '18:00'
+            })
+        
+        print(f"先月サンプルデータ作成完了: {len(sample_data)}件")
+        
+        # テンプレートファイルを作成
+        if openpyxl_available:
+            print("openpyxlを使用して先月テンプレート作成")
+            wb = Workbook()
+            ws = wb.active
+            ws.title = "勤怠データ"
+            
+            # ヘッダー行を追加
+            ws['A1'] = '日付'
+            ws['B1'] = '開始時刻'
+            ws['C1'] = '終了時刻'
+            
+            # データ行を追加
+            for i, data in enumerate(sample_data, start=2):
+                ws[f'A{i}'] = data['日付']
+                ws[f'B{i}'] = data['開始時刻']
+                ws[f'C{i}'] = data['終了時刻']
+            
+            # 本番環境に対応した一時ファイルの生成
+            temp_dir = '/tmp' if os.path.exists('/tmp') else tempfile.gettempdir()
+            print(f"一時ディレクトリ: {temp_dir}")
+            
+            temp_file = tempfile.NamedTemporaryFile(
+                delete=False, 
+                suffix='.xlsx',
+                dir=temp_dir
+            )
+            
+            try:
+                print(f"先月ファイル保存開始: {temp_file.name}")
+                wb.save(temp_file.name)
+                temp_file.close()
+                
+                # ファイルが正常に作成されたか確認
+                if os.path.exists(temp_file.name) and os.path.getsize(temp_file.name) > 0:
+                    file_size = os.path.getsize(temp_file.name)
+                    print(f"先月テンプレートファイル作成成功: {temp_file.name} ({file_size} bytes)")
+                    return temp_file.name, None
+                else:
+                    print("先月テンプレートファイルの保存に失敗しました")
+                    return None, "先月テンプレートファイルの保存に失敗しました"
+                    
+            except Exception as save_error:
+                print(f"先月ファイル保存エラー: {save_error}")
+                # 一時ファイルのクリーンアップ
+                try:
+                    if os.path.exists(temp_file.name):
+                        os.remove(temp_file.name)
+                except:
+                    pass
+                return None, f"先月ファイル保存エラー: {str(save_error)}"
+        else:
+            print("openpyxlが利用できません")
+            return None, "openpyxlが利用できません"
+    
+    except Exception as e:
+        print(f"先月テンプレート作成例外: {e}")
+        return None, f"先月テンプレート作成中にエラーが発生しました: {e}"
 
 def load_excel_data(file_path):
     """Excelファイルを読み込み"""
