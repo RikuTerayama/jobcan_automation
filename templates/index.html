@@ -593,7 +593,15 @@
             <form id="uploadForm" enctype="multipart/form-data">
                 <div class="form-group">
                     <label for="email">メールアドレス</label>
-                    <input type="email" id="email" name="email" required placeholder="your.email@example.com">
+                    <input type="email" id="email" name="email" required placeholder="メールアドレスを入力">
+                </div>
+                
+                <div class="form-group">
+                    <label for="company_id">会社ID（任意）</label>
+                    <input type="text" id="company_id" name="company_id" placeholder="複数会社の場合は入力してください">
+                    <small style="color: rgba(255, 255, 255, 0.7); font-size: 0.9em; margin-top: 5px; display: block;">
+                        複数の会社に登録されている場合のみ入力してください
+                    </small>
                 </div>
                 
                 <div class="form-group">
@@ -620,9 +628,14 @@
                     <li>自動でJobcanにログインし、勤怠データを入力します</li>
                 </ul>
                 <div style="margin-top: 20px; text-align: center;">
-                    <a href="/download-template" class="submit-btn" style="display: inline-block; text-decoration: none; text-align: center; width: 100%; max-width: 300px; margin: 0 auto;">
-                        今月のテンプレートを<br>ダウンロード
-                    </a>
+                    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                        <a href="/download-template" class="submit-btn" style="display: inline-block; text-decoration: none; text-align: center; min-width: 200px; margin: 0;">
+                            今月のテンプレートを<br>ダウンロード
+                        </a>
+                        <a href="/download-previous-template" class="submit-btn" style="display: inline-block; text-decoration: none; text-align: center; min-width: 200px; margin: 0;">
+                            先月のテンプレートを<br>ダウンロード
+                        </a>
+                    </div>
                 </div>
                 
                 <!-- 注意書きセクション -->
@@ -682,16 +695,20 @@
             
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            const company_id = document.getElementById('company_id').value;
             const file = document.getElementById('file').files[0];
             
             if (!email || !password || !file) {
-                alert('すべての項目を入力してください。');
+                alert('メールアドレス、パスワード、ファイルは必須です。');
                 return;
             }
             
             const formData = new FormData();
             formData.append('email', email);
             formData.append('password', password);
+            if (company_id) {
+                formData.append('company_id', company_id);
+            }
             formData.append('file', file);
             
             // プログレスポップアップを表示
