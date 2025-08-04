@@ -11,7 +11,7 @@ import time
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template, send_file
 
-from utils import allowed_file, create_template_excel
+from utils import allowed_file, create_template_excel, create_previous_month_template_excel
 from automation import process_jobcan_automation
 
 app = Flask(__name__)
@@ -210,6 +210,31 @@ def download_template():
         print(f"テンプレートダウンロード例外: {str(e)}")
         return jsonify({'error': f'テンプレートファイルの作成に失敗しました: {str(e)}'}), 500
 
+@app.route('/download-previous-template')
+def download_previous_template():
+    try:
+        print("先月テンプレートダウンロード開始")
+        template_file, error_message = create_previous_month_template_excel()
+        
+        if error_message:
+            print(f"先月テンプレート作成エラー: {error_message}")
+            return jsonify({'error': f'先月テンプレートファイルの作成に失敗しました: {error_message}'}), 500
+        
+        if not template_file or not os.path.exists(template_file):
+            print(f"先月テンプレートファイルが存在しません: {template_file}")
+            return jsonify({'error': '先月テンプレートファイルの生成に失敗しました'}), 500
+        
+        print(f"先月テンプレートファイル作成成功: {template_file}")
+        return send_file(
+            template_file,
+            as_attachment=True,
+            download_name='jobcan_previous_month_template.xlsx',
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    except Exception as e:
+        print(f"先月テンプレートダウンロード例外: {str(e)}")
+        return jsonify({'error': f'先月テンプレートファイルの作成に失敗しました: {str(e)}'}), 500
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     try:
@@ -226,6 +251,7 @@ def upload_file():
         
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
+        company_id = request.form.get('company_id', '').strip()
         
         # 入力データの詳細検証
         validation_errors = validate_input_data(email, password, file)
@@ -266,6 +292,7 @@ def upload_file():
                 'session_dir': session_dir,
                 'file_path': file_path,
                 'email_hash': hash(email),  # 個人情報はハッシュ化
+                'company_id': company_id,  # 会社IDを保存
                 'resource_warnings': resource_warnings
             }
         
@@ -273,7 +300,7 @@ def upload_file():
         def run_automation():
             try:
                 # セッション固有のブラウザ環境で処理を実行
-                process_jobcan_automation(job_id, email, password, file_path, jobs, session_dir, session_id)
+                process_jobcan_automation(job_id, email, password, file_path, jobs, session_dir, session_id, company_id)
             except Exception as e:
                 with jobs_lock:
                     if job_id in jobs:
@@ -395,61 +422,24 @@ def cleanup_expired_sessions():
         return jsonify({'error': f'セッションクリーンアップエラー: {str(e)}'})
 
 def generate_user_message(status, login_status, login_message, progress):
-    """ユーザー向けの詳細メッセージを生成"""
-    
-    if status == 'error':
+    """ユーザー向けメッセージを生成"""
+    if status == 'running':
+        if login_status == 'success':
+            return f"✅ ログイン成功 - {login_message}"
+        elif login_status == 'failed':
+            return f"❌ ログイン失敗 - {login_message}"
+        elif login_status == 'captcha':
+            return f"🔄 画像認証が必要です - {login_message}"
+        elif login_status == 'processing':
+            return f"🔄 ログイン処理中... - {login_message}"
+        else:
+            return f"🔄 処理中... - {login_message}"
+    elif status == 'completed':
+        return "✅ 処理完了 勤怠データの入力が完了しました。"
+    elif status == 'error':
         return f"❌ エラーが発生しました: {login_message}"
-    
-    if status == 'completed':
-        if login_status == 'success':
-            return "✅ ログイン成功 → 打刻実行 → 各日付完了"
-        elif login_status == 'captcha_detected':
-            return "⚠️ CAPTCHA（画像認証）が表示されています。手動でのログインが必要です"
-        elif login_status in ['login_error', 'login_failed']:
-            return f"⚠️ ログインに失敗しました: {login_message}"
-        elif login_status == 'account_restricted':
-            return f"⚠️ アカウントに制限があります: {login_message}"
-        elif login_status == 'timeout_error':
-            return "⚠️ ページの読み込みがタイムアウトしました。ネットワーク接続を確認してください"
-        elif login_status == 'browser_launch_error':
-            return "⚠️ ブラウザの起動に失敗しました。システム環境を確認してください"
-        elif login_status == 'playwright_unavailable':
-            return "⚠️ ブラウザ自動化機能が利用できません。ローカル環境での実行を推奨します"
-        else:
-            return f"⚠️ 処理は完了しましたが、ログインに問題がありました: {login_message}"
-    
-    # 処理中のメッセージ（進捗に応じて詳細化）
-    if progress == 1:
-        return "🔄 初期化中..."
-    elif progress == 2:
-        return "🔄 Excelファイル読み込み中..."
-    elif progress == 3:
-        return "🔄 データ検証中..."
-    elif progress == 4:
-        return "🔄 ブラウザ起動中..."
-    elif progress == 5:
-        if login_status == 'success':
-            return "🔄 ログイン成功 → データ入力処理中..."
-        elif login_status in ['login_error', 'login_failed']:
-            return f"🔄 ログインに失敗: {login_message}"
-        else:
-            return "🔄 Jobcanログイン中..."
-    elif progress == 6:
-        if login_status == 'success':
-            return "🔄 ログイン成功 → 打刻データ入力中..."
-        else:
-            return "🔄 データ入力処理中（シミュレーションモード）..."
-    elif progress == 7:
-        return "🔄 最終確認中..."
-    elif progress == 8:
-        return "🔄 処理完了中..."
     else:
-        if login_status == 'success':
-            return "🔄 処理中... ログインに成功しました"
-        elif login_status in ['login_error', 'login_failed']:
-            return f"🔄 処理中... ログインに失敗: {login_message}"
-        else:
-            return "🔄 処理中..."
+        return "🔄 処理中..."
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000))) 
