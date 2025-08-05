@@ -689,6 +689,7 @@
     
     <script>
         let currentJobId = null;
+        let lastLoginStatus = null; // 最後に表示したログイン状態を記録
         
         document.getElementById('uploadForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -745,6 +746,7 @@
             document.getElementById('loginResult').style.display = 'none';
             document.getElementById('errorDetails').style.display = 'none';
             document.getElementById('retryBtn').style.display = 'none';
+            lastLoginStatus = null; // ログイン状態をリセット
         }
         
         function closeProgressPopup() {
@@ -786,6 +788,12 @@
         function showLoginResult(loginStatus, loginMessage) {
             const loginResultDiv = document.getElementById('loginResult');
             const loginResultContent = document.getElementById('loginResultContent');
+            
+            // processing状態の場合は表示しない
+            if (loginStatus === 'processing') {
+                loginResultDiv.style.display = 'none';
+                return;
+            }
             
             // クラスをリセット
             loginResultDiv.className = 'login-result';
@@ -854,9 +862,13 @@
                     const response = await fetch(`/status/${currentJobId}`);
                     const result = await response.json();
                     
-                    // ログイン結果を表示
-                    if (result.login_status && result.login_message) {
-                        showLoginResult(result.login_status, result.login_message);
+                    // ログイン結果を表示（processing状態以外の場合のみ、かつ状態が変わった場合のみ）
+                    if (result.login_status && result.login_message && result.login_status !== 'processing') {
+                        // 状態が変わった場合のみ表示
+                        if (lastLoginStatus !== result.login_status) {
+                            showLoginResult(result.login_status, result.login_message);
+                            lastLoginStatus = result.login_status;
+                        }
                     }
                     
                     if (result.status === 'completed') {
@@ -872,6 +884,11 @@
                     } else {
                         // 進行中
                         updateProgressStatus('processing', result.step_name || '処理中', result.user_message || '処理を実行中です...');
+                        
+                        // ログイン処理中の場合はログイン結果を非表示
+                        if (result.login_status === 'processing') {
+                            document.getElementById('loginResult').style.display = 'none';
+                        }
                         
                         if (result.logs && result.logs.length > 0) {
                             // 新しいログのみを追加
