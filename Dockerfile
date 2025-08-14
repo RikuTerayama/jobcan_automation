@@ -10,6 +10,8 @@ RUN apt-get update && apt-get install -y \
     && apt-get update \
     && apt-get install -y google-chrome-stable \
     fonts-liberation \
+    fonts-unifont \
+    fonts-ubuntu \
     libasound2 \
     libatk-bridge2.0-0 \
     libdrm2 \
@@ -33,7 +35,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Playwrightブラウザのインストール
 RUN playwright install chromium
-RUN playwright install-deps chromium
 
 # アプリケーションファイルのコピー
 COPY . .
