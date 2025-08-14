@@ -11,7 +11,8 @@ RUN apt-get update && apt-get install -y \
     && apt-get install -y google-chrome-stable \
     fonts-liberation \
     fonts-unifont \
-    fonts-ubuntu \
+    fonts-dejavu \
+    fonts-noto \
     libasound2 \
     libatk-bridge2.0-0 \
     libdrm2 \
@@ -24,6 +25,18 @@ RUN apt-get update && apt-get install -y \
     xdg-utils \
     libxss1 \
     libxtst6 \
+    libx11-xcb1 \
+    libxcb-dri3-0 \
+    libxcursor1 \
+    libxext6 \
+    libxfixes3 \
+    libxi6 \
+    libxrender1 \
+    libcups2 \
+    libdbus-1-3 \
+    libatspi2.0-0 \
+    libx11-6 \
+    libxcb1 \
     && rm -rf /var/lib/apt/lists/*
 
 # 作業ディレクトリの設定
