@@ -310,6 +310,27 @@
             transform: none;
         }
         
+        /* ダウンロードボタンのスタイル */
+        .download-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .download-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary-blue-transparent);
+            transform: translateY(-2px);
+            box-shadow: 
+                0 8px 25px rgba(0, 0, 0, 0.3),
+                0 0 0 1px var(--primary-blue-transparent);
+        }
+        
+        .download-btn:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow: 
+                0 4px 15px rgba(0, 0, 0, 0.3),
+                0 0 0 1px var(--primary-blue-transparent);
+        }
+        
         .info-section {
             background: rgba(40, 40, 40, 0.6);
             padding: 35px;
@@ -728,12 +749,12 @@
                 </ul>
                 <div style="margin-top: 20px; text-align: center;">
                     <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
-                        <a href="/download-template" class="submit-btn" style="display: inline-block; text-decoration: none; text-align: center; min-width: 200px; margin: 0;">
+                        <button type="button" class="submit-btn download-btn" onclick="downloadTemplate('current')" style="display: inline-block; text-decoration: none; text-align: center; min-width: 200px; margin: 0; border: none; cursor: pointer;">
                             今月のテンプレートを<br>ダウンロード
-                        </a>
-                        <a href="/download-previous-template" class="submit-btn" style="display: inline-block; text-decoration: none; text-align: center; min-width: 200px; margin: 0;">
+                        </button>
+                        <button type="button" class="submit-btn download-btn" onclick="downloadTemplate('previous')" style="display: inline-block; text-decoration: none; text-align: center; min-width: 200px; margin: 0; border: none; cursor: pointer;">
                             先月のテンプレートを<br>ダウンロード
-                        </a>
+                        </button>
                     </div>
                 </div>
                 
@@ -1021,6 +1042,64 @@
             closeProgressPopup();
             // フォームを再送信
             document.getElementById('uploadForm').dispatchEvent(new Event('submit'));
+        }
+        
+        // テンプレートダウンロード処理
+        async function downloadTemplate(type) {
+            try {
+                const button = event.target;
+                const originalText = button.innerHTML;
+                
+                // ボタンを無効化してローディング表示
+                button.disabled = true;
+                button.innerHTML = '<span class="loading-spinner"></span>ダウンロード中...';
+                
+                // ダウンロードURLを決定
+                const downloadUrl = type === 'current' ? '/download-template' : '/download-previous-template';
+                
+                // fetchでファイルを取得
+                const response = await fetch(downloadUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                // レスポンスからファイル名を取得
+                const contentDisposition = response.headers.get('content-disposition');
+                let filename = 'template.xlsx';
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                    if (filenameMatch) {
+                        filename = filenameMatch[1];
+                    }
+                }
+                
+                // Blobとしてファイルを取得
+                const blob = await response.blob();
+                
+                // ダウンロードリンクを作成して自動クリック
+                const downloadLink = document.createElement('a');
+                downloadLink.href = window.URL.createObjectURL(blob);
+                downloadLink.download = filename;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+                
+                // ボタンを元に戻す
+                button.disabled = false;
+                button.innerHTML = originalText;
+                
+            } catch (error) {
+                console.error('Download error:', error);
+                
+                // エラー時はボタンを元に戻す
+                const button = event.target;
+                button.disabled = false;
+                button.innerHTML = originalText;
+                
+                // エラーメッセージを表示
+                alert('ダウンロードに失敗しました。しばらく時間をおいてから再試行してください。');
+            }
         }
     </script>
 </body>
