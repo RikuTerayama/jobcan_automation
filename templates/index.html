@@ -1017,7 +1017,15 @@
         function startProgressPolling() {
             if (!currentJobId) return;
             
+            // ポーリング完了フラグをリセット
+            window.pollingCompleted = false;
+            
             const pollInterval = setInterval(async () => {
+                // ポーリングが完了している場合は処理をスキップ
+                if (window.pollingCompleted) {
+                    clearInterval(pollInterval);
+                    return;
+                }
                 try {
                     const response = await fetch(`/status/${currentJobId}`);
                     const result = await response.json();
@@ -1036,11 +1044,15 @@
                         addProgressLog('✅ 処理が正常に完了しました');
                         clearInterval(pollInterval);
                         document.getElementById('retryBtn').style.display = 'none';
+                        // ポーリング完了フラグを設定
+                        window.pollingCompleted = true;
                     } else if (result.status === 'error') {
                         updateProgressStatus('error', 'エラーが発生しました', result.user_message || '処理中にエラーが発生しました');
                         addProgressLog('❌ エラー: ' + (result.user_message || '不明なエラー'));
                         clearInterval(pollInterval);
                         document.getElementById('retryBtn').style.display = 'inline-block';
+                        // ポーリング完了フラグを設定
+                        window.pollingCompleted = true;
                     } else {
                         // 進行中
                         updateProgressStatus('processing', result.step_name || '処理中', result.user_message || '処理を実行中です...');
@@ -1063,7 +1075,20 @@
                     
                 } catch (error) {
                     console.error('Polling error:', error);
-                    addProgressLog('⚠️ ステータス確認中にエラーが発生しました');
+                    // エラーログはコンソールに出力するが、ユーザーには表示しない
+                    // 処理完了後やネットワークの一時的な問題で発生することがある
+                    
+                    // 連続エラーが発生した場合はポーリングを停止
+                    if (!window.pollingErrorCount) {
+                        window.pollingErrorCount = 0;
+                    }
+                    window.pollingErrorCount++;
+                    
+                    if (window.pollingErrorCount > 5) {
+                        console.warn('Too many polling errors, stopping polling');
+                        clearInterval(pollInterval);
+                        window.pollingCompleted = true;
+                    }
                 }
             }, 2000); // 2秒ごとにポーリング
         }
