@@ -58,5 +58,5 @@ RUN mkdir -p uploads
 # ポートの公開
 EXPOSE $PORT
 
-# アプリケーションの起動
-CMD gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 300 app:app 
+# アプリケーションの起動（メモリ最適化版）
+CMD gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 180 --max-requests 100 --max-requests-jitter 20 --preload app:app 
