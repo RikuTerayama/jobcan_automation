@@ -14,6 +14,12 @@ from flask import Flask, request, jsonify, render_template, send_file
 from utils import allowed_file, create_template_excel, create_previous_month_template_excel
 from automation import process_jobcan_automation
 
+# メモリ制限設定（環境変数から取得、デフォルト値付き）
+MEMORY_LIMIT_MB = int(os.getenv("MEMORY_LIMIT_MB", "450"))
+MEMORY_WARNING_MB = int(os.getenv("MEMORY_WARNING_MB", "512"))
+MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", "10"))
+MAX_ACTIVE_SESSIONS = int(os.getenv("MAX_ACTIVE_SESSIONS", "20"))
+
 app = Flask(__name__)
 
 # アップロードフォルダの設定
@@ -60,21 +66,19 @@ def get_system_resources():
         return {'memory_mb': 0, 'cpu_percent': 0, 'active_sessions': len(session_manager['active_sessions'])}
 
 def check_resource_limits():
-    """リソース制限のチェック（警告のみ、処理は継続）"""
+    """リソース制限のチェック（メモリ制限チェック強化）"""
     resources = get_system_resources()
     
     warnings = []
     
-    # メモリ使用量の警告（1GB超過）
-    if resources['memory_mb'] > 1024:
+    # メモリ使用量の警告（環境変数で設定可能）
+    if resources['memory_mb'] > MEMORY_LIMIT_MB:
+        raise RuntimeError(f"メモリ制限を超過しました: {resources['memory_mb']:.1f}MB > {MEMORY_LIMIT_MB}MB")
+    elif resources['memory_mb'] > MEMORY_WARNING_MB:
         warnings.append(f"メモリ使用量が高いです: {resources['memory_mb']:.1f}MB")
     
-    # CPU使用量の警告（80%超過）
-    if resources['cpu_percent'] > 80:
-        warnings.append(f"CPU使用量が高いです: {resources['cpu_percent']:.1f}%")
-    
-    # アクティブセッション数の警告（50超過）
-    if resources['active_sessions'] > 50:
+    # アクティブセッション数の警告（環境変数で設定可能）
+    if resources['active_sessions'] > MAX_ACTIVE_SESSIONS:
         warnings.append(f"アクティブセッション数が多いです: {resources['active_sessions']}個")
     
     return warnings
@@ -248,6 +252,14 @@ def upload_file():
         
         if not allowed_file(file.filename):
             return jsonify({'error': 'Excelファイル（.xlsx, .xls）のみアップロード可能です'})
+        
+        # ファイルサイズ制限（環境変数で設定可能）
+        file.seek(0, 2)  # ファイルの末尾に移動
+        file_size = file.tell()  # ファイルサイズを取得
+        file.seek(0)  # ファイルの先頭に戻す
+        
+        if file_size > MAX_FILE_SIZE_MB * 1024 * 1024:
+            return jsonify({'error': f'ファイルサイズが{MAX_FILE_SIZE_MB}MBを超えています。より小さいファイルを使用してください。'})
         
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '').strip()
