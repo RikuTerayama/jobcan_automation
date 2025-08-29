@@ -22,11 +22,11 @@ async def test_browser_utils():
         print("=== 共通ユーティリティテスト開始 ===")
         
         # インポートテスト
-        from app.browser_utils import (
+        from browser_utils.browser_utils import (
             rss_mb, mem, guard_memory, 
             NAV_TIMEOUT_MS, STEP_TIMEOUT_MS, MAX_MEM_MB
         )
-        from app.concurrency import browser_sem, get_concurrency_limit
+        from browser_utils.concurrency import browser_sem, get_concurrency_limit
         
         print(f"✅ インポート成功")
         print(f"   NAV_TIMEOUT_MS: {NAV_TIMEOUT_MS}ms")
@@ -65,7 +65,7 @@ async def test_jobcan_flow():
         print("=== Jobcanフローテスト開始 ===")
         
         # インポートテスト
-        from app.flows.jobcan import (
+        from browser_utils.flows.jobcan import (
             JobcanCredentials, 
             do_login_and_go_timesheet,
             LOGIN_URL, TIMESHEET_URL
