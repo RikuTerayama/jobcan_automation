@@ -723,84 +723,84 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                     date_str, year, month, day = extract_date_info(date)
                     processed_count += 1
                     add_job_log(job_id, f"📝 データ {processed_count}/{total_data}: {date_str} {start_time}-{end_time}", jobs)
-                
-                # 時刻を4桁形式に変換
-                start_time_4digit = convert_time_to_4digit(start_time)
-                end_time_4digit = convert_time_to_4digit(end_time)
-                
-                # 打刻修正ページに移動
-                modify_url = f"https://ssl.jobcan.jp/employee/adit/modify?year={year}&month={month}&day={day}"
-                add_job_log(job_id, f"🔗 打刻修正ページに移動: {modify_url}", jobs)
-                
-                try:
-                    page.goto(modify_url, timeout=30000)
-                    page.wait_for_load_state('networkidle', timeout=30000)
                     
-                    # 人間らしい待機
-                    human_like_wait()
-                    add_job_log(job_id, "✅ 打刻修正ページアクセス完了", jobs)
-                except Exception as e:
-                    add_job_log(job_id, f"❌ 打刻修正ページアクセスエラー: {e}", jobs)
-                    continue
-                
-                # 時刻入力フィールドが読み込まれるまで待機
-                add_job_log(job_id, "⏳ 時刻入力フィールドの読み込みを待機中...", jobs)
-                try:
-                    page.wait_for_selector('input[type="text"]', timeout=10000)
-                    add_job_log(job_id, "✅ 時刻入力フィールドの読み込み完了", jobs)
-                except Exception as e:
-                    add_job_log(job_id, f"⚠️ 時刻入力フィールドの読み込みタイムアウト: {e}", jobs)
-                
-                # 1つの入力フィールドを取得
-                time_input = page.locator('input[type="text"]').first
-                
-                # 1回目: 始業時刻を人間らしく入力して打刻
-                add_job_log(job_id, f"⏰ 1回目: 始業時刻を入力: {start_time_4digit}", jobs)
-                try:
-                    # 人間らしいタイピングで入力
-                    if not human_like_typing(page, 'input[type="text"]', start_time_4digit, job_id, jobs):
-                        add_job_log(job_id, "❌ 始業時刻入力に失敗しました", jobs)
+                    # 時刻を4桁形式に変換
+                    start_time_4digit = convert_time_to_4digit(start_time)
+                    end_time_4digit = convert_time_to_4digit(end_time)
+                    
+                    # 打刻修正ページに移動
+                    modify_url = f"https://ssl.jobcan.jp/employee/adit/modify?year={year}&month={month}&day={day}"
+                    add_job_log(job_id, f"🔗 打刻修正ページに移動: {modify_url}", jobs)
+                    
+                    try:
+                        page.goto(modify_url, timeout=30000)
+                        page.wait_for_load_state('networkidle', timeout=30000)
+                        
+                        # 人間らしい待機
+                        human_like_wait()
+                        add_job_log(job_id, "✅ 打刻修正ページアクセス完了", jobs)
+                    except Exception as e:
+                        add_job_log(job_id, f"❌ 打刻修正ページアクセスエラー: {e}", jobs)
                         continue
                     
+                    # 時刻入力フィールドが読み込まれるまで待機
+                    add_job_log(job_id, "⏳ 時刻入力フィールドの読み込みを待機中...", jobs)
+                    try:
+                        page.wait_for_selector('input[type="text"]', timeout=10000)
+                        add_job_log(job_id, "✅ 時刻入力フィールドの読み込み完了", jobs)
+                    except Exception as e:
+                        add_job_log(job_id, f"⚠️ 時刻入力フィールドの読み込みタイムアウト: {e}", jobs)
+                    
+                    # 1つの入力フィールドを取得
+                    time_input = page.locator('input[type="text"]').first
+                    
+                    # 1回目: 始業時刻を人間らしく入力して打刻
+                    add_job_log(job_id, f"⏰ 1回目: 始業時刻を入力: {start_time_4digit}", jobs)
+                    try:
+                        # 人間らしいタイピングで入力
+                        if not human_like_typing(page, 'input[type="text"]', start_time_4digit, job_id, jobs):
+                            add_job_log(job_id, "❌ 始業時刻入力に失敗しました", jobs)
+                            continue
+                        
+                        # 人間らしい待機
+                        human_like_wait()
+                        add_job_log(job_id, "✅ 始業時刻入力完了", jobs)
+                    except Exception as e:
+                        add_job_log(job_id, f"❌ 始業時刻入力エラー: {e}", jobs)
+                        continue  # 始業時刻入力に失敗した場合は次のデータへ
+                    
+                    # 1回目の打刻ボタンを人間らしくクリック
+                    add_job_log(job_id, "🔘 1回目: 打刻ボタンをクリック中...", jobs)
+                    first_punch_success = False
+                    
                     # 人間らしい待機
                     human_like_wait()
-                    add_job_log(job_id, "✅ 始業時刻入力完了", jobs)
-                except Exception as e:
-                    add_job_log(job_id, f"❌ 始業時刻入力エラー: {e}", jobs)
-                    continue  # 始業時刻入力に失敗した場合は次のデータへ
-                
-                # 1回目の打刻ボタンを人間らしくクリック
-                add_job_log(job_id, "🔘 1回目: 打刻ボタンをクリック中...", jobs)
-                first_punch_success = False
-                
-                # 人間らしい待機
-                human_like_wait()
-                
-                # 打刻ボタンを探してクリック (prioritized methods)
-                try:
-                    page.get_by_role("button", name="打刻").click()
-                    page.wait_for_load_state('networkidle', timeout=10000)
-                    add_job_log(job_id, "✅ 1回目: 打刻ボタンクリック完了（get_by_role）", jobs)
-                    first_punch_success = True
-                except Exception as e:
-                    add_job_log(job_id, f"⚠️ 1回目: get_by_roleでのボタンクリックでエラー: {e}", jobs)
-                
-                if not first_punch_success:
+                    
+                    # 打刻ボタンを探してクリック (prioritized methods)
                     try:
-                        page.locator('input[value="打刻"]').click()
+                        page.get_by_role("button", name="打刻").click()
                         page.wait_for_load_state('networkidle', timeout=10000)
-                        add_job_log(job_id, "✅ 1回目: 打刻ボタンクリック完了（input[value]）", jobs)
+                        add_job_log(job_id, "✅ 1回目: 打刻ボタンクリック完了（get_by_role）", jobs)
                         first_punch_success = True
                     except Exception as e:
-                        add_job_log(job_id, f"⚠️ 1回目: input[value]でのボタンクリックでエラー: {e}", jobs)
-                
-                if not first_punch_success:
-                    try:
-                        page.get_by_text("打刻").click()
-                        page.wait_for_load_state('networkidle', timeout=10000)
-                        add_job_log(job_id, "✅ 1回目: 打刻ボタンクリック完了（get_by_text）", jobs)
-                        first_punch_success = True
-                    except Exception as e:
+                        add_job_log(job_id, f"⚠️ 1回目: get_by_roleでのボタンクリックでエラー: {e}", jobs)
+                    
+                    if not first_punch_success:
+                        try:
+                            page.locator('input[value="打刻"]').click()
+                            page.wait_for_load_state('networkidle', timeout=10000)
+                            add_job_log(job_id, "✅ 1回目: 打刻ボタンクリック完了（input[value]）", jobs)
+                            first_punch_success = True
+                        except Exception as e:
+                            add_job_log(job_id, f"⚠️ 1回目: input[value]でのボタンクリックでエラー: {e}", jobs)
+                    
+                    if not first_punch_success:
+                        try:
+                            page.get_by_text("打刻").click()
+                            page.wait_for_load_state('networkidle', timeout=10000)
+                            add_job_log(job_id, "✅ 1回目: 打刻ボタンクリック完了（get_by_text）", jobs)
+                            first_punch_success = True
+                        except Exception as e:
                         add_job_log(job_id, f"⚠️ 1回目: get_by_textでのボタンクリックでエラー: {e}", jobs)
                 
                 if not first_punch_success:
@@ -945,10 +945,10 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                     date_str, year, month, day = extract_date_info(date)
                     processed_count += 1
                     add_job_log(job_id, f"📝 データ {processed_count}/{total_data}: {date_str} {start_time}-{end_time}", jobs)
-                
-                # 時刻を4桁形式に変換
-                start_time_4digit = convert_time_to_4digit(start_time)
-                end_time_4digit = convert_time_to_4digit(end_time)
+                    
+                    # 時刻を4桁形式に変換
+                    start_time_4digit = convert_time_to_4digit(start_time)
+                    end_time_4digit = convert_time_to_4digit(end_time)
                 
                 # 打刻修正ページに移動
                 modify_url = f"https://ssl.jobcan.jp/employee/adit/modify?year={year}&month={month}&day={day}"
