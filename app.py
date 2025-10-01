@@ -297,6 +297,9 @@ def upload_file():
                 'status': 'running',
                 'logs': [],
                 'progress': 0,
+                'step_name': 'initializing',
+                'current_data': 0,
+                'total_data': 0,
                 'start_time': datetime.now().timestamp(),
                 'login_status': 'initializing',
                 'login_message': '🔄 処理を初期化中...',
@@ -305,7 +308,8 @@ def upload_file():
                 'file_path': file_path,
                 'email_hash': hash(email),  # 個人情報はハッシュ化
                 'company_id': company_id,  # 会社IDを保存
-                'resource_warnings': resource_warnings
+                'resource_warnings': resource_warnings,
+                'last_updated': time.time()
             }
         
         # バックグラウンドで処理を実行（エラーハンドリング強化）
@@ -323,6 +327,7 @@ def upload_file():
                         jobs[job_id]['login_status'] = 'error'
                         jobs[job_id]['login_message'] = error_message
                         jobs[job_id]['logs'].append(f"❌ {error_message}")
+                        jobs[job_id]['last_updated'] = time.time()
             finally:
                 # 処理完了後の完全クリーンアップ（エラーが発生しても必ず実行）
                 try:
@@ -361,7 +366,13 @@ def get_status(job_id):
     try:
         with jobs_lock:
             if job_id not in jobs:
-                return jsonify({'error': 'ジョブが見つかりません'}), 404
+                print(f"ジョブが見つかりません: {job_id}")
+                print(f"現在のジョブ一覧: {list(jobs.keys())}")
+                return jsonify({
+                    'error': 'ジョブが見つかりません',
+                    'job_id': job_id,
+                    'available_jobs': list(jobs.keys())
+                }), 404
             
             job = jobs[job_id]
             
