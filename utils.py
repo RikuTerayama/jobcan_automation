@@ -531,16 +531,36 @@ def load_excel_data(file_path):
             # pandasを使用して読み込み
             import pandas as pd
             data = pd.read_excel(file_path)
-            return data, True
+            # 有効なデータ行数をカウント（ヘッダー行を除く、空白行も除外）
+            valid_rows = data.dropna(subset=['日付'], how='all').dropna(subset=['日付', '開始時刻', '終了時刻'], how='all')
+            return data, len(valid_rows)
         elif openpyxl_available:
             # openpyxlを使用して読み込み
             from openpyxl import load_workbook
             wb = load_workbook(file_path)
-            return wb, False
+            ws = wb.active
+            
+            # 有効なデータ行数をカウント（ヘッダー行を除く、空白行も除外）
+            valid_rows = 0
+            for row in range(2, ws.max_row + 1):
+                date_value = ws[f'A{row}'].value
+                start_time_value = ws[f'B{row}'].value
+                end_time_value = ws[f'C{row}'].value
+                
+                # すべての主要カラムが空の場合はスキップ
+                if (date_value is None or str(date_value).strip() == '') and \
+                   (start_time_value is None or str(start_time_value).strip() == '') and \
+                   (end_time_value is None or str(end_time_value).strip() == ''):
+                    continue
+                
+                valid_rows += 1
+            
+            return wb, valid_rows
         else:
-            return None, False
+            return None, 0
     except Exception as e:
-        return None, False
+        print(f"Excelファイル読み込みエラー: {e}")
+        return None, 0
 
 def extract_date_info(date):
     """日付から年月日を抽出"""
