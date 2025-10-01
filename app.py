@@ -308,25 +308,38 @@ def upload_file():
                 'resource_warnings': resource_warnings
             }
         
-        # バックグラウンドで処理を実行
+        # バックグラウンドで処理を実行（エラーハンドリング強化）
         def run_automation():
             try:
                 # セッション固有のブラウザ環境で処理を実行
                 process_jobcan_automation(job_id, email, password, file_path, jobs, session_dir, session_id, company_id)
             except Exception as e:
+                error_message = f'処理中にエラーが発生しました: {str(e)}'
+                print(f"自動化処理エラー {job_id}: {error_message}")
+                
                 with jobs_lock:
                     if job_id in jobs:
                         jobs[job_id]['status'] = 'error'
-                        jobs[job_id]['login_message'] = f'処理中にエラーが発生しました: {str(e)}'
+                        jobs[job_id]['login_status'] = 'error'
+                        jobs[job_id]['login_message'] = error_message
+                        jobs[job_id]['logs'].append(f"❌ {error_message}")
             finally:
-                # 処理完了後の完全クリーンアップ
+                # 処理完了後の完全クリーンアップ（エラーが発生しても必ず実行）
                 try:
+                    cleanup_start_time = time.time()
                     if os.path.exists(file_path):
                         os.remove(file_path)
+                        print(f"ファイル削除完了: {file_path}")
+                    
                     cleanup_user_session(session_id)
                     unregister_session(session_id)
+                    
+                    cleanup_time = time.time() - cleanup_start_time
+                    print(f"セッションクリーンアップ完了 {session_id}: {cleanup_time:.2f}秒")
+                    
                 except Exception as cleanup_error:
                     print(f"クリーンアップエラー {session_id}: {cleanup_error}")
+                    # クリーンアップエラーでも処理は継続
         
         thread = threading.Thread(target=run_automation)
         thread.daemon = True  # メインプロセス終了時に自動終了
@@ -348,7 +361,7 @@ def get_status(job_id):
     try:
         with jobs_lock:
             if job_id not in jobs:
-                return jsonify({'error': 'ジョブが見つかりません'})
+                return jsonify({'error': 'ジョブが見つかりません'}), 404
             
             job = jobs[job_id]
             
@@ -359,10 +372,15 @@ def get_status(job_id):
             # ユーザー向けの詳細メッセージを生成
             user_message = generate_user_message(job['status'], login_status, login_message, job.get('progress', 0))
             
-            # リソース情報を追加
-            resources = get_system_resources()
+            # リソース情報を追加（エラーが発生しても処理を続行）
+            try:
+                resources = get_system_resources()
+            except Exception as resource_error:
+                print(f"リソース情報取得エラー: {resource_error}")
+                resources = {'memory_mb': 0, 'cpu_percent': 0, 'active_sessions': 0}
             
-            return jsonify({
+            # レスポンスデータを構築
+            response_data = {
                 'status': job['status'],
                 'progress': job.get('progress', 0),
                 'step_name': job.get('step_name', ''),
@@ -376,9 +394,25 @@ def get_status(job_id):
                 'session_id': job.get('session_id', ''),
                 'resources': resources,
                 'resource_warnings': job.get('resource_warnings', [])
-            })
+            }
+            
+            # ステータスに応じたHTTPステータスコードを設定
+            if job['status'] == 'error':
+                return jsonify(response_data), 500
+            elif job['status'] == 'completed':
+                return jsonify(response_data), 200
+            else:
+                return jsonify(response_data), 200
+                
     except Exception as e:
-        return jsonify({'error': f'ステータス取得エラー: {str(e)}'})
+        print(f"ステータス取得で予期しないエラー: {e}")
+        return jsonify({
+            'error': 'ステータス取得エラー',
+            'status': 'error',
+            'progress': 0,
+            'login_status': 'error',
+            'login_message': 'システムエラーが発生しました'
+        }), 500
 
 @app.route('/sessions')
 def get_active_sessions():
