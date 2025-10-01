@@ -406,8 +406,19 @@ def perform_login(page, email, password, job_id, jobs, company_id=None):
         clear_session(page, job_id, jobs)
         
         add_job_log(job_id, "🔐 Jobcanログインページにアクセス中...", jobs)
-        page.goto("https://id.jobcan.jp/users/sign_in?app_key=atd")
-        page.wait_for_load_state('networkidle', timeout=30000)
+        try:
+            page.goto("https://id.jobcan.jp/users/sign_in?app_key=atd", timeout=45000)
+            page.wait_for_load_state('networkidle', timeout=45000)
+        except Exception as goto_error:
+            add_job_log(job_id, f"⚠️ ページアクセスエラー: {goto_error}", jobs)
+            # 再試行
+            try:
+                add_job_log(job_id, "🔄 ページアクセスを再試行中...", jobs)
+                page.goto("https://id.jobcan.jp/users/sign_in?app_key=atd", timeout=60000)
+                page.wait_for_load_state('domcontentloaded', timeout=30000)
+            except Exception as retry_error:
+                add_job_log(job_id, f"❌ ページアクセス再試行も失敗: {retry_error}", jobs)
+                return False, "page_access_error", "❌ ログインページにアクセスできませんでした"
         
         # 人間らしい待機
         human_like_wait(3.0, 5.0)
@@ -487,15 +498,42 @@ def perform_login(page, email, password, job_id, jobs, company_id=None):
         # メールアドレスフィールドが表示されるまで待機
         page.wait_for_selector('input[name="user[email]"]', state='visible', timeout=10000)
         
-        # メールアドレスを人間らしく入力
+        # メールアドレスを人間らしく入力（複数セレクター対応）
         add_job_log(job_id, "📧 メールアドレスを入力中...", jobs)
-        if not human_like_typing(page, 'input[name="user[email]"]', email, job_id, jobs):
+        
+        email_selectors = [
+            'input[name="user[email]"]',
+            'input[name="email"]',
+            'input[type="email"]',
+            'input[placeholder*="メール"]',
+            'input[placeholder*="email"]'
+        ]
+        
+        email_input_success = False
+        for selector in email_selectors:
+            try:
+                add_job_log(job_id, f"🔍 メールアドレス入力フィールドを検索中: {selector}", jobs)
+                page.wait_for_selector(selector, state='visible', timeout=3000)
+                
+                if human_like_typing(page, selector, email, job_id, jobs):
+                    email_input_success = True
+                    add_job_log(job_id, f"✅ メールアドレス入力成功: {selector}", jobs)
+                    break
+                else:
+                    add_job_log(job_id, f"⚠️ メールアドレス入力失敗: {selector}", jobs)
+                    
+            except Exception as e:
+                add_job_log(job_id, f"⚠️ セレクター {selector} でエラー: {e}", jobs)
+                continue
+        
+        if not email_input_success:
+            add_job_log(job_id, "❌ メールアドレス入力に失敗しました", jobs)
             return False, "typing_error", "❌ メールアドレス入力に失敗しました"
         
         # 人間らしい待機
         human_like_wait(1.0, 2.0)
         
-        # パスワード入力（改善版）
+        # パスワード入力（改善版・タイムアウト対策付き）
         add_job_log(job_id, "🔑 パスワードを入力中...", jobs)
         
         # 複数のセレクタを試行
@@ -510,8 +548,8 @@ def perform_login(page, email, password, job_id, jobs, company_id=None):
         password_input_found = False
         for selector in password_selectors:
             try:
-                page.wait_for_selector(selector, state='visible', timeout=5000)
-                add_job_log(job_id, f"✅ パスワード入力フィールド発見: {selector}", jobs)
+                add_job_log(job_id, f"🔍 パスワード入力フィールドを検索中: {selector}", jobs)
+                page.wait_for_selector(selector, state='visible', timeout=3000)
                 
                 # 要素が有効かチェック
                 element = page.locator(selector)
@@ -519,14 +557,10 @@ def perform_login(page, email, password, job_id, jobs, company_id=None):
                     add_job_log(job_id, f"⚠️ 要素が無効: {selector}", jobs)
                     continue
                 
-                # フォーカスしてから入力
-                element.click()
-                element.fill("")  # 既存の値をクリア
-                
                 # 人間らしいタイピングを試行
                 if human_like_typing(page, selector, password, job_id, jobs):
                     password_input_found = True
-                    add_job_log(job_id, "✅ パスワード入力成功", jobs)
+                    add_job_log(job_id, f"✅ パスワード入力成功: {selector}", jobs)
                     break
                 else:
                     add_job_log(job_id, f"⚠️ タイピング失敗: {selector}", jobs)
@@ -542,28 +576,61 @@ def perform_login(page, email, password, job_id, jobs, company_id=None):
         # 人間らしい待機
         human_like_wait(1.0, 2.0)
         
-        # ログインボタンが表示されるまで待機
-        page.wait_for_selector('input[type="submit"]', state='visible', timeout=10000)
-        
-        # ログインボタンを人間らしくクリック
+        # ログインボタンを人間らしくクリック（複数セレクター対応）
         add_job_log(job_id, "🔘 ログインボタンをクリック中...", jobs)
-        try:
-            login_button = page.locator('input[type="submit"]').first
-            login_button.click()
-        except Exception as e:
-            add_job_log(job_id, f"⚠️ ログインボタンクリックエラー: {e}", jobs)
-            # 代替方法を試行
+        
+        login_button_selectors = [
+            'input[type="submit"]',
+            'button[type="submit"]',
+            'input[value*="ログイン"]',
+            'button:has-text("ログイン")',
+            'input[value*="Sign in"]',
+            'button:has-text("Sign in")'
+        ]
+        
+        login_button_clicked = False
+        for selector in login_button_selectors:
             try:
-                page.click('input[type="submit"]')
-            except Exception as e2:
-                add_job_log(job_id, f"❌ 代替ログインボタンクリックも失敗: {e2}", jobs)
-                return False, "button_error", "❌ ログインボタンクリックに失敗しました"
+                add_job_log(job_id, f"🔍 ログインボタンを検索中: {selector}", jobs)
+                page.wait_for_selector(selector, state='visible', timeout=3000)
+                
+                # 要素が有効かチェック
+                element = page.locator(selector)
+                if element.is_disabled():
+                    add_job_log(job_id, f"⚠️ ログインボタンが無効: {selector}", jobs)
+                    continue
+                
+                # クリック実行
+                element.click()
+                login_button_clicked = True
+                add_job_log(job_id, f"✅ ログインボタンクリック成功: {selector}", jobs)
+                break
+                
+            except Exception as e:
+                add_job_log(job_id, f"⚠️ ログインボタンクリックエラー {selector}: {e}", jobs)
+                continue
+        
+        if not login_button_clicked:
+            add_job_log(job_id, "❌ ログインボタンクリックに失敗しました", jobs)
+            return False, "button_error", "❌ ログインボタンクリックに失敗しました"
         
         # 人間らしい待機
         human_like_wait(3.0, 5.0)
         
-        page.wait_for_load_state('networkidle', timeout=30000)
-        add_job_log(job_id, "✅ ログインボタンクリック完了", jobs)
+        # ページ読み込み待機（複数の状態をチェック）
+        try:
+            page.wait_for_load_state('networkidle', timeout=45000)
+            add_job_log(job_id, "✅ ログインボタンクリック完了（networkidle）", jobs)
+        except Exception as network_error:
+            add_job_log(job_id, f"⚠️ networkidle待機エラー: {network_error}", jobs)
+            try:
+                page.wait_for_load_state('domcontentloaded', timeout=30000)
+                add_job_log(job_id, "✅ ログインボタンクリック完了（domcontentloaded）", jobs)
+            except Exception as dom_error:
+                add_job_log(job_id, f"⚠️ domcontentloaded待機エラー: {dom_error}", jobs)
+                # 最低限の待機
+                human_like_wait(5.0, 8.0)
+                add_job_log(job_id, "✅ ログインボタンクリック完了（待機のみ）", jobs)
         
         # ログイン状態をチェック
         login_success, status, message = check_login_status(page, job_id, jobs)
@@ -1052,39 +1119,81 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
         raise e
 
 def human_like_typing(page, selector, text, job_id, jobs):
-    """人間らしいタイピングを実行（強化版）"""
-    try:
-        add_job_log(job_id, f"⌨️ 人間らしいタイピングを実行: {selector}", jobs)
-        
-        # 要素が表示されるまで待機
-        page.wait_for_selector(selector, state='visible', timeout=5000)
-        
-        # 要素をクリックしてフォーカス
-        element = page.locator(selector).first
-        element.click()
-        human_like_wait(0.5, 1.0)
-        
-        # 既存の内容をクリア
-        page.fill(selector, "")
-        human_like_wait(0.3, 0.8)
-        
-        # 人間らしいタイピング（ランダムな遅延）
-        for char in text:
-            page.type(selector, char, delay=random.uniform(50, 200))
-            human_like_wait(0.05, 0.15)
-        
-        # 入力内容の確認
-        actual_value = page.input_value(selector)
-        if actual_value == text:
-            add_job_log(job_id, f"✅ タイピング成功: {selector}", jobs)
-            return True
-        else:
-            add_job_log(job_id, f"⚠️ タイピング内容不一致: 期待={text}, 実際={actual_value}", jobs)
-            return False
+    """人間らしいタイピングを実行（強化版・タイムアウト対策付き）"""
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            add_job_log(job_id, f"⌨️ 人間らしいタイピングを実行 (試行 {attempt + 1}/{max_retries}): {selector}", jobs)
             
-    except Exception as e:
-        add_job_log(job_id, f"❌ タイピングエラー: {e}", jobs)
-        return False
+            # 要素が表示されるまで待機（タイムアウト短縮）
+            page.wait_for_selector(selector, state='visible', timeout=3000)
+            
+            # 要素をクリックしてフォーカス
+            element = page.locator(selector).first
+            if not element.is_visible():
+                add_job_log(job_id, f"⚠️ 要素が見えません: {selector}", jobs)
+                if attempt < max_retries - 1:
+                    human_like_wait(1.0, 2.0)
+                    continue
+                else:
+                    return False
+            
+            element.click()
+            human_like_wait(0.5, 1.0)
+            
+            # 既存の内容をクリア
+            page.fill(selector, "")
+            human_like_wait(0.3, 0.8)
+            
+            # 人間らしいタイピング（ランダムな遅延・短縮版）
+            for i, char in enumerate(text):
+                try:
+                    page.type(selector, char, delay=random.uniform(30, 100))
+                    # 長い文字列の場合は途中で少し待機
+                    if i > 0 and i % 10 == 0:
+                        human_like_wait(0.1, 0.2)
+                    else:
+                        human_like_wait(0.02, 0.08)
+                except Exception as char_error:
+                    add_job_log(job_id, f"⚠️ 文字入力エラー (文字 {i+1}): {char_error}", jobs)
+                    if attempt < max_retries - 1:
+                        break
+                    else:
+                        return False
+            
+            # 入力完了後の待機
+            human_like_wait(0.5, 1.0)
+            
+            # 入力内容の確認
+            try:
+                actual_value = page.input_value(selector)
+                if actual_value == text:
+                    add_job_log(job_id, f"✅ タイピング成功: {selector}", jobs)
+                    return True
+                else:
+                    add_job_log(job_id, f"⚠️ タイピング内容不一致: 期待={text}, 実際={actual_value}", jobs)
+                    if attempt < max_retries - 1:
+                        human_like_wait(1.0, 2.0)
+                        continue
+                    else:
+                        return False
+            except Exception as check_error:
+                add_job_log(job_id, f"⚠️ 入力確認エラー: {check_error}", jobs)
+                if attempt < max_retries - 1:
+                    human_like_wait(1.0, 2.0)
+                    continue
+                else:
+                    return False
+                    
+        except Exception as e:
+            add_job_log(job_id, f"❌ タイピングエラー (試行 {attempt + 1}): {e}", jobs)
+            if attempt < max_retries - 1:
+                human_like_wait(1.0, 2.0)
+                continue
+            else:
+                return False
+    
+    return False
 
 def human_like_wait(min_seconds=0.5, max_seconds=2.0):
     """人間らしい待機時間"""
@@ -1431,10 +1540,11 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 # 最新のChrome User-Agent（CAPTCHA対策）
                 user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                 
-                # サーバー環境対応のため、通常のlaunchを使用
+                # サーバー環境対応のため、通常のlaunchを使用（タイムアウト設定付き）
                 browser = p.chromium.launch(
                     headless=True,  # CAPTCHA対策のためヘッドレスモードを有効化
-                    args=browser_args
+                    args=browser_args,
+                    timeout=60000  # ブラウザ起動タイムアウトを60秒に設定
                 )
                 
                 # セッション固有のコンテキスト設定
