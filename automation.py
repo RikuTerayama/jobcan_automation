@@ -713,13 +713,16 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                 add_job_log(job_id, f"✅ データ処理で空白行 {skipped_rows} 行をスキップしました", jobs)
             
             # フィルタ後のデータで処理
+            processed_count = 0
             for index, row in filtered_data.iterrows():
-                date = row.iloc[0]
-                start_time = row.iloc[1]
-                end_time = row.iloc[2]
-                
-                date_str, year, month, day = extract_date_info(date)
-                add_job_log(job_id, f"📝 データ {index + 1}/{total_data}: {date_str} {start_time}-{end_time}", jobs)
+                try:
+                    date = row.iloc[0]
+                    start_time = row.iloc[1]
+                    end_time = row.iloc[2]
+                    
+                    date_str, year, month, day = extract_date_info(date)
+                    processed_count += 1
+                    add_job_log(job_id, f"📝 データ {processed_count}/{total_data}: {date_str} {start_time}-{end_time}", jobs)
                 
                 # 時刻を4桁形式に変換
                 start_time_4digit = convert_time_to_4digit(start_time)
@@ -893,13 +896,18 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                     add_job_log(job_id, "⚠️ 2回目: 打刻ボタンが見つかりません（想定通りの処理構造です）", jobs)
                     # 2回目の打刻に失敗しても処理は継続
                 
-                # 出勤簿ページに戻る
-                add_job_log(job_id, "🔄 出勤簿ページに戻ります", jobs)
-                page.goto("https://ssl.jobcan.jp/employee/attendance")
-                page.wait_for_load_state('networkidle', timeout=30000)
-                
-                update_progress(job_id, 6, f"勤怠データ入力中 ({index + 1}/{total_data})", jobs, index + 1, total_data)
-                time.sleep(2)  # 処理間隔
+                    # 出勤簿ページに戻る
+                    add_job_log(job_id, "🔄 出勤簿ページに戻ります", jobs)
+                    page.goto("https://ssl.jobcan.jp/employee/attendance")
+                    page.wait_for_load_state('networkidle', timeout=30000)
+                    
+                    update_progress(job_id, 6, f"勤怠データ入力中 ({processed_count}/{total_data})", jobs, processed_count, total_data)
+                    time.sleep(2)  # 処理間隔
+                    
+                except Exception as data_error:
+                    add_job_log(job_id, f"❌ データ {processed_count} の処理でエラー: {data_error}", jobs)
+                    add_job_log(job_id, f"🔄 次のデータの処理を続行します", jobs)
+                    continue
         else:
             # openpyxlを使用した処理（空白行スキップ対応）
             ws = data_source.active
@@ -927,13 +935,16 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                 add_job_log(job_id, f"✅ データ処理で空白行 {skipped_count} 行をスキップしました", jobs)
             
             # 有効な行のみを処理
+            processed_count = 0
             for row in valid_rows:
-                date = ws[f'A{row}'].value
-                start_time = ws[f'B{row}'].value
-                end_time = ws[f'C{row}'].value
-                
-                date_str, year, month, day = extract_date_info(date)
-                add_job_log(job_id, f"📝 データ {row - 1}/{total_data}: {date_str} {start_time}-{end_time}", jobs)
+                try:
+                    date = ws[f'A{row}'].value
+                    start_time = ws[f'B{row}'].value
+                    end_time = ws[f'C{row}'].value
+                    
+                    date_str, year, month, day = extract_date_info(date)
+                    processed_count += 1
+                    add_job_log(job_id, f"📝 データ {processed_count}/{total_data}: {date_str} {start_time}-{end_time}", jobs)
                 
                 # 時刻を4桁形式に変換
                 start_time_4digit = convert_time_to_4digit(start_time)
@@ -1104,13 +1115,18 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                     add_job_log(job_id, "⚠️ 2回目: 打刻ボタンが見つかりません（想定通りの処理構造です）", jobs)
                     # 2回目の打刻に失敗しても処理は継続
                 
-                # 出勤簿ページに戻る
-                add_job_log(job_id, "🔄 出勤簿ページに戻ります", jobs)
-                page.goto("https://ssl.jobcan.jp/employee/attendance")
-                page.wait_for_load_state('networkidle', timeout=30000)
-                
-                update_progress(job_id, 6, f"勤怠データ入力中 ({row - 1}/{total_data})", jobs, row - 1, total_data)
-                time.sleep(2)  # 処理間隔
+                    # 出勤簿ページに戻る
+                    add_job_log(job_id, "🔄 出勤簿ページに戻ります", jobs)
+                    page.goto("https://ssl.jobcan.jp/employee/attendance")
+                    page.wait_for_load_state('networkidle', timeout=30000)
+                    
+                    update_progress(job_id, 6, f"勤怠データ入力中 ({processed_count}/{total_data})", jobs, processed_count, total_data)
+                    time.sleep(2)  # 処理間隔
+                    
+                except Exception as data_error:
+                    add_job_log(job_id, f"❌ データ {processed_count} の処理でエラー: {data_error}", jobs)
+                    add_job_log(job_id, f"🔄 次のデータの処理を続行します", jobs)
+                    continue
         
         add_job_log(job_id, "🎉 実際のデータ入力処理が完了しました", jobs)
         
