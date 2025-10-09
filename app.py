@@ -9,7 +9,7 @@ import shutil
 import psutil
 import time
 from datetime import datetime
-from flask import Flask, request, jsonify, render_template, send_file
+from flask import Flask, request, jsonify, render_template, send_file, Response
 
 from utils import allowed_file, create_template_excel, create_previous_month_template_excel
 from automation import process_jobcan_automation
@@ -28,6 +28,14 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# 環境変数をテンプレートコンテキストに注入（AdSense設定用）
+@app.context_processor
+def inject_env_vars():
+    """環境変数をテンプレートで使えるようにする"""
+    return {
+        'ADSENSE_ENABLED': os.getenv('ADSENSE_ENABLED', 'false').lower() == 'true'
+    }
 
 # ジョブの状態を管理（スレッドセーフな辞書）
 jobs = {}
@@ -497,6 +505,12 @@ def generate_user_message(status, login_status, login_message, progress):
         return f"❌ エラーが発生しました: {login_message}"
     else:
         return "🔄 処理中..."
+
+@app.route('/ads.txt')
+def ads_txt():
+    """ads.txt を配信（Google AdSense用）"""
+    content = "google.com, pub-4232725615106709, DIRECT, f08c47fec0942fa0"
+    return Response(content, mimetype='text/plain')
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000))) 
