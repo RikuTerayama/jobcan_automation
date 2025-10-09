@@ -136,12 +136,103 @@ jobcan_automation-main/
 
 - `PORT`: アプリケーションのポート番号
 - `SECRET_KEY`: Flaskのシークレットキー
+- `ADSENSE_ENABLED`: Google AdSense有効化フラグ（本番環境のみ `true` に設定）
+  - デフォルト: `false`（開発環境）
+  - 本番環境: `true` に設定することでAdSenseスクリプトが読み込まれます
 
 ## 📊 モニタリング
 
 - **ヘルスチェック**: `/health` エンドポイント
 - **準備状態**: `/ready` エンドポイント
 - **依存関係**: pandas, openpyxl, playwrightの利用可能性を確認
+
+## 📢 Google AdSense 設定
+
+### 概要
+
+このアプリケーションは、本番環境でGoogle AdSenseをサポートしています。
+
+### 有効化方法
+
+1. **環境変数を設定**
+   ```bash
+   # 本番環境で以下を設定
+   ADSENSE_ENABLED=true
+   ```
+
+2. **デプロイ**
+   - Renderなどのデプロイ環境で環境変数 `ADSENSE_ENABLED=true` を設定
+   - 開発環境では未設定（または `false`）のままにすることを推奨
+
+### AdSense Publisher ID
+
+- **Publisher ID**: `ca-pub-4232725615106709`
+- AdSenseスクリプトは `<head>` 内に1回のみ読み込まれます
+
+### 除外ページ
+
+以下のページでは、AdSenseスクリプトは読み込まれません：
+- `/privacy` - プライバシーポリシーページ
+- `/contact` - お問い合わせページ
+- `/thanks` - サンクスページ
+- `/login` - ログインページ
+- `/app/*` - アプリケーション管理ページ
+
+**除外ページを追加する方法:**
+
+`templates/index.html` (または他のテンプレート) の条件式を編集：
+
+```jinja2
+{% if ADSENSE_ENABLED and not (request.path.startswith('/login') or request.path.startswith('/app/') or request.path in ['/privacy', '/contact', '/thanks', '/新しいパス']) %}
+```
+
+### ads.txt ファイル
+
+Google AdSenseの認証のため、`ads.txt` ファイルを配信しています。
+
+- **URL**: `https://<your-domain>/ads.txt`
+- **内容**:
+  ```
+  google.com, pub-4232725615106709, DIRECT, f08c47fec0942fa0
+  ```
+
+**配置場所**: `app.py` の `/ads.txt` ルートで自動配信
+
+### デプロイ後の確認手順
+
+1. **ブラウザでサイトにアクセス**
+   ```
+   https://<your-domain>/
+   ```
+
+2. **ページのソースを表示**
+   - 右クリック → 「ページのソースを表示」
+   - または `Ctrl+U` (Windows) / `Cmd+Option+U` (Mac)
+
+3. **AdSenseスクリプトの確認**
+   - `<head>` 内に以下のスクリプトが**1回のみ**存在することを確認：
+     ```html
+     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4232725615106709" crossorigin="anonymous"></script>
+     ```
+
+4. **ads.txt の確認**
+   ```
+   https://<your-domain>/ads.txt
+   ```
+   上記URLにアクセスし、以下の内容が表示されることを確認：
+   ```
+   google.com, pub-4232725615106709, DIRECT, f08c47fec0942fa0
+   ```
+
+5. **除外ページの確認**
+   - 除外ページ（例: `/privacy`, `/login` など）でソースを表示
+   - AdSenseスクリプトが含まれていないことを確認
+
+### トラブルシューティング
+
+- **スクリプトが表示されない**: `ADSENSE_ENABLED=true` が設定されているか確認
+- **スクリプトが重複している**: テンプレートの継承構造を確認し、重複を削除
+- **ads.txt がアクセスできない**: `/ads.txt` ルートが正しく設定されているか確認
 
 ## 🔒 セキュリティ
 
