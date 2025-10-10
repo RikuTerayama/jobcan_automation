@@ -575,5 +575,14 @@ Allow: /
 """
         return Response(content, mimetype='text/plain')
 
+@app.route('/sitemap.xml')
+def sitemap():
+    """サイトマップを配信"""
+    try:
+        return send_file('static/sitemap.xml', mimetype='application/xml')
+    except Exception as e:
+        # ファイルがない場合は404
+        return jsonify({'error': 'Sitemap not found'}), 404
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000))) 
