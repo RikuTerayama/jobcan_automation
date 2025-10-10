@@ -154,6 +154,21 @@ def validate_input_data(email, password, file):
 def index():
     return render_template('index.html')
 
+@app.route('/privacy')
+def privacy():
+    """プライバシーポリシーページ"""
+    return render_template('privacy.html')
+
+@app.route('/terms')
+def terms():
+    """利用規約ページ"""
+    return render_template('terms.html')
+
+@app.route('/contact')
+def contact():
+    """お問い合わせページ"""
+    return render_template('contact.html')
+
 @app.route('/ping')
 def ping():
     return jsonify({'status': 'ok', 'message': 'pong'})
