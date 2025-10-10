@@ -130,6 +130,21 @@ jobcan_automation-main/
 2. **Dockerfile** でコンテナ化
 3. **requirements.txt** で依存関係管理
 
+### Renderのスリープ対策（重要）
+
+**Renderの無料プランは15分間アクセスがないとスリープします。** Google AdSense審査で「サイトが利用不可」と判定されないよう、以下の対策を実施してください。
+
+#### **推奨：UptimeRobotで監視（無料）**
+
+1. **UptimeRobot に登録**: https://uptimerobot.com/
+2. **モニターを追加**:
+   - Monitor Type: `HTTP(s)`
+   - URL: `https://<your-domain>/ping`
+   - Monitoring Interval: `5 minutes`
+3. **効果**: 5分ごとにアクセスしてサーバーを起動状態に保ちます
+
+これにより、Googleクローラーがアクセスした際も即座に応答できます。
+
 ### 環境変数
 
 必要に応じて以下の環境変数を設定：
