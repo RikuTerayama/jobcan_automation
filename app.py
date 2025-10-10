@@ -169,6 +169,36 @@ def contact():
     """お問い合わせページ"""
     return render_template('contact.html')
 
+@app.route('/guide/getting-started')
+def guide_getting_started():
+    """はじめての使い方ガイド"""
+    return render_template('guide_getting_started.html')
+
+@app.route('/guide/excel-format')
+def guide_excel_format():
+    """Excelファイルの作成方法ガイド"""
+    return render_template('guide_excel_format.html')
+
+@app.route('/guide/troubleshooting')
+def guide_troubleshooting():
+    """トラブルシューティングガイド"""
+    return render_template('guide_troubleshooting.html')
+
+@app.route('/faq')
+def faq():
+    """よくある質問（FAQ）"""
+    return render_template('faq.html')
+
+@app.route('/glossary')
+def glossary():
+    """用語集"""
+    return render_template('glossary.html')
+
+@app.route('/about')
+def about():
+    """サイトについて"""
+    return render_template('about.html')
+
 @app.route('/ping')
 def ping():
     return jsonify({'status': 'ok', 'message': 'pong'})
