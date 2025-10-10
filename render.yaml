@@ -5,8 +5,11 @@ services:
     plan: free
     buildCommand: docker build -t jobcan-automation .
     startCommand: docker run -p $PORT:$PORT jobcan-automation
+    healthCheckPath: /ping
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: PORT
-        value: 10000 
+        value: 10000
+      - key: ADSENSE_ENABLED
+        value: true 
