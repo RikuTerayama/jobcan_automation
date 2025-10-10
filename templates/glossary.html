@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用語集 - Jobcan AutoFill</title>
+    
+    {# Google AdSense - 本番環境のみ、除外ページ以外で読み込み #}
+    {% if ADSENSE_ENABLED and not (request.path.startswith('/login') or request.path.startswith('/app/') or request.path in ['/privacy', '/contact', '/thanks']) %}
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4232725615106709" crossorigin="anonymous"></script>
+    {% endif %}
+    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #121212 0%, #1A1A1A 50%, #0F0F0F 100%);
+            min-height: 100vh;
+            color: #FFFFFF;
+            line-height: 1.8;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, #1E1E1E 0%, #2A2A2A 100%);
+            border-radius: 20px;
+            padding: 50px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            color: #FFFFFF;
+        }
+        h2 {
+            font-size: 1.8em;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            color: #FFFFFF;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 10px;
+        }
+        .term-item {
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 25px;
+            border-radius: 12px;
+            border-left: 4px solid #4A9EFF;
+        }
+        .term-name {
+            font-weight: 600;
+            color: #4A9EFF;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+        .term-reading {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        .term-definition {
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.8;
+        }
+        .term-example {
+            margin-top: 10px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            font-style: italic;
+        }
+        .nav-link {
+            display: inline-block;
+            margin-top: 40px;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            color: #FFFFFF;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        a {
+            color: #4A9EFF;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📖 勤怠管理・Jobcan用語集</h1>
+        <p>勤怠管理とJobcan AutoFillに関連する用語を分かりやすく解説します。</p>
+
+        <h2>勤怠管理の基本用語</h2>
+
+        <div class="term-item">
+            <div class="term-name">勤怠管理（きんたいかんり）</div>
+            <div class="term-reading">Attendance Management</div>
+            <div class="term-definition">
+                従業員の出勤・退勤時刻、労働時間、休暇取得などを記録・管理することです。労働基準法により、企業には従業員の労働時間を適正に把握する義務があります。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">打刻（だこく）</div>
+            <div class="term-reading">Time Stamping</div>
+            <div class="term-definition">
+                出勤・退勤の時刻を記録することです。従来はタイムカードを使用していましたが、現在はWeb上やICカード、生体認証などで行うことが一般的です。
+            </div>
+            <div class="term-example">例：朝9時に出勤打刻をする</div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">出勤時刻（しゅっきんじこく）</div>
+            <div class="term-reading">Clock In Time</div>
+            <div class="term-definition">
+                従業員が勤務を開始した時刻のことです。始業時刻と異なる場合、遅刻または早出勤となります。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">退勤時刻（たいきんじこく）</div>
+            <div class="term-reading">Clock Out Time</div>
+            <div class="term-definition">
+                従業員が勤務を終了した時刻のことです。終業時刻を過ぎている場合は残業となります。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">労働時間（ろうどうじかん）</div>
+            <div class="term-reading">Working Hours</div>
+            <div class="term-definition">
+                従業員が実際に労働した時間のことです。出勤時刻から退勤時刻までの時間から、休憩時間を差し引いたものです。労働基準法では、1日8時間、週40時間を超えた労働は原則として割増賃金の対象となります。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">残業（ざんぎょう）</div>
+            <div class="term-reading">Overtime Work</div>
+            <div class="term-definition">
+                所定労働時間を超えて働くことです。法定労働時間（1日8時間）を超えた場合、割増賃金が発生します。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">遅刻（ちこく）</div>
+            <div class="term-reading">Late Arrival</div>
+            <div class="term-definition">
+                始業時刻に遅れて出勤することです。遅刻時間分の給与が控除される場合や、評価に影響する場合があります。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">早退（そうたい）</div>
+            <div class="term-reading">Early Leave</div>
+            <div class="term-definition">
+                終業時刻より前に退勤することです。私用や体調不良などの理由で、通常より早く業務を終了することを指します。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">欠勤（けっきん）</div>
+            <div class="term-reading">Absence</div>
+            <div class="term-definition">
+                勤務日に出勤しないことです。事前に届け出る場合と、当日連絡する場合があります。無断欠勤は重大な就業規則違反となります。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">有給休暇（ゆうきゅうきゅうか）</div>
+            <div class="term-reading">Paid Leave / Paid Time Off</div>
+            <div class="term-definition">
+                給与が支払われる休暇のことです。労働基準法により、一定期間勤続した従業員には年次有給休暇が付与されます。
+            </div>
+        </div>
+
+        <h2>Jobcan関連用語</h2>
+
+        <div class="term-item">
+            <div class="term-name">Jobcan（ジョブカン）</div>
+            <div class="term-reading">Jobcan</div>
+            <div class="term-definition">
+                株式会社DONUTSが提供する勤怠管理システムです。Web上で出退勤の打刻、勤怠データの管理、シフト作成などが行えます。多くの企業で導入されています。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">勤怠データ（きんたいデータ）</div>
+            <div class="term-reading">Attendance Data</div>
+            <div class="term-definition">
+                出勤時刻、退勤時刻、労働時間、休暇取得状況などの記録データです。給与計算や労務管理に使用されます。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">打刻修正（だこくしゅうせい）</div>
+            <div class="term-reading">Time Stamp Correction</div>
+            <div class="term-definition">
+                間違って打刻した時刻や、打刻忘れを後から修正することです。通常は申請・承認が必要です。
+            </div>
+        </div>
+
+        <h2>Jobcan AutoFill関連用語</h2>
+
+        <div class="term-item">
+            <div class="term-name">自動入力（じどうにゅうりょく）</div>
+            <div class="term-reading">Automatic Data Entry</div>
+            <div class="term-definition">
+                人間が手動で行っていた入力作業を、プログラムが自動的に実行することです。本サービスの中核機能です。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">テンプレートファイル</div>
+            <div class="term-reading">Template File</div>
+            <div class="term-definition">
+                あらかじめ日付が入力されたExcelファイルのことです。開始時刻と終了時刻を入力するだけで使用できるため、手間を大幅に削減できます。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">Excel形式（エクセルけいしき）</div>
+            <div class="term-reading">Excel Format</div>
+            <div class="term-definition">
+                Microsoft Excelで作成・編集できるファイル形式です。本サービスでは.xlsx または .xls形式に対応しています。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">アップロード</div>
+            <div class="term-reading">Upload</div>
+            <div class="term-definition">
+                ローカルコンピュータのファイルをサーバーに送信することです。本サービスでは、勤怠データを記入したExcelファイルをアップロードして処理を実行します。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">処理状況（しょりじょうきょう）</div>
+            <div class="term-reading">Processing Status</div>
+            <div class="term-definition">
+                自動入力の進行状況を示す情報です。ログイン中、データ入力中、完了などの状態がリアルタイムで表示されます。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">ログイン認証（ログインにんしょう）</div>
+            <div class="term-reading">Login Authentication</div>
+            <div class="term-definition">
+                ユーザーの身元を確認するプロセスです。メールアドレスとパスワードを使用して、正当なユーザーであることを証明します。
+            </div>
+        </div>
+
+        <h2>IT・セキュリティ用語</h2>
+
+        <div class="term-item">
+            <div class="term-name">HTTPS（エイチティーティーピーエス）</div>
+            <div class="term-reading">HyperText Transfer Protocol Secure</div>
+            <div class="term-definition">
+                暗号化されたHTTP通信のことです。データの盗聴や改ざんを防ぎ、安全に情報をやり取りできます。本サービスではHTTPSを使用しています。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">画像認証（がぞうにんしょう）</div>
+            <div class="term-reading">CAPTCHA</div>
+            <div class="term-definition">
+                自動プログラム（ボット）ではなく、人間が操作していることを確認するための仕組みです。歪んだ文字や画像を選択することで証明します。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">Cookie（クッキー）</div>
+            <div class="term-reading">Cookie</div>
+            <div class="term-definition">
+                Webサイトがブラウザに保存する小さなデータファイルです。ログイン状態の保持や、ユーザーの設定を記憶するために使用されます。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">キャッシュ</div>
+            <div class="term-reading">Cache</div>
+            <div class="term-definition">
+                一度アクセスしたデータを一時的に保存しておく仕組みです。次回アクセス時に高速に表示できますが、古いデータが表示される場合もあります。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">タイムアウト</div>
+            <div class="term-reading">Timeout</div>
+            <div class="term-definition">
+                処理が一定時間内に完了しなかった場合、自動的に中断されることです。ネットワーク接続が不安定な場合などに発生します。
+            </div>
+        </div>
+
+        <h2>労働法関連用語</h2>
+
+        <div class="term-item">
+            <div class="term-name">労働基準法（ろうどうきじゅんほう）</div>
+            <div class="term-reading">Labor Standards Act</div>
+            <div class="term-definition">
+                労働条件の最低基準を定めた法律です。労働時間、休憩、休日、賃金などについて規定しています。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">法定労働時間（ほうていろうどうじかん）</div>
+            <div class="term-reading">Statutory Working Hours</div>
+            <div class="term-definition">
+                労働基準法で定められた労働時間の上限です。原則として1日8時間、週40時間までです。これを超えた労働には割増賃金が必要です。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">36協定（さぶろくきょうてい）</div>
+            <div class="term-reading">Article 36 Agreement</div>
+            <div class="term-definition">
+                労働基準法第36条に基づく協定です。これにより、法定労働時間を超えた時間外労働や休日労働が可能になります。
+            </div>
+        </div>
+
+        <div class="term-item">
+            <div class="term-name">就業規則（しゅうぎょうきそく）</div>
+            <div class="term-reading">Work Rules / Employment Regulations</div>
+            <div class="term-definition">
+                企業が定める労働条件や職場のルールです。労働時間、賃金、休暇、懲戒処分などについて規定されています。
+            </div>
+        </div>
+
+        <h2>さらに詳しく知る</h2>
+        <p>その他のリソースもご活用ください：</p>
+        <ul>
+            <li><a href="/guide/getting-started">はじめての使い方</a></li>
+            <li><a href="/guide/excel-format">Excelファイルの作成方法</a></li>
+            <li><a href="/guide/troubleshooting">トラブルシューティング</a></li>
+            <li><a href="/faq">よくある質問（FAQ）</a></li>
+            <li><a href="/about">サイトについて</a></li>
+        </ul>
+
+        <a href="/" class="nav-link">← トップページに戻る</a>
+    </div>
+</body>
+</html>
+
