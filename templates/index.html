@@ -788,6 +788,9 @@
                     <li>Excelファイルの形式：A列=日付、B列=開始時刻、C列=終了時刻（1行目はヘッダー）</li>
                     <li>自動でJobcanにログインし、勤怠データを入力します</li>
                 </ul>
+                <p style="margin-top: 20px; padding: 15px; background: rgba(74, 158, 255, 0.1); border-left: 4px solid #4A9EFF; border-radius: 8px;">
+                    <strong>📚 詳しい使い方は</strong><a href="/guide/getting-started" style="color: #4A9EFF; margin-left: 8px;">はじめての使い方ガイド</a>をご覧ください。
+                </p>
                 <div style="margin-top: 20px; text-align: center;">
                     <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
                         <button type="button" class="submit-btn download-btn" onclick="downloadTemplate('current')" style="display: inline-block; text-decoration: none; text-align: center; min-width: 200px; margin: 0; cursor: pointer;">
@@ -817,14 +820,33 @@
         <!-- フッター -->
         <div class="footer">
             <div class="footer-content">
-                <div class="footer-links" style="margin-bottom: 20px;">
-                    <a href="/privacy" style="color: rgba(255, 255, 255, 0.8); text-decoration: none; margin: 0 15px; font-size: 0.9em;">プライバシーポリシー</a>
-                    <span style="color: rgba(255, 255, 255, 0.3);">|</span>
-                    <a href="/terms" style="color: rgba(255, 255, 255, 0.8); text-decoration: none; margin: 0 15px; font-size: 0.9em;">利用規約</a>
-                    <span style="color: rgba(255, 255, 255, 0.3);">|</span>
-                    <a href="/contact" style="color: rgba(255, 255, 255, 0.8); text-decoration: none; margin: 0 15px; font-size: 0.9em;">お問い合わせ</a>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-bottom: 30px; text-align: left;">
+                    <div>
+                        <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">ガイド</h4>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <a href="/guide/getting-started" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">はじめての使い方</a>
+                            <a href="/guide/excel-format" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">Excelファイルの作成方法</a>
+                            <a href="/guide/troubleshooting" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">トラブルシューティング</a>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">リソース</h4>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <a href="/faq" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">よくある質問（FAQ）</a>
+                            <a href="/glossary" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">用語集</a>
+                            <a href="/about" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">サイトについて</a>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">法的情報</h4>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <a href="/privacy" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">プライバシーポリシー</a>
+                            <a href="/terms" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">利用規約</a>
+                            <a href="/contact" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">お問い合わせ</a>
+                        </div>
+                    </div>
                 </div>
-                <div class="footer-info">
+                <div class="footer-info" style="border-top: 1px solid rgba(255, 255, 255, 0.2); padding-top: 20px;">
                     <p class="copyright">© 2025 Jobcan Autofill. All rights reserved.</p>
                     <p class="developer">Developed by RT</p>
                 </div>
