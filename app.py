@@ -512,5 +512,23 @@ def ads_txt():
     content = "google.com, pub-4232725615106709, DIRECT, f08c47fec0942fa0"
     return Response(content, mimetype='text/plain')
 
+@app.route('/robots.txt')
+def robots_txt():
+    """robots.txt を配信"""
+    try:
+        return send_file('static/robots.txt', mimetype='text/plain')
+    except Exception as e:
+        # ファイルがない場合のフォールバック
+        content = """User-agent: *
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: AdsBot-Google
+Allow: /
+"""
+        return Response(content, mimetype='text/plain')
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000))) 
