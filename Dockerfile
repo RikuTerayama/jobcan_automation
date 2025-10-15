@@ -58,5 +58,21 @@ RUN mkdir -p uploads
 # ポートの公開
 EXPOSE $PORT
 
-# アプリケーションの起動（メモリ最適化版）
-CMD gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 180 --max-requests 100 --max-requests-jitter 20 --preload app:app 
+# アプリケーションの起動（SRE最適化版）
+# 環境変数: WEB_CONCURRENCY（workers数）、WEB_TIMEOUT（タイムアウト）
+CMD gunicorn --bind 0.0.0.0:$PORT \
+  --workers ${WEB_CONCURRENCY:-2} \
+  --threads ${WEB_THREADS:-2} \
+  --worker-class sync \
+  --timeout ${WEB_TIMEOUT:-180} \
+  --graceful-timeout ${WEB_GRACEFUL_TIMEOUT:-30} \
+  --keep-alive ${WEB_KEEPALIVE:-5} \
+  --max-requests ${WEB_MAX_REQUESTS:-500} \
+  --max-requests-jitter ${WEB_MAX_REQUESTS_JITTER:-50} \
+  --access-logfile - \
+  --error-logfile - \
+  --log-level ${WEB_LOG_LEVEL:-info} \
+  --log-file - \
+  --capture-output \
+  --enable-stdio-inheritance \
+  app:app 
