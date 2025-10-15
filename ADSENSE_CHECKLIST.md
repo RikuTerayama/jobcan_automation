@@ -102,10 +102,15 @@ Measure-Command { Invoke-WebRequest -Uri "https://<your-domain>/" }
 
 - [ ] UptimeRobot にログイン
 - [ ] Monitor が作成されている
-- [ ] Monitor URL: `https://<your-domain>/ping`
+- [ ] Monitor URL: `https://<your-domain>/healthz`（推奨）または `/ping`
 - [ ] Monitoring Interval: `5 minutes`
 - [ ] Monitor Status が **Up** になっている
 - [ ] 過去1時間のアップタイム: 100%
+- [ ] Response Time: 平均 < 500ms
+
+**SRE推奨:**
+- メインモニター: `/healthz`（超軽量、<10ms）
+- サブモニター: `/ping`（バックアップ）
 
 ---
 
@@ -193,6 +198,32 @@ Google PageSpeed Insights で確認:
 - [ ] すべてのページが5秒以内に表示される
 - [ ] モバイルでも正常に表示される
 - [ ] AdSenseスクリプトが正しく配置されている
+
+### **SRE追加確認（503防止）**
+
+- [ ] Renderログに `Worker timeout` や `Killed` がない（過去24時間）
+- [ ] メモリ使用率が85%以下（Render Dashboard → Metrics）
+- [ ] `/healthz` が100回連続で200 OKを返す
+- [ ] CPU使用率が70%以下
+- [ ] バックグラウンドジョブが正常完了している（ログ確認）
+
+**連続ヘルスチェック（推奨）:**
+```bash
+# 100回連続テスト
+for i in {1..100}; do
+  curl -f https://<your-domain>/healthz || echo "FAIL at $i"
+done
+# 期待: すべて成功、FAILなし
+```
+
+**レスポンスタイム確認:**
+```bash
+# 10回測定して平均を確認
+for i in {1..10}; do
+  curl -o /dev/null -s -w "%{time_total}s\n" https://<your-domain>/healthz
+done
+# 期待: すべて 0.1秒以下
+```
 
 ---
 
