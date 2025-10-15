@@ -37,4 +37,9 @@ services:
       - key: MEMORY_LIMIT_MB
         value: "450"  # OOM前に警告
       - key: MEMORY_WARNING_MB
-        value: "400" 
+        value: "400"
+      # === 同時実行制限（OOM防止）===
+      - key: MAX_ACTIVE_SESSIONS
+        value: "2"  # free plan (512MB) では2が安全上限
+      - key: MAX_FILE_SIZE_MB
+        value: "10" 
