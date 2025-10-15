@@ -6,6 +6,59 @@
 
 ---
 
+## 📊 同時処理能力
+
+### **現在の設定値**
+
+```yaml
+WEB_CONCURRENCY: 2        # Gunicorn workers
+WEB_THREADS: 2            # Threads per worker
+MAX_ACTIVE_SESSIONS: 2    # 同時ブラウザ自動化制限（OOM防止）
+```
+
+### **プラン別の同時処理能力**
+
+| プラン | RAM | 同時処理（重い処理）| 同時処理（軽い処理）| 推奨ユーザー数 |
+|--------|-----|-------------------|-------------------|--------------|
+| **Free** | 512MB | **1-2人** | 4リクエスト | 個人利用 |
+| **Starter** | 1GB+ | **3-4人** | 8リクエスト | 小規模チーム |
+| **Standard** | 2GB+ | **6-8人** | 16リクエスト | 中規模チーム |
+
+**重い処理:** Excelアップロード + Jobcan自動化（Playwright使用）  
+**軽い処理:** ページ閲覧、テンプレートダウンロード、ヘルスチェック
+
+### **メモリ使用量の内訳**
+
+```
+基本（Flask + Gunicorn）:
+├─ Python runtime: 50-80MB
+├─ Flask + dependencies: 50-70MB
+├─ Gunicorn workers × 2: 60-100MB
+└─ 小計: 180-280MB
+
+Playwright処理1件あたり:
+├─ Playwright: 50-100MB
+├─ Chromium browser: 350-500MB
+└─ 合計: 400-600MB
+
+同時2セッション実行時:
+180-280MB (基本) + 400-600MB × 2 = 980-1480MB
+→ free plan (512MB) では不可
+→ 実質1-2セッションが限界
+```
+
+### **制限の仕組み**
+
+```python
+# app.py の check_resource_limits() で制限
+if active_sessions >= MAX_ACTIVE_SESSIONS:
+    raise RuntimeError("同時処理数の上限に達しています")
+    # → HTTP 500 エラーを返す
+    # → ユーザーに「しばらく待って再試行」を促す
+```
+
+---
+
 ## 📊 診断サマリ（2025-10-11 23:46 JST インシデント）
 
 ### **根因仮説トップ3**
