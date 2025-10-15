@@ -8,11 +8,20 @@ import tempfile
 import shutil
 import psutil
 import time
+import logging
 from datetime import datetime
-from flask import Flask, request, jsonify, render_template, send_file, Response
+from flask import Flask, request, jsonify, render_template, send_file, Response, g
 
 from utils import allowed_file, create_template_excel, create_previous_month_template_excel
 from automation import process_jobcan_automation
+
+# ロギング設定
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
 # メモリ制限設定（環境変数から取得、デフォルト値付き）
 MEMORY_LIMIT_MB = int(os.getenv("MEMORY_LIMIT_MB", "450"))
@@ -28,6 +37,39 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# === リクエストロギングミドルウェア ===
+@app.before_request
+def before_request():
+    """リクエスト開始時の処理"""
+    g.start_time = time.time()
+    g.request_id = request.headers.get('X-Request-ID', str(uuid.uuid4())[:8])
+    
+    # ヘルスチェック以外のリクエストをログ
+    if not request.path.startswith(('/healthz', '/livez', '/readyz')):
+        logger.info(f"req_start rid={g.request_id} method={request.method} path={request.path} ip={request.remote_addr}")
+
+@app.after_request
+def after_request(response):
+    """リクエスト終了時の処理"""
+    if hasattr(g, 'start_time') and hasattr(g, 'request_id'):
+        duration_ms = (time.time() - g.start_time) * 1000
+        response.headers['X-Request-ID'] = g.request_id
+        
+        # ヘルスチェック以外のリクエストをログ
+        if not request.path.startswith(('/healthz', '/livez', '/readyz')):
+            level = logging.WARNING if duration_ms > 1000 else logging.INFO
+            logger.log(
+                level,
+                f"req_end rid={g.request_id} method={request.method} path={request.path} "
+                f"status={response.status_code} ms={duration_ms:.1f}"
+            )
+            
+            # 遅延警告
+            if duration_ms > 5000:
+                logger.warning(f"SLOW_REQUEST rid={g.request_id} path={request.path} ms={duration_ms:.1f}")
+    
+    return response
 
 # 環境変数をテンプレートコンテキストに注入（AdSense設定用）
 @app.context_processor
@@ -199,30 +241,57 @@ def about():
     """サイトについて"""
     return render_template('about.html')
 
+# === ヘルスチェックエンドポイント（Render用・超軽量） ===
+@app.route('/healthz')
+def healthz():
+    """超軽量ヘルスチェック - Render Health Check用"""
+    return Response('ok', mimetype='text/plain', headers={'Cache-Control': 'no-store'})
+
+@app.route('/livez')
+def livez():
+    """プロセス生存確認 - 即座にOK"""
+    return Response('ok', mimetype='text/plain', headers={'Cache-Control': 'no-store'})
+
+@app.route('/readyz')
+def readyz():
+    """準備完了確認 - 軽量チェックのみ"""
+    try:
+        # 最小限のチェック：jobsディクショナリが存在するか
+        _ = len(jobs)
+        return Response('ok', mimetype='text/plain', headers={'Cache-Control': 'no-store'})
+    except Exception as e:
+        return Response(f'not ready: {str(e)}', status=503, mimetype='text/plain')
+
+# === 後方互換性のため既存エンドポイントを維持（ただし軽量化） ===
 @app.route('/ping')
 def ping():
-    return jsonify({'status': 'ok', 'message': 'pong'})
+    """後方互換 - UptimeRobot用"""
+    return jsonify({'status': 'ok', 'message': 'pong', 'timestamp': datetime.now().isoformat()})
 
 @app.route('/health')
 def health():
-    from utils import pandas_available, openpyxl_available, playwright_available
-    
-    # リソース監視情報を追加
-    resources = get_system_resources()
-    warnings = check_resource_limits()
-    
-    return jsonify({
-        'status': 'healthy',
-        'timestamp': datetime.now().isoformat(),
-        'pandas_available': pandas_available,
-        'openpyxl_available': openpyxl_available,
-        'playwright_available': playwright_available,
-        'resources': resources,
-        'warnings': warnings
-    })
+    """詳細ヘルスチェック - デバッグ用（重いので監視には使わない）"""
+    try:
+        from utils import pandas_available, openpyxl_available, playwright_available
+        resources = get_system_resources()
+        
+        return jsonify({
+            'status': 'healthy',
+            'timestamp': datetime.now().isoformat(),
+            'dependencies': {
+                'pandas': pandas_available,
+                'openpyxl': openpyxl_available,
+                'playwright': playwright_available
+            },
+            'resources': resources,
+            'active_sessions': len(session_manager['active_sessions'])
+        })
+    except Exception as e:
+        return jsonify({'status': 'unhealthy', 'error': str(e)}), 500
 
 @app.route('/ready')
 def ready():
+    """後方互換 - 既存依存関係チェック"""
     from utils import pandas_available, openpyxl_available, playwright_available
     return jsonify({
         'status': 'ready',
@@ -365,14 +434,22 @@ def upload_file():
                 'last_updated': time.time()
             }
         
-        # バックグラウンドで処理を実行（エラーハンドリング強化）
+        # バックグラウンドで処理を実行（エラーハンドリング強化 + 観測性）
         def run_automation():
+            bg_start_time = time.time()
+            logger.info(f"bg_job_start job_id={job_id} session_id={session_id} file_size={file_size}")
+            
             try:
                 # セッション固有のブラウザ環境で処理を実行
                 process_jobcan_automation(job_id, email, password, file_path, jobs, session_dir, session_id, company_id)
+                
+                duration = time.time() - bg_start_time
+                logger.info(f"bg_job_success job_id={job_id} duration_sec={duration:.1f}")
+                
             except Exception as e:
                 error_message = f'処理中にエラーが発生しました: {str(e)}'
-                print(f"自動化処理エラー {job_id}: {error_message}")
+                duration = time.time() - bg_start_time
+                logger.error(f"bg_job_error job_id={job_id} duration_sec={duration:.1f} error={str(e)}")
                 
                 with jobs_lock:
                     if job_id in jobs:
@@ -387,16 +464,16 @@ def upload_file():
                     cleanup_start_time = time.time()
                     if os.path.exists(file_path):
                         os.remove(file_path)
-                        print(f"ファイル削除完了: {file_path}")
+                        logger.info(f"cleanup_file job_id={job_id} path={file_path}")
                     
                     cleanup_user_session(session_id)
                     unregister_session(session_id)
                     
                     cleanup_time = time.time() - cleanup_start_time
-                    print(f"セッションクリーンアップ完了 {session_id}: {cleanup_time:.2f}秒")
+                    logger.info(f"cleanup_complete job_id={job_id} session_id={session_id} cleanup_sec={cleanup_time:.2f}")
                     
                 except Exception as cleanup_error:
-                    print(f"クリーンアップエラー {session_id}: {cleanup_error}")
+                    logger.error(f"cleanup_error job_id={job_id} session_id={session_id} error={str(cleanup_error)}")
                     # クリーンアップエラーでも処理は継続
         
         thread = threading.Thread(target=run_automation)
