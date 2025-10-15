@@ -2,14 +2,39 @@ services:
   - type: web
     name: jobcan-automation
     env: docker
+    # plan: free で 512MB RAM → Playwright使用時はOOM risk高
+    # 推奨: plan: starter (512MB→1GB+) で安定化
     plan: free
     buildCommand: docker build -t jobcan-automation .
     startCommand: docker run -p $PORT:$PORT jobcan-automation
-    healthCheckPath: /ping
+    # 超軽量ヘルスチェック（/healthz = <10ms）
+    healthCheckPath: /healthz
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: PORT
         value: 10000
       - key: ADSENSE_ENABLED
-        value: true 
+        value: true
+      # === Gunicorn 最適化設定 ===
+      - key: WEB_CONCURRENCY
+        value: "2"  # workers数（512MB環境で2が安全上限）
+      - key: WEB_THREADS
+        value: "2"  # スレッド数
+      - key: WEB_TIMEOUT
+        value: "180"  # タイムアウト3分（Jobcan処理用）
+      - key: WEB_GRACEFUL_TIMEOUT
+        value: "30"
+      - key: WEB_KEEPALIVE
+        value: "5"
+      - key: WEB_MAX_REQUESTS
+        value: "500"  # メモリリーク対策
+      - key: WEB_MAX_REQUESTS_JITTER
+        value: "50"
+      - key: WEB_LOG_LEVEL
+        value: "info"
+      # === メモリ制限（既存）===
+      - key: MEMORY_LIMIT_MB
+        value: "450"  # OOM前に警告
+      - key: MEMORY_WARNING_MB
+        value: "400" 
