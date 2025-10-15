@@ -127,9 +127,14 @@ def check_resource_limits():
     elif resources['memory_mb'] > MEMORY_WARNING_MB:
         warnings.append(f"メモリ使用量が高いです: {resources['memory_mb']:.1f}MB")
     
-    # アクティブセッション数の警告（環境変数で設定可能）
-    if resources['active_sessions'] > MAX_ACTIVE_SESSIONS:
-        warnings.append(f"アクティブセッション数が多いです: {resources['active_sessions']}個")
+    # アクティブセッション数の制限（OOM防止）
+    if resources['active_sessions'] >= MAX_ACTIVE_SESSIONS:
+        raise RuntimeError(
+            f"同時処理数の上限に達しています（{resources['active_sessions']}/{MAX_ACTIVE_SESSIONS}）。"
+            f"しばらく待ってから再試行してください。"
+        )
+    elif resources['active_sessions'] > MAX_ACTIVE_SESSIONS * 0.8:
+        warnings.append(f"アクティブセッション数が多いです: {resources['active_sessions']}/{MAX_ACTIVE_SESSIONS}個")
     
     return warnings
 
