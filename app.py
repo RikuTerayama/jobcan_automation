@@ -71,6 +71,25 @@ def after_request(response):
     
     return response
 
+# グローバルエラーハンドラー
+@app.errorhandler(500)
+def internal_error(error):
+    """500エラーのハンドリング"""
+    logger.error(f"internal_server_error rid={getattr(g, 'request_id', 'unknown')} error={str(error)}")
+    return jsonify({'error': '内部サーバーエラーが発生しました。しばらく待ってから再試行してください。'}), 500
+
+@app.errorhandler(503)
+def service_unavailable(error):
+    """503エラーのハンドリング"""
+    logger.error(f"service_unavailable rid={getattr(g, 'request_id', 'unknown')} error={str(error)}")
+    return jsonify({'error': 'サービスが一時的に利用できません。しばらく待ってから再試行してください。'}), 503
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """未処理例外のハンドリング"""
+    logger.error(f"unhandled_exception rid={getattr(g, 'request_id', 'unknown')} error={str(e)}")
+    return jsonify({'error': '予期しないエラーが発生しました。しばらく待ってから再試行してください。'}), 500
+
 # 環境変数をテンプレートコンテキストに注入（AdSense設定用）
 @app.context_processor
 def inject_env_vars():
@@ -96,23 +115,30 @@ session_manager = {
 }
 
 def get_system_resources():
-    """システムリソースの使用状況を取得"""
+    """システムリソースの使用状況を取得（強化版）"""
     try:
         import psutil
         process = psutil.Process()
         memory_info = process.memory_info()
+        memory_mb = memory_info.rss / 1024 / 1024
         cpu_percent = process.cpu_percent()
         
+        # メモリ使用量が危険域の場合はログに記録
+        if memory_mb > MEMORY_WARNING_MB:
+            logger.warning(f"high_memory_usage memory_mb={memory_mb:.1f} warning_threshold={MEMORY_WARNING_MB}")
+        if memory_mb > MEMORY_LIMIT_MB:
+            logger.error(f"memory_limit_exceeded memory_mb={memory_mb:.1f} limit={MEMORY_LIMIT_MB}")
+        
         return {
-            'memory_mb': memory_info.rss / 1024 / 1024,
+            'memory_mb': memory_mb,
             'cpu_percent': cpu_percent,
             'active_sessions': len(session_manager['active_sessions'])
         }
     except ImportError:
-        print("psutilが利用できません。リソース監視機能は無効化されます。")
+        logger.warning("psutil_not_available resource_monitoring_disabled")
         return {'memory_mb': 0, 'cpu_percent': 0, 'active_sessions': len(session_manager['active_sessions'])}
     except Exception as e:
-        print(f"リソース監視エラー: {e}")
+        logger.error(f"resource_monitoring_error error={str(e)}")
         return {'memory_mb': 0, 'cpu_percent': 0, 'active_sessions': len(session_manager['active_sessions'])}
 
 def check_resource_limits():
@@ -249,8 +275,14 @@ def about():
 # === ヘルスチェックエンドポイント（Render用・超軽量） ===
 @app.route('/healthz')
 def healthz():
-    """超軽量ヘルスチェック - Render Health Check用"""
-    return Response('ok', mimetype='text/plain', headers={'Cache-Control': 'no-store'})
+    """超軽量ヘルスチェック - Render Health Check用（堅牢化）"""
+    try:
+        # 最小限のチェック：アプリケーションが応答可能か
+        return Response('ok', mimetype='text/plain', headers={'Cache-Control': 'no-store'})
+    except Exception as e:
+        # ログに記録してから503を返す
+        logger.error(f"healthz_check_failed error={str(e)}")
+        return Response(f'health check failed: {str(e)}', status=503, mimetype='text/plain')
 
 @app.route('/livez')
 def livez():
@@ -259,12 +291,18 @@ def livez():
 
 @app.route('/readyz')
 def readyz():
-    """準備完了確認 - 軽量チェックのみ"""
+    """準備完了確認 - 軽量チェックのみ（堅牢化）"""
     try:
         # 最小限のチェック：jobsディクショナリが存在するか
         _ = len(jobs)
+        # 追加チェック：メモリ使用量が安全範囲内か
+        resources = get_system_resources()
+        if resources['memory_mb'] > MEMORY_LIMIT_MB:
+            return Response(f'memory limit exceeded: {resources["memory_mb"]:.1f}MB', status=503, mimetype='text/plain')
         return Response('ok', mimetype='text/plain', headers={'Cache-Control': 'no-store'})
     except Exception as e:
+        # ログに記録してから503を返す
+        logger.error(f"readyz_check_failed error={str(e)}")
         return Response(f'not ready: {str(e)}', status=503, mimetype='text/plain')
 
 # === 後方互換性のため既存エンドポイントを維持（ただし軽量化） ===
