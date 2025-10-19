@@ -126,9 +126,9 @@ grep -i "killed\|oom\|memory" <render-log>
 
 ---
 
-## 🛠️ 実施した改善（Phase 2）
+## 🛠️ 実施した改善（Phase 2 + 503エラー対策）
 
-### **(A) ヘルスチェック最適化**
+### **(A) ヘルスチェック最適化 + 堅牢化**
 
 #### **新規エンドポイント:**
 
@@ -155,9 +155,68 @@ def healthz():
 
 ---
 
-### **(B) 構造化ロギング**
+### **(B) 構造化ロギング + エラーハンドリング強化**
 
-#### **リクエストID + 遅延ログ:**
+#### **グローバルエラーハンドラー追加:**
+
+```python
+@app.errorhandler(500)
+def internal_error(error):
+    logger.error(f"internal_server_error rid={g.request_id} error={str(error)}")
+    return jsonify({'error': '内部サーバーエラーが発生しました。'}), 500
+
+@app.errorhandler(503)
+def service_unavailable(error):
+    logger.error(f"service_unavailable rid={g.request_id} error={str(error)}")
+    return jsonify({'error': 'サービスが一時的に利用できません。'}), 503
+```
+
+#### **メモリ監視強化:**
+
+```python
+# メモリ使用量が危険域の場合はログに記録
+if memory_mb > MEMORY_WARNING_MB:
+    logger.warning(f"high_memory_usage memory_mb={memory_mb:.1f}")
+if memory_mb > MEMORY_LIMIT_MB:
+    logger.error(f"memory_limit_exceeded memory_mb={memory_mb:.1f}")
+```
+
+### **(C) 503エラー対策**
+
+#### **1. 保守的な設定に変更:**
+
+```yaml
+# render.yaml
+WEB_CONCURRENCY: "1"        # 2 → 1（メモリ節約）
+WEB_THREADS: "1"            # 2 → 1（メモリ節約）
+MAX_ACTIVE_SESSIONS: "1"    # 2 → 1（同時実行制限）
+```
+
+#### **2. ヘルスチェック堅牢化:**
+
+```python
+@app.route('/healthz')
+def healthz():
+    try:
+        return Response('ok', mimetype='text/plain')
+    except Exception as e:
+        logger.error(f"healthz_check_failed error={str(e)}")
+        return Response(f'health check failed: {str(e)}', status=503)
+
+@app.route('/readyz')
+def readyz():
+    try:
+        _ = len(jobs)
+        resources = get_system_resources()
+        if resources['memory_mb'] > MEMORY_LIMIT_MB:
+            return Response(f'memory limit exceeded', status=503)
+        return Response('ok', mimetype='text/plain')
+    except Exception as e:
+        logger.error(f"readyz_check_failed error={str(e)}")
+        return Response(f'not ready: {str(e)}', status=503)
+```
+
+#### **3. リクエストID + 遅延ログ:**
 
 ```python
 @app.before_request / @app.after_request で以下を記録:
