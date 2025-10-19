@@ -4,6 +4,7 @@ services:
     env: docker
     # plan: free で 512MB RAM → Playwright使用時はOOM risk高
     # 推奨: plan: starter (512MB→1GB+) で安定化
+    # 503エラー対策のため、より保守的な設定に変更
     plan: free
     buildCommand: docker build -t jobcan-automation .
     startCommand: docker run -p $PORT:$PORT jobcan-automation
@@ -38,8 +39,13 @@ services:
         value: "450"  # OOM前に警告
       - key: MEMORY_WARNING_MB
         value: "400"
-      # === 同時実行制限（OOM防止）===
+      # === 同時実行制限（OOM防止・503エラー対策）===
       - key: MAX_ACTIVE_SESSIONS
-        value: "2"  # free plan (512MB) では2が安全上限
+        value: "1"  # 503エラー対策のため1に削減（free plan 512MB）
       - key: MAX_FILE_SIZE_MB
-        value: "10" 
+        value: "10"
+      # === 503エラー対策の追加設定 ===
+      - key: WEB_CONCURRENCY
+        value: "1"  # workers数を1に削減（メモリ節約）
+      - key: WEB_THREADS
+        value: "1"  # threads数を1に削減（メモリ節約） 
