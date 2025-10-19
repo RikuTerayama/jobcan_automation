@@ -1,8 +1,8 @@
-# ヘルスチェックエンドポイント検証スクリプト（PowerShell版）
+# ヘルスチェックエンドポイント検証スクリプト（PowerShell版）- 503エラー対策版
 # Usage: .\test_health.ps1 https://jobcan-automation.onrender.com
 
 param(
-    [string]$Domain = "http://localhost:5000"
+    [string]$Domain = "https://jobcan-automation.onrender.com"
 )
 
 Write-Host "🔍 ヘルスチェックエンドポイント検証" -ForegroundColor Cyan
