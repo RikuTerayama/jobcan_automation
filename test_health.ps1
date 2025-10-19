@@ -1,5 +1,5 @@
 # ヘルスチェックエンドポイント検証スクリプト（PowerShell版）- 503エラー対策版
-# Usage: .\test_health.ps1 https://jobcan-automation.onrender.com
+# Usage: .\test_health_fixed.ps1 https://jobcan-automation.onrender.com
 
 param(
     [string]$Domain = "https://jobcan-automation.onrender.com"
@@ -9,75 +9,105 @@ Write-Host "🔍 ヘルスチェックエンドポイント検証" -ForegroundCo
 Write-Host "Domain: $Domain"
 Write-Host ""
 
-# === 基本ヘルスチェック ===
-Write-Host "📊 基本ヘルスチェック:" -ForegroundColor Yellow
-Write-Host "---"
+# テストするエンドポイント
+$endpoints = @(
+    @{Path="/healthz"; Name="Render Health Check"; ExpectedStatus=200},
+    @{Path="/livez"; Name="Process Liveness"; ExpectedStatus=200},
+    @{Path="/readyz"; Name="Readiness Check"; ExpectedStatus=200},
+    @{Path="/ping"; Name="UptimeRobot Monitor"; ExpectedStatus=200},
+    @{Path="/"; Name="Main Page"; ExpectedStatus=200}
+)
 
-function Test-Endpoint {
-    param([string]$Path, [string]$Name)
-    
-    try {
-        $start = Get-Date
-        $response = Invoke-WebRequest -Uri "$Domain$Path" -TimeoutSec 10 -UseBasicParsing
-        $end = Get-Date
-        $duration = ($end - $start).TotalSeconds
-        
-        if ($response.StatusCode -eq 200) {
-            Write-Host "$Name : ✅ OK ($([math]::Round($duration, 3))s)" -ForegroundColor Green
-            return $true
-        } else {
-            Write-Host "$Name : ❌ FAIL (code: $($response.StatusCode))" -ForegroundColor Red
-            return $false
-        }
-    } catch {
-        Write-Host "$Name : ❌ ERROR ($($_.Exception.Message))" -ForegroundColor Red
-        return $false
-    }
-}
-
-Test-Endpoint -Path "/healthz" -Name "/healthz"
-Test-Endpoint -Path "/livez" -Name "/livez  "
-Test-Endpoint -Path "/readyz" -Name "/readyz "
-Test-Endpoint -Path "/ping" -Name "/ping   "
-
-Write-Host ""
-
-# === 連続テスト ===
-Write-Host "🔄 連続テスト（100回）:" -ForegroundColor Yellow
-Write-Host "---"
-
+$totalTests = $endpoints.Count
+$successCount = 0
 $failCount = 0
-$totalTime = 0
 $times = @()
 
-for ($i = 1; $i -le 100; $i++) {
+Write-Host "🧪 基本ヘルスチェックテスト:" -ForegroundColor Yellow
+Write-Host "---"
+
+foreach ($endpoint in $endpoints) {
+    $url = "$Domain$($endpoint.Path)"
+    Write-Host -NoNewline "Testing $($endpoint.Name) ($($endpoint.Path))... "
+    
     try {
-        $start = Get-Date
-        $response = Invoke-WebRequest -Uri "$Domain/healthz" -TimeoutSec 5 -UseBasicParsing
-        $end = Get-Date
-        $duration = ($end - $start).TotalSeconds
-        $times += $duration
-        $totalTime += $duration
+        $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+        $response = Invoke-WebRequest -Uri $url -Method GET -TimeoutSec 30 -UseBasicParsing
+        $stopwatch.Stop()
         
-        if ($response.StatusCode -ne 200) {
-            Write-Host "❌ FAIL at request $i (code: $($response.StatusCode))" -ForegroundColor Red
+        $responseTime = $stopwatch.Elapsed.TotalSeconds
+        $times += $responseTime
+        
+        if ($response.StatusCode -eq $endpoint.ExpectedStatus) {
+            Write-Host "✅ OK (${responseTime}s)" -ForegroundColor Green
+            $successCount++
+        } else {
+            Write-Host "❌ FAIL - Expected $($endpoint.ExpectedStatus), got $($response.StatusCode)" -ForegroundColor Red
             $failCount++
         }
     } catch {
-        Write-Host "❌ FAIL at request $i (error: $($_.Exception.Message))" -ForegroundColor Red
+        Write-Host "❌ ERROR - $($_.Exception.Message)" -ForegroundColor Red
         $failCount++
-    }
-    
-    # プログレス表示（10回ごと）
-    if ($i % 10 -eq 0) {
-        Write-Host "." -NoNewline
     }
 }
 
 Write-Host ""
-Write-Host ""
+Write-Host "📊 基本テスト結果: $successCount/$totalTests 成功" -ForegroundColor $(if ($failCount -eq 0) { "Green" } else { "Red" })
 
-# === 結果サマリ ===
+if ($failCount -gt 0) {
+    Write-Host "⚠️  基本テストでエラーが発生しました。詳細を確認してください。" -ForegroundColor Yellow
+    Write-Host ""
+    Write-Host "🔧 トラブルシューティング:" -ForegroundColor Cyan
+    Write-Host "1. Render Dashboard でログを確認"
+    Write-Host "2. メモリ使用率を確認"
+    Write-Host "3. デプロイ状況を確認"
+    Write-Host ""
+    exit 1
+}
+
+Write-Host ""
+Write-Host "🚀 連続負荷テスト (100リクエスト):" -ForegroundColor Yellow
+Write-Host "---"
+
+# 連続テスト用のカウンターをリセット
+$successCount = 0
+$failCount = 0
+$times = @()
+
+for ($i = 1; $i -le 100; $i++) {
+    $url = "$Domain/healthz"
+    
+    try {
+        $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+        $response = Invoke-WebRequest -Uri $url -Method GET -TimeoutSec 10 -UseBasicParsing
+        $stopwatch.Stop()
+        
+        $responseTime = $stopwatch.Elapsed.TotalSeconds
+        $times += $responseTime
+        
+        if ($response.StatusCode -eq 200) {
+            $successCount++
+        } else {
+            $failCount++
+        }
+        
+        # 進捗表示（10回ごと）
+        if ($i % 10 -eq 0) {
+            Write-Host "Progress: $i/100 (Success: $successCount, Failed: $failCount)" -ForegroundColor Cyan
+        }
+        
+        # 短い間隔でリクエスト
+        Start-Sleep -Milliseconds 100
+        
+    } catch {
+        $failCount++
+        if ($i % 10 -eq 0) {
+            Write-Host "Progress: $i/100 (Success: $successCount, Failed: $failCount)" -ForegroundColor Cyan
+        }
+    }
+}
+
+Write-Host ""
 Write-Host "📈 結果サマリ:" -ForegroundColor Yellow
 Write-Host "---"
 
@@ -115,4 +145,3 @@ Write-Host ""
 Write-Host "🔗 詳細確認:" -ForegroundColor Cyan
 Write-Host "   Render Logs: https://dashboard.render.com/"
 Write-Host "   UptimeRobot: https://uptimerobot.com/"
-
