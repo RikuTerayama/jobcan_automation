@@ -72,6 +72,12 @@ def after_request(response):
     return response
 
 # グローバルエラーハンドラー
+@app.errorhandler(404)
+def not_found(error):
+    """404エラーのハンドリング"""
+    logger.warning(f"not_found rid={getattr(g, 'request_id', 'unknown')} path={request.path} method={request.method} user_agent={request.headers.get('User-Agent', 'Unknown')} error={str(error)}")
+    return jsonify({'error': 'ページが見つかりません。URLを確認してください。'}), 404
+
 @app.errorhandler(500)
 def internal_error(error):
     """500エラーのハンドリング"""
@@ -86,7 +92,11 @@ def service_unavailable(error):
 
 @app.errorhandler(Exception)
 def handle_exception(e):
-    """未処理例外のハンドリング"""
+    """未処理例外のハンドリング（404以外）"""
+    # 404エラーは上記のハンドラーで処理されるため、ここでは処理しない
+    if hasattr(e, 'code') and e.code == 404:
+        raise e  # 404エラーハンドラーに委譲
+    
     logger.error(f"unhandled_exception rid={getattr(g, 'request_id', 'unknown')} error={str(e)}")
     return jsonify({'error': '予期しないエラーが発生しました。しばらく待ってから再試行してください。'}), 500
 
@@ -298,7 +308,17 @@ def readyz():
         # 追加チェック：メモリ使用量が安全範囲内か
         resources = get_system_resources()
         if resources['memory_mb'] > MEMORY_LIMIT_MB:
+            logger.error(f"memory_limit_exceeded current={resources['memory_mb']:.1f}MB limit={MEMORY_LIMIT_MB}MB")
             return Response(f'memory limit exceeded: {resources["memory_mb"]:.1f}MB', status=503, mimetype='text/plain')
+        
+        # 同時接続数チェック
+        if len(jobs) > MAX_ACTIVE_SESSIONS:
+            logger.error(f"max_sessions_exceeded current={len(jobs)} limit={MAX_ACTIVE_SESSIONS}")
+            return Response(f'max sessions exceeded: {len(jobs)}/{MAX_ACTIVE_SESSIONS}', status=503, mimetype='text/plain')
+        
+        # リソース使用率をログに記録
+        logger.info(f"system_resources memory={resources['memory_mb']:.1f}MB cpu={resources['cpu_percent']:.1f}% active_sessions={len(jobs)}")
+        
         return Response('ok', mimetype='text/plain', headers={'Cache-Control': 'no-store'})
     except Exception as e:
         # ログに記録してから503を返す
