@@ -17,11 +17,11 @@ services:
         value: 10000
       - key: ADSENSE_ENABLED
         value: true
-      # === Gunicorn 最適化設定 ===
+      # === Gunicorn 最適化設定（503エラー対策）===
       - key: WEB_CONCURRENCY
-        value: "2"  # workers数（512MB環境で2が安全上限）
+        value: "1"  # workers数（free plan 512MBで安定化）
       - key: WEB_THREADS
-        value: "2"  # スレッド数
+        value: "1"  # スレッド数（メモリ節約）
       - key: WEB_TIMEOUT
         value: "180"  # タイムアウト3分（Jobcan処理用）
       - key: WEB_GRACEFUL_TIMEOUT
@@ -34,18 +34,13 @@ services:
         value: "50"
       - key: WEB_LOG_LEVEL
         value: "info"
-      # === メモリ制限（既存）===
+      # === メモリ制限（OOM防止）===
       - key: MEMORY_LIMIT_MB
         value: "450"  # OOM前に警告
       - key: MEMORY_WARNING_MB
         value: "400"
-      # === 同時実行制限（OOM防止・503エラー対策）===
+      # === 同時実行制限（503エラー対策）===
       - key: MAX_ACTIVE_SESSIONS
-        value: "1"  # 503エラー対策のため1に削減（free plan 512MB）
+        value: "1"  # 同時接続数制限（free plan 512MB）
       - key: MAX_FILE_SIZE_MB
-        value: "10"
-      # === 503エラー対策の追加設定 ===
-      - key: WEB_CONCURRENCY
-        value: "1"  # workers数を1に削減（メモリ節約）
-      - key: WEB_THREADS
-        value: "1"  # threads数を1に削減（メモリ節約） 
+        value: "10" 
