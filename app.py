@@ -729,5 +729,29 @@ def sitemap():
         # ファイルがない場合は404
         return jsonify({'error': 'Sitemap not found'}), 404
 
+def monitor_processing_resources(data_index, total_data):
+    """データ処理中のリソース監視（4番目以降で強化）"""
+    try:
+        resources = get_system_resources()
+        memory_usage_percent = (resources['memory_mb'] / MEMORY_LIMIT_MB) * 100
+        
+        # 4番目のデータ以降はより厳密に監視
+        if data_index >= 4:
+            logger.info(f"processing_monitor data={data_index}/{total_data} memory={resources['memory_mb']:.1f}MB/{MEMORY_LIMIT_MB}MB ({memory_usage_percent:.1f}%) cpu={resources['cpu_percent']:.1f}%")
+            
+            # メモリ使用率が85%を超えた場合は警告
+            if memory_usage_percent > 85:
+                logger.warning(f"critical_memory_usage data={data_index} memory={resources['memory_mb']:.1f}MB ({memory_usage_percent:.1f}%) - approaching OOM")
+                
+                # メモリ使用率が90%を超えた場合は緊急停止
+                if memory_usage_percent > 90:
+                    logger.error(f"emergency_memory_stop data={data_index} memory={resources['memory_mb']:.1f}MB ({memory_usage_percent:.1f}%) - preventing OOM")
+                    raise RuntimeError(f"メモリ使用率が危険域に達しました: {memory_usage_percent:.1f}%")
+        
+        return True
+    except Exception as e:
+        logger.error(f"processing_monitor_failed data={data_index} error={str(e)}")
+        raise
+
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000))) 
