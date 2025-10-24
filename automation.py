@@ -724,6 +724,13 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                     processed_count += 1
                     add_job_log(job_id, f"📝 データ {processed_count}/{total_data}: {date_str} {start_time}-{end_time}", jobs)
                     
+                    # リソース監視（4番目以降で強化）
+                    try:
+                        from app import monitor_processing_resources
+                        monitor_processing_resources(processed_count, total_data)
+                    except Exception as monitor_error:
+                        add_job_log(job_id, f"⚠️ リソース監視エラー: {monitor_error}", jobs)
+                    
                     # 時刻を4桁形式に変換
                     start_time_4digit = convert_time_to_4digit(start_time)
                     end_time_4digit = convert_time_to_4digit(end_time)
@@ -902,10 +909,24 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                         page.wait_for_load_state('networkidle', timeout=30000)
                         
                         update_progress(job_id, 6, f"勤怠データ入力中 ({processed_count}/{total_data})", jobs, processed_count, total_data)
-                        time.sleep(2)  # 処理間隔
+                        # 処理間隔（4番目以降は長めに待機）
+                        if processed_count >= 4:
+                            add_job_log(job_id, "⏳ メモリ最適化のため5秒待機中...", jobs)
+                            time.sleep(5)  # 4番目以降は5秒待機
+                        else:
+                            time.sleep(2)  # 通常の処理間隔
                     
                 except Exception as data_error:
                     add_job_log(job_id, f"❌ データ {processed_count} の処理でエラー: {data_error}", jobs)
+                    
+                    # 4番目以降のエラーは詳細ログを出力
+                    if processed_count >= 4:
+                        add_job_log(job_id, f"🔍 エラー詳細: {type(data_error).__name__}: {str(data_error)}", jobs)
+                        
+                        # メモリ不足の可能性がある場合は警告
+                        if "memory" in str(data_error).lower() or "oom" in str(data_error).lower():
+                            add_job_log(job_id, "⚠️ メモリ不足の可能性があります。処理を継続しますが、注意が必要です。", jobs)
+                    
                     add_job_log(job_id, f"🔄 次のデータの処理を続行します", jobs)
                     continue
         else:
@@ -1121,10 +1142,24 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                         page.wait_for_load_state('networkidle', timeout=30000)
                         
                         update_progress(job_id, 6, f"勤怠データ入力中 ({processed_count}/{total_data})", jobs, processed_count, total_data)
-                        time.sleep(2)  # 処理間隔
+                        # 処理間隔（4番目以降は長めに待機）
+                        if processed_count >= 4:
+                            add_job_log(job_id, "⏳ メモリ最適化のため5秒待機中...", jobs)
+                            time.sleep(5)  # 4番目以降は5秒待機
+                        else:
+                            time.sleep(2)  # 通常の処理間隔
                     
                 except Exception as data_error:
                     add_job_log(job_id, f"❌ データ {processed_count} の処理でエラー: {data_error}", jobs)
+                    
+                    # 4番目以降のエラーは詳細ログを出力
+                    if processed_count >= 4:
+                        add_job_log(job_id, f"🔍 エラー詳細: {type(data_error).__name__}: {str(data_error)}", jobs)
+                        
+                        # メモリ不足の可能性がある場合は警告
+                        if "memory" in str(data_error).lower() or "oom" in str(data_error).lower():
+                            add_job_log(job_id, "⚠️ メモリ不足の可能性があります。処理を継続しますが、注意が必要です。", jobs)
+                    
                     add_job_log(job_id, f"🔄 次のデータの処理を続行します", jobs)
                     continue
         
