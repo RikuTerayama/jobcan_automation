@@ -316,8 +316,13 @@ def readyz():
             logger.error(f"max_sessions_exceeded current={len(jobs)} limit={MAX_ACTIVE_SESSIONS}")
             return Response(f'max sessions exceeded: {len(jobs)}/{MAX_ACTIVE_SESSIONS}', status=503, mimetype='text/plain')
         
-        # リソース使用率をログに記録
-        logger.info(f"system_resources memory={resources['memory_mb']:.1f}MB cpu={resources['cpu_percent']:.1f}% active_sessions={len(jobs)}")
+        # リソース使用率をログに記録（詳細版）
+        memory_usage_percent = (resources['memory_mb'] / MEMORY_LIMIT_MB) * 100
+        logger.info(f"system_resources memory={resources['memory_mb']:.1f}MB/{MEMORY_LIMIT_MB}MB ({memory_usage_percent:.1f}%) cpu={resources['cpu_percent']:.1f}% active_sessions={len(jobs)}/{MAX_ACTIVE_SESSIONS}")
+        
+        # メモリ使用率が高い場合は警告
+        if memory_usage_percent > 80:
+            logger.warning(f"high_memory_usage memory={resources['memory_mb']:.1f}MB ({memory_usage_percent:.1f}%) - approaching limit")
         
         return Response('ok', mimetype='text/plain', headers={'Cache-Control': 'no-store'})
     except Exception as e:
