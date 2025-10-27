@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jobcan AutoFill</title>
+    
+    {# Google Search Console 所有権確認 #}
+    <meta name="google-site-verification" content="bQuTb9pABqynDmXqfDdakvmFSqz8y8MyYnOExuucmnA" />
+    
+    {# Google AdSense - 本番環境のみ、除外ページ以外で読み込み #}
+    {% if ADSENSE_ENABLED and not (request.path.startswith('/login') or request.path.startswith('/app/') or request.path in ['/privacy', '/contact', '/thanks']) %}
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4232725615106709" crossorigin="anonymous"></script>
+    {% endif %}
+    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet">
+    <style>
+        /* CSS変数定義 - 濃い青色系 */
+        :root {
+            --primary-blue: #003366;
+            --primary-blue-light: #004c99;
+            --primary-blue-dark: #002B5C;
+            --primary-blue-transparent: rgba(0, 51, 102, 0.9);
+            --primary-blue-light-transparent: rgba(0, 76, 153, 0.9);
+            --primary-blue-dark-transparent: rgba(0, 43, 92, 0.9);
+        }
+        
+        /* シックで洗練されたUIデザイン */
+        * {
+            box-sizing: border-box;
+            font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;
+        }
+        
+        body {
+            font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #121212 0%, #1A1A1A 50%, #0F0F0F 100%);
+            min-height: 100vh;
+            color: #FFFFFF;
+            letter-spacing: 0.05em;
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, #1E1E1E 0%, #2A2A2A 100%);
+            border-radius: 20px;
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .header {
+            background-image: url("{{ url_for('static', filename='JobcanAutofill.png') }}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            color: #FFFFFF;
+            padding: 80px 40px;
+            text-align: center;
+            position: relative;
+            margin-bottom: 35px;
+            min-height: 240px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 1;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, var(--primary-blue-transparent), transparent);
+            border-radius: 2px;
+            box-shadow: 0 0 10px var(--primary-blue-transparent);
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 3.2em;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', 'Arial', sans-serif;
+            text-shadow: 
+                0 2px 4px rgba(0, 0, 0, 0.3),
+                0 0 20px rgba(255, 255, 255, 0.1);
+            position: relative;
+            color: #FFFFFF;
+        }
+        
+        .header h1::before {
+            content: '🕒';
+            position: absolute;
+            left: -50px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.6em;
+            opacity: 0.8;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+        
+
+        
+        .header p {
+            margin: 15px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.2em;
+            font-weight: 300;
+            letter-spacing: 0.05em;
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+        }
+        
+        .header-subtitle {
+            margin: 10px 0 20px 0;
+            font-size: 1.4em;
+            font-weight: 400;
+            opacity: 0.9;
+            color: #FFFFFF;
+        }
+        
+        .header-info {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .copyright {
+            margin: 5px 0;
+            font-size: 0.9em;
+            opacity: 0.7;
+            color: #FFFFFF;
+        }
+        
+        .developer {
+            margin: 5px 0;
+            font-size: 0.9em;
+            opacity: 0.8;
+            color: #FFFFFF;
+            font-weight: 500;
+        }
+        
+        /* フッターのスタイル */
+        .footer {
+            background: linear-gradient(145deg, #1A1A1A 0%, #0F0F0F 100%);
+            padding: 40px;
+            text-align: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 0;
+        }
+        
+        .footer-content {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .footer h2 {
+            margin: 0 0 15px 0;
+            font-size: 2.2em;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            color: #FFFFFF;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .footer-subtitle {
+            margin: 10px 0 25px 0;
+            font-size: 1.2em;
+            font-weight: 400;
+            opacity: 0.9;
+            color: #FFFFFF;
+        }
+        
+        .footer-info {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .footer .copyright {
+            margin: 8px 0;
+            font-size: 0.95em;
+            opacity: 0.7;
+            color: #FFFFFF;
+        }
+        
+        .footer .developer {
+            margin: 8px 0;
+            font-size: 0.95em;
+            opacity: 0.8;
+            color: #FFFFFF;
+            font-weight: 500;
+        }
+        
+        .footer-links a:hover {
+            color: #FFFFFF !important;
+            text-decoration: underline !important;
+        }
+        
+        .content {
+            padding: 50px 40px;
+            background: linear-gradient(145deg, #1E1E1E 0%, #2A2A2A 100%);
+        }
+        
+        .form-group {
+            margin-bottom: 30px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 12px;
+            font-weight: 400;
+            color: #FFFFFF;
+            font-size: 1.1em;
+            letter-spacing: 0.05em;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        .form-group input[type="email"],
+        .form-group input[type="password"],
+        .form-group input[type="text"],
+        .form-group input[type="file"] {
+            width: 100%;
+            padding: 18px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;
+            background: rgba(30, 30, 30, 0.8);
+            color: #FFFFFF;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-sizing: border-box;
+            letter-spacing: 0.02em;
+        }
+        
+        .form-group input[type="email"]:focus,
+        .form-group input[type="password"]:focus,
+        .form-group input[type="text"]:focus,
+        .form-group input[type="file"]:focus {
+            outline: none;
+            border-color: var(--primary-blue-transparent);
+            box-shadow: 
+                0 0 0 3px var(--primary-blue-transparent),
+                0 4px 12px rgba(0, 0, 0, 0.2);
+            background: rgba(40, 40, 40, 0.9);
+        }
+        
+        .form-group input[type="email"]::placeholder,
+        .form-group input[type="password"]::placeholder,
+        .form-group input[type="text"]::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .submit-btn {
+            background: transparent;
+            color: #FFFFFF;
+            padding: 18px 40px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 400;
+            font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%;
+            margin-top: 30px;
+            letter-spacing: 0.05em;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+        
+        .submit-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary-blue-transparent);
+            transform: translateY(-2px);
+            box-shadow: 
+                0 8px 25px rgba(0, 0, 0, 0.3),
+                0 0 0 1px var(--primary-blue-transparent);
+        }
+        
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* ダウンロードボタンのスタイル */
+        .download-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: transparent;
+            color: #FFFFFF;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            font-size: 1.1em;
+            font-weight: 400;
+            letter-spacing: 0.05em;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .download-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+        
+        .download-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 
+                0 8px 25px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+        }
+        
+        .download-btn:hover::before {
+            left: 100%;
+        }
+        
+        .download-btn:active:not(:disabled) {
+            transform: translateY(0);
+            box-shadow: 
+                0 4px 15px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+        }
+        
+        .download-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .info-section {
+            background: rgba(40, 40, 40, 0.6);
+            padding: 35px;
+            border-radius: 16px;
+            margin-top: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        .info-section h3 {
+            margin: 0 0 20px 0;
+            color: #FFFFFF;
+            font-size: 1.4em;
+            font-weight: 400;
+            letter-spacing: 0.05em;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        .info-section ul {
+            margin: 0;
+            padding-left: 25px;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.8;
+            font-size: 1rem;
+        }
+        
+        .info-section li {
+            margin-bottom: 8px;
+            letter-spacing: 0.02em;
+        }
+        
+        .security-notice {
+            background: rgba(0, 51, 102, 0.1);
+            border: 1px solid rgba(0, 51, 102, 0.3);
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 35px;
+        }
+        
+        .security-notice h4 {
+            margin: 0 0 12px 0;
+            color: var(--primary-blue-light);
+            font-weight: 400;
+            letter-spacing: 0.05em;
+        }
+        
+        .security-notice p {
+            margin: 0;
+            color: rgba(0, 76, 153, 0.9);
+            line-height: 1.6;
+            font-size: 0.95em;
+        }
+        
+        /* プログレスポップアップ */
+        .progress-popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        
+        .progress-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(145deg, #1E1E1E 0%, #2A2A2A 100%);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .progress-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .progress-header h3 {
+            margin: 0;
+            color: #FFFFFF;
+            font-size: 1.6em;
+            font-weight: 400;
+            letter-spacing: 0.05em;
+        }
+        
+        .progress-status {
+            background: rgba(40, 40, 40, 0.6);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-left: 4px solid var(--primary-blue-transparent);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .progress-status h4 {
+            margin: 0 0 12px 0;
+            color: #FFFFFF;
+            font-size: 1.2em;
+            font-weight: 400;
+            letter-spacing: 0.05em;
+        }
+        
+        .progress-status p {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+        
+        .progress-log {
+            background: rgba(20, 20, 20, 0.8);
+            color: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            padding: 20px;
+            font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;
+            font-size: 0.9em;
+            max-height: 250px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            letter-spacing: 0.02em;
+        }
+        
+        .progress-actions {
+            text-align: center;
+        }
+        
+        .progress-btn {
+            background: transparent;
+            color: #FFFFFF;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+            font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;
+            margin: 0 10px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            letter-spacing: 0.05em;
+        }
+        
+        .progress-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary-blue-transparent);
+            transform: translateY(-1px);
+        }
+        
+        .progress-btn.secondary {
+            background: rgba(100, 100, 100, 0.3);
+            border-color: rgba(100, 100, 100, 0.5);
+        }
+        
+        .progress-btn.secondary:hover {
+            background: rgba(120, 120, 120, 0.4);
+            border-color: rgba(150, 150, 150, 0.6);
+        }
+        
+        .error-details {
+            background: rgba(220, 53, 69, 0.1);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .error-details h5 {
+            margin: 0 0 12px 0;
+            color: #DC3545;
+            font-weight: 400;
+            letter-spacing: 0.05em;
+        }
+        
+        .error-details ul {
+            margin: 0;
+            padding-left: 25px;
+            color: rgba(220, 53, 69, 0.9);
+            line-height: 1.6;
+        }
+        
+        .login-result {
+            background: rgba(40, 167, 69, 0.1);
+            border: 1px solid rgba(40, 167, 69, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .login-result h5 {
+            margin: 0 0 12px 0;
+            color: #28A745;
+            font-weight: 400;
+            letter-spacing: 0.05em;
+        }
+        
+        .login-result.success {
+            background: rgba(40, 167, 69, 0.1);
+            border-color: rgba(40, 167, 69, 0.3);
+        }
+        
+        .login-result.error {
+            background: rgba(220, 53, 69, 0.1);
+            border-color: rgba(220, 53, 69, 0.3);
+        }
+        
+        .login-result.warning {
+            background: rgba(0, 51, 102, 0.1);
+            border-color: rgba(0, 51, 102, 0.3);
+        }
+        
+        .message-content {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+            white-space: pre-line;
+            color: rgba(255, 255, 255, 0.9);
+            border-left: 3px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .message-content.error {
+            background: rgba(220, 53, 69, 0.1);
+            border-left-color: rgba(220, 53, 69, 0.5);
+        }
+        
+        .message-content.warning {
+            background: rgba(0, 51, 102, 0.1);
+            border-left-color: rgba(0, 51, 102, 0.5);
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid var(--primary-blue-transparent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 12px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .status-success {
+            border-left-color: rgba(40, 167, 69, 0.5);
+        }
+        
+        .status-error {
+            border-left-color: rgba(220, 53, 69, 0.5);
+        }
+        
+        .status-warning {
+            border-left-color: rgba(0, 51, 102, 0.5);
+        }
+        
+        /* 注意書きセクションのスタイル */
+        .warning-notice {
+            background: rgba(44, 44, 44, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 25px;
+            margin-top: 30px;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+        
+        .warning-notice h4 {
+            margin: 0 0 15px 0;
+            color: #ffffff;
+            font-size: 1.2em;
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            letter-spacing: 0.05em;
+            font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;
+        }
+        
+        .warning-notice p {
+            margin: 0 0 12px 0;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.7;
+            font-size: 0.95em;
+            letter-spacing: 0.02em;
+            font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;
+        }
+        
+        .warning-notice p:last-child {
+            margin-bottom: 0;
+        }
+        
+        .warning-notice strong {
+            color: #ffffff;
+            font-weight: 500;
+        }
+        
+        /* レスポンシブデザイン */
+        @media (max-width: 768px) {
+            body {
+                padding: 15px;
+                font-size: 0.95rem;
+            }
+            
+            .container {
+                border-radius: 15px;
+            }
+            
+            .header {
+                padding: 60px 25px;
+                min-height: 200px;
+            }
+            
+            .content {
+                padding: 30px 25px;
+            }
+            
+            .footer {
+                padding: 30px 25px;
+            }
+            
+            .footer h2 {
+                font-size: 1.8em;
+            }
+            
+            .footer-subtitle {
+                font-size: 1.1em;
+            }
+            
+            .progress-content {
+                padding: 30px 25px;
+                width: 95%;
+            }
+        }
+        
+        /* スクロールバーのカスタマイズ */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <!-- 背景画像としてロゴを表示 -->
+        </div>
+        
+        <div class="content">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="email">メールアドレス</label>
+                    <input type="email" id="email" name="email" required placeholder="メールアドレスを入力">
+                </div>
+                
+                <div class="form-group">
+                    <label for="company_id">会社ID（任意）</label>
+                    <input type="text" id="company_id" name="company_id" placeholder="会社ID（任意）を入力">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">パスワード</label>
+                    <input type="password" id="password" name="password" required placeholder="パスワードを入力">
+                </div>
+                
+                <div class="form-group">
+                    <label for="file">Excelファイル</label>
+                    <input type="file" id="file" name="file" accept=".xlsx,.xls" required>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    勤怠データを自動入力
+                </button>
+            </form>
+            
+            <div class="info-section">
+                <h3>使用方法</h3>
+                <ul>
+                    <li>Jobcanのログイン情報（メールアドレスとパスワード）を入力</li>
+                    <li>勤怠データが含まれたExcelファイルをアップロード</li>
+                    <li>Excelファイルの形式：A列=日付、B列=開始時刻、C列=終了時刻（1行目はヘッダー）</li>
+                    <li>自動でJobcanにログインし、勤怠データを入力します</li>
+                </ul>
+                <p style="margin-top: 20px; padding: 15px; background: rgba(74, 158, 255, 0.1); border-left: 4px solid #4A9EFF; border-radius: 8px;">
+                    <strong>📚 詳しい使い方は</strong><a href="/guide/getting-started" style="color: #4A9EFF; margin-left: 8px;">はじめての使い方ガイド</a>をご覧ください。
+                </p>
+                <div style="margin-top: 20px; text-align: center;">
+                    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                        <button type="button" class="submit-btn download-btn" onclick="downloadTemplate('current')" style="display: inline-block; text-decoration: none; text-align: center; min-width: 200px; margin: 0; cursor: pointer;">
+                            今月のテンプレートを<br>ダウンロード
+                        </button>
+                        <button type="button" class="submit-btn download-btn" onclick="downloadTemplate('previous')" style="display: inline-block; text-decoration: none; text-align: center; min-width: 200px; margin: 0; cursor: pointer;">
+                            先月のテンプレートを<br>ダウンロード
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 注意書きセクション -->
+                <div class="warning-notice">
+                    <h4>⚠️ ご利用にあたってのご注意</h4>
+                    <p>本アプリは、個人の業務効率化を目的として開発されたものであり、会社の公式ツールではありません。<br>Jobcanへの勤怠データ入力を補助するものですが、正確な勤怠情報の登録を前提としています。</p>
+                    <p>実際の勤務実態と異なる打刻の入力や、所属企業の就業規則・セキュリティポリシーに反する使用は、法令または社内規定に抵触する可能性があります。</p>
+                    <p><strong>自動入力機能をご利用の際は、ご自身の判断と責任、そして倫理観をもって慎重にご使用ください。</strong></p>
+                </div>
+            </div>
+            
+                            <div class="security-notice">
+                    <h4>セキュリティについて</h4>
+                    <p>入力されたログイン情報は一時的にメモリに保存され、処理完了後に自動的に削除されます。<br>サーバーには保存されません。</p>
+                </div>
+            
+            <!-- 新規コンテンツセクション：充実した情報を提供 -->
+            <div style="margin-top: 50px; padding-top: 40px; border-top: 2px solid rgba(255, 255, 255, 0.1);">
+                <h2 style="font-size: 1.8em; margin-bottom: 30px; color: #FFFFFF; text-align: center; letter-spacing: 0.05em;">
+                    Jobcan勤怠管理を効率化する総合ガイド
+                </h2>
+                
+                <div style="background: rgba(44, 44, 44, 0.6); border-radius: 16px; padding: 30px; margin-bottom: 30px;">
+                    <h3 style="color: #4A9EFF; font-size: 1.3em; margin-bottom: 20px;">🎯 このツールについて</h3>
+                    <p style="line-height: 1.8; margin-bottom: 15px;">
+                        Jobcan AutoFillは、Jobcan（株式会社ジョブカン）が提供する勤怠管理システムへの勤怠データ入力プロセスを自動化する、個人向けの効率化ツールです。手作業での繰り返し入力作業を削減し、貴重な時間をより重要な業務に充てることを目的としています。
+                    </p>
+                    <p style="line-height: 1.8; margin-bottom: 15px;">
+                        本ツールは、Playwrightという最新のブラウザ自動化技術を活用し、人間の操作を再現することで、安全かつ正確にデータ入力を実行します。複数の勤怠データを一括で処理できるため、月次締めや月末の勤怠確定作業が大幅に短縮されます。
+                    </p>
+                    <p style="line-height: 1.8;">
+                        また、Excelファイルを使用するため、既存の勤怠管理ワークフローと自然に統合でき、学習コストを最小限に抑えながら運用を開始できます。
+                    </p>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; margin-bottom: 30px;">
+                    <div style="background: rgba(74, 158, 255, 0.1); border: 1px solid rgba(74, 158, 255, 0.3); border-radius: 12px; padding: 25px;">
+                        <h4 style="color: #4A9EFF; font-size: 1.2em; margin-bottom: 15px;">⚡ 主な機能</h4>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            <li style="margin-bottom: 10px; padding-left: 20px; position: relative;">✓ 一括勤怠データ入力</li>
+                            <li style="margin-bottom: 10px; padding-left: 20px; position: relative;">✓ Excelファイルからの自動読み込み</li>
+                            <li style="margin-bottom: 10px; padding-left: 20px; position: relative;">✓ 人間らしい操作パターンの再現</li>
+                            <li style="margin-bottom: 10px; padding-left: 20px; position: relative;">✓ リアルタイムの処理進捗表示</li>
+                            <li style="margin-bottom: 10px; padding-left: 20px; position: relative;">✓ セキュアな一時的データ処理</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="background: rgba(74, 158, 255, 0.1); border: 1px solid rgba(74, 158, 255, 0.3); border-radius: 12px; padding: 25px;">
+                        <h4 style="color: #4A9EFF; font-size: 1.2em; margin-bottom: 15px;">🎓 利用シーン</h4>
+                        <ul style="list-style: none; padding: 0; margin: 0;">
+                            <li style="margin-bottom: 10px; padding-left: 20px; position: relative;">• 月次勤怠データの一括登録</li>
+                            <li style="margin-bottom: 10px; padding-left: 20px; position: relative;">• 遅刻・早退データの修正作業</li>
+                            <li style="margin-bottom: 10px; padding-left: 20px; position: relative;">• 過去月の勤怠データ入力</li>
+                            <li style="margin-bottom: 10px; padding-left: 20px; position: relative;">• テンプレートからの勤怠時間入力</li>
+                            <li style="margin-bottom: 10px; padding-left: 20px; position: relative;">• 定時的な勤怠データ管理作業</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div style="background: rgba(255, 152, 0, 0.1); border-left: 4px solid #FF9800; border-radius: 12px; padding: 25px; margin-bottom: 30px;">
+                    <h4 style="color: #FF9800; font-size: 1.2em; margin-bottom: 15px;">📋 使用可能なデータ形式</h4>
+                    <p style="line-height: 1.8; margin-bottom: 15px;">
+                        本ツールは、以下の形式のExcelファイルをサポートしています：
+                    </p>
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                        <thead>
+                            <tr style="background: rgba(255, 255, 255, 0.05);">
+                                <th style="padding: 12px; text-align: left; border: 1px solid rgba(255, 255, 255, 0.2);">列</th>
+                                <th style="padding: 12px; text-align: left; border: 1px solid rgba(255, 255, 255, 0.2);">項目</th>
+                                <th style="padding: 12px; text-align: left; border: 1px solid rgba(255, 255, 255, 0.2);">例</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid rgba(255, 255, 255, 0.2);">A列</td>
+                                <td style="padding: 12px; border: 1px solid rgba(255, 255, 255, 0.2);">日付</td>
+                                <td style="padding: 12px; border: 1px solid rgba(255, 255, 255, 0.2);">2025-10-01 または 2025/10/01</td>
+                            </tr>
+                            <tr style="background: rgba(255, 255, 255, 0.02);">
+                                <td style="padding: 12px; border: 1px solid rgba(255, 255, 255, 0.2);">B列</td>
+                                <td style="padding: 12px; border: 1px solid rgba(255, 255, 255, 0.2);">開始時刻</td>
+                                <td style="padding: 12px; border: 1px solid rgba(255, 255, 255, 0.2);">09:00 または 0900</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px; border: 1px solid rgba(255, 255, 255, 0.2);">C列</td>
+                                <td style="padding: 12px; border: 1px solid rgba(255, 255, 255, 0.2);">終了時刻</td>
+                                <td style="padding: 12px; border: 1px solid rgba(255, 255, 255, 0.2);">18:00 または 1800</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div style="background: rgba(76, 175, 80, 0.1); border-left: 4px solid #4CAF50; border-radius: 12px; padding: 25px; margin-bottom: 30px;">
+                    <h4 style="color: #4CAF50; font-size: 1.2em; margin-bottom: 15px;">✅ 最適な使用方法</h4>
+                    <ol style="line-height: 1.8; padding-left: 25px;">
+                        <li style="margin-bottom: 10px;">テンプレートファイルをダウンロードして、勤怠データを入力します。</li>
+                        <li style="margin-bottom: 10px;">ログイン情報を入力し、Excelファイルをアップロードします。</li>
+                        <li style="margin-bottom: 10px;">「勤怠データを自動入力」ボタンをクリックすると、処理が開始されます。</li>
+                        <li style="margin-bottom: 10px;">処理の進捗がリアルタイムで表示されるため、状況を常に把握できます。</li>
+                        <li style="margin-bottom: 10px;">処理完了後、Jobcanでデータが正しく登録されているか確認します。</li>
+                    </ol>
+                </div>
+                
+                <div style="text-align: center; margin-top: 40px; padding-top: 30px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                    <p style="font-size: 1.1em; margin-bottom: 20px; color: rgba(255, 255, 255, 0.9);">
+                        より詳しい情報や使い方については、以下のガイドをご参照ください
+                    </p>
+                    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                        <a href="/guide/getting-started" style="display: inline-block; padding: 12px 24px; background: rgba(74, 158, 255, 0.2); border: 1px solid rgba(74, 158, 255, 0.5); border-radius: 8px; color: #4A9EFF; text-decoration: none; transition: all 0.3s;">はじめての使い方</a>
+                        <a href="/faq" style="display: inline-block; padding: 12px 24px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; color: #FFFFFF; text-decoration: none; transition: all 0.3s;">よくある質問</a>
+                        <a href="/guide/troubleshooting" style="display: inline-block; padding: 12px 24px; background: rgba(255, 152, 0, 0.2); border: 1px solid rgba(255, 152, 0, 0.5); border-radius: 8px; color: #FF9800; text-decoration: none; transition: all 0.3s;">トラブル解決</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- フッター -->
+        <div class="footer">
+            <div class="footer-content">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-bottom: 30px; text-align: left;">
+                    <div>
+                        <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">ガイド</h4>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <a href="/guide/getting-started" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">はじめての使い方</a>
+                            <a href="/guide/excel-format" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">Excelファイルの作成方法</a>
+                            <a href="/guide/troubleshooting" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">トラブルシューティング</a>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">リソース</h4>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <a href="/faq" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">よくある質問（FAQ）</a>
+                            <a href="/glossary" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">用語集</a>
+                            <a href="/about" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">サイトについて</a>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">法的情報</h4>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <a href="/privacy" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">プライバシーポリシー</a>
+                            <a href="/terms" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">利用規約</a>
+                            <a href="/contact" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">お問い合わせ</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-info" style="border-top: 1px solid rgba(255, 255, 255, 0.2); padding-top: 20px;">
+                    <p class="copyright">© 2025 Jobcan Autofill. All rights reserved.</p>
+                    <p class="developer">Developed by RT</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- プログレスポップアップ -->
+    <div class="progress-popup" id="progressPopup">
+        <div class="progress-content">
+            <div class="progress-header">
+                <h3>処理状況</h3>
+            </div>
+            
+            <div class="progress-status" id="progressStatus">
+                <h4><span class="loading-spinner"></span>処理中...</h4>
+                <p id="progressMessage">初期化中...</p>
+            </div>
+            
+            <div class="login-result" id="loginResult" style="display: none;">
+                <h5>ログイン結果</h5>
+                <div id="loginResultContent"></div>
+            </div>
+            
+            <div class="progress-log" id="progressLog">
+                <!-- ログメッセージがここに表示されます -->
+            </div>
+            
+            <div class="error-details" id="errorDetails" style="display: none;">
+                <h5>エラー詳細</h5>
+                <div id="errorContent"></div>
+            </div>
+            
+            <div class="progress-actions">
+                <button class="progress-btn" id="closeBtn" onclick="closeProgressPopup()">閉じる</button>
+                <button class="progress-btn secondary" id="retryBtn" onclick="retryProcess()" style="display: none;">再試行</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentJobId = null;
+        let lastLoginStatus = null; // 最後に表示したログイン状態を記録
+        
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const company_id = document.getElementById('company_id').value;
+            const file = document.getElementById('file').files[0];
+            
+            if (!email || !password || !file) {
+                alert('メールアドレス、パスワード、ファイルは必須です。');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('email', email);
+            formData.append('password', password);
+            if (company_id) {
+                formData.append('company_id', company_id);
+            }
+            formData.append('file', file);
+            
+            // プログレスポップアップを表示
+            showProgressPopup();
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.job_id) {
+                    currentJobId = result.job_id;
+                    updateProgressStatus('processing', '処理が開始されました', 'Jobcanへのログインとデータ処理を開始しています...');
+                    startProgressPolling();
+                } else {
+                    updateProgressStatus('error', 'エラーが発生しました', result.error || '不明なエラーが発生しました');
+                    showErrorDetails(result.error || '不明なエラーが発生しました');
+                }
+                
+            } catch (error) {
+                updateProgressStatus('error', 'ネットワークエラー', 'サーバーとの通信中にエラーが発生しました。');
+                console.error('Error:', error);
+            }
+        });
+        
+        function showProgressPopup() {
+            document.getElementById('progressPopup').style.display = 'block';
+            document.getElementById('progressStatus').className = 'progress-status';
+            document.getElementById('progressMessage').textContent = '初期化中...';
+            document.getElementById('progressLog').textContent = '';
+            document.getElementById('loginResult').style.display = 'none';
+            document.getElementById('errorDetails').style.display = 'none';
+            document.getElementById('retryBtn').style.display = 'none';
+            lastLoginStatus = null; // ログイン状態をリセット
+        }
+        
+        function closeProgressPopup() {
+            document.getElementById('progressPopup').style.display = 'none';
+        }
+        
+        function updateProgressStatus(type, title, message) {
+            const statusDiv = document.getElementById('progressStatus');
+            const titleElement = statusDiv.querySelector('h4');
+            const messageElement = document.getElementById('progressMessage');
+            
+            // クラスをリセット
+            statusDiv.className = 'progress-status';
+            
+            // タイプに応じてクラスを追加
+            if (type === 'success') {
+                statusDiv.classList.add('status-success');
+                titleElement.innerHTML = '✅ ' + title;
+            } else if (type === 'error') {
+                statusDiv.classList.add('status-error');
+                titleElement.innerHTML = '❌ ' + title;
+            } else if (type === 'warning') {
+                statusDiv.classList.add('status-warning');
+                titleElement.innerHTML = '⚠️ ' + title;
+            } else {
+                titleElement.innerHTML = '<span class="loading-spinner"></span>' + title;
+            }
+            
+            messageElement.textContent = message;
+        }
+        
+        function addProgressLog(message) {
+            const logDiv = document.getElementById('progressLog');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.textContent += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function showLoginResult(loginStatus, loginMessage) {
+            const loginResultDiv = document.getElementById('loginResult');
+            const loginResultContent = document.getElementById('loginResultContent');
+            
+            // processing状態の場合は表示しない
+            if (loginStatus === 'processing') {
+                loginResultDiv.style.display = 'none';
+                return;
+            }
+            
+            // クラスをリセット
+            loginResultDiv.className = 'login-result';
+            
+            let statusIcon = '';
+            let statusClass = '';
+            
+            if (loginStatus === 'success') {
+                statusIcon = '✅';
+                statusClass = 'success';
+            } else if (loginStatus === 'captcha_detected') {
+                statusIcon = '⚠️';
+                statusClass = 'warning';
+            } else {
+                statusIcon = '❌';
+                statusClass = 'error';
+            }
+            
+            loginResultDiv.classList.add(statusClass);
+            
+            // 改行を適切に処理
+            const formattedMessage = loginMessage.replace(/\n/g, '<br>');
+            
+            loginResultContent.innerHTML = `
+                <p><strong>${statusIcon} ログイン状態:</strong></p>
+                <div class="message-content ${statusClass}">${formattedMessage}</div>
+                <p><strong>ステータスコード:</strong> ${loginStatus}</p>
+            `;
+            
+            loginResultDiv.style.display = 'block';
+        }
+        
+        function showErrorDetails(errorMessage) {
+            const errorDiv = document.getElementById('errorDetails');
+            const errorContent = document.getElementById('errorContent');
+            
+            errorContent.innerHTML = `
+                <p><strong>エラーメッセージ:</strong></p>
+                <p>${errorMessage}</p>
+                <p><strong>考えられる原因:</strong></p>
+                <ul>
+                    <li>メールアドレスまたはパスワードが正しくありません</li>
+                    <li>Jobcanアカウントが無効またはロックされています</li>
+                    <li>ネットワーク接続に問題があります</li>
+                    <li>Jobcanサービスがメンテナンス中です</li>
+                    <li>CAPTCHAが表示されているため手動ログインが必要です</li>
+                </ul>
+                <p><strong>解決策:</strong></p>
+                <ul>
+                    <li>ログイン情報を再確認してください</li>
+                    <li>手動でJobcanにログインしてアカウント状態を確認してください</li>
+                    <li>別のブラウザでログインを試行してください</li>
+                    <li>しばらく時間をおいてから再試行してください</li>
+                </ul>
+            `;
+            
+            errorDiv.style.display = 'block';
+            document.getElementById('retryBtn').style.display = 'inline-block';
+        }
+        
+        function startProgressPolling() {
+            if (!currentJobId) return;
+            
+            // ポーリング完了フラグをリセット
+            window.pollingCompleted = false;
+            
+            const pollInterval = setInterval(async () => {
+                // ポーリングが完了している場合は処理をスキップ
+                if (window.pollingCompleted) {
+                    clearInterval(pollInterval);
+                    return;
+                }
+                try {
+                    const response = await fetch(`/status/${currentJobId}`);
+                    const result = await response.json();
+                    
+                    // ログイン結果を表示（processing状態以外の場合のみ、かつ状態が変わった場合のみ）
+                    if (result.login_status && result.login_message && result.login_status !== 'processing') {
+                        // 状態が変わった場合のみ表示
+                        if (lastLoginStatus !== result.login_status) {
+                            showLoginResult(result.login_status, result.login_message);
+                            lastLoginStatus = result.login_status;
+                        }
+                    }
+                    
+                    if (result.status === 'completed') {
+                        updateProgressStatus('success', '処理完了', result.user_message || '勤怠データの入力が完了しました。');
+                        addProgressLog('✅ 処理が正常に完了しました');
+                        clearInterval(pollInterval);
+                        document.getElementById('retryBtn').style.display = 'none';
+                        // ポーリング完了フラグを設定
+                        window.pollingCompleted = true;
+                    } else if (result.status === 'error') {
+                        updateProgressStatus('error', 'エラーが発生しました', result.user_message || '処理中にエラーが発生しました');
+                        addProgressLog('❌ エラー: ' + (result.user_message || '不明なエラー'));
+                        clearInterval(pollInterval);
+                        document.getElementById('retryBtn').style.display = 'inline-block';
+                        // ポーリング完了フラグを設定
+                        window.pollingCompleted = true;
+                    } else {
+                        // 進行中
+                        updateProgressStatus('processing', result.step_name || '処理中', result.user_message || '処理を実行中です...');
+                        
+                        // ログイン処理中の場合はログイン結果を非表示
+                        if (result.login_status === 'processing') {
+                            document.getElementById('loginResult').style.display = 'none';
+                        }
+                        
+                        if (result.logs && result.logs.length > 0) {
+                            // 新しいログのみを追加
+                            const currentLogs = document.getElementById('progressLog').textContent;
+                            result.logs.forEach(log => {
+                                if (!currentLogs.includes(log)) {
+                                    addProgressLog(log);
+                                }
+                            });
+                        }
+                    }
+                    
+                } catch (error) {
+                    console.error('Polling error:', error);
+                    // エラーログはコンソールに出力するが、ユーザーには表示しない
+                    // 処理完了後やネットワークの一時的な問題で発生することがある
+                    
+                    // 連続エラーが発生した場合はポーリングを停止
+                    if (!window.pollingErrorCount) {
+                        window.pollingErrorCount = 0;
+                    }
+                    window.pollingErrorCount++;
+                    
+                    if (window.pollingErrorCount > 5) {
+                        console.warn('Too many polling errors, stopping polling');
+                        clearInterval(pollInterval);
+                        window.pollingCompleted = true;
+                    }
+                }
+            }, 2000); // 2秒ごとにポーリング
+        }
+        
+        function retryProcess() {
+            closeProgressPopup();
+            // フォームを再送信
+            document.getElementById('uploadForm').dispatchEvent(new Event('submit'));
+        }
+        
+        // テンプレートダウンロード処理
+        async function downloadTemplate(type) {
+            try {
+                const button = event.target;
+                const originalText = button.innerHTML;
+                
+                // ボタンを無効化してローディング表示
+                button.disabled = true;
+                button.innerHTML = '<span class="loading-spinner"></span>ダウンロード中...';
+                
+                // ダウンロードURLを決定
+                const downloadUrl = type === 'current' ? '/download-template' : '/download-previous-template';
+                
+                // fetchでファイルを取得
+                const response = await fetch(downloadUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                // レスポンスからファイル名を取得
+                const contentDisposition = response.headers.get('content-disposition');
+                let filename = 'template.xlsx';
+                if (contentDisposition) {
+                    const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+                    if (filenameMatch) {
+                        filename = filenameMatch[1];
+                    }
+                }
+                
+                // Blobとしてファイルを取得
+                const blob = await response.blob();
+                
+                // ダウンロードリンクを作成して自動クリック
+                const downloadLink = document.createElement('a');
+                downloadLink.href = window.URL.createObjectURL(blob);
+                downloadLink.download = filename;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+                
+                // ボタンを元に戻す
+                button.disabled = false;
+                button.innerHTML = originalText;
+                
+            } catch (error) {
+                console.error('Download error:', error);
+                
+                // エラー時はボタンを元に戻す
+                const button = event.target;
+                button.disabled = false;
+                button.innerHTML = originalText;
+                
+                // エラーメッセージを表示
+                alert('ダウンロードに失敗しました。しばらく時間をおいてから再試行してください。');
+            }
+        }
+    </script>
+</body>
+</html> 

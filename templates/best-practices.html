@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ベストプラクティス - Jobcan AutoFill</title>
+    
+    {# Google AdSense #}
+    {% if ADSENSE_ENABLED and not (request.path.startswith('/login') or request.path.startswith('/app/') or request.path in ['/privacy', '/contact', '/thanks']) %}
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4232725615106709" crossorigin="anonymous"></script>
+    {% endif %}
+    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; font-family: 'Noto Sans JP', sans-serif; }
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #121212 0%, #1A1A1A 50%, #0F0F0F 100%);
+            color: #FFFFFF;
+            line-height: 1.8;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { color: #4A9EFF; font-size: 2em; margin-bottom: 30px; }
+        h2 { color: #4A9EFF; font-size: 1.5em; margin-top: 40px; margin-bottom: 20px; border-bottom: 2px solid rgba(74, 158, 255, 0.3); padding-bottom: 10px; }
+        h3 { color: #FF9800; font-size: 1.3em; margin-top: 30px; margin-bottom: 15px; }
+        .nav-link { display: inline-block; margin-top: 40px; padding: 12px 24px; background: rgba(74, 158, 255, 0.2); border: 1px solid rgba(74, 158, 255, 0.5); border-radius: 8px; color: #4A9EFF; text-decoration: none; }
+        .nav-link:hover { background: rgba(74, 158, 255, 0.3); }
+        .highlight-box { background: rgba(74, 158, 255, 0.1); border-left: 4px solid #4A9EFF; padding: 20px; margin: 25px 0; border-radius: 8px; }
+        .warning-box { background: rgba(255, 152, 0, 0.1); border-left: 4px solid #FF9800; padding: 20px; margin: 25px 0; border-radius: 8px; }
+        ul, ol { line-height: 2; }
+        li { margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ベストプラクティスガイド</h1>
+        
+        <p>Jobcan AutoFillを効果的に活用するための、実践的なベストプラクティスをご紹介します。このガイドに従うことで、より安全かつ効率的に勤怠管理を行えます。</p>
+
+        <h2>1. データ入力の準備</h2>
+        
+        <h3>Excelファイルの準備</h3>
+        <div class="highlight-box">
+            <p><strong>推奨事項：</strong></p>
+            <ul>
+                <li>テンプレートファイルを使用して、必ず正しい形式に従ってください</li>
+                <li>日付は「YYYY-MM-DD」形式または「YYYY/MM/DD」形式で統一してください</li>
+                <li>時刻は「HH:MM」形式または4桁の数値（0900など）で入力してください</li>
+                <li>データ入力前に、必ず目視で内容を確認してください</li>
+            </ul>
+        </div>
+
+        <h3>データの検証</h3>
+        <div class="warning-box">
+            <p><strong>重要：</strong>入力前に以下の点を必ず確認してください：</p>
+            <ul>
+                <li>すべての日付が正しい形式になっているか</li>
+                <li>開始時刻と終了時刻の関係が論理的に正しいか（開始時刻 < 終了時刻）</li>
+                <li>空白行や不完全なデータがないか</li>
+                <li>勤務時間が会社の就業規則に準拠しているか</li>
+            </ul>
+        </div>
+
+        <h2>2. セキュリティとプライバシー</h2>
+
+        <h3>ログイン情報の管理</h3>
+        <div class="highlight-box">
+            <p><strong>セキュリティのベストプラクティス：</strong></p>
+            <ul>
+                <li>ログイン情報は、個人のセキュアな環境でのみ使用してください</li>
+                <li>共有PCや公共のWi-Fi環境では使用を避けてください</li>
+                <li>処理完了後は、ブラウザの履歴をクリアしてください</li>
+                <li>定期的にパスワードを変更してください</li>
+            </ul>
+        </div>
+
+        <h3>データの保護</h3>
+        <p>本サービスは、一時的な処理のみを行い、個人情報の永続的な保存は一切行いません。しかし、ユーザー側でも以下の点に注意してください：</p>
+        <ul>
+            <li>Excelファイルには、勤怠データのみを含めてください（個人情報の混入を避ける）</li>
+            <li>処理後のファイルは適切に管理してください（不要になったら削除）</li>
+            <li>他のユーザーとExcelファイルを共有しないでください</li>
+        </ul>
+
+        <h2>3. 効率的な使用方法</h2>
+
+        <h3>処理タイミングの最適化</h3>
+        <div class="highlight-box">
+            <p><strong>推奨される処理タイミング：</strong></p>
+            <ul>
+                <li>月次締め後、月初めにまとめて処理する</li>
+                <li>システム負荷の少ない時間帯を選択する（深夜・早朝など）</li>
+                <li>一度に処理するデータ数を適切に制限する（50件程度が目安）</li>
+                <li>ネットワーク接続が安定している環境で使用する</li>
+            </ul>
+        </div>
+
+        <h3>エラーハンドリング</h3>
+        <p>エラーが発生した場合の対処法：</p>
+        <ol>
+            <li>エラーメッセージを確認し、<a href="/guide/troubleshooting">トラブルシューティングガイド</a>を参照</li>
+            <li>問題が解決しない場合は、処理を一度中断し、しばらく待ってから再試行</li>
+            <li>同じエラーが繰り返し発生する場合は、Excelファイルの形式を確認</li>
+            <li>それでも解決しない場合は、<a href="/contact">お問い合わせ</a>から報告</li>
+        </ol>
+
+        <h2>4. 法的・倫理的な考慮事項</h2>
+
+        <h3>就業規則の遵守</h3>
+        <div class="warning-box">
+            <p><strong>重要な注意事項：</strong></p>
+            <ul>
+                <li>所属企業の就業規則やセキュリティポリシーを必ず遵守してください</li>
+                <li>勤怠管理システムへの不正なアクセスや改ざんは、法令違反となる可能性があります</li>
+                <li>実際の勤務実態と異なるデータの入力は、就業規則違反となる可能性があります</li>
+                <li>個人の判断と責任、そして倫理観をもって慎重にご使用ください</li>
+            </ul>
+        </div>
+
+        <h3>適切な使用範囲</h3>
+        <p>本ツールは、以下の目的での使用を想定しています：</p>
+        <ul>
+            <li>テンプレートからの勤怠データ入力</li>
+            <li>過去の勤怠データの再入力（打刻漏れの修正など）</li>
+            <li>月次締め時の一括データ入力</li>
+        </ul>
+        <p><strong>以下の目的での使用は避けてください：</strong></p>
+        <ul>
+            <li>実際の勤務時間と異なるデータの入力</li>
+            <li>勤怠改ざんや不正なアクセス</li>
+            <li>会社のセキュリティポリシーに反する行為</li>
+        </ul>
+
+        <h2>5. トラブルシューティングのヒント</h2>
+
+        <h3>よくある問題と対処法</h3>
+        <div class="highlight-box">
+            <p><strong>問題：処理が途中で停止する</strong></p>
+            <p>対処法：</p>
+            <ul>
+                <li>Excelファイルのデータ量を減らして再度試行</li>
+                <li>ネットワーク接続を確認</li>
+                <li>しばらく待ってから再試行</li>
+            </ul>
+        </div>
+
+        <div class="highlight-box">
+            <p><strong>問題：ログインに失敗する</strong></p>
+            <p>対処法：</p>
+            <ul>
+                <li>メールアドレスとパスワードが正しいか確認</li>
+                <li>会社IDが必要な場合は正しく入力しているか確認</li>
+                <li>JobcanのWebサイトで直接ログインできるか確認</li>
+            </ul>
+        </div>
+
+        <h2>6. 継続的な改善</h2>
+
+        <h3>フィードバックの提供</h3>
+        <p>本サービスは継続的に改善しています。以下のフィードバックをお待ちしています：</p>
+        <ul>
+            <li>機能要望</li>
+            <li>不具合報告</li>
+            <li>使い勝手に関する意見</li>
+            <li>技術的な改善提案</li>
+        </ul>
+        <p>フィードバックは<a href="/contact">お問い合わせページ</a>から提供できます。</p>
+
+        <h3>ドキュメントの活用</h3>
+        <p>より詳しい情報は、以下のドキュメントをご参照ください：</p>
+        <ul>
+            <li><a href="/guide/getting-started">はじめての使い方</a></li>
+            <li><a href="/faq">よくある質問</a></li>
+            <li><a href="/guide/troubleshooting">トラブルシューティング</a></li>
+            <li><a href="/glossary">用語集</a></li>
+        </ul>
+
+        <a href="/" class="nav-link">← トップページに戻る</a>
+    </div>
+</body>
+</html>
+

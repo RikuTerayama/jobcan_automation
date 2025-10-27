@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プライバシーポリシー - Jobcan AutoFill</title>
+    
+    {# Google AdSense - 本番環境のみ、除外ページ以外で読み込み #}
+    {% if ADSENSE_ENABLED and not (request.path.startswith('/login') or request.path.startswith('/app/') or request.path in ['/privacy', '/contact', '/thanks']) %}
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4232725615106709" crossorigin="anonymous"></script>
+    {% endif %}
+    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #121212 0%, #1A1A1A 50%, #0F0F0F 100%);
+            min-height: 100vh;
+            color: #FFFFFF;
+            line-height: 1.8;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, #1E1E1E 0%, #2A2A2A 100%);
+            border-radius: 20px;
+            padding: 50px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #FFFFFF;
+        }
+        .update-date {
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 30px;
+        }
+        h2 {
+            font-size: 1.8em;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            color: #FFFFFF;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 10px;
+        }
+        p, li {
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 15px;
+        }
+        ul {
+            padding-left: 30px;
+        }
+        a {
+            color: #4A9EFF;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 40px;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            color: #FFFFFF;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .back-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>プライバシーポリシー</h1>
+        <p class="update-date">最終更新日：2025年10月10日</p>
+
+        <h2>1. はじめに</h2>
+        <p>Jobcan AutoFill（以下「本サービス」）は、ユーザーの皆様のプライバシーを尊重し、個人情報の保護に努めます。本プライバシーポリシーは、本サービスがどのように情報を収集、使用、保護するかを説明するものです。</p>
+
+        <h2>2. 収集する情報</h2>
+        <p>本サービスは以下の情報を収集します：</p>
+        <ul>
+            <li><strong>ログイン情報</strong>：Jobcanへのログインに必要なメールアドレスとパスワード（一時的にメモリ内のみで処理）</li>
+            <li><strong>勤怠データ</strong>：アップロードされたExcelファイルに含まれる勤怠情報</li>
+            <li><strong>利用状況</strong>：サービスの改善を目的としたアクセスログ（IPアドレス、ブラウザ情報、アクセス日時）</li>
+        </ul>
+
+        <h2>3. 情報の使用目的</h2>
+        <p>収集した情報は以下の目的でのみ使用されます：</p>
+        <ul>
+            <li>Jobcanへの自動ログインと勤怠データの入力</li>
+            <li>サービスの提供、運用、改善</li>
+            <li>技術的な問題の診断と解決</li>
+            <li>利用規約違反の検出と防止</li>
+        </ul>
+
+        <h2>4. 情報の保管と削除</h2>
+        <p><strong>重要：本サービスはログイン情報や勤怠データをサーバーに保存しません。</strong></p>
+        <ul>
+            <li>すべての個人情報は処理中のみメモリ内に一時的に保持されます</li>
+            <li>処理完了後、すべての情報は自動的に削除されます</li>
+            <li>アップロードされたファイルは処理後に即座に削除されます</li>
+        </ul>
+
+        <h2>5. 第三者への情報提供</h2>
+        <p>本サービスは、以下の場合を除き、ユーザーの個人情報を第三者に提供、開示することはありません：</p>
+        <ul>
+            <li>ユーザーの同意がある場合</li>
+            <li>法令に基づく場合</li>
+            <li>人の生命、身体または財産の保護のために必要な場合</li>
+        </ul>
+
+        <h2>6. セキュリティ</h2>
+        <p>本サービスは、個人情報の保護のために以下のセキュリティ対策を実施しています：</p>
+        <ul>
+            <li>HTTPS通信による暗号化</li>
+            <li>処理完了後の即座のデータ削除</li>
+            <li>アクセスログの適切な管理</li>
+            <li>定期的なセキュリティ更新</li>
+        </ul>
+
+        <h2>7. Cookie（クッキー）の使用</h2>
+        <p>本サービスは、サービスの改善と広告配信のためにCookieを使用する場合があります。Cookieの使用を希望しない場合は、ブラウザの設定で無効化することができます。</p>
+
+        <h2>8. Google AdSenseについて</h2>
+        <p>本サービスは、Google AdSenseを使用して広告を配信しています。Google AdSenseは、Cookieを使用してユーザーの興味に基づいた広告を表示します。Cookieを使用した広告配信を無効化する場合は、<a href="https://www.google.com/settings/ads" target="_blank">Googleの広告設定ページ</a>で設定を変更できます。</p>
+
+        <h2>9. プライバシーポリシーの変更</h2>
+        <p>本プライバシーポリシーは、法令の変更やサービスの改善に伴い、予告なく変更される場合があります。変更後のプライバシーポリシーは、本ページに掲載された時点で効力を生じます。</p>
+
+        <h2>10. お問い合わせ</h2>
+        <p>本プライバシーポリシーに関するご質問やご意見は、<a href="/contact">お問い合わせページ</a>よりご連絡ください。</p>
+
+        <a href="/" class="back-link">← トップページに戻る</a>
+    </div>
+</body>
+</html>
+

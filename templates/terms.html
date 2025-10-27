@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>利用規約 - Jobcan AutoFill</title>
+    
+    {# Google AdSense - 本番環境のみ、除外ページ以外で読み込み #}
+    {% if ADSENSE_ENABLED and not (request.path.startswith('/login') or request.path.startswith('/app/') or request.path in ['/privacy', '/contact', '/thanks']) %}
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4232725615106709" crossorigin="anonymous"></script>
+    {% endif %}
+    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #121212 0%, #1A1A1A 50%, #0F0F0F 100%);
+            min-height: 100vh;
+            color: #FFFFFF;
+            line-height: 1.8;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, #1E1E1E 0%, #2A2A2A 100%);
+            border-radius: 20px;
+            padding: 50px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #FFFFFF;
+        }
+        .update-date {
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 30px;
+        }
+        h2 {
+            font-size: 1.8em;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            color: #FFFFFF;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 10px;
+        }
+        p, li {
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 15px;
+        }
+        ul {
+            padding-left: 30px;
+        }
+        a {
+            color: #4A9EFF;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 40px;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            color: #FFFFFF;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        .back-link:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        .warning {
+            background: rgba(220, 53, 69, 0.1);
+            border-left: 4px solid #DC3545;
+            padding: 20px;
+            margin: 30px 0;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>利用規約</h1>
+        <p class="update-date">最終更新日：2025年10月10日</p>
+
+        <h2>第1条（適用範囲）</h2>
+        <p>本利用規約（以下「本規約」）は、Jobcan AutoFill（以下「本サービス」）の利用に関する条件を定めるものです。本サービスを利用するすべてのユーザーは、本規約に同意したものとみなされます。</p>
+
+        <h2>第2条（サービスの内容）</h2>
+        <p>本サービスは、Jobcanへの勤怠データ自動入力を補助するツールです。ユーザーがアップロードしたExcelファイルのデータに基づき、Jobcanへ自動的にログインし、勤怠情報を入力します。</p>
+
+        <h2>第3条（利用資格）</h2>
+        <p>本サービスを利用できるのは、以下の条件を満たす方に限ります：</p>
+        <ul>
+            <li>Jobcanのアカウントを正当に保有している方</li>
+            <li>本規約に同意し、遵守できる方</li>
+            <li>実際の勤務実態に基づく勤怠データのみを入力する方</li>
+        </ul>
+
+        <h2>第4条（禁止事項）</h2>
+        <p>ユーザーは、本サービスの利用にあたり、以下の行為を行ってはなりません：</p>
+        <ul>
+            <li>虚偽の勤怠データを入力すること</li>
+            <li>実際の勤務実態と異なるデータを入力すること</li>
+            <li>他人のアカウント情報を不正に使用すること</li>
+            <li>本サービスのシステムに過度な負荷をかける行為</li>
+            <li>所属企業の就業規則やセキュリティポリシーに違反する行為</li>
+            <li>法令、公序良俗に反する行為</li>
+            <li>本サービスの運営を妨害する行為</li>
+        </ul>
+
+        <div class="warning">
+            <strong>⚠️ 重要な注意事項</strong>
+            <p>本サービスは、個人の業務効率化を目的として開発されたツールであり、会社の公式ツールではありません。実際の勤務実態と異なる打刻の入力や、所属企業の就業規則・セキュリティポリシーに反する使用は、法令または社内規定に抵触する可能性があります。</p>
+            <p><strong>自動入力機能をご利用の際は、ご自身の判断と責任、そして倫理観をもって慎重にご使用ください。</strong></p>
+        </div>
+
+        <h2>第5条（免責事項）</h2>
+        <p>本サービスの提供者は、以下について一切の責任を負いません：</p>
+        <ul>
+            <li>本サービスの利用により生じた損害（データの消失、業務上の不利益、懲戒処分など）</li>
+            <li>Jobcanのシステム変更により本サービスが正常に動作しなくなった場合</li>
+            <li>ユーザーが入力した勤怠データの正確性</li>
+            <li>ユーザーの就業規則違反やセキュリティポリシー違反</li>
+            <li>サービスの中断、終了、障害</li>
+        </ul>
+
+        <h2>第6条（個人情報の取り扱い）</h2>
+        <p>本サービスにおける個人情報の取り扱いについては、<a href="/privacy">プライバシーポリシー</a>をご確認ください。</p>
+
+        <h2>第7条（サービスの変更・終了）</h2>
+        <p>本サービスの提供者は、ユーザーへの事前通知なく、本サービスの内容を変更、または本サービスの提供を終了することができます。これにより生じた損害について、一切の責任を負いません。</p>
+
+        <h2>第8条（利用規約の変更）</h2>
+        <p>本規約は、ユーザーへの事前通知なく変更される場合があります。変更後の規約は、本ページに掲載された時点で効力を生じます。本サービスを継続して利用した場合、変更後の規約に同意したものとみなされます。</p>
+
+        <h2>第9条（準拠法・管轄裁判所）</h2>
+        <p>本規約の解釈にあたっては、日本法を準拠法とします。本サービスに関する紛争については、東京地方裁判所を第一審の専属的合意管轄裁判所とします。</p>
+
+        <h2>第10条（お問い合わせ）</h2>
+        <p>本規約に関するご質問やご意見は、<a href="/contact">お問い合わせページ</a>よりご連絡ください。</p>
+
+        <a href="/" class="back-link">← トップページに戻る</a>
+    </div>
+</body>
+</html>
+
