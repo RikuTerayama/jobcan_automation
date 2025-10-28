@@ -1,16 +1,12 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Excelファイルの作成方法 - Jobcan AutoFill</title>
+    {% block title %}Excelファイルの作成方法 | Jobcan AutoFill{% endblock %}
+    {% block description %}Jobcan AutoFillで使用するExcelファイルの作成方法を詳細解説。正しい形式で効率的にデータを準備できます。{% endblock %}
+    {% block keywords %}Excel形式, ファイル作成, テンプレート{% endblock %}
     
-    {# Google AdSense - 本番環境のみ、除外ページ以外で読み込み #}
-    {% if ADSENSE_ENABLED and not (request.path.startswith('/login') or request.path.startswith('/app/') or request.path in ['/privacy', '/contact', '/thanks']) %}
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4232725615106709" crossorigin="anonymous"></script>
-    {% endif %}
-    
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet">
+    {# 共通HEADメタタグ #}
+    {% include 'includes/head_meta.html' %}
     <style>
         body {
             font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;

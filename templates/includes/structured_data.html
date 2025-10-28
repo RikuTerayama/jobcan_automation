@@ -1,0 +1,42 @@
+{# 構造化データ（JSON-LD） #}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Jobcan AutoFill",
+  "url": "https://jobcan-automation.onrender.com",
+  "logo": "https://jobcan-automation.onrender.com{{ url_for('static', filename='JobcanAutofill.png') }}",
+  "description": "Jobcanへの勤怠データをExcelから一括入力する自動化ツール",
+  "sameAs": [],
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "お問い合わせ",
+    "url": "https://jobcan-automation.onrender.com/contact"
+  }
+}
+</script>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Jobcan AutoFill",
+  "url": "https://jobcan-automation.onrender.com",
+  "description": "Jobcanへの勤怠データをExcelから一括入力する自動化ツール",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Jobcan AutoFill"
+  },
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": {
+      "@type": "EntryPoint",
+      "urlTemplate": "https://jobcan-automation.onrender.com/?q={search_term_string}"
+    },
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+
+{% block extra_structured_data %}{% endblock %}
+

@@ -1,0 +1,60 @@
+{# 共通HEADメタタグ #}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+{# Title: 24-31文字、主要KW左側配置 #}
+<title>{% block title %}Jobcan AutoFill - 勤怠データ自動入力ツール{% endblock %}</title>
+
+{# Meta Description: 80-110文字、自然文で価値・ベネフィットを伝える #}
+{% set meta_desc = block('description')|default('Jobcanへの勤怠データをExcelから一括入力する自動化ツール。手作業の繰り返しを削減し、業務効率を向上させます。') %}
+{% if meta_desc|length > 110 %}
+<meta name="description" content="{{ meta_desc[:107] }}...">
+{% else %}
+<meta name="description" content="{{ meta_desc }}">
+{% endif %}
+
+{# Meta Keywords (任意): 2-3語、Google検索では評価対象外 #}
+{# 注: Googleは<meta name="keywords">を評価対象外としています。以下は歴史的な互換性のための実装です。 #}
+{% if block('keywords') is defined and block('keywords')|trim %}
+<meta name="keywords" content="{% block keywords %}{% endblock %}">
+{% endif %}
+
+<link rel="canonical" href="{% block canonical_url %}https://jobcan-automation.onrender.com{{ request.path }}{% endblock %}">
+
+{# Google Search Console 所有権確認 #}
+<meta name="google-site-verification" content="bQuTb9pABqynDmXqfDdakvmFSqz8y8MyYnOExuucmnA" />
+
+{# Google AdSense - 本番環境のみ、除外ページ以外で読み込み #}
+{% if ADSENSE_ENABLED and not (request.path.startswith('/login') or request.path.startswith('/app/') or request.path in ['/privacy', '/contact', '/thanks']) %}
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4232725615106709" crossorigin="anonymous"></script>
+{% endif %}
+
+{# Open Graph / OGP #}
+<meta property="og:type" content="{% block og_type %}website{% endblock %}">
+<meta property="og:title" content="{% block og_title %}{% block title %}Jobcan AutoFill{% endblock %}{% endblock %}">
+{% if meta_desc|length > 200 %}
+<meta property="og:description" content="{{ meta_desc[:197] }}...">
+{% else %}
+<meta property="og:description" content="{{ meta_desc }}">
+{% endif %}
+<meta property="og:url" content="https://jobcan-automation.onrender.com{{ request.path }}">
+<meta property="og:image" content="{% block og_image %}https://jobcan-automation.onrender.com{{ url_for('static', filename='JobcanAutofill.png') }}{% endblock %}">
+
+{# Twitter Card #}
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{% block twitter_title %}{% block og_title %}{% block title %}Jobcan AutoFill{% endblock %}{% endblock %}{% endblock %}">
+{% if meta_desc|length > 200 %}
+<meta name="twitter:description" content="{{ meta_desc[:197] }}...">
+{% else %}
+<meta name="twitter:description" content="{{ meta_desc }}">
+{% endif %}
+
+{# Robots #}
+<meta name="robots" content="{% block robots %}index,follow{% endblock %}">
+
+{# Web Font (Noto Sans JP) #}
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+
+{# カスタムスタイル（各ページで拡張可能） #}
+{% block extra_head %}{% endblock %}
+

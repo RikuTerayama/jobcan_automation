@@ -1,16 +1,12 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>よくある質問（FAQ） - Jobcan AutoFill</title>
+    {% block title %}よくある質問（FAQ） | Jobcan AutoFill{% endblock %}
+    {% block description %}Jobcan AutoFillに関するよくある質問34件を回答。初期設定からエラー対応、セキュリティまで幅広くカバーします。{% endblock %}
+    {% block keywords %}FAQ, よくある質問, トラブル対応{% endblock %}
     
-    {# Google AdSense - 本番環境のみ、除外ページ以外で読み込み #}
-    {% if ADSENSE_ENABLED and not (request.path.startswith('/login') or request.path.startswith('/app/') or request.path in ['/privacy', '/contact', '/thanks']) %}
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4232725615106709" crossorigin="anonymous"></script>
-    {% endif %}
-    
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet">
+    {# 共通HEADメタタグ #}
+    {% include 'includes/head_meta.html' %}
     <style>
         body {
             font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;
@@ -367,6 +363,98 @@
             <div class="faq-question">Q25. サービスが使えなくなることはありますか？</div>
             <div class="faq-answer">
                 A. サービスの提供は予告なく変更・終了される場合があります。Jobcanのシステム仕様変更により、一時的に使用できなくなる可能性もあります。詳細は<a href="/terms">利用規約</a>をご確認ください。
+            </div>
+        </div>
+
+        <h2>セキュリティとプライバシーについて</h2>
+
+        <div class="faq-item">
+            <div class="category">セキュリティ</div>
+            <div class="faq-question">Q26. ログイン情報は安全ですか？</div>
+            <div class="faq-answer">
+                A. はい、ログイン情報は一時的にメモリに保存され、処理完了後に自動的に削除されます。サーバーやデータベースには一切保存されず、第三者に共有されることはありません。詳細は<a href="/privacy">プライバシーポリシー</a>をご確認ください。
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="category">セキュリティ</div>
+            <div class="faq-question">Q27. SSL/TLSによる通信の暗号化は行われていますか？</div>
+            <div class="faq-answer">
+                A. はい、本サービスはHTTPS通信を使用しており、すべてのデータ通信はTLS暗号化によって保護されています。ブラウザのアドレスバーに鍵マークが表示されている場合は、安全な接続が確立されています。
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="category">セキュリティ</div>
+            <div class="faq-question">Q28. 第三者にログイン情報が漏洩するリスクはありますか？</div>
+            <div class="faq-answer">
+                A. 本サービスは一時的な処理のみを行い、ログイン情報の永続的な保存は一切行いません。また、監視ログやアクセスログにも、個人を特定できる情報は記録されません。詳細は<a href="/privacy">プライバシーポリシー</a>をご確認ください。
+            </div>
+        </div>
+
+        <h2>技術仕様について</h2>
+
+        <div class="faq-item">
+            <div class="category">技術</div>
+            <div class="faq-question">Q29. どのような技術を使用していますか？</div>
+            <div class="faq-answer">
+                A. 本サービスは以下の技術を採用しています：
+                <ul>
+                    <li>Playwright（ブラウザ自動化）</li>
+                    <li>Python 3.x（サーバーサイド）</li>
+                    <li>Flask（Webフレームワーク）</li>
+                    <li>pandas（データ処理）</li>
+                    <li>openpyxl（Excelファイル処理）</li>
+                </ul>
+                これにより、高速かつ正確なデータ処理が実現されています。
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="category">技術</div>
+            <div class="faq-question">Q30. 処理速度はどのくらいですか？</div>
+            <div class="faq-answer">
+                A. データ1件あたり約10-15秒程度の処理時間が必要です。人間の操作パターンを再現するため、適切な待機時間を設けており、Jobcanシステムへの負荷を最小限に抑えながら正確なデータ入力を実現しています。
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="category">技術</div>
+            <div class="faq-question">Q31. ブラウザの種類やバージョンに依存しますか？</div>
+            <div class="faq-answer">
+                A. いいえ、本サービスはサーバーサイドでPlaywrightを使用してブラウザを制御します。ユーザーのブラウザの種類やバージョンは一切関係なく、すべての環境で同じように動作します。
+            </div>
+        </div>
+
+        <h2>運用とサポートについて</h2>
+
+        <div class="faq-item">
+            <div class="category">サポート</div>
+            <div class="faq-question">Q32. 無料で利用できますか？</div>
+            <div class="faq-answer">
+                A. はい、本サービスは個人向けの無料ツールとして提供されています。ただし、サーバーリソースには限りがあるため、適度な使用をお願いします。過度な使用や悪用が疑われる場合は、サービスの提供を制限する場合があります。
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="category">サポート</div>
+            <div class="faq-question">Q33. 商用利用は可能ですか？</div>
+            <div class="faq-answer">
+                A. 本サービスは個人向けの効率化ツールとして開発されています。商用利用については、<a href="/contact">お問い合わせ</a>から事前にご連絡ください。企業の就業規則やセキュリティポリシーを必ず遵守してください。
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="category">サポート</div>
+            <div class="faq-question">Q34. エラーが発生した場合の対応方法は？</div>
+            <div class="faq-answer">
+                A. エラーが発生した場合は、以下の手順をご確認ください：
+                <ol>
+                    <li><a href="/guide/troubleshooting">トラブルシューティングガイド</a>を確認</li>
+                    <li>もう一度処理を試行</li>
+                    <li>問題が解決しない場合は<a href="/contact">お問い合わせ</a>から報告</li>
+                </ol>
+                エラーログを添付していただくと、迅速に対応できます。
             </div>
         </div>
 
