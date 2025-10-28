@@ -227,6 +227,20 @@
             border-width: 0;
         }
         
+        /* テキストユーティリティ */
+        .text-center {
+            text-align: center;
+        }
+        
+        .font-weight-bold {
+            font-weight: 600;
+        }
+        
+        /* 見出しの強調（CSSで） */
+        h2, h3, h4 {
+            font-weight: 600;
+        }
+        
         .content {
             padding: 50px 40px;
             background: linear-gradient(145deg, #1E1E1E 0%, #2A2A2A 100%);
@@ -759,6 +773,7 @@
     <main>
         <div class="container">
             <header class="header" role="banner">
+                <img src="{{ url_for('static', filename='JobcanAutofill.png') }}" alt="Jobcan AutoFill ロゴ" width="900" height="240" style="display: none;" />
                 <!-- 背景画像としてロゴを表示 -->
             </header>
             
@@ -799,9 +814,9 @@
                     <li>自動でJobcanにログインし、勤怠データを入力します</li>
                 </ul>
                 <p style="margin-top: 20px; padding: 15px; background: rgba(74, 158, 255, 0.1); border-left: 4px solid #4A9EFF; border-radius: 8px;">
-                    <strong>📚 詳しい使い方は</strong><a href="/guide/getting-started" style="color: #4A9EFF; margin-left: 8px;">はじめての使い方ガイド</a>をご覧ください。
+                    <span class="font-weight-bold">📚 詳しい使い方は</span><a href="/guide/getting-started" style="color: #4A9EFF; margin-left: 8px;">はじめての使い方ガイド</a>をご覧ください。
                 </p>
-                <div style="margin-top: 20px; text-align: center;">
+                <div class="text-center" style="margin-top: 20px;">
                     <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
                         <button type="button" class="submit-btn download-btn" onclick="downloadTemplate('current')" style="display: inline-block; text-decoration: none; text-align: center; min-width: 200px; margin: 0; cursor: pointer;">
                             今月のテンプレートを<br>ダウンロード
@@ -817,7 +832,7 @@
                     <h4>⚠️ ご利用にあたってのご注意</h4>
                     <p>本アプリは、個人の業務効率化を目的として開発されたものであり、会社の公式ツールではありません。<br>Jobcanへの勤怠データ入力を補助するものですが、正確な勤怠情報の登録を前提としています。</p>
                     <p>実際の勤務実態と異なる打刻の入力や、所属企業の就業規則・セキュリティポリシーに反する使用は、法令または社内規定に抵触する可能性があります。</p>
-                    <p><strong>自動入力機能をご利用の際は、ご自身の判断と責任、そして倫理観をもって慎重にご使用ください。</strong></p>
+                    <p class="font-weight-bold">自動入力機能をご利用の際は、ご自身の判断と責任、そして倫理観をもって慎重にご使用ください。</p>
                 </div>
             </div>
             
