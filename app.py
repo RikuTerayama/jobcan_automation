@@ -282,6 +282,11 @@ def about():
     """サイトについて"""
     return render_template('about.html')
 
+@app.route('/sitemap.html')
+def sitemap_html():
+    """HTMLサイトマップ"""
+    return render_template('sitemap.html')
+
 # === ヘルスチェックエンドポイント（Render用・超軽量） ===
 @app.route('/healthz')
 def healthz():
