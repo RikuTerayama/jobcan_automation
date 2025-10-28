@@ -1,0 +1,12 @@
+{
+  "name": "jobcan-automation",
+  "version": "1.0.0",
+  "description": "Jobcan勤怠データ自動入力ツール",
+  "scripts": {
+    "lint:html": "html-validate 'templates/**/*.html'"
+  },
+  "devDependencies": {
+    "html-validate": "^9.0.0"
+  }
+}
+
