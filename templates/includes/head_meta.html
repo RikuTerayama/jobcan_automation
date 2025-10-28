@@ -1,6 +1,6 @@
 {# HEADの軽量化 - 必須メタのみ #}
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}Jobcan AutoFill - 勤怠データ自動入力ツール{% endblock %}</title>
 {% set meta_desc = block('description')|default('Jobcanへの勤怠データをExcelから一括入力する自動化ツール。手作業の繰り返しを削減し、業務効率を向上させます。') %}
 <meta name="description" content="{% if meta_desc|length > 110 %}{{ meta_desc[:107] }}...{% else %}{{ meta_desc }}{% endif %}">
