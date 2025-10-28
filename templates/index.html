@@ -215,6 +215,18 @@
             text-decoration: underline !important;
         }
         
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+        
         .content {
             padding: 50px 40px;
             background: linear-gradient(145deg, #1E1E1E 0%, #2A2A2A 100%);
@@ -744,12 +756,14 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <!-- 背景画像としてロゴを表示 -->
-        </div>
-        
-        <div class="content">
+    <main>
+        <div class="container">
+            <header class="header" role="banner">
+                <!-- 背景画像としてロゴを表示 -->
+            </header>
+            
+            <div class="content">
+                <h1 class="sr-only">Jobcan勤怠データ自動入力ツール</h1>
             <form id="uploadForm" enctype="multipart/form-data">
                 <div class="form-group">
                     <label for="email">メールアドレス</label>
@@ -776,8 +790,8 @@
                 </button>
             </form>
             
-            <div class="info-section">
-                <h3>使用方法</h3>
+            <section class="info-section" aria-labelledby="usage-heading">
+                <h2 id="usage-heading">使用方法</h2>
                 <ul>
                     <li>Jobcanのログイン情報（メールアドレスとパスワード）を入力</li>
                     <li>勤怠データが含まれたExcelファイルをアップロード</li>
@@ -810,11 +824,11 @@
                             <div class="security-notice">
                     <h4>セキュリティについて</h4>
                     <p>入力されたログイン情報は一時的にメモリに保存され、処理完了後に自動的に削除されます。<br>サーバーには保存されません。</p>
-                </div>
+                </section>
             
             <!-- 新規コンテンツセクション：充実した情報を提供 -->
-            <div style="margin-top: 50px; padding-top: 40px; border-top: 2px solid rgba(255, 255, 255, 0.1);">
-                <h2 style="font-size: 1.8em; margin-bottom: 30px; color: #FFFFFF; text-align: center; letter-spacing: 0.05em;">
+            <section aria-labelledby="comprehensive-guide-heading" style="margin-top: 50px; padding-top: 40px; border-top: 2px solid rgba(255, 255, 255, 0.1);">
+                <h2 id="comprehensive-guide-heading" style="font-size: 1.8em; margin-bottom: 30px; color: #FFFFFF; text-align: center; letter-spacing: 0.05em;">
                     Jobcan勤怠管理を効率化する総合ガイド
                 </h2>
                 
@@ -908,12 +922,14 @@
                         <a href="/faq" style="display: inline-block; padding: 12px 24px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; color: #FFFFFF; text-decoration: none; transition: all 0.3s;">よくある質問</a>
                         <a href="/guide/troubleshooting" style="display: inline-block; padding: 12px 24px; background: rgba(255, 152, 0, 0.2); border: 1px solid rgba(255, 152, 0, 0.5); border-radius: 8px; color: #FF9800; text-decoration: none; transition: all 0.3s;">トラブル解決</a>
                     </div>
+                    </div>
                 </div>
-            </div>
+            </section>
         </div>
+    </main>
         
         <!-- フッター -->
-        <div class="footer">
+        <footer class="footer">
             <div class="footer-content">
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-bottom: 30px; text-align: left;">
                     <div>
