@@ -43,6 +43,12 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://jobcan-automation.onrender.com/best-practices</loc>
+    <lastmod>2025-01-27</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://jobcan-automation.onrender.com/privacy</loc>
     <lastmod>2025-01-27</lastmod>
     <changefreq>yearly</changefreq>
