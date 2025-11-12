@@ -287,10 +287,20 @@ def case_studies():
     """導入事例ページ"""
     return render_template('case-studies.html')
 
+@app.route('/case-study/contact-center')
+def case_study_contact_center():
+    """導入事例：コンタクトセンター"""
+    return render_template('case-study-contact-center.html')
+
 @app.route('/blog')
 def blog_index():
     """ブログ一覧"""
     return render_template('blog/index.html')
+
+@app.route('/blog/implementation-checklist')
+def blog_implementation_checklist():
+    """ブログ記事：導入チェックリスト"""
+    return render_template('blog/implementation-checklist.html')
 
 @app.route('/blog/automation-roadmap')
 def blog_automation_roadmap():
