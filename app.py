@@ -282,6 +282,21 @@ def about():
     """サイトについて"""
     return render_template('about.html')
 
+@app.route('/case-studies')
+def case_studies():
+    """導入事例ページ"""
+    return render_template('case-studies.html')
+
+@app.route('/blog')
+def blog_index():
+    """ブログ一覧"""
+    return render_template('blog/index.html')
+
+@app.route('/blog/automation-roadmap')
+def blog_automation_roadmap():
+    """ブログ記事：90日ロードマップ"""
+    return render_template('blog/automation-roadmap.html')
+
 @app.route('/sitemap.html')
 def sitemap_html():
     """HTMLサイトマップ"""
