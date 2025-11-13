@@ -1,24 +1,25 @@
 <!doctype html>
 <html lang="ja">
 <head>
-    {% set page_title = 'Jobcan勤怠自動入力ツール | AutoFill機能付き' %}
-    {% set page_description = 'Jobcanへの勤怠データをExcelから一括入力する自動化ツール。手作業の繰り返しを削減し、月次締め作業を大幅に効率化します。' %}
-    {% block title %}{{ page_title }}{% endblock %}
-    {% block description %}{{ page_description }}{% endblock %}
+    {% block title %}Jobcan勤怠自動入力ツール | AutoFill機能付き{% endblock %}
+    {% block description %}Jobcanへの勤怠データをExcelから一括入力する自動化ツール。手作業の繰り返しを削減し、月次締め作業を大幅に効率化します。{% endblock %}
     {% block keywords %}Jobcan, 自動入力, 勤怠管理, エクセル{% endblock %}
     {# 共通HEADメタタグ - ブロック定義の後にインクルード #}
     {% include 'includes/head_meta.html' %}
     {# description_metaブロックでdescriptionの内容を設定（長さ制限付き） #}
     {% block description_meta %}
-        <meta name="description" content="{% if page_description|length > 110 %}{{ page_description[:107] }}...{% else %}{{ page_description }}{% endif %}">
+        {% set desc_text = block('description') %}
+        <meta name="description" content="{% if desc_text|length > 110 %}{{ desc_text[:107] }}...{% else %}{{ desc_text }}{% endif %}">
     {% endblock %}
     {# og:titleも設定 #}
     {% block og_title %}
-        <meta property="og:title" content="{{ page_title }}">
+        {% set title_text = block('title') %}
+        <meta property="og:title" content="{{ title_text }}">
     {% endblock %}
     {# og:descriptionも設定（長さ制限付き） #}
     {% block og_description %}
-        <meta property="og:description" content="{% if page_description|length > 200 %}{{ page_description[:197] }}...{% else %}{{ page_description }}{% endif %}">
+        {% set desc_text = block('description') %}
+        <meta property="og:description" content="{% if desc_text|length > 200 %}{{ desc_text[:197] }}...{% else %}{{ desc_text }}{% endif %}">
     {% endblock %}
     <style>
         /* CSS変数定義 - 濃い青色系 */
