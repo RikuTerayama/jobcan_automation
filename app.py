@@ -97,7 +97,20 @@ def handle_exception(e):
     if hasattr(e, 'code') and e.code == 404:
         raise e  # 404エラーハンドラーに委譲
     
-    logger.error(f"unhandled_exception rid={getattr(g, 'request_id', 'unknown')} error={str(e)}")
+    # 詳細なエラー情報をログに記録
+    import traceback
+    error_traceback = traceback.format_exc()
+    logger.error(f"unhandled_exception rid={getattr(g, 'request_id', 'unknown')} error={str(e)}\n{error_traceback}")
+    
+    # テンプレートレンダリングエラーの場合はHTMLエラーページを返す
+    if 'TemplateNotFound' in str(type(e)) or 'TemplateSyntaxError' in str(type(e)) or 'render_template' in error_traceback:
+        try:
+            return render_template('error.html', error_message='ページの表示中にエラーが発生しました。'), 500
+        except:
+            # エラーテンプレートもレンダリングできない場合はシンプルなHTMLを返す
+            return f'<html><body><h1>エラーが発生しました</h1><p>予期しないエラーが発生しました。しばらく待ってから再試行してください。</p></body></html>', 500
+    
+    # その他のエラーはJSONを返す（APIエンドポイント用）
     return jsonify({'error': '予期しないエラーが発生しました。しばらく待ってから再試行してください。'}), 500
 
 # 環境変数をテンプレートコンテキストに注入（AdSense設定用）
@@ -235,7 +248,18 @@ def validate_input_data(email, password, file):
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    """トップページ"""
+    try:
+        return render_template('index.html')
+    except Exception as e:
+        logger.error(f"index_page_error error={str(e)}")
+        import traceback
+        logger.error(f"traceback:\n{traceback.format_exc()}")
+        # エラーが発生しても最低限のHTMLを返す
+        try:
+            return render_template('error.html', error_message='ページの表示中にエラーが発生しました。'), 500
+        except:
+            return '<html><head><meta charset="utf-8"><title>エラー</title></head><body><h1>エラーが発生しました</h1><p>予期しないエラーが発生しました。しばらく待ってから再試行してください。</p></body></html>', 500
 
 @app.route('/privacy')
 def privacy():
