@@ -306,10 +306,6 @@ def about():
     """サイトについて"""
     return render_template('about.html')
 
-@app.route('/case-studies')
-def case_studies():
-    """導入事例ページ"""
-    return render_template('case-studies.html')
 
 @app.route('/case-study/contact-center')
 def case_study_contact_center():
