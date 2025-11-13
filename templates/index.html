@@ -3,11 +3,10 @@
 <head>
     {% set page_title = 'Jobcan勤怠自動入力ツール | AutoFill機能付き' %}
     {% set page_description = 'Jobcanへの勤怠データをExcelから一括入力する自動化ツール。手作業の繰り返しを削減し、月次締め作業を大幅に効率化します。' %}
-    {% block title %}{{ page_title }}{% endblock %}
-    {% block description %}{{ page_description }}{% endblock %}
-    {% block keywords %}Jobcan, 自動入力, 勤怠管理, エクセル{% endblock %}
-    {# 共通HEADメタタグ - ブロック定義の後にインクルード #}
+    {# 共通HEADメタタグ - 変数定義の後にインクルード #}
     {% include 'includes/head_meta.html' %}
+    {# titleブロックをオーバーライド #}
+    {% block title %}{{ page_title }}{% endblock %}
     {# description_metaブロックでdescriptionの内容を設定（長さ制限付き） #}
     {% block description_meta %}
         <meta name="description" content="{% if page_description|length > 110 %}{{ page_description[:107] }}...{% else %}{{ page_description }}{% endif %}">
