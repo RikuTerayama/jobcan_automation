@@ -6,7 +6,9 @@
 <link rel="canonical" href="https://jobcan-automation.onrender.com{{ request.path if request else '/' }}">
 <meta name="google-site-verification" content="bQuTb9pABqynDmXqfDdakvmFSqz8y8MyYnOExuucmnA" />
 <meta property="og:type" content="website">
-<meta property="og:title" content="{% block og_title %}{% block title %}Jobcan AutoFill{% endblock %}{% endblock %}">
+{% block og_title %}
+    <meta property="og:title" content="Jobcan AutoFill">
+{% endblock %}
 {% block og_description %}{% endblock %}
 <meta property="og:url" content="https://jobcan-automation.onrender.com{{ request.path if request else '/' }}">
 <meta property="og:image" content="https://jobcan-automation.onrender.com{{ url_for('static', filename='JobcanAutofill.png') }}">
