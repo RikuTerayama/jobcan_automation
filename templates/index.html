@@ -11,6 +11,11 @@
         {% set desc_text = block('description') %}
         <meta name="description" content="{% if desc_text|length > 110 %}{{ desc_text[:107] }}...{% else %}{{ desc_text }}{% endif %}">
     {% endblock %}
+    {# og:titleも設定 #}
+    {% block og_title %}
+        {% set title_text = block('title') %}
+        <meta property="og:title" content="{{ title_text }}">
+    {% endblock %}
     {# og:descriptionも設定（長さ制限付き） #}
     {% block og_description %}
         {% set desc_text = block('description') %}
