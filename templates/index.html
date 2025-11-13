@@ -3,10 +3,10 @@
 <head>
     {% set page_title = 'Jobcan勤怠自動入力ツール | AutoFill機能付き' %}
     {% set page_description = 'Jobcanへの勤怠データをExcelから一括入力する自動化ツール。手作業の繰り返しを削減し、月次締め作業を大幅に効率化します。' %}
-    {# 共通HEADメタタグ - 変数定義の後にインクルード #}
-    {% include 'includes/head_meta.html' %}
-    {# titleブロックをオーバーライド #}
+    {# titleブロックをオーバーライド（head_meta.htmlの前に定義） #}
     {% block title %}{{ page_title }}{% endblock %}
+    {# 共通HEADメタタグ - ブロック定義の後にインクルード #}
+    {% include 'includes/head_meta.html' %}
     {# description_metaブロックでdescriptionの内容を設定（長さ制限付き） #}
     {% block description_meta %}
         <meta name="description" content="{% if page_description|length > 110 %}{{ page_description[:107] }}...{% else %}{{ page_description }}{% endif %}">
@@ -861,13 +861,13 @@
                 
                 <div style="background: rgba(44, 44, 44, 0.6); border-radius: 16px; padding: 30px; margin-bottom: 30px;">
                     <h3 style="color: #4A9EFF; font-size: 1.3em; margin-bottom: 20px;">🎯 このツールについて</h3>
-                    <p style="line-height: 1.8; margin-bottom: 15px;">
+                    <p style="line-height: 1.8; margin-bottom: 15px; color: #FFFFFF;">
                         Jobcan AutoFillは、Jobcan（株式会社ジョブカン）が提供する勤怠管理システムへの勤怠データ入力プロセスを自動化する、個人向けの効率化ツールです。手作業での繰り返し入力作業を削減し、貴重な時間をより重要な業務に充てることを目的としています。
                     </p>
-                    <p style="line-height: 1.8; margin-bottom: 15px;">
+                    <p style="line-height: 1.8; margin-bottom: 15px; color: #FFFFFF;">
                         本ツールは、Playwrightという最新のブラウザ自動化技術を活用し、人間の操作を再現することで、安全かつ正確にデータ入力を実行します。複数の勤怠データを一括で処理できるため、月次締めや月末の勤怠確定作業が大幅に短縮されます。
                     </p>
-                    <p style="line-height: 1.8;">
+                    <p style="line-height: 1.8; color: #FFFFFF;">
                         また、Excelファイルを使用するため、既存の勤怠管理ワークフローと自然に統合でき、学習コストを最小限に抑えながら運用を開始できます。
                     </p>
                 </div>
@@ -958,7 +958,7 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 20px;">
                     <div style="background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 20px;">
                         <h3 style="margin: 0 0 12px 0; color: #4A9EFF; font-size: 1.2em;">時間がかかりすぎる</h3>
-                        <p style="margin: 0; line-height: 1.7;">1ヶ月分の勤怠入力に1人あたり平均2〜3時間。締め日直前は残業が常態化している。</p>
+                        <p style="margin: 0; line-height: 1.7;">1ヶ月分の勤怠入力に1人あたり平均20~30分。締め日直前は残業が常態化している。</p>
                     </div>
                     <div style="background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 20px;">
                         <h3 style="margin: 0 0 12px 0; color: #4CAF50; font-size: 1.2em;">ヒューマンエラーが多い</h3>
