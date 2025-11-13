@@ -2,13 +2,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}Jobcan AutoFill - 勤怠データ自動入力ツール{% endblock %}</title>
-{% set meta_desc = block('description')|default('Jobcanへの勤怠データをExcelから一括入力する自動化ツール。手作業の繰り返しを削減し、業務効率を向上させます。') %}
-<meta name="description" content="{% if meta_desc|length > 110 %}{{ meta_desc[:107] }}...{% else %}{{ meta_desc }}{% endif %}">
+{% block description_meta %}
+    <meta name="description" content="Jobcanへの勤怠データをExcelから一括入力する自動化ツール。手作業の繰り返しを削減し、業務効率を向上させます。">
+{% endblock %}
 <link rel="canonical" href="https://jobcan-automation.onrender.com{{ request.path if request else '/' }}">
 <meta name="google-site-verification" content="bQuTb9pABqynDmXqfDdakvmFSqz8y8MyYnOExuucmnA" />
 <meta property="og:type" content="website">
 <meta property="og:title" content="{% block og_title %}{% block title %}Jobcan AutoFill{% endblock %}{% endblock %}">
-<meta property="og:description" content="{% if meta_desc|length > 200 %}{{ meta_desc[:197] }}...{% else %}{{ meta_desc }}{% endif %}">
+{% block og_description %}
+    <meta property="og:description" content="Jobcanへの勤怠データをExcelから一括入力する自動化ツール。手作業の繰り返しを削減し、業務効率を向上させます。">
+{% endblock %}
 <meta property="og:url" content="https://jobcan-automation.onrender.com{{ request.path if request else '/' }}">
 <meta property="og:image" content="https://jobcan-automation.onrender.com{{ url_for('static', filename='JobcanAutofill.png') }}">
 {% if ADSENSE_ENABLED and request and request.path and not (request.path.startswith('/login') or request.path.startswith('/app/') or request.path in ['/privacy', '/contact', '/thanks']) %}
