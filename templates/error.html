@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>エラーが発生しました | Jobcan AutoFill</title>
+    <style>
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #121212 0%, #1A1A1A 50%, #0F0F0F 100%);
+            color: #FFFFFF;
+            line-height: 1.8;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            max-width: 600px;
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        h1 {
+            color: #FF9800;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        p {
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 30px;
+        }
+        a {
+            display: inline-block;
+            padding: 12px 24px;
+            background: rgba(74, 158, 255, 0.2);
+            border: 1px solid rgba(74, 158, 255, 0.5);
+            border-radius: 8px;
+            color: #4A9EFF;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        a:hover {
+            background: rgba(74, 158, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚠️ エラーが発生しました</h1>
+        <p>{{ error_message|default('予期しないエラーが発生しました。しばらく待ってから再試行してください。') }}</p>
+        <a href="/">トップページに戻る</a>
+    </div>
+</body>
+</html>
+
