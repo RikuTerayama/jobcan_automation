@@ -365,17 +365,93 @@
 
         <h2>セキュリティとプライバシーについて</h2>
 
+        <h2>このツール特有の質問</h2>
+
         <div class="faq-item">
-            <div class="category">セキュリティ</div>
-            <div class="faq-question">Q26. ログイン情報は安全ですか？</div>
+            <div class="category">Playwrightの挙動</div>
+            <div class="faq-question">Q26. Playwrightとは何ですか？どのように動作しますか？</div>
             <div class="faq-answer">
-                A. はい、ログイン情報は一時的にメモリに保存され、処理完了後に自動的に削除されます。サーバーやデータベースには一切保存されず、第三者に共有されることはありません。詳細は<a href="/privacy">プライバシーポリシー</a>をご確認ください。
+                A. Playwrightは、ブラウザを自動制御するためのライブラリです。本ツールでは、Playwrightを使用してJobcanのWebページを操作し、人間の操作パターンを再現します。具体的には、以下のような動作を行います：
+                <ul>
+                    <li>Jobcanのログインページにアクセス</li>
+                    <li>メールアドレスとパスワードを人間らしいタイピング速度で入力</li>
+                    <li>ログインボタンをクリック</li>
+                    <li>各日付の打刻修正ページに移動</li>
+                    <li>開始時刻と終了時刻を入力し、打刻ボタンをクリック</li>
+                </ul>
+                このように、実際のブラウザを操作するため、Jobcan側のセキュリティ機能（CAPTCHAやセッション管理）にも対応しやすくなっています。
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="category">処理間隔</div>
+            <div class="faq-question">Q27. 処理間隔はどのくらいですか？なぜ待機時間があるのですか？</div>
+            <div class="faq-answer">
+                A. 本ツールは、以下の処理間隔で動作します：
+                <ul>
+                    <li><strong>1〜3件目：</strong>各データ処理後に約2秒待機します（通常の処理間隔）</li>
+                    <li><strong>4件目以降：</strong>各データ処理後に約5秒待機します（メモリ最適化のため）</li>
+                </ul>
+                この待機時間は、以下の理由で設けられています：
+                <ul>
+                    <li>Jobcan側のサーバー負荷を軽減するため</li>
+                    <li>セキュリティチェックが発動しにくくするため</li>
+                    <li>メモリ使用量を最適化するため</li>
+                    <li>人間の操作パターンを再現するため</li>
+                </ul>
+                処理中は、この間隔を維持することを推奨します。
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="category">ログの見方</div>
+            <div class="faq-question">Q28. ログにはどのような情報が表示されますか？</div>
+            <div class="faq-answer">
+                A. 処理中に表示されるログには、以下の情報が含まれます：
+                <ul>
+                    <li><strong>処理の開始：</strong>「🚀 Jobcan自動化処理を開始」</li>
+                    <li><strong>Excelファイルの読み込み：</strong>「✅ Excelファイル読み込み完了: X件のデータ」</li>
+                    <li><strong>ログイン処理：</strong>「🔐 Jobcanにログイン中...」「✅ ログインに成功しました」</li>
+                    <li><strong>各データの処理：</strong>「📝 データ X/11: YYYY-MM-DD HH:MM-HH:MM」「✅ データ X/11 の処理が完了しました」</li>
+                    <li><strong>処理の完了：</strong>「📊 全データ処理完了: X件のデータを処理しました」「🎉 処理が正常に完了しました」</li>
+                </ul>
+                エラーが発生した場合は、エラーメッセージとその詳細が表示されます。ログを確認することで、処理の進捗状況や問題の原因を特定できます。
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="category">CAPTCHA対応</div>
+            <div class="faq-question">Q29. CAPTCHAが表示された場合はどうなりますか？</div>
+            <div class="faq-answer">
+                A. CAPTCHAが表示された場合、本ツールは処理を中断します。以下の対処方法を試してください：
+                <ol>
+                    <li>一度手動でJobcanにログインし、CAPTCHAをクリアしてください</li>
+                    <li>30分〜1時間程度待ってから、再度処理を試行してください</li>
+                    <li>異なるネットワークから試行してください（例：モバイル回線、別のWi-Fi）</li>
+                    <li>短時間に複数回ログインを試みないようにしてください</li>
+                </ol>
+                本ツールは、CAPTCHAを自動的に解決する機能は持っていません。これは、セキュリティ上の理由からです。
+            </div>
+        </div>
+
+        <div class="faq-item">
+            <div class="category">ブラウザ側での注意</div>
+            <div class="faq-question">Q30. 処理中にブラウザで何か操作する必要はありますか？</div>
+            <div class="faq-answer">
+                A. いいえ、処理中はブラウザで何も操作する必要はありません。以下の点に注意してください：
+                <ul>
+                    <li><strong>ブラウザを閉じない：</strong>処理が完了するまで、ブラウザを閉じないでください。処理が中断される可能性があります。</li>
+                    <li><strong>他のタブを開かない：</strong>処理中は、他のタブを開いたり、別のページに移動したりしないでください。</li>
+                    <li><strong>ポップアップを許可する：</strong>処理進捗を表示するポップアップウィンドウが表示されるため、ポップアップブロッカーを無効化してください。</li>
+                    <li><strong>ネットワーク接続を維持する：</strong>処理中は、ネットワーク接続が切れないようにしてください。</li>
+                </ul>
+                処理が完了すると、「🎉 処理が正常に完了しました」というメッセージが表示されます。
             </div>
         </div>
 
         <div class="faq-item">
             <div class="category">セキュリティ</div>
-            <div class="faq-question">Q27. SSL/TLSによる通信の暗号化は行われていますか？</div>
+            <div class="faq-question">Q31. SSL/TLSによる通信の暗号化は行われていますか？</div>
             <div class="faq-answer">
                 A. はい、本サービスはHTTPS通信を使用しており、すべてのデータ通信はTLS暗号化によって保護されています。ブラウザのアドレスバーに鍵マークが表示されている場合は、安全な接続が確立されています。
             </div>
@@ -383,7 +459,7 @@
 
         <div class="faq-item">
             <div class="category">セキュリティ</div>
-            <div class="faq-question">Q28. 第三者にログイン情報が漏洩するリスクはありますか？</div>
+            <div class="faq-question">Q32. 第三者にログイン情報が漏洩するリスクはありますか？</div>
             <div class="faq-answer">
                 A. 本サービスは一時的な処理のみを行い、ログイン情報の永続的な保存は一切行いません。また、監視ログやアクセスログにも、個人を特定できる情報は記録されません。詳細は<a href="/privacy">プライバシーポリシー</a>をご確認ください。
             </div>
@@ -393,7 +469,7 @@
 
         <div class="faq-item">
             <div class="category">技術</div>
-            <div class="faq-question">Q29. どのような技術を使用していますか？</div>
+            <div class="faq-question">Q33. どのような技術を使用していますか？</div>
             <div class="faq-answer">
                 A. 本サービスは以下の技術を採用しています：
                 <ul>
@@ -409,17 +485,17 @@
 
         <div class="faq-item">
             <div class="category">技術</div>
-            <div class="faq-question">Q30. 処理速度はどのくらいですか？</div>
+            <div class="faq-question">Q34. 処理速度はどのくらいですか？</div>
             <div class="faq-answer">
-                A. データ1件あたり約10-15秒程度の処理時間が必要です。人間の操作パターンを再現するため、適切な待機時間を設けており、Jobcanシステムへの負荷を最小限に抑えながら正確なデータ入力を実現しています。
+                A. データ1件あたり約10-15秒程度の処理時間が必要です。人間の操作パターンを再現するため、適切な待機時間を設けており、Jobcanシステムへの負荷を最小限に抑えながら正確なデータ入力を実現しています。1ヶ月分（20営業日）のデータで約2〜3分程度かかります。
             </div>
         </div>
 
         <div class="faq-item">
             <div class="category">技術</div>
-            <div class="faq-question">Q31. ブラウザの種類やバージョンに依存しますか？</div>
+            <div class="faq-question">Q35. ブラウザの種類やバージョンに依存しますか？</div>
             <div class="faq-answer">
-                A. いいえ、本サービスはサーバーサイドでPlaywrightを使用してブラウザを制御します。ユーザーのブラウザの種類やバージョンは一切関係なく、すべての環境で同じように動作します。
+                A. いいえ、本サービスはサーバーサイドでPlaywrightを使用してブラウザを制御します。ユーザーのブラウザの種類やバージョンは一切関係なく、すべての環境で同じように動作します。ユーザー側では、標準的なWebブラウザ（Chrome、Edge、Firefox、Safariなど）でアクセスするだけで利用できます。
             </div>
         </div>
 
@@ -427,7 +503,7 @@
 
         <div class="faq-item">
             <div class="category">サポート</div>
-            <div class="faq-question">Q32. 無料で利用できますか？</div>
+            <div class="faq-question">Q36. 無料で利用できますか？</div>
             <div class="faq-answer">
                 A. はい、本サービスは個人向けの無料ツールとして提供されています。ただし、サーバーリソースには限りがあるため、適度な使用をお願いします。過度な使用や悪用が疑われる場合は、サービスの提供を制限する場合があります。
             </div>
@@ -435,7 +511,7 @@
 
         <div class="faq-item">
             <div class="category">サポート</div>
-            <div class="faq-question">Q33. 商用利用は可能ですか？</div>
+            <div class="faq-question">Q37. 商用利用は可能ですか？</div>
             <div class="faq-answer">
                 A. 本サービスは個人向けの効率化ツールとして開発されています。商用利用については、<a href="/contact">お問い合わせ</a>から事前にご連絡ください。企業の就業規則やセキュリティポリシーを必ず遵守してください。
             </div>
@@ -443,7 +519,7 @@
 
         <div class="faq-item">
             <div class="category">サポート</div>
-            <div class="faq-question">Q34. エラーが発生した場合の対応方法は？</div>
+            <div class="faq-question">Q38. エラーが発生した場合の対応方法は？</div>
             <div class="faq-answer">
                 A. エラーが発生した場合は、以下の手順をご確認ください：
                 <ol>
@@ -451,7 +527,7 @@
                     <li>もう一度処理を試行</li>
                     <li>問題が解決しない場合は<a href="/contact">お問い合わせ</a>から報告</li>
                 </ol>
-                エラーログを添付していただくと、迅速に対応できます。
+                エラーログを添付していただくと、迅速に対応できます。ログには、処理の進捗状況やエラーの詳細が記録されています。
             </div>
         </div>
 
