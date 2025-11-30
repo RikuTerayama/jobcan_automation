@@ -903,18 +903,21 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                         add_job_log(job_id, "⚠️ 2回目: 打刻ボタンが見つかりません（想定通りの処理構造です）", jobs)
                         # 2回目の打刻に失敗しても処理は継続
                     
-                        # 出勤簿ページに戻る
-                        add_job_log(job_id, "🔄 出勤簿ページに戻ります", jobs)
-                        page.goto("https://ssl.jobcan.jp/employee/attendance")
-                        page.wait_for_load_state('networkidle', timeout=30000)
-                        
-                        update_progress(job_id, 6, f"勤怠データ入力中 ({processed_count}/{total_data})", jobs, processed_count, total_data)
-                        # 処理間隔（4番目以降は長めに待機）
-                        if processed_count >= 4:
-                            add_job_log(job_id, "⏳ メモリ最適化のため5秒待機中...", jobs)
-                            time.sleep(5)  # 4番目以降は5秒待機
-                        else:
-                            time.sleep(2)  # 通常の処理間隔
+                    # データ処理完了ログを出力
+                    add_job_log(job_id, f"✅ データ {processed_count}/{total_data} の処理が完了しました: {date_str}", jobs)
+                    
+                    # 出勤簿ページに戻る
+                    add_job_log(job_id, "🔄 出勤簿ページに戻ります", jobs)
+                    page.goto("https://ssl.jobcan.jp/employee/attendance")
+                    page.wait_for_load_state('networkidle', timeout=30000)
+                    
+                    update_progress(job_id, 6, f"勤怠データ入力中 ({processed_count}/{total_data})", jobs, processed_count, total_data)
+                    # 処理間隔（4番目以降は長めに待機）
+                    if processed_count >= 4:
+                        add_job_log(job_id, "⏳ メモリ最適化のため5秒待機中...", jobs)
+                        time.sleep(5)  # 4番目以降は5秒待機
+                    else:
+                        time.sleep(2)  # 通常の処理間隔
                     
                 except Exception as data_error:
                     add_job_log(job_id, f"❌ データ {processed_count} の処理でエラー: {data_error}", jobs)
@@ -929,6 +932,9 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                     
                     add_job_log(job_id, f"🔄 次のデータの処理を続行します", jobs)
                     continue
+            
+            # pandas使用時の処理完了サマリー
+            add_job_log(job_id, f"📊 全データ処理完了: {processed_count}件のデータを処理しました", jobs)
         else:
             # openpyxlを使用した処理（空白行スキップ対応）
             ws = data_source.active
@@ -1136,18 +1142,21 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                         add_job_log(job_id, "⚠️ 2回目: 打刻ボタンが見つかりません（想定通りの処理構造です）", jobs)
                         # 2回目の打刻に失敗しても処理は継続
                     
-                        # 出勤簿ページに戻る
-                        add_job_log(job_id, "🔄 出勤簿ページに戻ります", jobs)
-                        page.goto("https://ssl.jobcan.jp/employee/attendance")
-                        page.wait_for_load_state('networkidle', timeout=30000)
-                        
-                        update_progress(job_id, 6, f"勤怠データ入力中 ({processed_count}/{total_data})", jobs, processed_count, total_data)
-                        # 処理間隔（4番目以降は長めに待機）
-                        if processed_count >= 4:
-                            add_job_log(job_id, "⏳ メモリ最適化のため5秒待機中...", jobs)
-                            time.sleep(5)  # 4番目以降は5秒待機
-                        else:
-                            time.sleep(2)  # 通常の処理間隔
+                    # データ処理完了ログを出力
+                    add_job_log(job_id, f"✅ データ {processed_count}/{total_data} の処理が完了しました: {date_str}", jobs)
+                    
+                    # 出勤簿ページに戻る
+                    add_job_log(job_id, "🔄 出勤簿ページに戻ります", jobs)
+                    page.goto("https://ssl.jobcan.jp/employee/attendance")
+                    page.wait_for_load_state('networkidle', timeout=30000)
+                    
+                    update_progress(job_id, 6, f"勤怠データ入力中 ({processed_count}/{total_data})", jobs, processed_count, total_data)
+                    # 処理間隔（4番目以降は長めに待機）
+                    if processed_count >= 4:
+                        add_job_log(job_id, "⏳ メモリ最適化のため5秒待機中...", jobs)
+                        time.sleep(5)  # 4番目以降は5秒待機
+                    else:
+                        time.sleep(2)  # 通常の処理間隔
                     
                 except Exception as data_error:
                     add_job_log(job_id, f"❌ データ {processed_count} の処理でエラー: {data_error}", jobs)
@@ -1162,6 +1171,9 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                     
                     add_job_log(job_id, f"🔄 次のデータの処理を続行します", jobs)
                     continue
+            
+            # openpyxl使用時の処理完了サマリー
+            add_job_log(job_id, f"📊 全データ処理完了: {processed_count}件のデータを処理しました", jobs)
         
         add_job_log(job_id, "🎉 実際のデータ入力処理が完了しました", jobs)
         
