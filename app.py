@@ -306,6 +306,10 @@ def about():
     """サイトについて"""
     return render_template('about.html')
 
+@app.route('/best-practices')
+def best_practices():
+    """ベストプラクティス"""
+    return render_template('best-practices.html')
 
 @app.route('/case-study/contact-center')
 def case_study_contact_center():
@@ -326,6 +330,21 @@ def blog_implementation_checklist():
 def blog_automation_roadmap():
     """ブログ記事：90日ロードマップ"""
     return render_template('blog/automation-roadmap.html')
+
+@app.route('/blog/workstyle-reform-automation')
+def blog_workstyle_reform_automation():
+    """ブログ記事：働き方改革と自動化"""
+    return render_template('blog/workstyle-reform-automation.html')
+
+@app.route('/blog/excel-attendance-limits')
+def blog_excel_attendance_limits():
+    """ブログ記事：Excel管理の限界と自動化ツール"""
+    return render_template('blog/excel-attendance-limits.html')
+
+@app.route('/blog/playwright-security')
+def blog_playwright_security():
+    """ブログ記事：Playwrightによるブラウザ自動化のセキュリティ"""
+    return render_template('blog/playwright-security.html')
 
 @app.route('/sitemap.html')
 def sitemap_html():
