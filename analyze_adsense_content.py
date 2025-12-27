@@ -114,6 +114,15 @@ def count_keywords(text: str, keywords: List[str]) -> Dict[str, int]:
         pattern = r'\b' + re.escape(keyword.lower()) + r'\b'
         matches = len(re.findall(pattern, text_lower))
         counts[keyword] = matches
+        
+        # 複合語も検出（例：「勤怠管理」「データ入力」「自動化ツール」「業務効率化」）
+        # ただし、既に単独で検出されている場合は追加しない
+        if matches == 0:
+            # 複合語パターンも検索
+            compound_pattern = re.escape(keyword.lower())
+            compound_matches = len(re.findall(compound_pattern, text_lower))
+            if compound_matches > 0:
+                counts[keyword] = compound_matches
     return counts
 
 def analyze_html_file(file_path: Path) -> Dict:
