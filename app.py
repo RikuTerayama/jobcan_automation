@@ -291,6 +291,11 @@ def guide_troubleshooting():
     """トラブルシューティングガイド"""
     return render_template('guide_troubleshooting.html')
 
+@app.route('/guide/complete')
+def guide_complete():
+    """完全ガイド"""
+    return render_template('guide/complete-guide.html')
+
 @app.route('/faq')
 def faq():
     """よくある質問（FAQ）"""
@@ -365,6 +370,21 @@ def blog_convince_it_and_hr_for_automation():
 def blog_playwright_jobcan_challenges_and_solutions():
     """ブログ記事：Playwrightでハマったポイント"""
     return render_template('blog/playwright-jobcan-challenges-and-solutions.html')
+
+@app.route('/blog/jobcan-auto-input-tools-overview')
+def blog_jobcan_auto_input_tools_overview():
+    """ブログ記事：Jobcan自動入力ツールの全体像と選び方"""
+    return render_template('blog/jobcan-auto-input-tools-overview.html')
+
+@app.route('/blog/reduce-manual-work-checklist')
+def blog_reduce_manual_work_checklist():
+    """ブログ記事：勤怠管理の手入力を減らすための実務チェックリスト"""
+    return render_template('blog/reduce-manual-work-checklist.html')
+
+@app.route('/blog/jobcan-month-end-tips')
+def blog_jobcan_month_end_tips():
+    """ブログ記事：Jobcan月末締めをラクにするための7つの実践テクニック"""
+    return render_template('blog/jobcan-month-end-tips.html')
 
 @app.route('/case-study/consulting-firm')
 def case_study_consulting_firm():
@@ -821,12 +841,78 @@ Allow: /
 
 @app.route('/sitemap.xml')
 def sitemap():
-    """サイトマップを配信"""
-    try:
-        return send_file('static/sitemap.xml', mimetype='application/xml')
-    except Exception as e:
-        # ファイルがない場合は404
-        return jsonify({'error': 'Sitemap not found'}), 404
+    """XMLサイトマップを動的生成"""
+    from flask import url_for
+    from datetime import datetime
+    
+    # ベースURL
+    base_url = 'https://jobcan-automation.onrender.com'
+    
+    # サイトマップに含めるURLのリスト
+    # 形式: (url_path, changefreq, priority, lastmod)
+    urls = [
+        # 主要ページ
+        ('/', 'daily', '1.0', '2025-01-26'),
+        ('/about', 'monthly', '0.9', '2025-01-26'),
+        ('/contact', 'monthly', '0.8', '2025-01-26'),
+        ('/privacy', 'yearly', '0.5', '2025-01-26'),
+        ('/terms', 'yearly', '0.5', '2025-01-26'),
+        ('/faq', 'weekly', '0.8', '2025-01-26'),
+        ('/glossary', 'monthly', '0.6', '2025-01-26'),
+        ('/best-practices', 'monthly', '0.8', '2025-01-26'),
+        ('/sitemap.html', 'monthly', '0.5', '2025-01-26'),
+        
+        # ガイドページ
+        ('/guide/complete', 'weekly', '0.9', '2025-01-26'),
+        ('/guide/getting-started', 'weekly', '0.9', '2025-01-26'),
+        ('/guide/excel-format', 'weekly', '0.9', '2025-01-26'),
+        ('/guide/troubleshooting', 'weekly', '0.8', '2025-01-26'),
+        
+        # ブログ一覧
+        ('/blog', 'daily', '0.8', '2025-01-26'),
+        
+        # ブログ記事（既存）
+        ('/blog/implementation-checklist', 'monthly', '0.7', '2025-01-26'),
+        ('/blog/automation-roadmap', 'monthly', '0.7', '2025-01-26'),
+        ('/blog/workstyle-reform-automation', 'monthly', '0.7', '2025-01-26'),
+        ('/blog/excel-attendance-limits', 'monthly', '0.7', '2025-01-26'),
+        ('/blog/playwright-security', 'monthly', '0.7', '2025-01-26'),
+        
+        # ブログ記事（新規3本）
+        ('/blog/month-end-closing-hell-and-automation', 'monthly', '0.7', '2025-01-26'),
+        ('/blog/excel-format-mistakes-and-design', 'monthly', '0.7', '2025-01-26'),
+        ('/blog/convince-it-and-hr-for-automation', 'monthly', '0.7', '2025-01-26'),
+        ('/blog/playwright-jobcan-challenges-and-solutions', 'monthly', '0.7', '2025-01-26'),
+        ('/blog/jobcan-auto-input-tools-overview', 'monthly', '0.7', '2025-01-26'),
+        ('/blog/reduce-manual-work-checklist', 'monthly', '0.7', '2025-01-26'),
+        ('/blog/jobcan-month-end-tips', 'monthly', '0.7', '2025-01-26'),
+        
+        # 導入事例
+        ('/case-study/contact-center', 'monthly', '0.8', '2025-01-26'),
+        ('/case-study/consulting-firm', 'monthly', '0.8', '2025-01-26'),
+        ('/case-study/remote-startup', 'monthly', '0.8', '2025-01-26'),
+    ]
+    
+    # XMLサイトマップを生成
+    xml_parts = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+    ]
+    
+    for url_path, changefreq, priority, lastmod in urls:
+        full_url = base_url + url_path
+        xml_parts.append('  <url>')
+        xml_parts.append(f'    <loc>{full_url}</loc>')
+        xml_parts.append(f'    <changefreq>{changefreq}</changefreq>')
+        xml_parts.append(f'    <priority>{priority}</priority>')
+        xml_parts.append(f'    <lastmod>{lastmod}</lastmod>')
+        xml_parts.append('  </url>')
+    
+    xml_parts.append('</urlset>')
+    
+    xml_content = '\n'.join(xml_parts)
+    
+    return Response(xml_content, mimetype='application/xml')
 
 def monitor_processing_resources(data_index, total_data):
     """データ処理中のリソース監視（4番目以降で強化）"""
