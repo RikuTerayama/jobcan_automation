@@ -346,6 +346,36 @@ def blog_playwright_security():
     """ブログ記事：Playwrightによるブラウザ自動化のセキュリティ"""
     return render_template('blog/playwright-security.html')
 
+@app.route('/blog/month-end-closing-hell-and-automation')
+def blog_month_end_closing_hell_and_automation():
+    """ブログ記事：月末締めが地獄になる理由と自動化"""
+    return render_template('blog/month-end-closing-hell-and-automation.html')
+
+@app.route('/blog/excel-format-mistakes-and-design')
+def blog_excel_format_mistakes_and_design():
+    """ブログ記事：Excelフォーマットのミス10選"""
+    return render_template('blog/excel-format-mistakes-and-design.html')
+
+@app.route('/blog/convince-it-and-hr-for-automation')
+def blog_convince_it_and_hr_for_automation():
+    """ブログ記事：情シス・人事を説得する5ステップ"""
+    return render_template('blog/convince-it-and-hr-for-automation.html')
+
+@app.route('/blog/playwright-jobcan-challenges-and-solutions')
+def blog_playwright_jobcan_challenges_and_solutions():
+    """ブログ記事：Playwrightでハマったポイント"""
+    return render_template('blog/playwright-jobcan-challenges-and-solutions.html')
+
+@app.route('/case-study/consulting-firm')
+def case_study_consulting_firm():
+    """導入事例：コンサルティングファーム"""
+    return render_template('case-study-consulting-firm.html')
+
+@app.route('/case-study/remote-startup')
+def case_study_remote_startup():
+    """導入事例：小規模スタートアップ"""
+    return render_template('case-study-remote-startup.html')
+
 @app.route('/sitemap.html')
 def sitemap_html():
     """HTMLサイトマップ"""
