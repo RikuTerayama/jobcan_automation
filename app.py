@@ -386,6 +386,16 @@ def blog_jobcan_month_end_tips():
     """ブログ記事：Jobcan月末締めをラクにするための7つの実践テクニック"""
     return render_template('blog/jobcan-month-end-tips.html')
 
+@app.route('/blog/jobcan-auto-input-dos-and-donts')
+def blog_jobcan_auto_input_dos_and_donts():
+    """ブログ記事：Jobcan自動入力のやり方と、やってはいけないNG自動化"""
+    return render_template('blog/jobcan-auto-input-dos-and-donts.html')
+
+@app.route('/blog/month-end-closing-checklist')
+def blog_month_end_closing_checklist():
+    """ブログ記事：月末の勤怠締め地獄を減らすための現実的なチェックリスト"""
+    return render_template('blog/month-end-closing-checklist.html')
+
 @app.route('/case-study/consulting-firm')
 def case_study_consulting_firm():
     """導入事例：コンサルティングファーム"""
@@ -886,6 +896,8 @@ def sitemap():
         ('/blog/jobcan-auto-input-tools-overview', 'monthly', '0.7', '2025-01-26'),
         ('/blog/reduce-manual-work-checklist', 'monthly', '0.7', '2025-01-26'),
         ('/blog/jobcan-month-end-tips', 'monthly', '0.7', '2025-01-26'),
+        ('/blog/jobcan-auto-input-dos-and-donts', 'monthly', '0.7', '2025-01-28'),
+        ('/blog/month-end-closing-checklist', 'monthly', '0.7', '2025-01-29'),
         
         # 導入事例
         ('/case-study/contact-center', 'monthly', '0.8', '2025-01-26'),
