@@ -759,6 +759,11 @@
                 padding: 30px 25px;
                 width: 95%;
             }
+            
+            /* モバイルでは2×2グリッドを1列に */
+            [aria-labelledby="pain-points-heading"] > div {
+                grid-template-columns: 1fr !important;
+            }
         }
         
         /* スクロールバーのカスタマイズ */
@@ -871,7 +876,7 @@
 
             <section aria-labelledby="pain-points-heading" style="margin-top: 60px; padding: 35px; background: rgba(30, 30, 30, 0.8); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.1);">
                 <h2 id="pain-points-heading" style="font-size: 1.7em; margin-bottom: 25px; color: #FFFFFF;">こんな課題はありませんか？</h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 20px;">
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
                     <div style="background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 20px;">
                         <h3 style="margin: 0 0 12px 0; color: #4A9EFF; font-size: 1.2em;">時間がかかりすぎる</h3>
                         <p style="margin: 0; line-height: 1.7; color: #FFFFFF;">1ヶ月分の勤怠入力に1人あたり平均20~30分。締め日直前は残業が常態化している。</p>
