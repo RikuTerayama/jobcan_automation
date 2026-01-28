@@ -296,6 +296,11 @@ def guide_complete():
     """完全ガイド"""
     return render_template('guide/complete-guide.html')
 
+@app.route('/guide/comprehensive-guide')
+def guide_comprehensive_guide():
+    """Jobcan勤怠管理を効率化する総合ガイド"""
+    return render_template('guide/comprehensive-guide.html')
+
 @app.route('/faq')
 def faq():
     """よくある質問（FAQ）"""
@@ -874,6 +879,7 @@ def sitemap():
         
         # ガイドページ
         ('/guide/complete', 'weekly', '0.9', '2025-01-26'),
+        ('/guide/comprehensive-guide', 'weekly', '0.9', '2025-01-26'),
         ('/guide/getting-started', 'weekly', '0.9', '2025-01-26'),
         ('/guide/excel-format', 'weekly', '0.9', '2025-01-26'),
         ('/guide/troubleshooting', 'weekly', '0.8', '2025-01-26'),
