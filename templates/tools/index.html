@@ -70,7 +70,6 @@
             padding: 30px;
             border: 1px solid rgba(255, 255, 255, 0.1);
             transition: all 0.3s;
-            text-decoration: none;
             color: inherit;
             display: block;
         }
@@ -79,6 +78,12 @@
             transform: translateY(-5px);
             box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
             border-color: rgba(74, 158, 255, 0.5);
+        }
+        
+        .product-card > a {
+            text-decoration: none;
+            color: inherit;
+            display: block;
         }
         
         .product-card .icon {
@@ -133,6 +138,79 @@
             background: rgba(74, 158, 255, 0.3);
         }
         
+        /* CTA行（使ってみる + ガイド） */
+        .tool-cta-row {
+            display: flex;
+            gap: 12px;
+            align-items: stretch;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+        
+        .tool-cta-row .link-button {
+            flex: 1;
+            text-align: center;
+            text-decoration: none;
+            margin: 0;
+        }
+        
+        /* ガイドカード */
+        .guide-card {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: rgba(74, 158, 255, 0.1);
+            border: 1px solid rgba(74, 158, 255, 0.3);
+            border-radius: 8px;
+            color: #4A9EFF;
+            text-decoration: none;
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.3s;
+            white-space: nowrap;
+            min-width: fit-content;
+        }
+        
+        .guide-card:hover {
+            background: rgba(74, 158, 255, 0.2);
+            border-color: rgba(74, 158, 255, 0.5);
+            transform: translateY(-1px);
+        }
+        
+        .guide-card .guide-icon {
+            font-size: 1.1em;
+        }
+        
+        .guide-card .guide-text {
+            font-weight: 500;
+        }
+        
+        .guide-card .guide-arrow {
+            opacity: 0.7;
+            transition: transform 0.3s;
+        }
+        
+        .guide-card:hover .guide-arrow {
+            transform: translateX(2px);
+        }
+        
+        @media (max-width: 640px) {
+            .tool-cta-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .tool-cta-row .link-button {
+                width: 100%;
+            }
+            
+            .guide-card {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
         @media (max-width: 768px) {
             .page-header h1 {
                 font-size: 2em;
@@ -159,42 +237,50 @@
         
         <div class="products-grid" id="products-grid" data-reveal-stagger>
             {% for product in products %}
-                <a href="{{ product.path }}" class="product-card" 
-                   data-name="{{ product.name }}" 
-                   data-description="{{ product.description }}"
-                   data-tags="{{ (product.tags or [])|join(',') }}"
-                   data-status="{{ product.status }}">
-                    <div class="icon">{{ product.icon }}</div>
-                    <h3>{{ product.name }}</h3>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
-                        <span class="status {{ product.status }}">
-                            {% if product.status == 'available' %}
-                                <span style="background: rgba(76, 175, 80, 0.2); color: #4CAF50; padding: 3px 8px; border-radius: 6px; font-size: 0.8em;">Local</span>
-                            {% else %}
-                                準備中
+                <div class="product-card" 
+                     data-name="{{ product.name }}" 
+                     data-description="{{ product.description }}"
+                     data-tags="{{ (product.tags or [])|join(',') }}"
+                     data-status="{{ product.status }}">
+                    <a href="{{ product.path }}" style="text-decoration: none; color: inherit; display: block;">
+                        <div class="icon">{{ product.icon }}</div>
+                        <h3>{{ product.name }}</h3>
+                        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;">
+                            <span class="status {{ product.status }}">
+                                {% if product.status == 'available' %}
+                                    <span style="background: rgba(76, 175, 80, 0.2); color: #4CAF50; padding: 3px 8px; border-radius: 6px; font-size: 0.8em;">Local</span>
+                                {% else %}
+                                    準備中
+                                {% endif %}
+                            </span>
+                            {% if product.tags %}
+                                {% for tag in product.tags %}
+                                    <span style="background: rgba(74, 158, 255, 0.2); color: #4A9EFF; padding: 3px 8px; border-radius: 6px; font-size: 0.75em;">{{ tag }}</span>
+                                {% endfor %}
                             {% endif %}
-                        </span>
-                        {% if product.tags %}
-                            {% for tag in product.tags %}
-                                <span style="background: rgba(74, 158, 255, 0.2); color: #4A9EFF; padding: 3px 8px; border-radius: 6px; font-size: 0.75em;">{{ tag }}</span>
-                            {% endfor %}
+                        </div>
+                        <p>{{ product.description }}</p>
+                        {% if product.features %}
+                            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                                <p style="font-size: 0.85em; color: rgba(255, 255, 255, 0.7); margin: 0;">
+                                    <strong>主な機能:</strong> {{ product.features|join('、') }}
+                                </p>
+                            </div>
+                        {% endif %}
+                    </a>
+                    <div class="tool-cta-row" style="margin-top: 15px;">
+                        <a href="{{ product.path }}" class="link-button" style="flex: 1; text-align: center; text-decoration: none;">
+                            {% if product.status == 'available' %}使ってみる{% else %}詳細を見る{% endif %}
+                        </a>
+                        {% if product.guide_path and product.status == 'available' %}
+                            <a href="{{ product.guide_path }}" class="guide-card">
+                                <span class="guide-icon">📚</span>
+                                <span class="guide-text">ガイド</span>
+                                <span class="guide-arrow">→</span>
+                            </a>
                         {% endif %}
                     </div>
-                    <p>{{ product.description }}</p>
-                    {% if product.features %}
-                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-                            <p style="font-size: 0.85em; color: rgba(255, 255, 255, 0.7); margin: 0;">
-                                <strong>主な機能:</strong> {{ product.features|join('、') }}
-                            </p>
-                        </div>
-                    {% endif %}
-                    <div class="link-button" style="margin-top: 15px;">
-                        {% if product.status == 'available' %}使ってみる{% else %}詳細を見る{% endif %}
-                    </div>
-                    {% if product.guide_path and product.status == 'available' %}
-                        <a href="{{ product.guide_path }}" style="display: block; margin-top: 10px; padding: 8px 16px; background: rgba(74, 158, 255, 0.1); border: 1px solid rgba(74, 158, 255, 0.3); border-radius: 6px; color: #4A9EFF; text-decoration: none; font-size: 0.9em; text-align: center; transition: all 0.3s;" onmouseover="this.style.background='rgba(74, 158, 255, 0.2)'" onmouseout="this.style.background='rgba(74, 158, 255, 0.1)'">📚 ガイド</a>
-                    {% endif %}
-                </a>
+                </div>
             {% endfor %}
         </div>
         
