@@ -411,6 +411,31 @@ def guide_comprehensive_guide():
     """Jobcan勤怠管理を効率化する総合ガイド"""
     return render_template('guide/comprehensive-guide.html')
 
+@app.route('/guide/image-batch')
+def guide_image_batch():
+    """画像一括変換ツールガイド"""
+    return render_template('guide/image-batch.html')
+
+@app.route('/guide/pdf')
+def guide_pdf():
+    """PDFユーティリティガイド"""
+    return render_template('guide/pdf.html')
+
+@app.route('/guide/image-cleanup')
+def guide_image_cleanup():
+    """画像ユーティリティガイド"""
+    return render_template('guide/image-cleanup.html')
+
+@app.route('/guide/minutes')
+def guide_minutes():
+    """議事録整形ツールガイド"""
+    return render_template('guide/minutes.html')
+
+@app.route('/guide/seo')
+def guide_seo():
+    """Web/SEOユーティリティガイド"""
+    return render_template('guide/seo.html')
+
 @app.route('/tools/image-batch')
 def tools_image_batch():
     """画像一括変換ツール"""
