@@ -1520,7 +1520,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 error_message = f'データ検証で{len(errors)}件のエラーが見つかりました。\n\n詳細:\n' + '\n'.join(error_details)
                 
                 jobs[job_id]['status'] = 'error'
-            jobs[job_id]['end_time'] = time.time()  # P0-3: エラー時刻を記録
+                jobs[job_id]['end_time'] = time.time()  # P0-3: エラー時刻を記録
                 jobs[job_id]['login_message'] = error_message
                 return
             
