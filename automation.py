@@ -1520,7 +1520,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 error_message = f'データ検証で{len(errors)}件のエラーが見つかりました。\n\n詳細:\n' + '\n'.join(error_details)
                 
                 jobs[job_id]['status'] = 'error'
-            jobs[job_id]['end_time'] = time.time()  # P0-3: エラー時刻を記録
+                jobs[job_id]['end_time'] = time.time()  # P0-3: エラー時刻を記録
                 jobs[job_id]['login_message'] = error_message
                 return
             
@@ -1732,59 +1732,6 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 if metrics_available:
                     log_memory("job_completed", job_id=job_id, session_id=session_id)
                 
-            except Exception as inner_e:
-                add_job_log(job_id, f"❌ ブラウザ処理でエラーが発生しました: {inner_e}", jobs)
-                jobs[job_id]['status'] = 'error'
-                jobs[job_id]['end_time'] = time.time()  # P0-3: エラー時刻を記録
-                jobs[job_id]['login_message'] = f'ブラウザ処理でエラーが発生しました: {str(inner_e)}'
-                
-                # P1-1: ジョブエラー時のメモリ計測
-                if metrics_available:
-                    log_memory("job_error", job_id=job_id, session_id=session_id)
-                
-                raise  # finallyブロックでクリーンアップを実行するため再raise
-                
-            finally:
-                # P0-1: 確実にクリーンアップ（page -> context -> browser の順）
-                cleanup_errors = []
-                
-                # page を閉じる
-                if page is not None:
-                    try:
-                        page.close()
-                        add_job_log(job_id, "cleanup_result page_close=success", jobs)
-                    except Exception as e:
-                        cleanup_errors.append(f"page_close_error: {str(e)}")
-                        add_job_log(job_id, f"cleanup_result page_close=failed error={str(e)}", jobs)
-                
-                # context を閉じる
-                if context is not None:
-                    try:
-                        context.close()
-                        add_job_log(job_id, "cleanup_result context_close=success", jobs)
-                    except Exception as e:
-                        cleanup_errors.append(f"context_close_error: {str(e)}")
-                        add_job_log(job_id, f"cleanup_result context_close=failed error={str(e)}", jobs)
-                
-                # browser を閉じる
-                if browser is not None:
-                    try:
-                        browser.close()
-                        add_job_log(job_id, "cleanup_result browser_close=success", jobs)
-                    except Exception as e:
-                        cleanup_errors.append(f"browser_close_error: {str(e)}")
-                        add_job_log(job_id, f"cleanup_result browser_close=failed error={str(e)}", jobs)
-                
-                # withブロックの終了時に自動的にplaywright_instanceが閉じられる
-                # 明示的なcloseは不要だが、ログは出力
-                if not cleanup_errors:
-                    add_job_log(job_id, "cleanup_result playwright_close=success (via_with_block)", jobs)
-                
-                if cleanup_errors:
-                    add_job_log(job_id, f"⚠️ クリーンアップ中にエラーが発生: {', '.join(cleanup_errors)}", jobs)
-                else:
-                    add_job_log(job_id, "🔒 ブラウザセッションを正常に終了しました", jobs)
-                
                 # P1-2: ブラウザ終了数をデクリメント（close完了後）
                 if metrics_available:
                     decrement_browser_count()
@@ -1832,6 +1779,47 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             jobs[job_id]['end_time'] = time.time()  # P0-3: エラー時刻を記録
             jobs[job_id]['login_message'] = f'予期しないエラーが発生しました: {str(e)}'
             return
+        
+        finally:
+            # P0-1: 確実にクリーンアップ（page -> context -> browser の順）
+            cleanup_errors = []
+            
+            # page を閉じる
+            if page is not None:
+                try:
+                    page.close()
+                    add_job_log(job_id, "cleanup_result page_close=success", jobs)
+                except Exception as e:
+                    cleanup_errors.append(f"page_close_error: {str(e)}")
+                    add_job_log(job_id, f"cleanup_result page_close=failed error={str(e)}", jobs)
+            
+            # context を閉じる
+            if context is not None:
+                try:
+                    context.close()
+                    add_job_log(job_id, "cleanup_result context_close=success", jobs)
+                except Exception as e:
+                    cleanup_errors.append(f"context_close_error: {str(e)}")
+                    add_job_log(job_id, f"cleanup_result context_close=failed error={str(e)}", jobs)
+            
+            # browser を閉じる
+            if browser is not None:
+                try:
+                    browser.close()
+                    add_job_log(job_id, "cleanup_result browser_close=success", jobs)
+                except Exception as e:
+                    cleanup_errors.append(f"browser_close_error: {str(e)}")
+                    add_job_log(job_id, f"cleanup_result browser_close=failed error={str(e)}", jobs)
+            
+            # withブロックの終了時に自動的にplaywright_instanceが閉じられる
+            # 明示的なcloseは不要だが、ログは出力
+            if not cleanup_errors:
+                add_job_log(job_id, "cleanup_result playwright_close=success (via_with_block)", jobs)
+            
+            if cleanup_errors:
+                add_job_log(job_id, f"⚠️ クリーンアップ中にエラーが発生: {', '.join(cleanup_errors)}", jobs)
+            else:
+                add_job_log(job_id, "🔒 ブラウザセッションを正常に終了しました", jobs)
         
     except Exception as e:
         add_job_log(job_id, f"❌ 予期しないエラーが発生しました: {e}", jobs)
