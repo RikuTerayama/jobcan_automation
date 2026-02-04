@@ -342,7 +342,8 @@ def validate_input_data(email, password, file):
 def index():
     """ランディングページ（製品ハブ）"""
     try:
-        return render_template('landing.html')
+        from lib.routes import PRODUCTS
+        return render_template('landing.html', products=PRODUCTS)
     except Exception as e:
         logger.error(f"landing_page_error error={str(e)}")
         import traceback
@@ -410,27 +411,27 @@ def guide_comprehensive_guide():
 
 @app.route('/tools/image-batch')
 def tools_image_batch():
-    """画像一括変換ツール（準備中）"""
+    """画像一括変換ツール"""
     return render_template('tools/image-batch.html')
 
 @app.route('/tools/pdf')
 def tools_pdf():
-    """PDFユーティリティ（準備中）"""
+    """PDFユーティリティ"""
     return render_template('tools/pdf.html')
 
 @app.route('/tools/image-cleanup')
 def tools_image_cleanup():
-    """画像ユーティリティ（準備中）"""
+    """画像ユーティリティ"""
     return render_template('tools/image-cleanup.html')
 
 @app.route('/tools/minutes')
 def tools_minutes():
-    """議事録整形ツール（準備中）"""
+    """議事録整形ツール"""
     return render_template('tools/minutes.html')
 
 @app.route('/tools/seo')
 def tools_seo():
-    """Web/SEOユーティリティ（準備中）"""
+    """Web/SEOユーティリティ"""
     return render_template('tools/seo.html')
 
 @app.route('/tools')

@@ -252,41 +252,15 @@
         <div class="section">
             <h2>📦 製品一覧</h2>
             <div class="products-grid">
-            <a href="/autofill" class="product-card">
-                <h3>🕒 Jobcan AutoFill</h3>
-                <p>Jobcanへの勤怠データをExcelから一括入力。月次締め作業を大幅に短縮します。</p>
-                <span class="status available">利用可能</span>
+            {% for product in products %}
+            <a href="{{ product.path }}" class="product-card">
+                <h3>{{ product.icon }} {{ product.name }}</h3>
+                <p>{{ product.description }}</p>
+                <span class="status {{ 'available' if product.status == 'available' else 'coming-soon' }}">
+                    {% if product.status == 'available' %}利用可能{% else %}準備中{% endif %}
+                </span>
             </a>
-            
-            <a href="/tools/image-batch" class="product-card">
-                <h3>🖼️ 画像一括変換</h3>
-                <p>png/jpg/webpの一括変換、リサイズ、品質圧縮、複数サイズ同時出力に対応予定。</p>
-                <span class="status coming-soon">準備中</span>
-            </a>
-            
-            <a href="/tools/pdf" class="product-card">
-                <h3>📄 PDFユーティリティ</h3>
-                <p>PDFの結合・分割・ページ抽出、PDF→画像zip変換、圧縮機能を提供予定。</p>
-                <span class="status coming-soon">準備中</span>
-            </a>
-            
-            <a href="/tools/image-cleanup" class="product-card">
-                <h3>✨ 画像ユーティリティ</h3>
-                <p>透過→白背景JPEG変換、余白トリム、縦横比統一、背景除去に対応予定。</p>
-                <span class="status coming-soon">準備中</span>
-            </a>
-            
-            <a href="/tools/minutes" class="product-card">
-                <h3>📝 議事録整形</h3>
-                <p>テキストから決定事項/ToDo/担当/期限を抽出し、報告書テンプレートを生成予定。</p>
-                <span class="status coming-soon">準備中</span>
-            </a>
-            
-            <a href="/tools/seo" class="product-card">
-                <h3>🔍 Web/SEOユーティリティ</h3>
-                <p>OGP画像ジェネレーター、PageSpeedチェックリスト、メタタグ検査に対応予定。</p>
-                <span class="status coming-soon">準備中</span>
-            </a>
+            {% endfor %}
             </div>
         </div>
         
