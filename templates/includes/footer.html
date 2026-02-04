@@ -1,5 +1,5 @@
 {# 共通フッター #}
-<footer style="background: linear-gradient(145deg, #1A1A1A 0%, #0F0F0F 100%); padding: 40px 20px; margin-top: 60px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+<footer style="background: var(--color-bg-primary, #121212); padding: var(--spacing-xl, 48px) var(--spacing-md, 16px); margin-top: var(--spacing-xl, 48px); border-top: 1px solid rgba(255, 255, 255, 0.1);">
     <div style="max-width: 1200px; margin: 0 auto;">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-bottom: 30px; text-align: left;">
             <div>
@@ -36,7 +36,7 @@
                 ファイルやテキストはアップロードせず、ブラウザ内で処理します。サーバーには保存されません。
             </p>
             <p style="margin: 8px 0; color: rgba(255, 255, 255, 0.7); font-size: 0.95em; text-align: center;">
-                © 2025 RT Tools. All rights reserved. | Developed by RT | Version: {{ app_version|default('1.0.0') }}
+                © 2025 Automation Hub. All rights reserved. | Developed by RT | Version: {{ app_version|default('1.0.0') }}
             </p>
         </div>
     </div>
