@@ -29,11 +29,11 @@ services:
       - key: WEB_KEEPALIVE
         value: "5"
       - key: WEB_MAX_REQUESTS
-        value: "500"  # メモリリーク対策
+        value: "500"  # メモリリーク対策（300-500の範囲で調整可能、OOM頻度次第で300-400に下げる）
       - key: WEB_MAX_REQUESTS_JITTER
-        value: "50"
+        value: "50"  # max-requestsの10%程度が目安（30-50の範囲で調整可能）  # max-requestsの10%程度が目安
       - key: WEB_LOG_LEVEL
-        value: "info"
+        value: "warning"  # P0-P1: メモリ最適化のためwarningに変更（infoはノイズが多い）
       # === メモリ制限（OOM防止）===
       # P0-4: 閾値の整合性を修正（WARNING < LIMIT）
       - key: MEMORY_LIMIT_MB

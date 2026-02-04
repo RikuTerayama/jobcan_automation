@@ -857,6 +857,24 @@ def upload_file():
         if validation_errors:
             return jsonify({'error': '入力エラー: ' + '; '.join(validation_errors)})
         
+        # P0-P1: メモリガード（新規ジョブ開始前チェック）
+        # MEMORY_WARNING_MBを超えていたら、新規ジョブ開始を拒否してユーザーにリトライ案内
+        # これにより「ギリギリ状態でPlaywright起動→即死」を減らす
+        try:
+            resources = get_system_resources()
+            if resources['memory_mb'] > MEMORY_WARNING_MB:
+                logger.warning(f"memory_guard_blocked memory_mb={resources['memory_mb']:.1f} warning_threshold={MEMORY_WARNING_MB} job_id={job_id}")
+                return jsonify({
+                    'error': f'メモリ使用量が高いため、現在新しい処理を開始できません。',
+                    'message': f'現在のメモリ使用量: {resources["memory_mb"]:.1f}MB（警告閾値: {MEMORY_WARNING_MB}MB）',
+                    'retry_after': 60,  # 60秒後にリトライを推奨
+                    'status_code': 503
+                }), 503
+        except Exception as memory_check_error:
+            # メモリチェックのエラーはログに記録するが、処理は続行（安全側に倒す）
+            logger.error(f"memory_guard_check_error: {memory_check_error}")
+            # エラー時は警告のみ（処理は継続）
+        
         # リソース監視と警告（処理は継続）
         resource_warnings = check_resource_limits()
         if resource_warnings:
@@ -878,7 +896,7 @@ def upload_file():
         # セッションを登録
         register_session(session_id, job_id)
         
-        # P1-1: ファイルアップロード直後のメモリ計測
+        # P0-P1: ファイルアップロード直後のメモリ計測（重要イベント）
         if metrics_available:
             log_memory("upload_done", job_id=job_id, session_id=session_id, extra={
                 'jobs_count': len(jobs),
@@ -914,12 +932,7 @@ def upload_file():
             bg_start_time = time.time()
             logger.info(f"bg_job_start job_id={job_id} session_id={session_id} file_size={file_size}")
             
-            # P1-1: ジョブ開始時のメモリ計測
-            if metrics_available:
-                log_memory("job_start", job_id=job_id, session_id=session_id, extra={
-                    'jobs_count': len(jobs),
-                    'sessions_count': len(session_manager['active_sessions'])
-                })
+            # P0-P1: ジョブ開始時のメモリ計測は削除（重要度低、ログノイズ削減）
             
             try:
                 # セッション固有のブラウザ環境で処理を実行
