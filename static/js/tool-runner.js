@@ -91,6 +91,15 @@ class ToolRunner {
             throw new Error('ファイルが選択されていません');
         }
 
+        // GA4 イベント: ツール実行開始
+        if (typeof window !== 'undefined' && window.gtag) {
+            const toolId = this.toolId || 'unknown';
+            window.gtag('event', 'tool_run_start', {
+                tool_id: toolId,
+                file_count: this.selectedFiles.length
+            });
+        }
+
         this.isRunning = true;
         this.cancelled = false;
         this.outputs = [];
@@ -389,6 +398,18 @@ class ToolRunner {
         if (!output) {
             throw new Error('出力ファイルが見つかりません');
         }
+
+        // GA4 イベント: ダウンロード
+        if (typeof window !== 'undefined' && window.gtag) {
+            const toolId = this.toolId || 'unknown';
+            const fileType = output.filename.split('.').pop() || 'unknown';
+            window.gtag('event', 'tool_download', {
+                tool_id: toolId,
+                file_type: fileType,
+                download_type: 'single'
+            });
+        }
+
         FileUtils.downloadBlob(output.blob, output.filename);
     }
 
@@ -409,6 +430,18 @@ class ToolRunner {
                 })),
                 zipName
             );
+
+            // GA4 イベント: ZIPダウンロード
+            if (typeof window !== 'undefined' && window.gtag) {
+                const toolId = this.toolId || 'unknown';
+                window.gtag('event', 'tool_download', {
+                    tool_id: toolId,
+                    file_type: 'zip',
+                    download_type: 'zip',
+                    file_count: this.outputs.length
+                });
+            }
+
             FileUtils.downloadBlob(zipBlob, zipName);
         } catch (error) {
             throw new Error(`ZIP作成に失敗しました: ${error.message}`);
