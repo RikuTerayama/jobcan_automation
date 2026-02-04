@@ -327,12 +327,31 @@ def allowed_file(filename):
     """アップロードされたファイルの拡張子をチェック"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'xlsx', 'xls'}
 
+# P0-2: ログの上限設定
+MAX_LOG_ENTRIES = 200  # 最大ログ件数
+MAX_LOG_CHARS = 2000  # 1ログの最大文字数
+
 def add_job_log(job_id: str, message: str, jobs: dict):
-    """ジョブのログを追加"""
+    """ジョブのログを追加（P0-2: 上限設定付き）"""
     if job_id in jobs:
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         sanitized_message = sanitize_log_message(message)
-        jobs[job_id]['logs'].append(f"[{timestamp}] {sanitized_message}")
+        
+        # P0-2: メッセージ長制限
+        if len(sanitized_message) > MAX_LOG_CHARS:
+            sanitized_message = sanitized_message[:MAX_LOG_CHARS - 3] + "..."
+        
+        log_entry = f"[{timestamp}] {sanitized_message}"
+        
+        # P0-2: ログ件数制限（最新MAX_LOG_ENTRIES件のみ保持）
+        if 'logs' not in jobs[job_id]:
+            jobs[job_id]['logs'] = []
+        
+        jobs[job_id]['logs'].append(log_entry)
+        
+        # ログ件数が上限を超えた場合、古いログを削除（最新MAX_LOG_ENTRIES件のみ保持）
+        if len(jobs[job_id]['logs']) > MAX_LOG_ENTRIES:
+            jobs[job_id]['logs'] = jobs[job_id]['logs'][-MAX_LOG_ENTRIES:]
 
 def sanitize_log_message(message):
     """ログメッセージから個人情報を除去"""

@@ -1,0 +1,1031 @@
+<!doctype html>
+<html lang="ja">
+<head>
+    {% set page_title = 'Web/SEOユーティリティ | RT Tools' %}
+    {% set page_description = 'OGP画像生成、PageSpeed改善チェックリスト、メタタグ検査、sitemap.xml/robots.txt生成をブラウザ内で実行。アップロード不要。' %}
+    {% block title %}{{ page_title }}{% endblock %}
+    {% include 'includes/head_meta.html' %}
+    {% block description_meta %}
+        <meta name="description" content="{% if page_description|length > 110 %}{{ page_description[:107] }}...{% else %}{{ page_description }}{% endif %}">
+    {% endblock %}
+    {% block og_title %}
+        <meta property="og:title" content="{{ page_title }}">
+    {% endblock %}
+    {% block og_description %}
+        <meta property="og:description" content="{% if page_description|length > 200 %}{{ page_description[:197] }}...{% else %}{{ page_description }}{% endif %}">
+    {% endblock %}
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;
+        }
+        
+        body {
+            font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #121212 0%, #1A1A1A 50%, #0F0F0F 100%);
+            min-height: 100vh;
+            color: #FFFFFF;
+            letter-spacing: 0.05em;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .page-header {
+            text-align: center;
+            padding: 40px 20px;
+            margin-bottom: 40px;
+        }
+        
+        .page-header h1 {
+            font-size: 2.5em;
+            margin: 0 0 15px 0;
+            color: #FFFFFF;
+            font-weight: 600;
+        }
+        
+        .page-header p {
+            font-size: 1.1em;
+            color: rgba(255, 255, 255, 0.8);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .panel {
+            background: rgba(30, 30, 30, 0.5);
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .panel h3 {
+            color: #4A9EFF;
+            font-size: 1.2em;
+            margin: 0 0 20px 0;
+        }
+        
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px;
+            border-radius: 8px;
+        }
+        
+        .mode-button {
+            flex: 1;
+            padding: 10px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.95em;
+        }
+        
+        .mode-button.active {
+            background: rgba(74, 158, 255, 0.2);
+            border-color: rgba(74, 158, 255, 0.5);
+            color: #4A9EFF;
+        }
+        
+        .option-group {
+            margin-bottom: 15px;
+        }
+        
+        .option-group label {
+            display: block;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        
+        .option-group input,
+        .option-group select,
+        .option-group textarea {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: #FFFFFF;
+            font-size: 0.95em;
+            font-family: inherit;
+        }
+        
+        .option-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .option-group input[type="range"] {
+            padding: 0;
+        }
+        
+        .option-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+        }
+        
+        .action-button {
+            padding: 12px 24px;
+            background: rgba(74, 158, 255, 0.2);
+            border: 1px solid rgba(74, 158, 255, 0.5);
+            border-radius: 8px;
+            color: #4A9EFF;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .action-button:hover:not(:disabled) {
+            background: rgba(74, 158, 255, 0.3);
+        }
+        
+        .action-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .action-button.secondary {
+            background: rgba(255, 152, 0, 0.2);
+            border-color: rgba(255, 152, 0, 0.5);
+            color: #FF9800;
+        }
+        
+        .action-button.secondary:hover:not(:disabled) {
+            background: rgba(255, 152, 0, 0.3);
+        }
+        
+        .output-preview {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+        
+        .output-preview img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+        
+        .output-preview pre {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: rgba(255, 255, 255, 0.9);
+            margin: 0;
+        }
+        
+        .output-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .output-actions button {
+            flex: 1;
+        }
+        
+        .info-text {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 1200px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% include 'includes/header.html' %}
+    
+    <div class="container">
+        <div class="page-header">
+            <h1>🔍 Web/SEOユーティリティ</h1>
+            <p>OGP画像生成、PageSpeed改善チェックリスト、メタタグ検査、sitemap.xml/robots.txt生成をローカルで実行できます。アップロード不要。</p>
+        </div>
+        
+        <div class="main-layout">
+            <!-- 左: 設定エリア -->
+            <div class="panel">
+                <h3>⚙️ 設定</h3>
+                
+                <div class="mode-selector">
+                    <button class="mode-button active" onclick="switchMode('ogp')">OGP画像生成</button>
+                    <button class="mode-button" onclick="switchMode('pagespeed')">PageSpeedチェックリスト</button>
+                    <button class="mode-button" onclick="switchMode('meta')">メタタグ検査（v2）</button>
+                    <button class="mode-button" onclick="switchMode('sitemap')">sitemap/robots（v2）</button>
+                </div>
+                
+                <!-- OGP画像生成設定 -->
+                <div id="ogp-settings">
+                    <div class="option-group">
+                        <label>プリセットサイズ</label>
+                        <select id="ogp-preset">
+                            <option value="ogp_1200_630">OGP標準 (1200x630)</option>
+                            <option value="square_1080">正方形 (1080x1080)</option>
+                            <option value="wide_1200_675">ワイド (1200x675)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>タイトル <span style="color: #F44336;">*</span></label>
+                        <input type="text" id="ogp-title" placeholder="OGP画像のタイトル">
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>サブタイトル</label>
+                        <input type="text" id="ogp-subtitle" placeholder="サブタイトル（任意）">
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>バッジ</label>
+                        <input type="text" id="ogp-badge" placeholder="バッジテキスト（任意）">
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>作成者</label>
+                        <input type="text" id="ogp-author" placeholder="作成者名（任意）">
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>日付</label>
+                        <input type="text" id="ogp-date" placeholder="日付（任意）">
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>レイアウト</label>
+                        <select id="ogp-layout">
+                            <option value="left">左揃え</option>
+                            <option value="center">中央揃え</option>
+                        </select>
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>背景</label>
+                        <select id="ogp-background">
+                            <option value="light">ライト</option>
+                            <option value="dark">ダーク</option>
+                        </select>
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>出力形式</label>
+                        <select id="ogp-format" onchange="updateOgpOptions()">
+                            <option value="png">PNG</option>
+                            <option value="jpeg">JPEG</option>
+                        </select>
+                    </div>
+                    
+                    <div class="option-group" id="ogp-quality-group" style="display: none;">
+                        <label>品質 <span id="ogp-quality-value">0.9</span></label>
+                        <input type="range" id="ogp-quality" min="0.1" max="1.0" step="0.1" value="0.9" oninput="document.getElementById('ogp-quality-value').textContent = this.value">
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>ファイル名（任意）</label>
+                        <input type="text" id="ogp-fileslug" placeholder="ファイル名のスラッグ">
+                        <p class="info-text">空欄の場合は "ogp" が使用されます</p>
+                    </div>
+                    
+                    <button id="ogp-generate-button" class="action-button" onclick="generateOgp()">画像を生成</button>
+                </div>
+                
+                <!-- PageSpeedチェックリスト設定 -->
+                <div id="pagespeed-settings" style="display: none;">
+                    <div class="option-group">
+                        <label>対象URL（任意）</label>
+                        <input type="text" id="ps-url" placeholder="https://example.com">
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>目的</label>
+                        <select id="ps-goal">
+                            <option value="other">その他</option>
+                            <option value="adsense">AdSense承認</option>
+                            <option value="blog">ブログ</option>
+                            <option value="ec">ECサイト</option>
+                            <option value="corporate">コーポレートサイト</option>
+                        </select>
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>フレームワーク</label>
+                        <select id="ps-framework">
+                            <option value="other">その他</option>
+                            <option value="nextjs">Next.js</option>
+                            <option value="static">静的サイト</option>
+                            <option value="wordpress">WordPress</option>
+                        </select>
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>優先指標</label>
+                        <select id="ps-priority">
+                            <option value="balanced">バランス型</option>
+                            <option value="lcp">LCP（最大コンテンツの表示）</option>
+                            <option value="cls">CLS（累積レイアウトシフト）</option>
+                            <option value="inp">INP（操作までの応答性）</option>
+                        </select>
+                    </div>
+                    
+                    <div class="option-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="ps-thirdparty" checked>
+                            <label for="ps-thirdparty">外部スクリプトの項目を含める</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="ps-images" checked>
+                            <label for="ps-images">画像最適化の項目を含める</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="ps-fonts" checked>
+                            <label for="ps-fonts">フォント最適化の項目を含める</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="ps-caching" checked>
+                            <label for="ps-caching">キャッシュと配信の項目を含める</label>
+                        </div>
+                    </div>
+                    
+                    <button class="action-button" onclick="generateChecklist()">チェックリストを生成</button>
+                </div>
+                
+                <!-- v2: メタタグ検査設定 -->
+                <div id="meta-settings" style="display: none;">
+                    <div class="option-group">
+                        <label>入力方式</label>
+                        <select id="meta-input-mode" onchange="updateMetaInputMode()">
+                            <option value="paste">HTML貼り付け</option>
+                            <option value="file">HTMLファイル読み込み</option>
+                            <option value="url">URL入力（CORS制約あり）</option>
+                        </select>
+                    </div>
+                    
+                    <div id="meta-paste-group" class="option-group">
+                        <label>HTMLコード</label>
+                        <textarea id="meta-html" rows="15" placeholder="&lt;!doctype html&gt;&#10;&lt;html&gt;&#10;  &lt;head&gt;&#10;    &lt;title&gt;...&lt;/title&gt;&#10;  &lt;/head&gt;&#10;  ..."></textarea>
+                    </div>
+                    
+                    <div id="meta-file-group" class="option-group" style="display: none;">
+                        <label>HTMLファイル</label>
+                        <input type="file" id="meta-file-input" accept="text/html" onchange="handleMetaFile()">
+                        <p class="info-text">読み込んだ内容がHTMLコード欄に反映されます</p>
+                    </div>
+                    
+                    <div id="meta-url-group" class="option-group" style="display: none;">
+                        <label>URL</label>
+                        <input type="text" id="meta-url-input" placeholder="https://example.com">
+                        <button class="action-button" onclick="fetchMetaFromUrl()" style="margin-top: 10px;">HTMLを取得</button>
+                        <p class="info-text" style="color: #FF9800;">⚠️ CORS制約により取得できない場合があります。その場合はHTMLを貼り付けてください。</p>
+                    </div>
+                    
+                    <button class="action-button" onclick="inspectMeta()">検査する</button>
+                </div>
+                
+                <!-- v2: sitemap/robots設定 -->
+                <div id="sitemap-settings" style="display: none;">
+                    <div class="option-group">
+                        <label>ベースURL <span style="color: #F44336;">*</span></label>
+                        <input type="text" id="sitemap-base-url" placeholder="https://example.com">
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>URLリスト（1行1URLまたは1行1パス）</label>
+                        <textarea id="sitemap-url-list" rows="10" placeholder="/&#10;/about&#10;/news&#10;/news/post-1&#10;# コメント行は無視されます"></textarea>
+                        <p class="info-text">パス（/で始まる）または完全なURLを入力。空行と#で始まる行は無視されます。</p>
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>lastmod</label>
+                        <select id="sitemap-lastmod">
+                            <option value="today">今日の日付を設定</option>
+                            <option value="none">設定しない</option>
+                        </select>
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>changefreq（任意）</label>
+                        <select id="sitemap-changefreq">
+                            <option value="">設定しない</option>
+                            <option value="always">always</option>
+                            <option value="hourly">hourly</option>
+                            <option value="daily">daily</option>
+                            <option value="weekly">weekly</option>
+                            <option value="monthly">monthly</option>
+                            <option value="yearly">yearly</option>
+                            <option value="never">never</option>
+                        </select>
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>priority（任意、0.1-1.0）</label>
+                        <input type="number" id="sitemap-priority" min="0.1" max="1.0" step="0.1" placeholder="0.5">
+                        <p class="info-text">空欄の場合は設定しません</p>
+                    </div>
+                    
+                    <button class="action-button" onclick="generateSitemap()">sitemap.xmlを生成</button>
+                    
+                    <hr style="margin: 30px 0; border-color: rgba(255, 255, 255, 0.2);">
+                    
+                    <h4 style="color: #4A9EFF; margin-bottom: 15px;">robots.txt生成</h4>
+                    
+                    <div class="option-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="robots-allow-all" checked>
+                            <label for="robots-allow-all">すべてを許可（Disallowが無い場合は全許可）</label>
+                        </div>
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>禁止パス（1行1パス、任意）</label>
+                        <textarea id="robots-disallow" rows="5" placeholder="/admin&#10;/private"></textarea>
+                        <p class="info-text">禁止したいパスを入力。空欄の場合は全許可です。</p>
+                    </div>
+                    
+                    <div class="option-group">
+                        <label>Sitemap URL（任意）</label>
+                        <input type="text" id="robots-sitemap-url" placeholder="https://example.com/sitemap.xml">
+                        <p class="info-text">空欄の場合は baseUrl + /sitemap.xml が使用されます</p>
+                    </div>
+                    
+                    <button class="action-button" onclick="generateRobots()">robots.txtを生成</button>
+                </div>
+            </div>
+            
+            <!-- 右: 出力エリア -->
+            <div class="panel">
+                <h3>📤 出力</h3>
+                
+                <div id="ogp-output" style="display: none;">
+                    <div id="ogp-preview" class="output-preview"></div>
+                    <div class="output-actions">
+                        <button class="action-button" onclick="downloadOgp()">画像をダウンロード</button>
+                        <button class="action-button secondary" onclick="copyOgpMeta()">メタタグ例をコピー</button>
+                    </div>
+                </div>
+                
+                <div id="pagespeed-output" style="display: none;">
+                    <div id="pagespeed-preview" class="output-preview"></div>
+                    <div class="output-actions">
+                        <button class="action-button" onclick="copyChecklist()">コピー</button>
+                        <button class="action-button" onclick="downloadChecklist()">Markdownをダウンロード</button>
+                    </div>
+                </div>
+                
+                <!-- v2: メタタグ検査出力 -->
+                <div id="meta-output" style="display: none;">
+                    <div id="meta-summary" style="margin-bottom: 15px; padding: 15px; background: rgba(0, 0, 0, 0.3); border-radius: 8px;"></div>
+                    <div id="meta-results" class="output-preview" style="max-height: 300px;"></div>
+                    <div id="meta-markdown-preview" class="output-preview" style="max-height: 400px; margin-top: 15px;"></div>
+                    <div class="output-actions">
+                        <button class="action-button" onclick="copyMetaResult()">結果をコピー</button>
+                        <button class="action-button" onclick="downloadMetaResult()">Markdownをダウンロード</button>
+                    </div>
+                </div>
+                
+                <!-- v2: sitemap/robots出力 -->
+                <div id="sitemap-output" style="display: none;">
+                    <div id="sitemap-xml-output" style="display: none;">
+                        <h4 style="color: #4A9EFF; margin-bottom: 10px;">sitemap.xml</h4>
+                        <div id="sitemap-xml-preview" class="output-preview"></div>
+                        <button class="action-button" onclick="downloadSitemapXml()" style="margin-top: 10px;">sitemap.xmlをダウンロード</button>
+                    </div>
+                    
+                    <div id="robots-txt-output" style="display: none; margin-top: 30px;">
+                        <h4 style="color: #4A9EFF; margin-bottom: 10px;">robots.txt</h4>
+                        <div id="robots-txt-preview" class="output-preview"></div>
+                        <button class="action-button" onclick="downloadRobotsTxt()" style="margin-top: 10px;">robots.txtをダウンロード</button>
+                    </div>
+                    
+                    <div id="sitemap-warnings" style="margin-top: 15px; padding: 15px; background: rgba(255, 152, 0, 0.2); border-radius: 8px; display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    {% include 'includes/footer.html' %}
+    
+    <!-- 共通ライブラリ -->
+    <script src="{{ url_for('static', filename='js/file-validation.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/file-utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/minutes-export.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/seo-ogp-presets.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/seo-ogp-canvas.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/seo-ogp-export.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/seo-pagespeed-checklist.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/seo-html-inspector.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/seo-sitemap.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/seo-robots.js') }}"></script>
+    
+    <script>
+        let currentMode = 'ogp';
+        let currentOgpBlob = null;
+        let currentOgpOptions = null;
+        let currentChecklist = '';
+        let currentMetaResult = null;
+        let currentSitemapXml = '';
+        let currentRobotsTxt = '';
+        
+        // モード切替
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // ボタンの状態を更新
+            document.querySelectorAll('.mode-button').forEach((btn, index) => {
+                btn.classList.remove('active');
+                const modes = ['ogp', 'pagespeed', 'meta', 'sitemap'];
+                if (modes[index] === mode) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // 設定パネルの表示切替
+            document.getElementById('ogp-settings').style.display = mode === 'ogp' ? 'block' : 'none';
+            document.getElementById('pagespeed-settings').style.display = mode === 'pagespeed' ? 'block' : 'none';
+            document.getElementById('meta-settings').style.display = mode === 'meta' ? 'block' : 'none';
+            document.getElementById('sitemap-settings').style.display = mode === 'sitemap' ? 'block' : 'none';
+            
+            // 出力パネルの表示切替
+            document.getElementById('ogp-output').style.display = mode === 'ogp' ? 'block' : 'none';
+            document.getElementById('pagespeed-output').style.display = mode === 'pagespeed' ? 'block' : 'none';
+            document.getElementById('meta-output').style.display = mode === 'meta' ? 'block' : 'none';
+            document.getElementById('sitemap-output').style.display = mode === 'sitemap' ? 'block' : 'none';
+        }
+        
+        // OGPオプションを更新
+        function updateOgpOptions() {
+            const format = document.getElementById('ogp-format').value;
+            const qualityGroup = document.getElementById('ogp-quality-group');
+            qualityGroup.style.display = format === 'jpeg' ? 'block' : 'none';
+        }
+        
+        // OGP画像を生成
+        async function generateOgp() {
+            const title = document.getElementById('ogp-title').value.trim();
+            
+            if (!title) {
+                alert('タイトルを入力してください');
+                return;
+            }
+            
+            const options = {
+                presetId: document.getElementById('ogp-preset').value,
+                title: title,
+                subtitle: document.getElementById('ogp-subtitle').value.trim(),
+                badge: document.getElementById('ogp-badge').value.trim(),
+                author: document.getElementById('ogp-author').value.trim(),
+                date: document.getElementById('ogp-date').value.trim(),
+                layout: document.getElementById('ogp-layout').value,
+                background: document.getElementById('ogp-background').value,
+                format: document.getElementById('ogp-format').value,
+                quality: parseFloat(document.getElementById('ogp-quality').value),
+                fileSlug: document.getElementById('ogp-fileslug').value.trim()
+            };
+            
+            try {
+                const result = await SeoOgpExport.exportOgpImage(options);
+                currentOgpBlob = result.blob;
+                currentOgpOptions = options;
+                
+                // プレビューを表示
+                const preview = document.getElementById('ogp-preview');
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(result.blob);
+                preview.innerHTML = '';
+                preview.appendChild(img);
+                
+                // メモリ解放
+                img.onload = () => URL.revokeObjectURL(img.src);
+            } catch (error) {
+                alert(`OGP画像生成エラー: ${error.message}`);
+            }
+        }
+        
+        // OGP画像をダウンロード
+        function downloadOgp() {
+            if (!currentOgpBlob || !currentOgpOptions) return;
+            
+            const preset = SeoOgpPresets.getPresetById(currentOgpOptions.presetId);
+            const fileSlug = currentOgpOptions.fileSlug || 'ogp';
+            const ext = currentOgpOptions.format === 'jpeg' || currentOgpOptions.format === 'jpg' ? 'jpg' : 'png';
+            const filename = `ogp_${fileSlug}_${preset.width}x${preset.height}.${ext}`;
+            
+            FileUtils.downloadBlob(currentOgpBlob, filename);
+        }
+        
+        // OGPメタタグ例をコピー
+        async function copyOgpMeta() {
+            if (!currentOgpOptions) return;
+            
+            const metaTags = SeoOgpExport.generateMetaTags(currentOgpOptions);
+            const success = await MinutesExport.copyToClipboard(metaTags);
+            
+            if (success) {
+                MinutesExport.showToast('メタタグ例をコピーしました', 'success');
+            } else {
+                MinutesExport.showToast('コピーに失敗しました', 'error');
+            }
+        }
+        
+        // チェックリストを生成
+        function generateChecklist() {
+            const options = {
+                targetUrl: document.getElementById('ps-url').value.trim(),
+                goal: document.getElementById('ps-goal').value,
+                framework: document.getElementById('ps-framework').value,
+                priority: document.getElementById('ps-priority').value,
+                includeThirdParty: document.getElementById('ps-thirdparty').checked,
+                includeImages: document.getElementById('ps-images').checked,
+                includeFonts: document.getElementById('ps-fonts').checked,
+                includeCaching: document.getElementById('ps-caching').checked
+            };
+            
+            const markdown = SeoPageSpeedChecklist.buildChecklistMarkdown(options);
+            currentChecklist = markdown;
+            
+            // プレビューを表示
+            const preview = document.getElementById('pagespeed-preview');
+            const pre = document.createElement('pre');
+            pre.textContent = markdown;
+            preview.innerHTML = '';
+            preview.appendChild(pre);
+        }
+        
+        // チェックリストをコピー
+        async function copyChecklist() {
+            if (!currentChecklist) return;
+            
+            const success = await MinutesExport.copyToClipboard(currentChecklist);
+            
+            if (success) {
+                MinutesExport.showToast('チェックリストをコピーしました', 'success');
+            } else {
+                MinutesExport.showToast('コピーに失敗しました', 'error');
+            }
+        }
+        
+        // チェックリストをダウンロード
+        function downloadChecklist() {
+            if (!currentChecklist) return;
+            
+            const blob = new Blob([currentChecklist], { type: 'text/markdown;charset=utf-8' });
+            const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
+            const filename = `pagespeed-checklist_${date}.md`;
+            
+            FileUtils.downloadBlob(blob, filename);
+        }
+        
+        // v2: メタタグ検査の入力方式を更新
+        function updateMetaInputMode() {
+            const mode = document.getElementById('meta-input-mode').value;
+            document.getElementById('meta-paste-group').style.display = mode === 'paste' ? 'block' : 'none';
+            document.getElementById('meta-file-group').style.display = mode === 'file' ? 'block' : 'none';
+            document.getElementById('meta-url-group').style.display = mode === 'url' ? 'block' : 'none';
+        }
+        
+        // v2: HTMLファイルを読み込み
+        function handleMetaFile() {
+            const fileInput = document.getElementById('meta-file-input');
+            const file = fileInput.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('meta-html').value = e.target.result;
+            };
+            reader.readAsText(file);
+        }
+        
+        // v2: URLからHTMLを取得
+        async function fetchMetaFromUrl() {
+            const url = document.getElementById('meta-url-input').value.trim();
+            if (!url) {
+                alert('URLを入力してください');
+                return;
+            }
+            
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                const html = await response.text();
+                document.getElementById('meta-html').value = html;
+                MinutesExport.showToast('HTMLを取得しました', 'success');
+            } catch (error) {
+                alert(`HTMLの取得に失敗しました: ${error.message}\n\nCORS制約により取得できない場合は、HTMLを直接貼り付けてください。`);
+            }
+        }
+        
+        // v2: メタタグ検査を実行
+        function inspectMeta() {
+            const html = document.getElementById('meta-html').value.trim();
+            if (!html) {
+                alert('HTMLコードを入力してください');
+                return;
+            }
+            
+            try {
+                // HTMLを解析
+                const doc = SeoHtmlInspector.parseHtml(html);
+                
+                // メタタグを抽出
+                const extracted = SeoHtmlInspector.extractMeta(doc);
+                
+                // 重複チェック
+                const duplicates = SeoHtmlInspector.checkDuplicates(doc);
+                
+                // 検査を実行
+                const items = SeoHtmlInspector.runMetaChecks(extracted, duplicates);
+                
+                // サマリを計算
+                const summary = {
+                    ok: items.filter(item => item.level === 'ok').length,
+                    warn: items.filter(item => item.level === 'warn').length,
+                    fail: items.filter(item => item.level === 'fail').length
+                };
+                
+                currentMetaResult = {
+                    items,
+                    extracted,
+                    summary
+                };
+                
+                // 結果を表示
+                displayMetaResult(currentMetaResult);
+            } catch (error) {
+                alert(`メタタグ検査エラー: ${error.message}`);
+            }
+        }
+        
+        // v2: メタタグ検査結果を表示
+        function displayMetaResult(result) {
+            const { items, summary } = result;
+            
+            // サマリを表示
+            const summaryEl = document.getElementById('meta-summary');
+            summaryEl.innerHTML = `
+                <strong>検査結果サマリ:</strong><br>
+                ✅ OK: ${summary.ok}件 | ⚠️ 警告: ${summary.warn}件 | ❌ NG: ${summary.fail}件
+            `;
+            
+            // 結果一覧を表示
+            const resultsEl = document.getElementById('meta-results');
+            resultsEl.innerHTML = '<strong>検査結果一覧:</strong><br><br>';
+            
+            items.forEach(item => {
+                const levelIcon = item.level === 'ok' ? '✅' : item.level === 'warn' ? '⚠️' : '❌';
+                const levelColor = item.level === 'ok' ? '#4CAF50' : item.level === 'warn' ? '#FF9800' : '#F44336';
+                resultsEl.innerHTML += `
+                    <div style="margin-bottom: 10px; padding: 10px; background: rgba(0, 0, 0, 0.3); border-radius: 6px; border-left: 3px solid ${levelColor};">
+                        <strong>${levelIcon} ${item.label}</strong><br>
+                        ${item.message}<br>
+                        ${item.value ? `<span style="color: rgba(255, 255, 255, 0.7); font-size: 0.9em;">値: ${item.value.length > 100 ? item.value.substring(0, 100) + '...' : item.value}</span>` : ''}
+                    </div>
+                `;
+            });
+            
+            // Markdownを生成して表示
+            const markdown = SeoHtmlInspector.buildMetaAuditMarkdown(result);
+            const markdownEl = document.getElementById('meta-markdown-preview');
+            const pre = document.createElement('pre');
+            pre.textContent = markdown;
+            markdownEl.innerHTML = '';
+            markdownEl.appendChild(pre);
+        }
+        
+        // v2: メタタグ検査結果をコピー
+        async function copyMetaResult() {
+            if (!currentMetaResult) return;
+            
+            const markdown = SeoHtmlInspector.buildMetaAuditMarkdown(currentMetaResult);
+            const success = await MinutesExport.copyToClipboard(markdown);
+            
+            if (success) {
+                MinutesExport.showToast('結果をコピーしました', 'success');
+            } else {
+                MinutesExport.showToast('コピーに失敗しました', 'error');
+            }
+        }
+        
+        // v2: メタタグ検査結果をダウンロード
+        function downloadMetaResult() {
+            if (!currentMetaResult) return;
+            
+            const markdown = SeoHtmlInspector.buildMetaAuditMarkdown(currentMetaResult);
+            MinutesExport.downloadMarkdown(markdown, 'seo_audit');
+        }
+        
+        // v2: sitemap.xmlを生成
+        function generateSitemap() {
+            const baseUrl = document.getElementById('sitemap-base-url').value.trim();
+            const urlList = document.getElementById('sitemap-url-list').value;
+            const lastmodMode = document.getElementById('sitemap-lastmod').value;
+            const changefreq = document.getElementById('sitemap-changefreq').value;
+            const priorityStr = document.getElementById('sitemap-priority').value.trim();
+            const priority = priorityStr ? parseFloat(priorityStr) : null;
+            
+            if (!baseUrl) {
+                alert('ベースURLを入力してください');
+                return;
+            }
+            
+            // URLを正規化
+            const { urls, warnings } = SeoSitemap.normalizeUrls(baseUrl, urlList);
+            
+            if (urls.length === 0) {
+                alert('有効なURLが1件も見つかりませんでした');
+                return;
+            }
+            
+            // sitemap.xmlを生成
+            currentSitemapXml = SeoSitemap.buildSitemapXml(urls, {
+                lastmodMode,
+                changefreq: changefreq || null,
+                priority
+            });
+            
+            // プレビューを表示
+            const preview = document.getElementById('sitemap-xml-preview');
+            const pre = document.createElement('pre');
+            pre.textContent = currentSitemapXml;
+            preview.innerHTML = '';
+            preview.appendChild(pre);
+            
+            document.getElementById('sitemap-xml-output').style.display = 'block';
+            
+            // 警告を表示
+            if (warnings.length > 0) {
+                const warningsEl = document.getElementById('sitemap-warnings');
+                warningsEl.innerHTML = '<strong>警告:</strong><br>' + warnings.map(w => `- ${w}`).join('<br>');
+                warningsEl.style.display = 'block';
+            } else {
+                document.getElementById('sitemap-warnings').style.display = 'none';
+            }
+        }
+        
+        // v2: sitemap.xmlをダウンロード
+        function downloadSitemapXml() {
+            if (!currentSitemapXml) return;
+            
+            const blob = new Blob([currentSitemapXml], { type: 'application/xml;charset=utf-8' });
+            FileUtils.downloadBlob(blob, 'sitemap.xml');
+        }
+        
+        // v2: robots.txtを生成
+        function generateRobots() {
+            const baseUrl = document.getElementById('sitemap-base-url').value.trim();
+            const allowAll = document.getElementById('robots-allow-all').checked;
+            const disallowPaths = document.getElementById('robots-disallow').value;
+            let sitemapUrl = document.getElementById('robots-sitemap-url').value.trim();
+            
+            // sitemapUrlが空の場合は自動生成
+            if (!sitemapUrl && baseUrl) {
+                sitemapUrl = baseUrl.replace(/\/$/, '') + '/sitemap.xml';
+            }
+            
+            currentRobotsTxt = SeoRobots.buildRobotsTxt({
+                allowAll,
+                disallowPaths,
+                sitemapUrl,
+                userAgent: '*'
+            });
+            
+            // プレビューを表示
+            const preview = document.getElementById('robots-txt-preview');
+            const pre = document.createElement('pre');
+            pre.textContent = currentRobotsTxt;
+            preview.innerHTML = '';
+            preview.appendChild(pre);
+            
+            document.getElementById('robots-txt-output').style.display = 'block';
+        }
+        
+        // v2: robots.txtをダウンロード
+        function downloadRobotsTxt() {
+            if (!currentRobotsTxt) return;
+            
+            const blob = new Blob([currentRobotsTxt], { type: 'text/plain;charset=utf-8' });
+            FileUtils.downloadBlob(blob, 'robots.txt');
+        }
+        
+        // サンプルHTMLを読み込む
+        function loadSampleHtml() {
+            const sampleHtml = `<!doctype html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>サンプルページ - テストサイト</title>
+    <meta name="description" content="これはサンプルページの説明文です。SEOメタタグ検査のテストに使用できます。">
+    <link rel="canonical" href="https://example.com/sample">
+    <meta name="robots" content="index, follow">
+    
+    <!-- OGタグ -->
+    <meta property="og:title" content="サンプルページ - テストサイト">
+    <meta property="og:description" content="これはサンプルページの説明文です。">
+    <meta property="og:url" content="https://example.com/sample">
+    <meta property="og:image" content="https://example.com/og-image.jpg">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="テストサイト">
+    
+    <!-- Twitterタグ -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="サンプルページ - テストサイト">
+    <meta name="twitter:description" content="これはサンプルページの説明文です。">
+    <meta name="twitter:image" content="https://example.com/og-image.jpg">
+</head>
+<body>
+    <h1>サンプルページ</h1>
+    <p>これはサンプルページです。</p>
+</body>
+</html>`;
+            
+            document.getElementById('meta-html').value = sampleHtml;
+        }
+        
+        // サンプルHTMLを読み込む
+        function loadSampleHtml() {
+            const sampleHtml = `<!doctype html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>サンプルページ - テストサイト</title>
+    <meta name="description" content="これはサンプルページの説明文です。SEOメタタグ検査のテストに使用できます。">
+    <link rel="canonical" href="https://example.com/sample">
+    <meta name="robots" content="index, follow">
+    
+    <!-- OGタグ -->
+    <meta property="og:title" content="サンプルページ - テストサイト">
+    <meta property="og:description" content="これはサンプルページの説明文です。">
+    <meta property="og:url" content="https://example.com/sample">
+    <meta property="og:image" content="https://example.com/og-image.jpg">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="テストサイト">
+    
+    <!-- Twitterタグ -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="サンプルページ - テストサイト">
+    <meta name="twitter:description" content="これはサンプルページの説明文です。">
+    <meta name="twitter:image" content="https://example.com/og-image.jpg">
+</head>
+<body>
+    <h1>サンプルページ</h1>
+    <p>これはサンプルページです。</p>
+</body>
+</html>`;
+            
+            document.getElementById('meta-html').value = sampleHtml;
+        }
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            updateOgpOptions();
+            
+            // タイトル入力で生成ボタンの有効/無効を切り替え
+            document.getElementById('ogp-title').addEventListener('input', () => {
+                const title = document.getElementById('ogp-title').value.trim();
+                document.getElementById('ogp-generate-button').disabled = !title;
+            });
+        });
+    </script>
+</body>
+</html>

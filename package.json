@@ -1,0 +1,15 @@
+{
+  "name": "jobcan-automation",
+  "version": "1.0.0",
+  "description": "Jobcan勤怠データ自動入力ツール",
+  "scripts": {
+    "lint:html": "html-validate 'templates/**/*.html'",
+    "audit:ui": "ts-node scripts/generate-ui-audit.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.30",
+    "html-validate": "^9.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

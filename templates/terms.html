@@ -1,16 +1,12 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>利用規約 - Jobcan AutoFill</title>
-    
-    {# Google AdSense - 本番環境のみ、除外ページ以外で読み込み #}
-    {% if ADSENSE_ENABLED and not (request.path.startswith('/login') or request.path.startswith('/app/') or request.path in ['/privacy', '/contact', '/thanks']) %}
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4232725615106709" crossorigin="anonymous"></script>
-    {% endif %}
-    
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet">
+    {# 共通HEADメタタグ #}
+    {% include 'includes/head_meta.html' %}
+    {% block title %}利用規約 | Jobcan AutoFill{% endblock %}
+    {% block description_meta %}
+        <meta name="description" content="Jobcan AutoFillの利用規約。サービスの利用条件、禁止事項、免責事項、個人情報の取り扱いについて説明します。">
+    {% endblock %}
     <style>
         body {
             font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;
@@ -94,6 +90,7 @@
 
         <h2>第2条（サービスの内容）</h2>
         <p>本サービスは、Jobcanへの勤怠データ自動入力を補助するツールです。ユーザーがアップロードしたExcelファイルのデータに基づき、Jobcanへ自動的にログインし、勤怠情報を入力します。</p>
+        <p><strong>重要な注意事項：</strong>本サービスは、Jobcanへの入力作業を補助するツールであり、実際の勤怠内容・入力結果の最終確認はユーザー自身が行う責任があります。自動入力の結果生じた不備や損害について、本サービスの提供者は一切の責任を負いません。自動入力後は、必ずJobcan側でデータが正しく登録されているか確認してください。</p>
 
         <h2>第3条（利用資格）</h2>
         <p>本サービスを利用できるのは、以下の条件を満たす方に限ります：</p>
@@ -113,6 +110,7 @@
             <li>所属企業の就業規則やセキュリティポリシーに違反する行為</li>
             <li>法令、公序良俗に反する行為</li>
             <li>本サービスの運営を妨害する行為</li>
+            <li>自動入力の結果を確認せずにそのまま承認すること（必ずJobcan側でデータが正しく登録されているか確認する義務があります）</li>
         </ul>
 
         <div class="warning">
@@ -126,13 +124,16 @@
         <ul>
             <li>本サービスの利用により生じた損害（データの消失、業務上の不利益、懲戒処分など）</li>
             <li>Jobcanのシステム変更により本サービスが正常に動作しなくなった場合</li>
-            <li>ユーザーが入力した勤怠データの正確性</li>
+            <li>ユーザーが入力した勤怠データの正確性（ユーザーは自動入力後、必ずJobcan側でデータが正しく登録されているか確認する義務があります）</li>
             <li>ユーザーの就業規則違反やセキュリティポリシー違反</li>
             <li>サービスの中断、終了、障害</li>
+            <li>自動入力処理の途中での中断やエラー（ネットワーク障害、Jobcan側のサーバー障害など）</li>
+            <li>自動入力処理の結果が期待通りでなかった場合（ユーザーは処理結果を必ず確認し、必要に応じて手動で修正する責任があります）</li>
         </ul>
 
         <h2>第6条（個人情報の取り扱い）</h2>
-        <p>本サービスにおける個人情報の取り扱いについては、<a href="/privacy">プライバシーポリシー</a>をご確認ください。</p>
+        <p>本サービスにおける個人情報の取り扱いについては、<a href="/privacy">プライバシーポリシー</a>をご確認ください。本サービスの利用に際しては、別途定めるプライバシーポリシーの内容も適用されます。</p>
+        <p>本サイトでは、今後 Google AdSense による広告配信を行う予定です。広告配信に関する個人情報の取り扱いについては、<a href="/privacy">プライバシーポリシー</a>の「第三者配信事業者による広告配信について」の節をご確認ください。</p>
 
         <h2>第7条（サービスの変更・終了）</h2>
         <p>本サービスの提供者は、ユーザーへの事前通知なく、本サービスの内容を変更、または本サービスの提供を終了することができます。これにより生じた損害について、一切の責任を負いません。</p>

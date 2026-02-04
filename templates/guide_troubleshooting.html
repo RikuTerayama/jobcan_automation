@@ -1,16 +1,12 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>トラブルシューティング - Jobcan AutoFill</title>
-    
-    {# Google AdSense - 本番環境のみ、除外ページ以外で読み込み #}
-    {% if ADSENSE_ENABLED and not (request.path.startswith('/login') or request.path.startswith('/app/') or request.path in ['/privacy', '/contact', '/thanks']) %}
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4232725615106709" crossorigin="anonymous"></script>
-    {% endif %}
-    
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet">
+    {# 共通HEADメタタグ #}
+    {% include 'includes/head_meta.html' %}
+    {% block title %}トラブルシューティング | Jobcan AutoFill{% endblock %}
+    {% block description_meta %}
+        <meta name="description" content="Jobcan AutoFillのトラブルシューティングガイド。よくあるエラーと解決方法、ログイン失敗、データ入力エラーなどの対処法を詳しく解説。">
+    {% endblock %}
     <style>
         body {
             font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;
@@ -455,9 +451,67 @@
 
         <div class="nav-links">
             <a href="/guide/excel-format" class="nav-link">← 前のガイド: Excelファイルの作成方法</a>
-            <a href="/" class="nav-link">トップページに戻る</a>
+            <a href="/autofill" class="nav-link">← Jobcan AutoFillに戻る</a>
+            <a href="/" class="nav-link">← 製品一覧へ</a>
         </div>
     </div>
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Jobcan AutoFill トラブルシューティングガイド",
+        "description": "Jobcan AutoFillの使用中に発生する可能性のあるエラーと、その解決方法を詳しく解説します。ログインエラー、ファイルエラー、処理エラー、データ入力に関する問題など、10種類のエラーと対処法を網羅しています。",
+        "datePublished": "2025-01-26",
+        "dateModified": "2025-01-26",
+        "author": {
+            "@type": "Person",
+            "name": "RT",
+            "jobTitle": "コンサルタント"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "Jobcan AutoFill"
+        },
+        "mainEntity": {
+            "@type": "HowTo",
+            "name": "Jobcan AutoFillのエラー対応手順",
+            "description": "Jobcan AutoFillで発生する可能性のあるエラーを特定し、解決するための手順を説明します。",
+            "step": [
+                {
+                    "@type": "HowToStep",
+                    "name": "ログインエラーの対処",
+                    "text": "ログインに失敗する場合は、メールアドレスとパスワードが正しいか、会社IDが必要な場合は正しく入力されているか、手動でJobcanにログインできるかを確認してください。アカウントがロックされていないかも確認が必要です。画像認証（CAPTCHA）が表示された場合は、一度手動でログインしてクリアし、30分～1時間程度待ってから再試行してください。",
+                    "position": 1
+                },
+                {
+                    "@type": "HowToStep",
+                    "name": "ファイルエラーの対処",
+                    "text": "ファイル形式が正しくない場合は、Excel形式（.xlsx または .xls）で保存し直してください。ファイルサイズが10MBを超えている場合は、不要なデータを削除するか、新しいファイルにコピーしてください。データ形式が正しくない場合は、日付がYYYY/MM/DD形式、時刻がHH:MM形式になっているか確認してください。",
+                    "position": 2
+                },
+                {
+                    "@type": "HowToStep",
+                    "name": "処理エラーの対処",
+                    "text": "処理が途中で止まってしまう場合は、ネットワーク接続が安定しているか確認し、数分待ってから再試行してください。別のブラウザで試す、キャッシュとCookieをクリアすることも有効です。サーバーエラーが発生した場合は、時間を空けて再試行してください。",
+                    "position": 3
+                },
+                {
+                    "@type": "HowToStep",
+                    "name": "データ入力に関する問題の対処",
+                    "text": "一部のデータが入力されていない場合は、Excelファイルの該当日のB列・C列が空白でないか、時刻形式が正しいか確認してください。Jobcan側にすでにデータが入力されている場合は上書きされません。入力されたデータが間違っている場合は、列の順序が正しいか、ヘッダー行が削除されていないか確認してください。",
+                    "position": 4
+                },
+                {
+                    "@type": "HowToStep",
+                    "name": "問題が解決しない場合",
+                    "text": "上記の方法で問題が解決しない場合は、トラブルシューティングガイドを確認し、お問い合わせページからエラーメッセージの内容と問題が発生した手順を具体的に説明してご連絡ください。エラーログを添付していただくと、迅速に対応できます。",
+                    "position": 5
+                }
+            ]
+        }
+    }
+    </script>
 </body>
 </html>
 

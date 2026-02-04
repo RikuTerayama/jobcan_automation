@@ -35,6 +35,24 @@ from utils import (
     openpyxl_available
 )
 
+# P1-1, P1-2: 計測ログユーティリティ（循環import回避）
+try:
+    from diagnostics.runtime_metrics import (
+        increment_browser_count,
+        decrement_browser_count,
+        log_memory
+    )
+    metrics_available = True
+except ImportError:
+    metrics_available = False
+    # フォールバック関数
+    def increment_browser_count():
+        pass
+    def decrement_browser_count():
+        pass
+    def log_memory(tag, job_id=None, session_id=None, extra=None):
+        pass
+
 def reliable_type(page, selector: str, text: str, job_id: str, jobs: dict, retries: int = 3) -> bool:
     """
     信頼性の高い入力機能（再試行機能付き）
@@ -903,18 +921,21 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                         add_job_log(job_id, "⚠️ 2回目: 打刻ボタンが見つかりません（想定通りの処理構造です）", jobs)
                         # 2回目の打刻に失敗しても処理は継続
                     
-                        # 出勤簿ページに戻る
-                        add_job_log(job_id, "🔄 出勤簿ページに戻ります", jobs)
-                        page.goto("https://ssl.jobcan.jp/employee/attendance")
-                        page.wait_for_load_state('networkidle', timeout=30000)
-                        
-                        update_progress(job_id, 6, f"勤怠データ入力中 ({processed_count}/{total_data})", jobs, processed_count, total_data)
-                        # 処理間隔（4番目以降は長めに待機）
-                        if processed_count >= 4:
-                            add_job_log(job_id, "⏳ メモリ最適化のため5秒待機中...", jobs)
-                            time.sleep(5)  # 4番目以降は5秒待機
-                        else:
-                            time.sleep(2)  # 通常の処理間隔
+                    # データ処理完了ログを出力
+                    add_job_log(job_id, f"✅ データ {processed_count}/{total_data} の処理が完了しました: {date_str}", jobs)
+                    
+                    # 出勤簿ページに戻る
+                    add_job_log(job_id, "🔄 出勤簿ページに戻ります", jobs)
+                    page.goto("https://ssl.jobcan.jp/employee/attendance")
+                    page.wait_for_load_state('networkidle', timeout=30000)
+                    
+                    update_progress(job_id, 6, f"勤怠データ入力中 ({processed_count}/{total_data})", jobs, processed_count, total_data)
+                    # 処理間隔（4番目以降は長めに待機）
+                    if processed_count >= 4:
+                        add_job_log(job_id, "⏳ メモリ最適化のため5秒待機中...", jobs)
+                        time.sleep(5)  # 4番目以降は5秒待機
+                    else:
+                        time.sleep(2)  # 通常の処理間隔
                     
                 except Exception as data_error:
                     add_job_log(job_id, f"❌ データ {processed_count} の処理でエラー: {data_error}", jobs)
@@ -929,6 +950,9 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                     
                     add_job_log(job_id, f"🔄 次のデータの処理を続行します", jobs)
                     continue
+            
+            # pandas使用時の処理完了サマリー
+            add_job_log(job_id, f"📊 全データ処理完了: {processed_count}件のデータを処理しました", jobs)
         else:
             # openpyxlを使用した処理（空白行スキップ対応）
             ws = data_source.active
@@ -1136,18 +1160,21 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                         add_job_log(job_id, "⚠️ 2回目: 打刻ボタンが見つかりません（想定通りの処理構造です）", jobs)
                         # 2回目の打刻に失敗しても処理は継続
                     
-                        # 出勤簿ページに戻る
-                        add_job_log(job_id, "🔄 出勤簿ページに戻ります", jobs)
-                        page.goto("https://ssl.jobcan.jp/employee/attendance")
-                        page.wait_for_load_state('networkidle', timeout=30000)
-                        
-                        update_progress(job_id, 6, f"勤怠データ入力中 ({processed_count}/{total_data})", jobs, processed_count, total_data)
-                        # 処理間隔（4番目以降は長めに待機）
-                        if processed_count >= 4:
-                            add_job_log(job_id, "⏳ メモリ最適化のため5秒待機中...", jobs)
-                            time.sleep(5)  # 4番目以降は5秒待機
-                        else:
-                            time.sleep(2)  # 通常の処理間隔
+                    # データ処理完了ログを出力
+                    add_job_log(job_id, f"✅ データ {processed_count}/{total_data} の処理が完了しました: {date_str}", jobs)
+                    
+                    # 出勤簿ページに戻る
+                    add_job_log(job_id, "🔄 出勤簿ページに戻ります", jobs)
+                    page.goto("https://ssl.jobcan.jp/employee/attendance")
+                    page.wait_for_load_state('networkidle', timeout=30000)
+                    
+                    update_progress(job_id, 6, f"勤怠データ入力中 ({processed_count}/{total_data})", jobs, processed_count, total_data)
+                    # 処理間隔（4番目以降は長めに待機）
+                    if processed_count >= 4:
+                        add_job_log(job_id, "⏳ メモリ最適化のため5秒待機中...", jobs)
+                        time.sleep(5)  # 4番目以降は5秒待機
+                    else:
+                        time.sleep(2)  # 通常の処理間隔
                     
                 except Exception as data_error:
                     add_job_log(job_id, f"❌ データ {processed_count} の処理でエラー: {data_error}", jobs)
@@ -1162,6 +1189,9 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                     
                     add_job_log(job_id, f"🔄 次のデータの処理を続行します", jobs)
                     continue
+            
+            # openpyxl使用時の処理完了サマリー
+            add_job_log(job_id, f"📊 全データ処理完了: {processed_count}件のデータを処理しました", jobs)
         
         add_job_log(job_id, "🎉 実際のデータ入力処理が完了しました", jobs)
         
@@ -1450,12 +1480,21 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         add_job_log(job_id, "📊 Excelファイルを読み込み中...", jobs)
         update_progress(job_id, 2, "Excelファイル読み込み中...", jobs)
         
+        # P1-1: Excel読み込み前のメモリ計測
+        if metrics_available:
+            log_memory("excel_before", job_id=job_id, session_id=session_id)
+        
         try:
             data_source, total_data = load_excel_data(file_path)
             add_job_log(job_id, f"✅ Excelファイル読み込み完了: {total_data}件のデータ", jobs)
+            
+            # P1-1: Excel読み込み後のメモリ計測
+            if metrics_available:
+                log_memory("excel_after", job_id=job_id, session_id=session_id)
         except Exception as e:
             add_job_log(job_id, f"❌ Excelファイル読み込みエラー: {e}", jobs)
             jobs[job_id]['status'] = 'error'
+            jobs[job_id]['end_time'] = time.time()  # P0-3: エラー時刻を記録
             jobs[job_id]['login_message'] = f'Excelファイルの読み込みに失敗しました: {str(e)}'
             return
         
@@ -1481,6 +1520,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 error_message = f'データ検証で{len(errors)}件のエラーが見つかりました。\n\n詳細:\n' + '\n'.join(error_details)
                 
                 jobs[job_id]['status'] = 'error'
+            jobs[job_id]['end_time'] = time.time()  # P0-3: エラー時刻を記録
                 jobs[job_id]['login_message'] = error_message
                 return
             
@@ -1492,6 +1532,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         except Exception as e:
             add_job_log(job_id, f"❌ データ検証エラー: {e}", jobs)
             jobs[job_id]['status'] = 'error'
+            jobs[job_id]['end_time'] = time.time()  # P0-3: エラー時刻を記録
             jobs[job_id]['login_message'] = f'データ検証中にエラーが発生しました: {str(e)}'
             return
         
@@ -1499,6 +1540,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         if not playwright_available:
             add_job_log(job_id, "❌ Playwrightが利用できません", jobs)
             jobs[job_id]['status'] = 'error'
+            jobs[job_id]['end_time'] = time.time()  # P0-3: エラー時刻を記録
             jobs[job_id]['login_status'] = 'playwright_unavailable'
             jobs[job_id]['login_message'] = 'ブラウザ自動化機能が利用できません'
             return
@@ -1507,8 +1549,21 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         add_job_log(job_id, "🌐 ブラウザを起動中...", jobs)
         update_progress(job_id, 4, "ブラウザ起動中...", jobs)
         
+        # P1-1: ブラウザ起動前のメモリ計測
+        if metrics_available:
+            log_memory("browser_before", job_id=job_id, session_id=session_id)
+        
+        # P0-1: Playwrightリソースの確実なクリーンアップのため、変数をNone初期化
+        browser = None
+        context = None
+        page = None
+        
         try:
             from playwright.sync_api import sync_playwright
+            
+            # P1-2: ブラウザ起動数をインクリメント
+            if metrics_available:
+                increment_browser_count()
             
             with sync_playwright() as p:
                 # セッション固有のブラウザ起動オプション
@@ -1653,6 +1708,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 if not login_success:
                     add_job_log(job_id, "❌ ログインに失敗したため、処理を停止します", jobs)
                     jobs[job_id]['status'] = 'completed'
+                    jobs[job_id]['end_time'] = time.time()  # P0-3: 完了時刻を記録
                     return
                 
                 # ステップ6: 実際のデータ入力処理
@@ -1670,15 +1726,111 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 update_progress(job_id, 8, "処理完了中...", jobs)
                 
                 jobs[job_id]['status'] = 'completed'
+                jobs[job_id]['end_time'] = time.time()  # P0-3: 完了時刻を記録
                 
-                # ブラウザを閉じる
-                browser.close()
-                add_job_log(job_id, "🔒 ブラウザセッションを終了しました", jobs)
+                # P1-1: ジョブ完了時のメモリ計測
+                if metrics_available:
+                    log_memory("job_completed", job_id=job_id, session_id=session_id)
+                
+            except Exception as inner_e:
+                add_job_log(job_id, f"❌ ブラウザ処理でエラーが発生しました: {inner_e}", jobs)
+                jobs[job_id]['status'] = 'error'
+                jobs[job_id]['end_time'] = time.time()  # P0-3: エラー時刻を記録
+                jobs[job_id]['login_message'] = f'ブラウザ処理でエラーが発生しました: {str(inner_e)}'
+                
+                # P1-1: ジョブエラー時のメモリ計測
+                if metrics_available:
+                    log_memory("job_error", job_id=job_id, session_id=session_id)
+                
+                raise  # finallyブロックでクリーンアップを実行するため再raise
+                
+            finally:
+                # P0-1: 確実にクリーンアップ（page -> context -> browser の順）
+                cleanup_errors = []
+                
+                # page を閉じる
+                if page is not None:
+                    try:
+                        page.close()
+                        add_job_log(job_id, "cleanup_result page_close=success", jobs)
+                    except Exception as e:
+                        cleanup_errors.append(f"page_close_error: {str(e)}")
+                        add_job_log(job_id, f"cleanup_result page_close=failed error={str(e)}", jobs)
+                
+                # context を閉じる
+                if context is not None:
+                    try:
+                        context.close()
+                        add_job_log(job_id, "cleanup_result context_close=success", jobs)
+                    except Exception as e:
+                        cleanup_errors.append(f"context_close_error: {str(e)}")
+                        add_job_log(job_id, f"cleanup_result context_close=failed error={str(e)}", jobs)
+                
+                # browser を閉じる
+                if browser is not None:
+                    try:
+                        browser.close()
+                        add_job_log(job_id, "cleanup_result browser_close=success", jobs)
+                    except Exception as e:
+                        cleanup_errors.append(f"browser_close_error: {str(e)}")
+                        add_job_log(job_id, f"cleanup_result browser_close=failed error={str(e)}", jobs)
+                
+                # withブロックの終了時に自動的にplaywright_instanceが閉じられる
+                # 明示的なcloseは不要だが、ログは出力
+                if not cleanup_errors:
+                    add_job_log(job_id, "cleanup_result playwright_close=success (via_with_block)", jobs)
+                
+                if cleanup_errors:
+                    add_job_log(job_id, f"⚠️ クリーンアップ中にエラーが発生: {', '.join(cleanup_errors)}", jobs)
+                else:
+                    add_job_log(job_id, "🔒 ブラウザセッションを正常に終了しました", jobs)
+                
+                # P1-2: ブラウザ終了数をデクリメント（close完了後）
+                if metrics_available:
+                    decrement_browser_count()
                 
         except Exception as e:
-            add_job_log(job_id, f"❌ ブラウザ処理でエラーが発生しました: {e}", jobs)
+            # P1-2: エラー時もブラウザ終了数をデクリメント
+            if metrics_available:
+                decrement_browser_count()
+            # P0-1: withブロックの外でエラーが発生した場合もクリーンアップを試行
+            # （withブロック内でエラーが発生した場合は、finallyブロックで既にクリーンアップ済み）
+            cleanup_errors = []
+            
+            # page を閉じる
+            if page is not None:
+                try:
+                    page.close()
+                    add_job_log(job_id, "cleanup_result page_close=success (outer_error_path)", jobs)
+                except Exception as cleanup_e:
+                    cleanup_errors.append(f"page_close_error: {str(cleanup_e)}")
+                    add_job_log(job_id, f"cleanup_result page_close=failed error={str(cleanup_e)} (outer_error_path)", jobs)
+            
+            # context を閉じる
+            if context is not None:
+                try:
+                    context.close()
+                    add_job_log(job_id, "cleanup_result context_close=success (outer_error_path)", jobs)
+                except Exception as cleanup_e:
+                    cleanup_errors.append(f"context_close_error: {str(cleanup_e)}")
+                    add_job_log(job_id, f"cleanup_result context_close=failed error={str(cleanup_e)} (outer_error_path)", jobs)
+            
+            # browser を閉じる
+            if browser is not None:
+                try:
+                    browser.close()
+                    add_job_log(job_id, "cleanup_result browser_close=success (outer_error_path)", jobs)
+                except Exception as cleanup_e:
+                    cleanup_errors.append(f"browser_close_error: {str(cleanup_e)}")
+                    add_job_log(job_id, f"cleanup_result browser_close=failed error={str(cleanup_e)} (outer_error_path)", jobs)
+            
+            if cleanup_errors:
+                add_job_log(job_id, f"⚠️ 外側エラー時のクリーンアップでエラーが発生: {', '.join(cleanup_errors)}", jobs)
+            
+            add_job_log(job_id, f"❌ 予期しないエラーが発生しました: {e}", jobs)
             jobs[job_id]['status'] = 'error'
-            jobs[job_id]['login_message'] = f'ブラウザ処理でエラーが発生しました: {str(e)}'
+            jobs[job_id]['end_time'] = time.time()  # P0-3: エラー時刻を記録
+            jobs[job_id]['login_message'] = f'予期しないエラーが発生しました: {str(e)}'
             return
         
     except Exception as e:

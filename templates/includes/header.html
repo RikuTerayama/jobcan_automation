@@ -1,0 +1,52 @@
+{# 共通ヘッダーナビゲーション #}
+<header style="background: rgba(30, 30, 30, 0.95); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 15px 0; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px);">
+    <nav style="max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <a href="/" style="font-size: 1.3em; font-weight: 600; color: #FFFFFF; text-decoration: none; letter-spacing: 0.05em;">
+                RT Tools
+            </a>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                {% set nav_items = [
+                    {'name': 'Home', 'path': '/', 'icon': '🏠'},
+                    {'name': 'AutoFill', 'path': '/autofill', 'icon': '🕒'},
+                    {'name': 'Tools', 'path': '/tools', 'icon': '🛠️'},
+                    {'name': 'Guide', 'path': '/guide/getting-started', 'icon': '📚'},
+                ] %}
+                {% for item in nav_items %}
+                    <a href="{{ item.path }}" 
+                       style="color: {% if request.path == item.path or (item.path == '/' and request.path == '/') %}#4A9EFF{% else %}rgba(255, 255, 255, 0.8){% endif %}; 
+                              text-decoration: none; 
+                              padding: 8px 12px; 
+                              border-radius: 6px; 
+                              transition: all 0.3s;
+                              {% if request.path == item.path or (item.path == '/' and request.path == '/') %}background: rgba(74, 158, 255, 0.1);{% endif %}"
+                       onmouseover="this.style.background='rgba(74, 158, 255, 0.15)'"
+                       onmouseout="this.style.background='{% if request.path == item.path or (item.path == '/' and request.path == '/') %}rgba(74, 158, 255, 0.1){% else %}transparent{% endif %}'">
+                        {{ item.icon }} {{ item.name }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </nav>
+</header>
+
+<style>
+    @media (max-width: 768px) {
+        header nav {
+            flex-direction: column;
+            gap: 15px;
+        }
+        header nav > div {
+            flex-direction: column;
+            width: 100%;
+        }
+        header nav > div > div {
+            width: 100%;
+            justify-content: center;
+        }
+        header nav a {
+            font-size: 0.9em;
+            padding: 6px 10px;
+        }
+    }
+</style>

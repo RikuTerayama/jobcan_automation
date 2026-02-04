@@ -35,10 +35,11 @@ services:
       - key: WEB_LOG_LEVEL
         value: "info"
       # === メモリ制限（OOM防止）===
+      # P0-4: 閾値の整合性を修正（WARNING < LIMIT）
       - key: MEMORY_LIMIT_MB
         value: "450"  # OOM前に警告
       - key: MEMORY_WARNING_MB
-        value: "400"
+        value: "400"  # LIMITより小さい値に設定
       # === 同時実行制限（503エラー対策）===
       - key: MAX_ACTIVE_SESSIONS
         value: "1"  # 同時接続数制限（free plan 512MB）

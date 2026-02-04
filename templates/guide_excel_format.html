@@ -1,16 +1,12 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Excelファイルの作成方法 - Jobcan AutoFill</title>
-    
-    {# Google AdSense - 本番環境のみ、除外ページ以外で読み込み #}
-    {% if ADSENSE_ENABLED and not (request.path.startswith('/login') or request.path.startswith('/app/') or request.path in ['/privacy', '/contact', '/thanks']) %}
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4232725615106709" crossorigin="anonymous"></script>
-    {% endif %}
-    
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet">
+    {# 共通HEADメタタグ #}
+    {% include 'includes/head_meta.html' %}
+    {% block title %}Excelファイルの作成方法 | Jobcan AutoFill{% endblock %}
+    {% block description_meta %}
+        <meta name="description" content="Jobcan AutoFill用のExcelファイルの作成方法。日付・時刻の形式、列の順序、よくあるエラーとその修正方法を詳しく解説。">
+    {% endblock %}
     <style>
         body {
             font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;
@@ -506,14 +502,234 @@
             <li><strong>非対応形式</strong>：CSV、テキストファイルなど</li>
         </ul>
 
+        <h2>よくあるフォーマットエラーと修正方法</h2>
+        <p style="line-height: 1.9; font-size: 1.05em; margin-bottom: 20px;">実際の利用でよく発生するフォーマットエラーと、その修正方法を具体的に解説します。</p>
+        
+        <div class="warning-box">
+            <h3 style="color: #DC3545; font-size: 1.2em; margin-bottom: 15px;">❌ エラー1：日付の形式が正しくない</h3>
+            <p style="margin-bottom: 12px;"><strong>症状：</strong>「Excelファイル読み込みエラー」または「日付の形式が正しくありません」というメッセージが表示される。</p>
+            <p style="margin-bottom: 12px;"><strong>NG例：</strong></p>
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0; background: rgba(220, 53, 69, 0.1);">
+                <thead>
+                    <tr style="background: rgba(220, 53, 69, 0.2);">
+                        <th style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">A列（日付）</th>
+                        <th style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">問題点</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">2025-11-13</td>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">ハイフン区切り（本ツールでは対応していますが、スラッシュ推奨）</td>
+                    </tr>
+                    <tr style="background: rgba(255, 255, 255, 0.02);">
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">11/13/2025</td>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">月/日/年の順序（年/月/日の順序が必要）</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">2025/11/13 (水)</td>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">曜日が含まれている</td>
+                    </tr>
+                    <tr style="background: rgba(255, 255, 255, 0.02);">
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">25/11/13</td>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">年が2桁（4桁の年が必要）</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p style="margin-top: 15px; margin-bottom: 12px;"><strong>修正方法：</strong></p>
+            <ol style="line-height: 1.9; padding-left: 30px;">
+                <li>日付を「YYYY/MM/DD」または「YYYY-MM-DD」形式に統一してください（例：2025/11/13）</li>
+                <li>曜日やその他の文字列を削除してください</li>
+                <li>年は必ず4桁で入力してください（例：2025、2026）</li>
+                <li>Excelのセル形式が「日付」になっている場合は、「文字列」に変更してください</li>
+            </ol>
+        </div>
+        
+        <div class="warning-box">
+            <h3 style="color: #DC3545; font-size: 1.2em; margin-bottom: 15px;">❌ エラー2：時刻の形式が正しくない</h3>
+            <p style="margin-bottom: 12px;"><strong>症状：</strong>「時刻の形式が正しくありません」というメッセージが表示される、または時刻が正しく認識されない。</p>
+            <p style="margin-bottom: 12px;"><strong>NG例：</strong></p>
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0; background: rgba(220, 53, 69, 0.1);">
+                <thead>
+                    <tr style="background: rgba(220, 53, 69, 0.2);">
+                        <th style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">B列/C列（時刻）</th>
+                        <th style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">問題点</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">9:00</td>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">時間が1桁（2桁が必要：09:00）</td>
+                    </tr>
+                    <tr style="background: rgba(255, 255, 255, 0.02);">
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">09:0</td>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">分が1桁（2桁が必要：09:00）</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">09時00分</td>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">日本語が含まれている</td>
+                    </tr>
+                    <tr style="background: rgba(255, 255, 255, 0.02);">
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">9:00 AM</td>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">AM/PM形式（24時間形式が必要）</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">09.00</td>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">ピリオド区切り（コロン区切りが必要：09:00）</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p style="margin-top: 15px; margin-bottom: 12px;"><strong>修正方法：</strong></p>
+            <ol style="line-height: 1.9; padding-left: 30px;">
+                <li>時刻を「HH:MM」形式（例：09:00、18:30）または4桁の数値形式（例：0900、1830）で入力してください</li>
+                <li>時間と分は必ず2桁で入力してください（例：09:00、09:05）</li>
+                <li>24時間形式で入力してください（例：13:00は午後1時、21:00は午後9時）</li>
+                <li>日本語やAM/PMなどの文字列を削除してください</li>
+                <li>Excelのセル形式が「時刻」になっている場合は、「文字列」に変更してください</li>
+            </ol>
+        </div>
+        
+        <div class="warning-box">
+            <h3 style="color: #DC3545; font-size: 1.2em; margin-bottom: 15px;">❌ エラー3：列の順序が間違っている</h3>
+            <p style="margin-bottom: 12px;"><strong>症状：</strong>「列の順序が正しくありません」というメッセージが表示される、または日付と時刻が逆に認識される。</p>
+            <p style="margin-bottom: 12px;"><strong>NG例：</strong></p>
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0; background: rgba(220, 53, 69, 0.1);">
+                <thead>
+                    <tr style="background: rgba(220, 53, 69, 0.2);">
+                        <th style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">A列</th>
+                        <th style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">B列</th>
+                        <th style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">C列</th>
+                        <th style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">問題点</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">09:00</td>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">2025/11/13</td>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">18:00</td>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">A列が時刻、B列が日付になっている</td>
+                    </tr>
+                    <tr style="background: rgba(255, 255, 255, 0.02);">
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">2025/11/13</td>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">18:00</td>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">09:00</td>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">開始時刻と終了時刻が逆になっている</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p style="margin-top: 15px; margin-bottom: 12px;"><strong>修正方法：</strong></p>
+            <ol style="line-height: 1.9; padding-left: 30px;">
+                <li>必ずテンプレートファイルを使用してください（既存のExcelファイルを流用しない）</li>
+                <li>A列=日付、B列=開始時刻、C列=終了時刻の順序を守ってください</li>
+                <li>列を追加・削除・移動しないでください</li>
+                <li>ヘッダー行（1行目）は削除・変更しないでください</li>
+            </ol>
+        </div>
+        
+        <div class="warning-box">
+            <h3 style="color: #DC3545; font-size: 1.2em; margin-bottom: 15px;">❌ エラー4：開始時刻と終了時刻の関係が正しくない</h3>
+            <p style="margin-bottom: 12px;"><strong>症状：</strong>「開始時刻と終了時刻の関係が正しくありません」というメッセージが表示される。</p>
+            <p style="margin-bottom: 12px;"><strong>NG例：</strong></p>
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0; background: rgba(220, 53, 69, 0.1);">
+                <thead>
+                    <tr style="background: rgba(220, 53, 69, 0.2);">
+                        <th style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">開始時刻</th>
+                        <th style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">終了時刻</th>
+                        <th style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">問題点</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">18:00</td>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">09:00</td>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">開始時刻が終了時刻より後になっている</td>
+                    </tr>
+                    <tr style="background: rgba(255, 255, 255, 0.02);">
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">09:00</td>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">09:00</td>
+                        <td style="padding: 10px; border: 1px solid rgba(255, 255, 255, 0.2);">開始時刻と終了時刻が同じ</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p style="margin-top: 15px; margin-bottom: 12px;"><strong>修正方法：</strong></p>
+            <ol style="line-height: 1.9; padding-left: 30px;">
+                <li>開始時刻は必ず終了時刻より前の時刻を入力してください（例：09:00 < 18:00）</li>
+                <li>開始時刻と終了時刻が同じ場合は、どちらかを修正してください</li>
+                <li>日をまたぐ勤務（例：22:00開始、翌日06:00終了）の場合は、終了時刻を24時間形式で入力してください（例：30:00）</li>
+            </ol>
+        </div>
+        
+        <div class="info-box">
+            <h3 style="color: #28A745; font-size: 1.2em; margin-bottom: 15px;">✅ エラーを防ぐためのチェックリスト</h3>
+            <p style="margin-bottom: 12px;">処理前に、以下のチェックリストを確認してください：</p>
+            <ul style="line-height: 1.9; padding-left: 30px;">
+                <li>✅ テンプレートファイルを使用しているか</li>
+                <li>✅ 日付が「YYYY/MM/DD」または「YYYY-MM-DD」形式になっているか</li>
+                <li>✅ 時刻が「HH:MM」形式または4桁の数値形式になっているか</li>
+                <li>✅ 列の順序が正しいか（A列=日付、B列=開始時刻、C列=終了時刻）</li>
+                <li>✅ 開始時刻が終了時刻より前になっているか</li>
+                <li>✅ 空白行が適切に処理されているか（空白行は自動的にスキップされます）</li>
+                <li>✅ ファイルサイズが10MB以下か</li>
+            </ul>
+            <p style="margin-top: 15px; font-size: 0.95em; color: rgba(255, 255, 255, 0.8);">
+                💡 詳しくは<a href="/best-practices" style="color: #28A745;">ベストプラクティスガイド</a>も参照してください。
+            </p>
+        </div>
+
         <h2>エラーが発生した場合</h2>
-        <p>ファイル形式に問題がある場合、エラーメッセージが表示されます。エラーが発生した場合は、<a href="/guide/troubleshooting">トラブルシューティングガイド</a>を参照してください。</p>
+        <p style="line-height: 1.9; font-size: 1.05em;">ファイル形式に問題がある場合、エラーメッセージが表示されます。上記の修正方法を試しても解決しない場合は、<a href="/guide/troubleshooting">トラブルシューティングガイド</a>を参照してください。</p>
 
         <div class="nav-links">
             <a href="/guide/getting-started" class="nav-link">← 前のガイド: はじめての使い方</a>
             <a href="/guide/troubleshooting" class="nav-link">次のガイド: トラブルシューティング →</a>
         </div>
     </div>
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "HowTo",
+        "name": "Jobcan AutoFill用Excelファイルの作成方法",
+        "description": "Jobcan AutoFillで使用するExcelファイルの正しい作成方法を詳しく解説します。日付・時刻の形式、よくあるエラーと修正方法を含みます。",
+        "step": [
+            {
+                "@type": "HowToStep",
+                "name": "テンプレートファイルをダウンロード",
+                "text": "Jobcan AutoFillページから「今月のテンプレートをダウンロード」または「先月のテンプレートをダウンロード」ボタンをクリックして、Excelテンプレートをダウンロードします。テンプレートには日付が自動入力されているため、開始時刻と終了時刻を入力するだけで済みます。",
+                "position": 1
+            },
+            {
+                "@type": "HowToStep",
+                "name": "A列に日付を入力（テンプレート使用時は自動入力済み）",
+                "text": "A列に日付をYYYY/MM/DD形式で入力します（例：2025/10/10）。テンプレートファイルを使用する場合は、日付は既に入力されているため、このステップは不要です。",
+                "position": 2
+            },
+            {
+                "@type": "HowToStep",
+                "name": "B列に開始時刻を入力",
+                "text": "B列に開始時刻をHH:MM形式で入力します（例：09:00、09:15）。24時間形式で入力してください。休日や欠勤の日は空白にしてください。",
+                "position": 3
+            },
+            {
+                "@type": "HowToStep",
+                "name": "C列に終了時刻を入力",
+                "text": "C列に終了時刻をHH:MM形式で入力します（例：18:00、18:30）。開始時刻よりも後の時刻を指定してください。休日や欠勤の日は空白にしてください。",
+                "position": 4
+            },
+            {
+                "@type": "HowToStep",
+                "name": "ファイル形式を確認",
+                "text": "ファイルを保存する際は、Excel ブック（.xlsx）形式で保存してください。1行目（ヘッダー行）は削除・変更しないでください。列の順序（A列=日付、B列=開始、C列=終了）は変更しないでください。",
+                "position": 5
+            },
+            {
+                "@type": "HowToStep",
+                "name": "エラーチェック",
+                "text": "処理前に、日付がYYYY/MM/DD形式、時刻がHH:MM形式、列の順序が正しいか、開始時刻が終了時刻より前になっているかを確認してください。エラーが発生した場合は、トラブルシューティングガイドを参照してください。",
+                "position": 6
+            }
+        ]
+    }
+    </script>
 </body>
 </html>
 

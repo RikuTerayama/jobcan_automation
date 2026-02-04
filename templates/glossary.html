@@ -1,16 +1,12 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>用語集 - Jobcan AutoFill</title>
-    
-    {# Google AdSense - 本番環境のみ、除外ページ以外で読み込み #}
-    {% if ADSENSE_ENABLED and not (request.path.startswith('/login') or request.path.startswith('/app/') or request.path in ['/privacy', '/contact', '/thanks']) %}
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4232725615106709" crossorigin="anonymous"></script>
-    {% endif %}
-    
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet">
+    {# 共通HEADメタタグ #}
+    {% include 'includes/head_meta.html' %}
+    {% block title %}用語集 | Jobcan AutoFill{% endblock %}
+    {% block description_meta %}
+        <meta name="description" content="勤怠管理とJobcan AutoFillに関連する用語集。打刻、開始時刻、終了時刻、Playwrightなどの専門用語を分かりやすく解説。">
+    {% endblock %}
     <style>
         body {
             font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;
@@ -106,7 +102,7 @@
             <div class="term-name">勤怠管理（きんたいかんり）</div>
             <div class="term-reading">Attendance Management</div>
             <div class="term-definition">
-                従業員の出勤・退勤時刻、労働時間、休暇取得などを記録・管理することです。労働基準法により、企業には従業員の労働時間を適正に把握する義務があります。
+                従業員の出勤・退勤時刻、労働時間、休暇取得などを記録・管理することです。<strong>本ツールでは、Jobcanへの勤怠データ入力プロセスを自動化することで、勤怠管理の効率化を支援します。</strong>Excelファイルに記入した勤怠データを、Jobcanに自動的に入力することで、手作業の時間を大幅に削減できます。
             </div>
         </div>
 
@@ -114,73 +110,27 @@
             <div class="term-name">打刻（だこく）</div>
             <div class="term-reading">Time Stamping</div>
             <div class="term-definition">
-                出勤・退勤の時刻を記録することです。従来はタイムカードを使用していましたが、現在はWeb上やICカード、生体認証などで行うことが一般的です。
+                出勤・退勤の時刻を記録することです。<strong>本ツールでは、Jobcanの打刻修正ページにアクセスし、開始時刻と終了時刻を入力して打刻ボタンをクリックする操作を自動化します。</strong>人間の操作パターンを再現するため、各データ処理後に適切な待機時間を設けています。
             </div>
-            <div class="term-example">例：朝9時に出勤打刻をする</div>
+            <div class="term-example">例：本ツールでは、「データ 1/11: 2025-11-13 09:00:00-22:30:00」のように、日付と時刻を自動的に打刻します。</div>
         </div>
 
         <div class="term-item">
-            <div class="term-name">出勤時刻（しゅっきんじこく）</div>
-            <div class="term-reading">Clock In Time</div>
+            <div class="term-name">開始時刻（かいしじこく）</div>
+            <div class="term-reading">Start Time</div>
             <div class="term-definition">
-                従業員が勤務を開始した時刻のことです。始業時刻と異なる場合、遅刻または早出勤となります。
+                <strong>本ツールでは、ExcelファイルのB列に入力する勤務開始時刻を指します。</strong>「09:00」または「0900」形式で入力してください。本ツールは、この時刻をJobcanの打刻修正ページに入力し、1回目の打刻ボタンをクリックします。
             </div>
+            <div class="term-example">例：ExcelファイルのB列に「09:00」と入力すると、本ツールは「⏰ 1回目: 始業時刻を入力: 0900」というログを出力し、Jobcanに「0900」と入力します。</div>
         </div>
 
         <div class="term-item">
-            <div class="term-name">退勤時刻（たいきんじこく）</div>
-            <div class="term-reading">Clock Out Time</div>
+            <div class="term-name">終了時刻（しゅうりょうじこく）</div>
+            <div class="term-reading">End Time</div>
             <div class="term-definition">
-                従業員が勤務を終了した時刻のことです。終業時刻を過ぎている場合は残業となります。
+                <strong>本ツールでは、ExcelファイルのC列に入力する勤務終了時刻を指します。</strong>「18:00」または「1800」形式で入力してください。本ツールは、この時刻をJobcanの打刻修正ページに入力し、2回目の打刻ボタンをクリックします。
             </div>
-        </div>
-
-        <div class="term-item">
-            <div class="term-name">労働時間（ろうどうじかん）</div>
-            <div class="term-reading">Working Hours</div>
-            <div class="term-definition">
-                従業員が実際に労働した時間のことです。出勤時刻から退勤時刻までの時間から、休憩時間を差し引いたものです。労働基準法では、1日8時間、週40時間を超えた労働は原則として割増賃金の対象となります。
-            </div>
-        </div>
-
-        <div class="term-item">
-            <div class="term-name">残業（ざんぎょう）</div>
-            <div class="term-reading">Overtime Work</div>
-            <div class="term-definition">
-                所定労働時間を超えて働くことです。法定労働時間（1日8時間）を超えた場合、割増賃金が発生します。
-            </div>
-        </div>
-
-        <div class="term-item">
-            <div class="term-name">遅刻（ちこく）</div>
-            <div class="term-reading">Late Arrival</div>
-            <div class="term-definition">
-                始業時刻に遅れて出勤することです。遅刻時間分の給与が控除される場合や、評価に影響する場合があります。
-            </div>
-        </div>
-
-        <div class="term-item">
-            <div class="term-name">早退（そうたい）</div>
-            <div class="term-reading">Early Leave</div>
-            <div class="term-definition">
-                終業時刻より前に退勤することです。私用や体調不良などの理由で、通常より早く業務を終了することを指します。
-            </div>
-        </div>
-
-        <div class="term-item">
-            <div class="term-name">欠勤（けっきん）</div>
-            <div class="term-reading">Absence</div>
-            <div class="term-definition">
-                勤務日に出勤しないことです。事前に届け出る場合と、当日連絡する場合があります。無断欠勤は重大な就業規則違反となります。
-            </div>
-        </div>
-
-        <div class="term-item">
-            <div class="term-name">有給休暇（ゆうきゅうきゅうか）</div>
-            <div class="term-reading">Paid Leave / Paid Time Off</div>
-            <div class="term-definition">
-                給与が支払われる休暇のことです。労働基準法により、一定期間勤続した従業員には年次有給休暇が付与されます。
-            </div>
+            <div class="term-example">例：ExcelファイルのC列に「22:30」と入力すると、本ツールは「⏰ 2回目: 終了時刻を入力: 2230」というログを出力し、Jobcanに「2230」と入力します。</div>
         </div>
 
         <h2>Jobcan関連用語</h2>
@@ -205,8 +155,9 @@
             <div class="term-name">打刻修正（だこくしゅうせい）</div>
             <div class="term-reading">Time Stamp Correction</div>
             <div class="term-definition">
-                間違って打刻した時刻や、打刻忘れを後から修正することです。通常は申請・承認が必要です。
+                間違って打刻した時刻や、打刻忘れを後から修正することです。<strong>本ツールでは、Jobcanの打刻修正ページ（https://ssl.jobcan.jp/employee/adit/modify?year=YYYY&month=MM&day=DD）にアクセスし、開始時刻と終了時刻を入力して打刻ボタンをクリックする操作を自動化します。</strong>各日付ごとに打刻修正ページに移動し、時刻を入力して打刻ボタンをクリックする処理を繰り返します。
             </div>
+            <div class="term-example">例：本ツールは、「🔗 打刻修正ページに移動: https://ssl.jobcan.jp/employee/adit/modify?year=2025&month=11&day=13」というログを出力し、該当ページにアクセスします。</div>
         </div>
 
         <h2>Jobcan AutoFill関連用語</h2>
@@ -247,7 +198,14 @@
             <div class="term-name">処理状況（しょりじょうきょう）</div>
             <div class="term-reading">Processing Status</div>
             <div class="term-definition">
-                自動入力の進行状況を示す情報です。ログイン中、データ入力中、完了などの状態がリアルタイムで表示されます。
+                自動入力の進行状況を示す情報です。<strong>本ツールでは、ポップアップウィンドウにリアルタイムで処理状況が表示されます。</strong>具体的には、以下のような情報が表示されます：
+                <ul>
+                    <li>「📝 データ X/11: YYYY-MM-DD HH:MM-HH:MM」：現在処理中のデータ</li>
+                    <li>「✅ データ X/11 の処理が完了しました」：各データの処理完了</li>
+                    <li>「📊 全データ処理完了: X件のデータを処理しました」：全データの処理完了</li>
+                    <li>「🎉 処理が正常に完了しました」：最終的な処理完了</li>
+                </ul>
+                エラーが発生した場合は、エラーメッセージとその詳細が表示されます。
             </div>
         </div>
 
@@ -273,8 +231,9 @@
             <div class="term-name">画像認証（がぞうにんしょう）</div>
             <div class="term-reading">CAPTCHA</div>
             <div class="term-definition">
-                自動プログラム（ボット）ではなく、人間が操作していることを確認するための仕組みです。歪んだ文字や画像を選択することで証明します。
+                自動プログラム（ボット）ではなく、人間が操作していることを確認するための仕組みです。<strong>本ツールでは、CAPTCHAが表示された場合、処理を中断します。</strong>これは、セキュリティ上の理由からです。CAPTCHAが表示された場合は、一度手動でJobcanにログインし、CAPTCHAをクリアしてから、30分〜1時間程度待ってから再度処理を試行してください。
             </div>
+            <div class="term-example">例：短時間に複数回ログインを試みると、Jobcan側のセキュリティチェックが発動し、CAPTCHAが表示される場合があります。</div>
         </div>
 
         <div class="term-item">
@@ -301,37 +260,40 @@
             </div>
         </div>
 
-        <h2>労働法関連用語</h2>
-
         <div class="term-item">
-            <div class="term-name">労働基準法（ろうどうきじゅんほう）</div>
-            <div class="term-reading">Labor Standards Act</div>
+            <div class="term-name">Playwright（プレイライト）</div>
+            <div class="term-reading">Playwright</div>
             <div class="term-definition">
-                労働条件の最低基準を定めた法律です。労働時間、休憩、休日、賃金などについて規定しています。
+                <strong>本ツールで使用しているブラウザ自動化ライブラリです。</strong>Playwrightを使用することで、実際のブラウザを操作し、人間の操作パターンを再現します。具体的には、Jobcanのログインページにアクセスし、メールアドレスとパスワードを人間らしいタイピング速度で入力し、ログインボタンをクリックする操作を自動化します。
             </div>
+            <div class="term-example">例：本ツールは、Playwrightを使用して「⌨️ 人間らしいタイピングを実行 (試行 1/3): input[name="user[email]"]」というログを出力し、人間らしい操作を再現します。</div>
         </div>
 
         <div class="term-item">
-            <div class="term-name">法定労働時間（ほうていろうどうじかん）</div>
-            <div class="term-reading">Statutory Working Hours</div>
+            <div class="term-name">処理間隔（しょりかんかく）</div>
+            <div class="term-reading">Processing Interval</div>
             <div class="term-definition">
-                労働基準法で定められた労働時間の上限です。原則として1日8時間、週40時間までです。これを超えた労働には割増賃金が必要です。
+                <strong>本ツールでは、各データ処理後に設けられる待機時間を指します。</strong>1〜3件目は約2秒、4件目以降は約5秒の待機時間が設けられています。この待機時間は、Jobcan側のサーバー負荷を軽減し、セキュリティチェックが発動しにくくするために設けられています。
             </div>
+            <div class="term-example">例：4件目以降のデータ処理では、「⏳ メモリ最適化のため5秒待機中...」というログが表示され、5秒間待機します。</div>
         </div>
 
         <div class="term-item">
-            <div class="term-name">36協定（さぶろくきょうてい）</div>
-            <div class="term-reading">Article 36 Agreement</div>
+            <div class="term-name">空白行のスキップ（くうはくぎょうのスキップ）</div>
+            <div class="term-reading">Blank Row Skipping</div>
             <div class="term-definition">
-                労働基準法第36条に基づく協定です。これにより、法定労働時間を超えた時間外労働や休日労働が可能になります。
+                <strong>本ツールでは、Excelファイル内の空白行を自動的にスキップする機能です。</strong>日付、開始時刻、終了時刻がすべて空白の行は、処理対象から除外されます。これにより、休日や欠勤の日を空白行として残しておくことができます。
             </div>
+            <div class="term-example">例：Excelファイルに11行のデータがあり、そのうち2行が空白の場合、本ツールは「✅ Excelファイル読み込み完了: 11件のデータ」「✅ データ処理で空白行 2 行をスキップしました」「✅ Excelファイル読み込み完了: 9件の有効データ」というログを出力します。</div>
         </div>
+
+        <h2>就業規則とコンプライアンス</h2>
 
         <div class="term-item">
             <div class="term-name">就業規則（しゅうぎょうきそく）</div>
             <div class="term-reading">Work Rules / Employment Regulations</div>
             <div class="term-definition">
-                企業が定める労働条件や職場のルールです。労働時間、賃金、休暇、懲戒処分などについて規定されています。
+                企業が定める労働条件や職場のルールです。<strong>本ツールを使用する際は、所属企業の就業規則やセキュリティポリシーを必ず遵守してください。</strong>自動化ツールの使用が禁止されている場合は、使用を控えてください。詳細は<a href="/terms">利用規約</a>をご確認ください。
             </div>
         </div>
 

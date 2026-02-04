@@ -1,0 +1,31 @@
+{# Google Analytics 4 (GA4) - 全ページ共通 #}
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-D91LLNQ7ZL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-D91LLNQ7ZL');
+</script>
+
+{# HEADの軽量化 - 必須メタのみ #}
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Jobcan AutoFill - 勤怠データ自動入力ツール{% endblock %}</title>
+{% block description_meta %}{% endblock %}
+<link rel="canonical" href="https://jobcan-automation.onrender.com{{ request.path if request else '/' }}">
+<meta name="google-site-verification" content="bQuTb9pABqynDmXqfDdakvmFSqz8y8MyYnOExuucmnA" />
+<meta property="og:type" content="website">
+{% block og_title %}
+    <meta property="og:title" content="Jobcan AutoFill">
+{% endblock %}
+{% block og_description %}{% endblock %}
+<meta property="og:url" content="https://jobcan-automation.onrender.com{{ request.path if request else '/' }}">
+<meta property="og:image" content="https://jobcan-automation.onrender.com{{ url_for('static', filename='JobcanAutofill.png') }}">
+{# AdSenseコードスニペット - サイト所有権確認のため全ページに配置 #}
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4232725615106709"
+     crossorigin="anonymous"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+{% block extra_head %}{% endblock %}
+
