@@ -147,7 +147,9 @@ def inject_env_vars():
     return {
         'ADSENSE_ENABLED': os.getenv('ADSENSE_ENABLED', 'false').lower() == 'true',
         'app_version': app_version,
-        'products': PRODUCTS
+        'products': PRODUCTS,
+        'GA_MEASUREMENT_ID': os.getenv('GA_MEASUREMENT_ID', ''),
+        'GSC_VERIFICATION_CONTENT': os.getenv('GSC_VERIFICATION_CONTENT', '')
     }
 
 # ジョブの状態を管理（スレッドセーフな辞書）

@@ -1,13 +1,17 @@
 {# Google Analytics 4 (GA4) - 全ページ共通 #}
+{% if GA_MEASUREMENT_ID %}
 <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-D91LLNQ7ZL"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id={{ GA_MEASUREMENT_ID }}"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
 
-  gtag('config', 'G-D91LLNQ7ZL');
+  gtag('config', '{{ GA_MEASUREMENT_ID }}', {
+    anonymize_ip: true
+  });
 </script>
+{% endif %}
 
 {# HEADの軽量化 - 必須メタのみ #}
 <meta charset="utf-8">
@@ -15,7 +19,9 @@
 <title>{% block title %}Jobcan AutoFill - 勤怠データ自動入力ツール{% endblock %}</title>
 {% block description_meta %}{% endblock %}
 <link rel="canonical" href="https://jobcan-automation.onrender.com{{ request.path if request else '/' }}">
-<meta name="google-site-verification" content="bQuTb9pABqynDmXqfDdakvmFSqz8y8MyYnOExuucmnA" />
+{% if GSC_VERIFICATION_CONTENT %}
+<meta name="google-site-verification" content="{{ GSC_VERIFICATION_CONTENT }}" />
+{% endif %}
 <meta property="og:type" content="website">
 {% block og_title %}
     <meta property="og:title" content="Jobcan AutoFill">
