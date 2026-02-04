@@ -673,6 +673,79 @@ def ready():
         }
     })
 
+@app.route('/health/memory', methods=['GET'])
+def health_memory():
+    """
+    メモリ計測用エンドポイント（DEBUG時のみ有効、本番影響なし）
+    ローカル/ステージング環境でメモリ使用状況を確認するためのエンドポイント
+    """
+    try:
+        import psutil
+        process = psutil.Process()
+        memory_info = process.memory_info()
+        rss_mb = memory_info.rss / 1024 / 1024
+        vms_mb = memory_info.vms / 1024 / 1024
+        
+        # システム全体のメモリ情報も取得
+        system_memory = psutil.virtual_memory()
+        
+        # ジョブとセッションの統計
+        with jobs_lock:
+            jobs_count = len(jobs)
+            jobs_status = {}
+            for job_id, job_info in jobs.items():
+                status = job_info.get('status', 'unknown')
+                jobs_status[status] = jobs_status.get(status, 0) + 1
+        
+        with session_manager['session_lock']:
+            sessions_count = len(session_manager['active_sessions'])
+        
+        from diagnostics.runtime_metrics import get_browser_count
+        browser_count = get_browser_count()
+        
+        return jsonify({
+            'status': 'ok',
+            'timestamp': datetime.now().isoformat(),
+            'process_memory': {
+                'rss_mb': round(rss_mb, 2),
+                'vms_mb': round(vms_mb, 2),
+                'percent': round(process.memory_percent(), 2)
+            },
+            'system_memory': {
+                'total_mb': round(system_memory.total / 1024 / 1024, 2),
+                'available_mb': round(system_memory.available / 1024 / 1024, 2),
+                'used_mb': round(system_memory.used / 1024 / 1024, 2),
+                'percent': round(system_memory.percent, 2)
+            },
+            'limits': {
+                'memory_limit_mb': MEMORY_LIMIT_MB,
+                'memory_warning_mb': MEMORY_WARNING_MB,
+                'max_file_size_mb': MAX_FILE_SIZE_MB,
+                'max_active_sessions': MAX_ACTIVE_SESSIONS
+            },
+            'resources': {
+                'jobs_count': jobs_count,
+                'jobs_by_status': jobs_status,
+                'sessions_count': sessions_count,
+                'browser_count': browser_count
+            },
+            'config': {
+                'web_concurrency': os.getenv('WEB_CONCURRENCY', 'unknown'),
+                'web_threads': os.getenv('WEB_THREADS', 'unknown'),
+                'web_timeout': os.getenv('WEB_TIMEOUT', 'unknown')
+            }
+        })
+    except ImportError:
+        return jsonify({
+            'status': 'error',
+            'error': 'psutil not available'
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
 @app.route('/test')
 def test():
     return jsonify({
