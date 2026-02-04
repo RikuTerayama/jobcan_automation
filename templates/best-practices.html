@@ -29,6 +29,9 @@
     </style>
 </head>
 <body>
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/header.html' %}
+    {% include 'includes/breadcrumb.html' %}
     <div class="container">
         <h1>ベストプラクティスガイド</h1>
         
@@ -258,6 +261,9 @@
 
         <a href="/" class="nav-link">← トップページに戻る</a>
     </div>
+    
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/footer.html' %}
 </body>
 </html>
 

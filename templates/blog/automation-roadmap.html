@@ -18,7 +18,12 @@
                         <li aria-current="page" style="color: #FFFFFF;">Jobcan自動化を社内展開するための90日ロードマップ</li>
                     </ol>
                 </nav>
-                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">2025-02-12 / 導入・運用ガイド</span>
+                {# P1-3: ブログの更新情報の明確化 #}
+                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">
+                    <time itemprop="datePublished" datetime="2025-02-12">公開日: 2025-02-12</time>
+                    {% if false %}<time itemprop="dateModified" datetime="2025-02-12"> / 更新日: 2025-02-12</time>{% endif %}
+                    / 導入・運用ガイド
+                </span>
                 <h1 itemprop="headline" style="margin: 12px 0 10px 0; font-size: 2.2em; color: #4A9EFF;">Jobcan自動化を社内展開するための90日ロードマップ</h1>
                 <p itemprop="description" style="margin: 0; color: rgba(255, 255, 255, 0.85);">
                     勤怠自動化ツールを導入したいが、どこから着手すべきか分からない――。そんな声に応えるため、Jobcan AutoFillで実際に成果を出したチームのプロセスを90日スケジュールに落とし込みました。ステークホルダー別のタスク、意思決定のポイント、稟議で使える資料テンプレートまで網羅しています。
@@ -149,5 +154,8 @@
         "url": "https://jobcan-automation.onrender.com/blog/automation-roadmap"
     }
     </script>
+    
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/footer.html' %}
 </body>
 </html>

@@ -18,7 +18,12 @@
                         <li aria-current="page" style="color: #FFFFFF;">実務チェックリスト</li>
                     </ol>
                 </nav>
-                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">2025-01-23 / 業務効率化・実務ノウハウ</span>
+                {# P1-3: ブログの更新情報の明確化 #}
+                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">
+                    <time itemprop="datePublished" datetime="2025-01-23">公開日: 2025-01-23</time>
+                    {% if false %}<time itemprop="dateModified" datetime="2025-01-23"> / 更新日: 2025-01-23</time>{% endif %}
+                    / 業務効率化・実務ノウハウ
+                </span>
                 <h1 itemprop="headline" style="margin: 12px 0 10px 0; font-size: 2.2em; color: #4A9EFF; line-height: 1.4;">まだ手入力していませんか 勤怠管理のムダを減らすための実務チェックリスト</h1>
                 <p itemprop="description" style="margin: 0; color: rgba(255, 255, 255, 0.85);">
                     勤怠管理の手入力を減らすための実務チェックリスト。データ集め、整形、システム入力、確認の各フェーズで自動化できる部分とできない部分を整理し、Excelテンプレ整備から自動入力ツール導入まで段階的に解説します。
@@ -221,6 +226,9 @@
         "url": "https://jobcan-automation.onrender.com/blog/reduce-manual-work-checklist"
     }
     </script>
+    
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/footer.html' %}
 </body>
 </html>
 

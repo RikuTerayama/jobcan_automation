@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
     {% include 'includes/head_meta.html' %}
+    {% set page_title = '議事録整形ツールガイド' %}
     {% block title %}議事録整形ツールガイド | Automation Hub{% endblock %}
     {% block description_meta %}
         <meta name="description" content="議事録整形ツールの使い方ガイド。テキストから決定事項/ToDo/担当/期限を抽出し、報告書テンプレートを生成する方法を詳しく解説。">
@@ -28,6 +29,7 @@
 </head>
 <body>
     {% include 'includes/header.html' %}
+    {% include 'includes/breadcrumb.html' %}
     <div class="container">
         <h1>📝 議事録整形ツールガイド</h1>
         <p>議事録整形ツールは、テキストから決定事項、ToDo、担当者、期限を自動抽出し、構造化された議事録や報告書テンプレートを生成するブラウザ内完結型のツールです。</p>

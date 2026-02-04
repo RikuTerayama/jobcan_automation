@@ -18,7 +18,12 @@
                         <li aria-current="page" style="color: #FFFFFF;">Jobcan AutoFill導入チェックリスト（10項目）</li>
                     </ol>
                 </nav>
-                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">2025-02-17 / 導入・運用ガイド</span>
+                {# P1-3: ブログの更新情報の明確化 #}
+                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">
+                    <time itemprop="datePublished" datetime="2025-02-17">公開日: 2025-02-17</time>
+                    {% if false %}<time itemprop="dateModified" datetime="2025-02-17"> / 更新日: 2025-02-17</time>{% endif %}
+                    / 導入・運用ガイド
+                </span>
                 <h1 itemprop="headline" style="margin: 12px 0 10px 0; font-size: 2.1em; color: #4A9EFF;">Jobcan AutoFill導入チェックリスト（10項目）</h1>
                 <p itemprop="description" style="margin: 0; color: rgba(255, 255, 255, 0.85);">
                     Jobcan AutoFillを導入する前に確認すべき10のポイントを整理しました。社内ルール、セキュリティ、データ管理、運用体制まで網羅しているので、稟議資料や導入準備のセルフレビューとしてご活用ください。
@@ -133,5 +138,8 @@
         "url": "https://jobcan-automation.onrender.com/blog/implementation-checklist"
     }
     </script>
+    
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/footer.html' %}
 </body>
 </html>

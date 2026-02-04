@@ -18,7 +18,12 @@
                         <li aria-current="page" style="color: #FFFFFF;">Excelフォーマットと実装</li>
                     </ol>
                 </nav>
-                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">2025-01-18 / 実務ノウハウ・技術解説</span>
+                {# P1-3: ブログの更新情報の明確化 #}
+                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">
+                    <time itemprop="datePublished" datetime="2025-01-18">公開日: 2025-01-18</time>
+                    {% if false %}<time itemprop="dateModified" datetime="2025-01-18"> / 更新日: 2025-01-18</time>{% endif %}
+                    / 実務ノウハウ・技術解説
+                </span>
                 <h1 itemprop="headline" style="margin: 12px 0 10px 0; font-size: 2.2em; color: #4A9EFF; line-height: 1.4;">勤怠Excelで人がよくやるミス10選と、AutoFill側で潰している工夫</h1>
                 <p itemprop="description" style="margin: 0; color: rgba(255, 255, 255, 0.85);">
                     日付形式、時刻形式、空白行、全角・半角など、勤怠Excelで実際によくあるミス10選と、Jobcan AutoFill側で実装している対策を、開発者RTの実体験を交えて詳しく解説します。
@@ -313,6 +318,9 @@
         "url": "https://jobcan-automation.onrender.com/blog/excel-format-mistakes-and-design"
     }
     </script>
+    
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/footer.html' %}
 </body>
 </html>
 

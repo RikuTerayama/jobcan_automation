@@ -18,7 +18,12 @@
                         <li aria-current="page" style="color: #FFFFFF;">働き方改革と自動化</li>
                     </ol>
                 </nav>
-                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">2025-12-25 / 業務効率化・DX</span>
+                {# P1-3: ブログの更新情報の明確化 #}
+                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">
+                    <time itemprop="datePublished" datetime="2025-12-25">公開日: 2025-12-25</time>
+                    {% if false %}<time itemprop="dateModified" datetime="2025-12-25"> / 更新日: 2025-12-25</time>{% endif %}
+                    / 業務効率化・DX
+                </span>
                 <h1 itemprop="headline" style="margin: 12px 0 10px 0; font-size: 2.2em; color: #4A9EFF; line-height: 1.4;">勤怠管理の自動化が「働き方改革」を加速させる理由と、その本質的な価値</h1>
                 <p itemprop="description" style="margin: 0; color: rgba(255, 255, 255, 0.85);">
                     働き方改革の真の鍵は、勤怠入力のような「見えない付帯業務」の削減にあります。勤怠管理の自動化がなぜ企業のDXを加速させ、コンプライアンス強化につながるのか、技術的・社会的背景から詳しく解説します。
@@ -98,6 +103,9 @@
         "url": "https://jobcan-automation.onrender.com/blog/workstyle-reform-automation"
     }
     </script>
+    
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/footer.html' %}
 </body>
 </html>
 

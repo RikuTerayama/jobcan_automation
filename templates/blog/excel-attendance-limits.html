@@ -18,7 +18,12 @@
                         <li aria-current="page" style="color: #FFFFFF;">Excel管理の限界と自動化</li>
                     </ol>
                 </nav>
-                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">2025-12-23 / 業務改善・効率化</span>
+                {# P1-3: ブログの更新情報の明確化 #}
+                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">
+                    <time itemprop="datePublished" datetime="2025-12-23">公開日: 2025-12-23</time>
+                    {% if false %}<time itemprop="dateModified" datetime="2025-12-23"> / 更新日: 2025-12-23</time>{% endif %}
+                    / 業務改善・効率化
+                </span>
                 <h1 itemprop="headline" style="margin: 12px 0 10px 0; font-size: 2.2em; color: #4A9EFF; line-height: 1.4;">Excelで勤怠を管理する限界と、API・自動化ツールを併用すべき理由</h1>
                 <p itemprop="description" style="margin: 0; color: rgba(255, 255, 255, 0.85);">
                     多くの企業で利用されるExcelでの勤怠管理。しかし、手入力によるミスやデータの整合性、セキュリティには限界があります。本記事ではExcel管理の課題と、自動化ツールを活用して業務効率化を実現する方法を解説します。
@@ -98,6 +103,9 @@
         "url": "https://jobcan-automation.onrender.com/blog/excel-attendance-limits"
     }
     </script>
+    
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/footer.html' %}
 </body>
 </html>
 

@@ -129,6 +129,12 @@ a:hover {
     text-decoration: underline;
 }
 
+/* Image Optimization (P1-2: CLS対策) */
+img {
+    height: auto;
+    max-width: 100%;
+}
+
 /* Container */
 .container {
     max-width: 1200px;
