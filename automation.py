@@ -2,6 +2,7 @@ import os
 import time
 import random
 import tempfile
+import gc
 from datetime import datetime
 from typing import Tuple, List, Optional
 
@@ -1554,6 +1555,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             log_memory("browser_before", job_id=job_id, session_id=session_id)
         
         # P0-1: Playwrightリソースの確実なクリーンアップのため、変数をNone初期化
+        # withブロックの外で定義することで、finallyブロックから確実にアクセス可能にする
         browser = None
         context = None
         page = None
@@ -1565,226 +1567,172 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             if metrics_available:
                 increment_browser_count()
             
+            # sync_playwright()をコンテキストマネージャーとして使用
+            # browser/context/pageをwithブロックの外で定義することで、finallyブロックから確実にアクセス可能にする
             with sync_playwright() as p:
-                # セッション固有のブラウザ起動オプション
-                browser_args = [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-accelerated-2d-canvas',
-                    '--no-first-run',
-                    '--no-zygote',
-                    '--disable-gpu',
-                    '--disable-background-timer-throttling',
-                    '--disable-backgrounding-occluded-windows',
-                    '--disable-renderer-backgrounding',
-                    '--disable-blink-features=AutomationControlled',
-                    '--disable-extensions-except',
-                    '--disable-plugins-discovery',
-                    '--disable-default-apps',
-                    '--disable-sync',
-                    '--disable-translate',
-                    '--hide-scrollbars',
-                    '--mute-audio',
-                    '--no-default-browser-check',
-                    '--no-pings',
-                    '--disable-web-security',
-                    '--disable-features=VizDisplayCompositor',
-                    '--disable-background-networking',
-                    '--disable-component-extensions-with-background-pages',
-                    '--disable-background-timer-throttling',
-                    '--disable-backgrounding-occluded-windows',
-                    '--disable-renderer-backgrounding',
-                    '--disable-features=TranslateUI',
-                    '--disable-ipc-flooding-protection',
-                    '--disable-client-side-phishing-detection',
-                    '--disable-hang-monitor',
-                    '--disable-prompt-on-repost',
-                    '--disable-domain-reliability',
-                    '--disable-component-update',
-                    # CAPTCHA対策の追加オプション
-                    '--disable-blink-features=AutomationControlled',
-                    '--disable-automation',
-                    '--disable-web-security',
-                    '--disable-features=VizDisplayCompositor',
-                    '--disable-background-networking',
-                    '--disable-component-extensions-with-background-pages',
-                    '--disable-background-timer-throttling',
-                    '--disable-backgrounding-occluded-windows',
-                    '--disable-renderer-backgrounding',
-                    '--disable-features=TranslateUI',
-                    '--disable-ipc-flooding-protection',
-                    '--disable-client-side-phishing-detection',
-                    '--disable-hang-monitor',
-                    '--disable-prompt-on-repost',
-                    '--disable-domain-reliability',
-                    '--disable-component-update',
-                    '--disable-default-apps',
-                    '--disable-sync',
-                    '--disable-translate',
-                    '--hide-scrollbars',
-                    '--mute-audio',
-                    '--no-first-run',
-                    '--no-default-browser-check',
-                    '--no-pings',
-                    '--disable-web-security',
-                    '--disable-features=VizDisplayCompositor',
-                    '--disable-background-networking',
-                    '--disable-component-extensions-with-background-pages',
-                    '--disable-background-timer-throttling',
-                    '--disable-backgrounding-occluded-windows',
-                    '--disable-renderer-backgrounding',
-                    '--disable-features=TranslateUI',
-                    '--disable-ipc-flooding-protection',
-                    '--disable-client-side-phishing-detection',
-                    '--disable-hang-monitor',
-                    '--disable-prompt-on-repost',
-                    '--disable-domain-reliability',
-                    '--disable-component-update'
-                ]
-                
-                # 最新のChrome User-Agent（CAPTCHA対策）
-                user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-                
-                # サーバー環境対応のため、通常のlaunchを使用（タイムアウト設定付き）
-                browser = p.chromium.launch(
-                    headless=True,  # CAPTCHA対策のためヘッドレスモードを有効化
-                    args=browser_args,
-                    timeout=60000  # ブラウザ起動タイムアウトを60秒に設定
-                )
-                
-                # セッション固有のコンテキスト設定
-                context_options = {
-                    'viewport': {'width': 1920, 'height': 1080},  # より大きなビューポート
-                    'user_agent': user_agent,
-                    'ignore_https_errors': True,
-                    'java_script_enabled': True,
-                    'accept_downloads': True,
-                    'locale': 'ja-JP',  # 日本語ロケール
-                    'timezone_id': 'Asia/Tokyo',  # 日本時間
-                    'permissions': ['geolocation'],  # 位置情報許可
-                    'extra_http_headers': {
-                        'Accept-Language': 'ja-JP,ja;q=0.9,en;q=0.8',
-                        'Accept-Encoding': 'gzip, deflate, br',
-                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                        'Cache-Control': 'no-cache',
-                        'Pragma': 'no-cache'
+                try:
+                    # セッション固有のブラウザ起動オプション（重複削除、メモリ最適化）
+                    # メモリ削減: 不要な機能を無効化してメモリ消費を抑制
+                    browser_args = [
+                        # セキュリティ・サンドボックス（必須）
+                        '--no-sandbox',
+                        '--disable-setuid-sandbox',
+                        '--disable-dev-shm-usage',  # /dev/shm使用を無効化（メモリ節約）
+                        # メモリ最適化: 不要な機能を無効化
+                        '--disable-accelerated-2d-canvas',  # 2Dキャンバスアクセラレーション無効化
+                        '--disable-gpu',  # GPU無効化（ヘッドレス環境では不要）
+                        '--no-zygote',  # Zygoteプロセス無効化（メモリ節約）
+                        # バックグラウンド処理無効化（メモリ節約）
+                        '--disable-background-timer-throttling',
+                        '--disable-backgrounding-occluded-windows',
+                        '--disable-renderer-backgrounding',
+                        '--disable-background-networking',
+                        '--disable-component-extensions-with-background-pages',
+                        # 自動化検出対策（CAPTCHA対策）
+                        '--disable-blink-features=AutomationControlled',
+                        '--disable-automation',
+                        # 不要な機能無効化（メモリ節約）
+                        '--disable-extensions-except',
+                        '--disable-plugins-discovery',
+                        '--disable-default-apps',
+                        '--disable-sync',
+                        '--disable-translate',
+                        '--disable-features=TranslateUI,VizDisplayCompositor',
+                        '--disable-ipc-flooding-protection',
+                        '--disable-client-side-phishing-detection',
+                        '--disable-hang-monitor',
+                        '--disable-prompt-on-repost',
+                        '--disable-domain-reliability',
+                        '--disable-component-update',
+                        # UI要素無効化（ヘッドレス環境では不要）
+                        '--hide-scrollbars',
+                        '--mute-audio',
+                        '--no-first-run',
+                        '--no-default-browser-check',
+                        '--no-pings',
+                        # セキュリティ設定（CAPTCHA対策のため一部緩和）
+                        '--disable-web-security',
+                    ]
+                    
+                    # 最新のChrome User-Agent（CAPTCHA対策）
+                    user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                    
+                    # サーバー環境対応のため、通常のlaunchを使用（タイムアウト設定付き）
+                    browser = p.chromium.launch(
+                        headless=True,  # ヘッドレスモード（メモリ節約）
+                        args=browser_args,
+                        timeout=60000  # ブラウザ起動タイムアウトを60秒に設定
+                    )
+                    
+                    # P1-1: ブラウザ起動後のメモリ計測
+                    if metrics_available:
+                        log_memory("browser_after", job_id=job_id, session_id=session_id)
+                    
+                    # セッション固有のコンテキスト設定
+                    context_options = {
+                        'viewport': {'width': 1920, 'height': 1080},  # より大きなビューポート
+                        'user_agent': user_agent,
+                        'ignore_https_errors': True,
+                        'java_script_enabled': True,
+                        'accept_downloads': True,
+                        'locale': 'ja-JP',  # 日本語ロケール
+                        'timezone_id': 'Asia/Tokyo',  # 日本時間
+                        'permissions': ['geolocation'],  # 位置情報許可
+                        'extra_http_headers': {
+                            'Accept-Language': 'ja-JP,ja;q=0.9,en;q=0.8',
+                            'Accept-Encoding': 'gzip, deflate, br',
+                            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                            'Cache-Control': 'no-cache',
+                            'Pragma': 'no-cache'
+                        }
                     }
-                }
-                
-                context = browser.new_context(**context_options)
-                page = context.new_page()
-                
-                # リダイレクト制御を追加（修正版）
-                def handle_request(route):
-                    route.continue_()
-                
-                page.route("**/*", handle_request)
-                
-                add_job_log(job_id, "✅ ブラウザ起動完了", jobs)
-                if session_id:
-                    add_job_log(job_id, f"🔑 セッション固有ブラウザ環境: {session_id}", jobs)
-                
-                # ステルスモードを設定
-                setup_stealth_mode(page, job_id, jobs)
-                
-                # ステップ5: ログイン処理
-                add_job_log(job_id, "🔐 Jobcanにログイン中...", jobs)
-                update_progress(job_id, 5, "Jobcanログイン中...", jobs)
-                
-                # ログイン処理開始時の状態を初期化
-                jobs[job_id]['login_status'] = 'processing'
-                jobs[job_id]['login_message'] = '🔄 ログイン処理中...'
-                
-                # 新しいCAPTCHA対策ロジックを使用
-                login_success, login_status, login_message = perform_login_with_captcha_retry(
-                    page, email, password, job_id, jobs, max_captcha_retries=3, company_id=company_id
-                )
-                
-                # ログイン結果をジョブ情報に保存
-                jobs[job_id]['login_status'] = login_status
-                jobs[job_id]['login_message'] = login_message
-                
-                if not login_success:
-                    add_job_log(job_id, "❌ ログインに失敗したため、処理を停止します", jobs)
+                    
+                    context = browser.new_context(**context_options)
+                    page = context.new_page()
+                    
+                    # リダイレクト制御を追加（修正版）
+                    def handle_request(route):
+                        route.continue_()
+                    
+                    page.route("**/*", handle_request)
+                    
+                    add_job_log(job_id, "✅ ブラウザ起動完了", jobs)
+                    if session_id:
+                        add_job_log(job_id, f"🔑 セッション固有ブラウザ環境: {session_id}", jobs)
+                    
+                    # ステルスモードを設定
+                    setup_stealth_mode(page, job_id, jobs)
+                    
+                    # ステップ5: ログイン処理
+                    add_job_log(job_id, "🔐 Jobcanにログイン中...", jobs)
+                    update_progress(job_id, 5, "Jobcanログイン中...", jobs)
+                    
+                    # ログイン処理開始時の状態を初期化
+                    jobs[job_id]['login_status'] = 'processing'
+                    jobs[job_id]['login_message'] = '🔄 ログイン処理中...'
+                    
+                    # 新しいCAPTCHA対策ロジックを使用
+                    login_success, login_status, login_message = perform_login_with_captcha_retry(
+                        page, email, password, job_id, jobs, max_captcha_retries=3, company_id=company_id
+                    )
+                    
+                    # ログイン結果をジョブ情報に保存
+                    jobs[job_id]['login_status'] = login_status
+                    jobs[job_id]['login_message'] = login_message
+                    
+                    if not login_success:
+                        add_job_log(job_id, "❌ ログインに失敗したため、処理を停止します", jobs)
+                        jobs[job_id]['status'] = 'completed'
+                        jobs[job_id]['end_time'] = time.time()  # P0-3: 完了時刻を記録
+                        return
+                    
+                    # ステップ6: 実際のデータ入力処理
+                    add_job_log(job_id, "🔧 ログイン成功のため、実際のデータ入力を試行します", jobs)
+                    update_progress(job_id, 6, "勤怠データ入力中...", jobs)
+                    
+                    perform_actual_data_input(page, data_source, total_data, pandas_available, job_id, jobs)
+                    
+                    # ステップ7: 最終確認
+                    add_job_log(job_id, "🔍 最終確認中...", jobs)
+                    update_progress(job_id, 7, "最終確認中...", jobs)
+                    
+                    # ステップ8: 処理完了
+                    add_job_log(job_id, "🎉 処理が正常に完了しました", jobs)
+                    update_progress(job_id, 8, "処理完了中...", jobs)
+                    
                     jobs[job_id]['status'] = 'completed'
                     jobs[job_id]['end_time'] = time.time()  # P0-3: 完了時刻を記録
-                    return
+                    
+                    # P1-1: ジョブ完了時のメモリ計測（ブラウザclose前）
+                    if metrics_available:
+                        log_memory("job_completed", job_id=job_id, session_id=session_id)
                 
-                # ステップ6: 実際のデータ入力処理
-                add_job_log(job_id, "🔧 ログイン成功のため、実際のデータ入力を試行します", jobs)
-                update_progress(job_id, 6, "勤怠データ入力中...", jobs)
-                
-                perform_actual_data_input(page, data_source, total_data, pandas_available, job_id, jobs)
-                
-                # ステップ7: 最終確認
-                add_job_log(job_id, "🔍 最終確認中...", jobs)
-                update_progress(job_id, 7, "最終確認中...", jobs)
-                
-                # ステップ8: 処理完了
-                add_job_log(job_id, "🎉 処理が正常に完了しました", jobs)
-                update_progress(job_id, 8, "処理完了中...", jobs)
-                
-                jobs[job_id]['status'] = 'completed'
-                jobs[job_id]['end_time'] = time.time()  # P0-3: 完了時刻を記録
-                
-                # P1-1: ジョブ完了時のメモリ計測
-                if metrics_available:
-                    log_memory("job_completed", job_id=job_id, session_id=session_id)
-                
-                # P1-2: ブラウザ終了数をデクリメント（close完了後）
-                if metrics_available:
-                    decrement_browser_count()
+                except Exception as inner_e:
+                    # withブロック内でエラーが発生した場合
+                    add_job_log(job_id, f"❌ ブラウザ処理中にエラーが発生: {inner_e}", jobs)
+                    # エラーを外側に伝播（finallyブロックでクリーンアップされる）
+                    raise
+                # withブロックの終了時に自動的にplaywright_instanceが閉じられる
+                # ただし、browser/context/pageは明示的にcloseする必要がある
                 
         except Exception as e:
-            # P1-2: エラー時もブラウザ終了数をデクリメント
-            if metrics_available:
-                decrement_browser_count()
-            # P0-1: withブロックの外でエラーが発生した場合もクリーンアップを試行
-            # （withブロック内でエラーが発生した場合は、finallyブロックで既にクリーンアップ済み）
-            cleanup_errors = []
-            
-            # page を閉じる
-            if page is not None:
-                try:
-                    page.close()
-                    add_job_log(job_id, "cleanup_result page_close=success (outer_error_path)", jobs)
-                except Exception as cleanup_e:
-                    cleanup_errors.append(f"page_close_error: {str(cleanup_e)}")
-                    add_job_log(job_id, f"cleanup_result page_close=failed error={str(cleanup_e)} (outer_error_path)", jobs)
-            
-            # context を閉じる
-            if context is not None:
-                try:
-                    context.close()
-                    add_job_log(job_id, "cleanup_result context_close=success (outer_error_path)", jobs)
-                except Exception as cleanup_e:
-                    cleanup_errors.append(f"context_close_error: {str(cleanup_e)}")
-                    add_job_log(job_id, f"cleanup_result context_close=failed error={str(cleanup_e)} (outer_error_path)", jobs)
-            
-            # browser を閉じる
-            if browser is not None:
-                try:
-                    browser.close()
-                    add_job_log(job_id, "cleanup_result browser_close=success (outer_error_path)", jobs)
-                except Exception as cleanup_e:
-                    cleanup_errors.append(f"browser_close_error: {str(cleanup_e)}")
-                    add_job_log(job_id, f"cleanup_result browser_close=failed error={str(cleanup_e)} (outer_error_path)", jobs)
-            
-            if cleanup_errors:
-                add_job_log(job_id, f"⚠️ 外側エラー時のクリーンアップでエラーが発生: {', '.join(cleanup_errors)}", jobs)
-            
+            # 外側のtryブロックでエラーが発生した場合
             add_job_log(job_id, f"❌ 予期しないエラーが発生しました: {e}", jobs)
             jobs[job_id]['status'] = 'error'
             jobs[job_id]['end_time'] = time.time()  # P0-3: エラー時刻を記録
             jobs[job_id]['login_message'] = f'予期しないエラーが発生しました: {str(e)}'
-            return
+            # エラーを記録した後、finallyブロックでクリーンアップされる
         
         finally:
-            # P0-1: 確実にクリーンアップ（page -> context -> browser の順）
+            # P0-1: 確実にクリーンアップ（page -> context -> browser -> playwright_instance の順）
+            # このfinallyブロックは必ず実行される（エラーが発生しても）
             cleanup_errors = []
             
-            # page を閉じる
+            # P1-1: クリーンアップ前のメモリ計測
+            if metrics_available:
+                log_memory("browser_cleanup_before", job_id=job_id, session_id=session_id)
+            
+            # page を閉じる（最優先）
             if page is not None:
                 try:
                     page.close()
@@ -1811,10 +1759,20 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     cleanup_errors.append(f"browser_close_error: {str(e)}")
                     add_job_log(job_id, f"cleanup_result browser_close=failed error={str(e)}", jobs)
             
-            # withブロックの終了時に自動的にplaywright_instanceが閉じられる
-            # 明示的なcloseは不要だが、ログは出力
-            if not cleanup_errors:
-                add_job_log(job_id, "cleanup_result playwright_close=success (via_with_block)", jobs)
+            # ガベージコレクションを実行（メモリ解放を促進）
+            try:
+                gc.collect()
+                add_job_log(job_id, "cleanup_result gc_collect=success", jobs)
+            except Exception as e:
+                add_job_log(job_id, f"cleanup_result gc_collect=failed error={str(e)}", jobs)
+            
+            # P1-1: クリーンアップ後のメモリ計測
+            if metrics_available:
+                log_memory("browser_cleanup_after", job_id=job_id, session_id=session_id)
+            
+            # P1-2: ブラウザ終了数をデクリメント（クリーンアップ完了後）
+            if metrics_available:
+                decrement_browser_count()
             
             if cleanup_errors:
                 add_job_log(job_id, f"⚠️ クリーンアップ中にエラーが発生: {', '.join(cleanup_errors)}", jobs)
