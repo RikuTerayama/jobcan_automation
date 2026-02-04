@@ -1,50 +1,16 @@
-{# 構造化データ（JSON-LD） #}
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  "name": "Jobcan AutoFill",
-  "url": "https://jobcan-automation.onrender.com",
-  "logo": "https://jobcan-automation.onrender.com{{ url_for('static', filename='JobcanAutofill.png') }}",
-  "description": "Jobcanへの勤怠データをExcelから一括入力する自動化ツール",
-  "sameAs": [],
-  "contactPoint": {
-    "@type": "ContactPoint",
-    "contactType": "お問い合わせ",
-    "url": "https://jobcan-automation.onrender.com/contact"
-  }
-}
-</script>
+{# パンくずリスト（UI + 構造化データ） #}
+{# 使用例: {% include 'includes/breadcrumb.html' %} #}
+{# page_title が設定されていない場合は、request.path から自動生成 #}
 
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": "Jobcan AutoFill",
-  "url": "https://jobcan-automation.onrender.com",
-  "description": "Jobcanへの勤怠データをExcelから一括入力する自動化ツール",
-  "publisher": {
-    "@type": "Organization",
-    "name": "Jobcan AutoFill"
-  },
-  "potentialAction": {
-    "@type": "SearchAction",
-    "target": {
-      "@type": "EntryPoint",
-      "urlTemplate": "https://jobcan-automation.onrender.com/?q={search_term_string}"
-    },
-    "query-input": "required name=search_term_string"
-  }
-}
-</script>
-
-{% block extra_structured_data %}
-{# BreadcrumbList JSON-LD（パンくずリスト用） #}
-{% if request.path != '/' %}
 {% set breadcrumb_items = [] %}
 {% set base_url = 'https://jobcan-automation.onrender.com' %}
+
+{# Home を常に最初に追加 #}
 {% set _ = breadcrumb_items.append({'name': 'ホーム', 'url': '/'}) %}
+
+{# パスに応じてパンくずを構築 #}
 {% if request.path.startswith('/tools/') and request.path != '/tools' %}
+    {# /tools 配下（個別ツールページ） #}
     {% set _ = breadcrumb_items.append({'name': 'ツール一覧', 'url': '/tools'}) %}
     {% if page_title is defined %}
         {% set _ = breadcrumb_items.append({'name': page_title, 'url': request.path}) %}
@@ -52,6 +18,7 @@
         {% set _ = breadcrumb_items.append({'name': request.path.split('/')[-1], 'url': request.path}) %}
     {% endif %}
 {% elif request.path.startswith('/guide/') and request.path != '/guide/getting-started' %}
+    {# /guide 配下（個別ガイドページ） #}
     {% set _ = breadcrumb_items.append({'name': 'ガイド', 'url': '/guide/getting-started'}) %}
     {% if page_title is defined %}
         {% set _ = breadcrumb_items.append({'name': page_title, 'url': request.path}) %}
@@ -59,6 +26,7 @@
         {% set _ = breadcrumb_items.append({'name': request.path.split('/')[-1], 'url': request.path}) %}
     {% endif %}
 {% elif request.path.startswith('/blog/') and request.path != '/blog' %}
+    {# /blog 配下（個別ブログ記事） #}
     {% set _ = breadcrumb_items.append({'name': 'ブログ', 'url': '/blog'}) %}
     {% if page_title is defined %}
         {% set _ = breadcrumb_items.append({'name': page_title, 'url': request.path}) %}
@@ -66,52 +34,76 @@
         {% set _ = breadcrumb_items.append({'name': request.path.split('/')[-1], 'url': request.path}) %}
     {% endif %}
 {% elif request.path.startswith('/case-study/') %}
+    {# /case-study 配下（導入事例） #}
     {% if page_title is defined %}
         {% set _ = breadcrumb_items.append({'name': page_title, 'url': request.path}) %}
     {% else %}
         {% set _ = breadcrumb_items.append({'name': '導入事例', 'url': request.path}) %}
     {% endif %}
 {% elif request.path == '/tools' %}
+    {# /tools 一覧ページ #}
     {% if page_title is defined %}
         {% set _ = breadcrumb_items.append({'name': page_title, 'url': '/tools'}) %}
     {% else %}
         {% set _ = breadcrumb_items.append({'name': 'ツール一覧', 'url': '/tools'}) %}
     {% endif %}
 {% elif request.path == '/blog' %}
+    {# /blog 一覧ページ #}
     {% if page_title is defined %}
         {% set _ = breadcrumb_items.append({'name': page_title, 'url': '/blog'}) %}
     {% else %}
         {% set _ = breadcrumb_items.append({'name': 'ブログ', 'url': '/blog'}) %}
     {% endif %}
 {% elif request.path == '/guide/getting-started' or request.path.startswith('/guide/') %}
+    {# /guide/getting-started またはその他のガイドページ #}
     {% if page_title is defined %}
         {% set _ = breadcrumb_items.append({'name': page_title, 'url': request.path}) %}
     {% else %}
         {% set _ = breadcrumb_items.append({'name': 'ガイド', 'url': request.path}) %}
     {% endif %}
 {% elif request.path != '/' %}
+    {# その他のページ（/autofill, /faq, /about など） #}
     {% if page_title is defined %}
         {% set _ = breadcrumb_items.append({'name': page_title, 'url': request.path}) %}
     {% else %}
         {% set _ = breadcrumb_items.append({'name': request.path, 'url': request.path}) %}
     {% endif %}
 {% endif %}
-<script type="application/ld+json">
-{
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-        {% for item in breadcrumb_items %}
-        {
-            "@type": "ListItem",
-            "position": {{ loop.index }},
-            "name": "{{ item.name|e }}",
-            "item": "{{ base_url }}{{ item.url }}"
-        }{% if not loop.last %},{% endif %}
-        {% endfor %}
-    ]
-}
-</script>
-{% endif %}
-{% endblock %}
 
+{# パンくずリストUI（LPは非表示） #}
+{% if request.path != '/' %}
+<nav aria-label="breadcrumb" class="breadcrumb-nav" style="margin-bottom: 20px; padding: 0 20px;">
+    <ol class="breadcrumb-list" style="list-style: none; padding: 0; margin: 0; display: inline-flex; gap: 8px; font-size: 0.9em; color: rgba(255, 255, 255, 0.7); flex-wrap: wrap; align-items: center;">
+        {% for item in breadcrumb_items %}
+            {% if loop.last %}
+                <li aria-current="page" style="color: #FFFFFF; font-weight: 500;">{{ item.name }}</li>
+            {% else %}
+                <li>
+                    <a href="{{ item.url }}" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; transition: color 0.2s;">{{ item.name }}</a>
+                    <span style="margin: 0 4px; color: rgba(255, 255, 255, 0.5);">›</span>
+                </li>
+            {% endif %}
+        {% endfor %}
+    </ol>
+</nav>
+{% endif %}
+
+{# BreadcrumbList JSON-LDは structured_data.html の extra_structured_data ブロックで生成 #}
+
+<style>
+    .breadcrumb-nav {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    .breadcrumb-list a:hover {
+        color: #4A9EFF;
+        text-decoration: underline;
+    }
+    
+    @media (max-width: 768px) {
+        .breadcrumb-list {
+            font-size: 0.85em;
+        }
+    }
+</style>

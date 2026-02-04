@@ -92,6 +92,9 @@
     </style>
 </head>
 <body>
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/header.html' %}
+    {% include 'includes/breadcrumb.html' %}
     <div class="container">
         <h1>📖 勤怠管理・Jobcan用語集</h1>
         <p>勤怠管理とJobcan AutoFillに関連する用語を分かりやすく解説します。</p>
@@ -309,6 +312,9 @@
 
         <a href="/" class="nav-link">← トップページに戻る</a>
     </div>
+    
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/footer.html' %}
 </body>
 </html>
 

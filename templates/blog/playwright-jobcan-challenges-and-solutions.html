@@ -18,7 +18,12 @@
                         <li aria-current="page" style="color: #FFFFFF;">技術解説</li>
                     </ol>
                 </nav>
-                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">2025-01-12 / 技術スタック・Playwright</span>
+                {# P1-3: ブログの更新情報の明確化 #}
+                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">
+                    <time itemprop="datePublished" datetime="2025-01-12">公開日: 2025-01-12</time>
+                    {% if false %}<time itemprop="dateModified" datetime="2025-01-12"> / 更新日: 2025-01-12</time>{% endif %}
+                    / 技術スタック・Playwright
+                </span>
                 <h1 itemprop="headline" style="margin: 12px 0 10px 0; font-size: 2.2em; color: #4A9EFF; line-height: 1.4;">PlaywrightでJobcanを自動操作する時にハマったポイントと、その解決パターン</h1>
                 <p itemprop="description" style="margin: 0; color: rgba(255, 255, 255, 0.85);">
                     PlaywrightでJobcanを自動操作する際に遭遇した技術的な課題と、その解決パターンを、開発者RTの実体験を交えて詳しく解説します。エンジニアやスクリプトを書ける情シス担当者向けの技術解説記事です。
@@ -268,6 +273,9 @@
         "url": "https://jobcan-automation.onrender.com/blog/playwright-jobcan-challenges-and-solutions"
     }
     </script>
+    
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/footer.html' %}
 </body>
 </html>
 

@@ -18,7 +18,12 @@
                         <li aria-current="page" style="color: #FFFFFF;">月末締めチェックリスト</li>
                     </ol>
                 </nav>
-                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">2025-01-29 / 業務効率化・実務ノウハウ</span>
+                {# P1-3: ブログの更新情報の明確化 #}
+                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">
+                    <time itemprop="datePublished" datetime="2025-01-29">公開日: 2025-01-29</time>
+                    {% if false %}<time itemprop="dateModified" datetime="2025-01-29"> / 更新日: 2025-01-29</time>{% endif %}
+                    / 業務効率化・実務ノウハウ
+                </span>
                 <h1 itemprop="headline" style="margin: 12px 0 10px 0; font-size: 2.2em; color: #4A9EFF; line-height: 1.4;">月末の勤怠締め地獄を減らすための現実的なチェックリスト</h1>
                 <p itemprop="description" style="margin: 0; color: rgba(255, 255, 255, 0.85);">
                     月末の勤怠締めで起きがちな「地獄パターン」と、月の前半・中盤でやっておくと楽になる工夫を、開発者RTの実体験を交えて解説。自動化ツールの導入タイミングも詳しく説明します。
@@ -169,6 +174,9 @@
         "url": "https://jobcan-automation.onrender.com/blog/month-end-closing-checklist"
     }
     </script>
+    
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/footer.html' %}
 </body>
 </html>
 

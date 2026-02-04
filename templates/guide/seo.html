@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
     {% include 'includes/head_meta.html' %}
+    {% set page_title = 'Web/SEOユーティリティガイド' %}
     {% block title %}Web/SEOユーティリティガイド | Automation Hub{% endblock %}
     {% block description_meta %}
         <meta name="description" content="Web/SEOユーティリティの使い方ガイド。OGP画像生成、PageSpeedチェックリスト、メタタグ検査、sitemap.xml/robots.txt生成の方法を詳しく解説。">
@@ -28,6 +29,7 @@
 </head>
 <body>
     {% include 'includes/header.html' %}
+    {% include 'includes/breadcrumb.html' %}
     <div class="container">
         <h1>🔍 Web/SEOユーティリティガイド</h1>
         <p>Web/SEOユーティリティは、OGP画像生成、PageSpeedチェックリスト、メタタグ検査、sitemap.xml/robots.txt生成などのSEO関連作業をブラウザ内で完結して実行できるツールです。</p>

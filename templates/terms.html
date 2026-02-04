@@ -81,6 +81,9 @@
     </style>
 </head>
 <body>
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/header.html' %}
+    {% include 'includes/breadcrumb.html' %}
     <div class="container">
         <h1>利用規約</h1>
         <p class="update-date">最終更新日：2025年10月10日</p>
@@ -147,8 +150,17 @@
         <h2>第10条（お問い合わせ）</h2>
         <p>本規約に関するご質問やご意見は、<a href="/contact">お問い合わせページ</a>よりご連絡ください。</p>
 
+        {# P0-3: AI支援コンテンツ表記 #}
+        <h2>第11条（コンテンツの作成について）</h2>
+        <p style="line-height: 1.9; color: rgba(255, 255, 255, 0.9);">
+            本サイトの一部コンテンツは、AI（人工知能）の支援により作成・編集される場合があります。コンテンツに誤りや不適切な表現がある場合は、<a href="/contact">お問い合わせページ</a>よりご連絡ください。迅速に対応いたします。
+        </p>
+
         <a href="/" class="back-link">← トップページに戻る</a>
     </div>
+    
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/footer.html' %}
 </body>
 </html>
 

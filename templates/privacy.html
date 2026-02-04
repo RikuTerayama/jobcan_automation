@@ -74,6 +74,9 @@
     </style>
 </head>
 <body>
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/header.html' %}
+    {% include 'includes/breadcrumb.html' %}
     <div class="container">
         <h1>プライバシーポリシー</h1>
         <p class="update-date">最終更新日：2025年10月10日</p>
@@ -140,6 +143,9 @@
 
         <a href="/" class="back-link">← トップページに戻る</a>
     </div>
+    
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/footer.html' %}
 </body>
 </html>
 

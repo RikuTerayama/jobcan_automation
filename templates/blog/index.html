@@ -10,12 +10,7 @@
 <body style="margin: 0; font-family: 'Noto Sans JP', sans-serif; background: linear-gradient(135deg, #101010 0%, #181818 50%, #0E0E0E 100%); color: #FFFFFF; line-height: 1.8;">
     <main style="max-width: 960px; margin: 0 auto; padding: 40px 20px;">
         <header style="margin-bottom: 50px; text-align: center;">
-            <nav aria-label="breadcrumb" style="margin-bottom: 20px;">
-                <ol style="list-style: none; padding: 0; margin: 0; display: inline-flex; gap: 10px; font-size: 0.9em; color: rgba(255, 255, 255, 0.7);">
-                    <li><a href="/" style="color: rgba(255, 255, 255, 0.7); text-decoration: none;">ホーム</a></li>
-                    <li aria-current="page" style="color: #FFFFFF;">ブログ</li>
-                </ol>
-            </nav>
+            {% include 'includes/breadcrumb.html' %}
             <h1 style="font-size: 2.4em; margin: 0; color: #4A9EFF;">Jobcan AutoFill ブログ</h1>
             <p style="margin: 20px auto 0 auto; max-width: 700px; color: rgba(255, 255, 255, 0.85);">
                 勤怠管理の自動化・DX・運用改善に関する知見を専門家の視点から発信するブログです。毎月のアップデート情報、ユーザー事例、テクノロジーの解説を通じて、より良い業務フロー構築を支援します。
@@ -308,5 +303,8 @@
         ]
     }
     </script>
+    
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/footer.html' %}
 </body>
 </html>
