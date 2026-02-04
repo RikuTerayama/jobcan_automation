@@ -110,6 +110,12 @@
     <div class="container">
         <h1>⚠️ エラーが発生しました</h1>
         <p>{{ error_message|default('予期しないエラーが発生しました。しばらく待ってから再試行してください。') }}</p>
+        {% if error_id %}
+        <p style="background: rgba(255, 152, 0, 0.1); border-left: 4px solid #FF9800; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <strong>エラーID:</strong> <code style="background: rgba(0, 0, 0, 0.3); padding: 4px 8px; border-radius: 4px;">{{ error_id }}</code><br>
+            <small style="color: rgba(255, 255, 255, 0.7);">お問い合わせの際は、このエラーIDをお伝えください。</small>
+        </p>
+        {% endif %}
         
         <h2>よくあるエラーと対処法</h2>
         <div class="error-types">
