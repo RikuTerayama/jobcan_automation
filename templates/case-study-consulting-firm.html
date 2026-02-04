@@ -11,12 +11,8 @@
     <main style="max-width: 960px; margin: 0 auto; padding: 40px 20px;">
         <article itemscope itemtype="https://schema.org/Article" style="background: rgba(0, 0, 0, 0.35); border-radius: 18px; padding: 35px; border: 1px solid rgba(74, 158, 255, 0.25);">
             <header style="margin-bottom: 30px;">
-                <nav aria-label="breadcrumb" style="margin-bottom: 20px;">
-                    <ol style="list-style: none; padding: 0; margin: 0; display: inline-flex; gap: 10px; font-size: 0.9em; color: rgba(255, 255, 255, 0.7);">
-                        <li><a href="/" style="color: rgba(255, 255, 255, 0.7); text-decoration: none;">ホーム</a></li>
-                        <li aria-current="page" style="color: #FFFFFF;">コンサルティングファームの導入事例</li>
-                    </ol>
-                </nav>
+                {% set page_title = 'コンサルティングファームの導入事例' %}
+                {% include 'includes/breadcrumb.html' %}
                 <h1 itemprop="headline" style="margin: 12px 0 10px 0; font-size: 2.2em; color: #4CAF50;">月次締めの"残業30時間"から脱却：コンサルティングファームでのJobcan AutoFill導入事例</h1>
                 <p style="margin: 0; color: rgba(255, 255, 255, 0.85);">
                     コンサルティングファーム（社員数30名規模）でのJobcan AutoFill導入事例です。プロジェクト単位で残業が膨らみやすく、月末に勤怠修正が集中しがちな環境で、月次締め作業の時間を大幅に削減し、メンバーの心理的な負担を軽減しました。
@@ -176,6 +172,9 @@
         "url": "https://jobcan-automation.onrender.com/case-study/consulting-firm"
     }
     </script>
+    
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/footer.html' %}
 </body>
 </html>
 

@@ -18,7 +18,12 @@
                         <li aria-current="page" style="color: #FFFFFF;">月末締めと自動化</li>
                     </ol>
                 </nav>
-                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">2025-01-20 / 業務効率化・実務ノウハウ</span>
+                {# P1-3: ブログの更新情報の明確化 #}
+                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">
+                    <time itemprop="datePublished" datetime="2025-01-20">公開日: 2025-01-20</time>
+                    {% if false %}<time itemprop="dateModified" datetime="2025-01-20"> / 更新日: 2025-01-20</time>{% endif %}
+                    / 業務効率化・実務ノウハウ
+                </span>
                 <h1 itemprop="headline" style="margin: 12px 0 10px 0; font-size: 2.2em; color: #4A9EFF; line-height: 1.4;">Jobcanの月末締めが地獄になる3つの理由と、自動化で中和する方法</h1>
                 <p itemprop="description" style="margin: 0; color: rgba(255, 255, 255, 0.85);">
                     月末締めで実際に起きがちな「地獄シナリオ」と、Jobcan AutoFillによる自動化で解決する方法を、開発者RTの実体験と社内展開の事例を交えて詳しく解説します。
@@ -224,6 +229,9 @@
         "url": "https://jobcan-automation.onrender.com/blog/month-end-closing-hell-and-automation"
     }
     </script>
+    
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/footer.html' %}
 </body>
 </html>
 

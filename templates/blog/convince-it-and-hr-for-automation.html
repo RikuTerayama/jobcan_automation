@@ -18,7 +18,12 @@
                         <li aria-current="page" style="color: #FFFFFF;">導入プロセス</li>
                     </ol>
                 </nav>
-                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">2025-01-15 / 導入ガイド・実務ノウハウ</span>
+                {# P1-3: ブログの更新情報の明確化 #}
+                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">
+                    <time itemprop="datePublished" datetime="2025-01-15">公開日: 2025-01-15</time>
+                    {% if false %}<time itemprop="dateModified" datetime="2025-01-15"> / 更新日: 2025-01-15</time>{% endif %}
+                    / 導入ガイド・実務ノウハウ
+                </span>
                 <h1 itemprop="headline" style="margin: 12px 0 10px 0; font-size: 2.2em; color: #4A9EFF; line-height: 1.4;">情シス・人事・上長を味方につけて勤怠自動化を導入するための5ステップ</h1>
                 <p itemprop="description" style="margin: 0; color: rgba(255, 255, 255, 0.85);">
                     勤怠自動化ツールを正式に導入する際、情シス・人事・上長を説得するための5ステップを、開発者RTの実体験と社内展開の事例を交えて詳しく解説します。
@@ -272,6 +277,9 @@
         "url": "https://jobcan-automation.onrender.com/blog/convince-it-and-hr-for-automation"
     }
     </script>
+    
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/footer.html' %}
 </body>
 </html>
 

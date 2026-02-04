@@ -107,6 +107,9 @@
     </style>
 </head>
 <body>
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/header.html' %}
+    {% include 'includes/breadcrumb.html' %}
     <div class="container">
         <h1>お問い合わせ</h1>
 
@@ -130,6 +133,18 @@
                 </p>
                 <p style="font-size: 0.9em; color: rgba(255, 255, 255, 0.7);">※ Googleフォームを使用しています。外部サイトに移動します。</p>
             </div>
+
+            {# P0-1: メール連絡先（環境変数が設定されている場合） #}
+            {% if OPERATOR_EMAIL %}
+            <div class="contact-method" style="background: rgba(40, 167, 69, 0.15); border: 2px solid rgba(40, 167, 69, 0.4);">
+                <h3>📧 メールでのお問い合わせ</h3>
+                <p>メールでのお問い合わせも受け付けております。以下のメールアドレスまでご連絡ください：</p>
+                <p style="margin: 20px 0;">
+                    <a href="mailto:{{ OPERATOR_EMAIL }}" style="display: inline-block; padding: 15px 30px; background: rgba(40, 167, 69, 0.3); border: 1px solid rgba(40, 167, 69, 0.6); border-radius: 8px; color: #FFFFFF; text-decoration: none; font-weight: 600; transition: all 0.3s; font-size: 1.1em;">{{ OPERATOR_EMAIL }}</a>
+                </p>
+                <p style="font-size: 0.9em; color: rgba(255, 255, 255, 0.7);">※ 原則として3営業日以内に返信いたします。</p>
+            </div>
+            {% endif %}
 
             <div class="contact-method">
                 <h3>💻 GitHub Issues（開発者向け）</h3>
@@ -200,6 +215,9 @@
 
         <a href="/" class="back-link">← トップページに戻る</a>
     </div>
+    
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/footer.html' %}
 </body>
 </html>
 

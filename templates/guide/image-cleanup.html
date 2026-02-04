@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
     {% include 'includes/head_meta.html' %}
+    {% set page_title = '画像ユーティリティガイド' %}
     {% block title %}画像ユーティリティガイド | Automation Hub{% endblock %}
     {% block description_meta %}
         <meta name="description" content="画像ユーティリティの使い方ガイド。透過PNG→白背景JPEG変換、余白トリム、縦横比統一、背景除去の方法を詳しく解説。">
@@ -28,6 +29,7 @@
 </head>
 <body>
     {% include 'includes/header.html' %}
+    {% include 'includes/breadcrumb.html' %}
     <div class="container">
         <h1>✨ 画像ユーティリティガイド</h1>
         <p>画像ユーティリティは、透過PNGを白背景JPEGに変換、余白トリム、縦横比統一、背景除去などの画像処理をブラウザ内で完結して実行できるツールです。</p>

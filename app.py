@@ -162,12 +162,23 @@ def inject_env_vars():
     except:
         pass
     
+    # P0-1: 運営者情報を環境変数から取得
+    operator_name = os.getenv('OPERATOR_NAME', '')
+    operator_email = os.getenv('OPERATOR_EMAIL', '')
+    operator_location = os.getenv('OPERATOR_LOCATION', '')
+    operator_note = os.getenv('OPERATOR_NOTE', '')
+    
     return {
         'ADSENSE_ENABLED': os.getenv('ADSENSE_ENABLED', 'false').lower() == 'true',
         'app_version': app_version,
         'products': PRODUCTS,
         'GA_MEASUREMENT_ID': os.getenv('GA_MEASUREMENT_ID', ''),
-        'GSC_VERIFICATION_CONTENT': os.getenv('GSC_VERIFICATION_CONTENT', '')
+        'GSC_VERIFICATION_CONTENT': os.getenv('GSC_VERIFICATION_CONTENT', ''),
+        # P0-1: 運営者情報
+        'OPERATOR_NAME': operator_name,
+        'OPERATOR_EMAIL': operator_email,
+        'OPERATOR_LOCATION': operator_location,
+        'OPERATOR_NOTE': operator_note
     }
 
 # ジョブの状態を管理（スレッドセーフな辞書）

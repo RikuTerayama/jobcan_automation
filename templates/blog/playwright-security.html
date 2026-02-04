@@ -18,7 +18,12 @@
                         <li aria-current="page" style="color: #FFFFFF;">セキュリティと技術</li>
                     </ol>
                 </nav>
-                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">2025-12-27 / セキュリティ・技術スタック</span>
+                {# P1-3: ブログの更新情報の明確化 #}
+                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">
+                    <time itemprop="datePublished" datetime="2025-12-27">公開日: 2025-12-27</time>
+                    {% if false %}<time itemprop="dateModified" datetime="2025-12-27"> / 更新日: 2025-12-27</time>{% endif %}
+                    / セキュリティ・技術スタック
+                </span>
                 <h1 itemprop="headline" style="margin: 12px 0 10px 0; font-size: 2.2em; color: #4A9EFF; line-height: 1.4;">Playwrightによるブラウザ自動化のセキュリティ：企業の安全性を守るための技術解説</h1>
                 <p itemprop="description" style="margin: 0; color: rgba(255, 255, 255, 0.85);">
                     Playwrightによるブラウザ自動化のセキュリティ対策を詳しく解説。企業が安心して利用できる自動化ツールの技術的基盤、認証の安全性、データ保護の仕組みについて、開発者の視点から説明します。
@@ -129,6 +134,9 @@
         "url": "https://jobcan-automation.onrender.com/blog/playwright-security"
     }
     </script>
+    
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/footer.html' %}
 </body>
 </html>
 

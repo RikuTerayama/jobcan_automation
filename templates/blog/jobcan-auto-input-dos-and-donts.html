@@ -18,7 +18,12 @@
                         <li aria-current="page" style="color: #FFFFFF;">自動入力のやり方とNGパターン</li>
                     </ol>
                 </nav>
-                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">2025-01-28 / 実務ノウハウ・セキュリティ</span>
+                {# P1-3: ブログの更新情報の明確化 #}
+                <span style="display: inline-block; font-size: 0.85em; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.6);">
+                    <time itemprop="datePublished" datetime="2025-01-28">公開日: 2025-01-28</time>
+                    {% if false %}<time itemprop="dateModified" datetime="2025-01-28"> / 更新日: 2025-01-28</time>{% endif %}
+                    / 実務ノウハウ・セキュリティ
+                </span>
                 <h1 itemprop="headline" style="margin: 12px 0 10px 0; font-size: 2.2em; color: #4A9EFF; line-height: 1.4;">Jobcan 自動入力のやり方と、やってはいけないNG自動化</h1>
                 <p itemprop="description" style="margin: 0; color: rgba(255, 255, 255, 0.85);">
                     Jobcanの自動入力方法と、やってはいけないNGパターンを解説。開発者RTの実体験を交え、コンプライアンス・セキュリティを守りながら効率化する方法を詳しく説明します。
@@ -155,6 +160,9 @@
         "url": "https://jobcan-automation.onrender.com/blog/jobcan-auto-input-dos-and-donts"
     }
     </script>
+    
+    {# P1-1: ナビゲーションの一貫性 #}
+    {% include 'includes/footer.html' %}
 </body>
 </html>
 
