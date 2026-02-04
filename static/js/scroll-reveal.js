@@ -2,10 +2,14 @@
  * Scroll Reveal Animation
  * Minimal, professional scroll animations using IntersectionObserver
  * Respects prefers-reduced-motion for accessibility
+ * Safe: Default visible, hidden only when JS is enabled
  */
 
 (function() {
     'use strict';
+
+    // Mark HTML as JS-enabled (for CSS to know JS is available)
+    document.documentElement.classList.add('js');
 
     // Check for prefers-reduced-motion
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -44,6 +48,11 @@
 
         // Observe single reveal elements
         revealElements.forEach(function(el) {
+            // Apply custom delay if specified
+            const delay = el.getAttribute('data-reveal-delay');
+            if (delay) {
+                el.style.setProperty('--reveal-delay', delay + 'ms');
+            }
             observer.observe(el);
         });
 

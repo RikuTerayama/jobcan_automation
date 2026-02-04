@@ -148,16 +148,16 @@
     
     <div class="container">
         <div class="page-header">
-            <h1>🛠️ ツール一覧</h1>
-            <p>業務効率化に役立つ各種ツールをご利用いただけます。すべてローカル処理で、ファイルはアップロードしません。</p>
+            <h1 data-reveal>🛠️ ツール一覧</h1>
+            <p data-reveal data-reveal-delay="50">業務効率化に役立つ各種ツールをご利用いただけます。すべてローカル処理で、ファイルはアップロードしません。</p>
         </div>
         
-        <div style="max-width: 800px; margin: 0 auto 30px;">
+        <div style="max-width: 800px; margin: 0 auto 30px;" data-reveal data-reveal-delay="100">
             <input type="text" id="search-input" placeholder="🔍 ツール名や説明で検索..." 
                    style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: #FFFFFF; font-size: 1em;">
         </div>
         
-        <div class="products-grid" id="products-grid">
+        <div class="products-grid" id="products-grid" data-reveal-stagger>
             {% for product in products %}
                 <a href="{{ product.path }}" class="product-card" 
                    data-name="{{ product.name }}" 
