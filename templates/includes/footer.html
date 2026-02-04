@@ -22,6 +22,16 @@
                     <a href="/guide/getting-started" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">はじめての使い方</a>
                     <a href="/guide/excel-format" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">Excelファイルの作成方法</a>
                     <a href="/guide/troubleshooting" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">トラブルシューティング</a>
+                    {% if products %}
+                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.2);">
+                            <p style="color: rgba(255, 255, 255, 0.9); font-size: 0.85em; font-weight: 500; margin-bottom: 8px;">ツール別ガイド</p>
+                            {% for product in products %}
+                                {% if product.guide_path and product.status == 'available' %}
+                                    <a href="{{ product.guide_path }}" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em; display: block; margin-bottom: 4px;">{{ product.icon }} {{ product.name }}</a>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                 </div>
             </div>
             <div>

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {% include 'includes/head_meta.html' %}
+    {% block title %}議事録整形ツールガイド | Automation Hub{% endblock %}
+    {% block description_meta %}
+        <meta name="description" content="議事録整形ツールの使い方ガイド。テキストから決定事項/ToDo/担当/期限を抽出し、報告書テンプレートを生成する方法を詳しく解説。">
+    {% endblock %}
+    <style>
+        body { font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #121212 0%, #1A1A1A 50%, #0F0F0F 100%); min-height: 100vh; color: #FFFFFF; line-height: 1.8; }
+        .container { max-width: 1000px; margin: 0 auto; background: linear-gradient(145deg, #1E1E1E 0%, #2A2A2A 100%); border-radius: 20px; padding: 50px; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5); }
+        h1 { font-size: 2.5em; margin-bottom: 30px; color: #FFFFFF; }
+        h2 { font-size: 1.8em; margin-top: 40px; margin-bottom: 20px; color: #FFFFFF; border-bottom: 2px solid rgba(255, 255, 255, 0.2); padding-bottom: 10px; }
+        h3 { font-size: 1.4em; margin-top: 30px; margin-bottom: 15px; color: #4A9EFF; }
+        p, li { color: rgba(255, 255, 255, 0.9); margin-bottom: 15px; font-size: 1.05em; }
+        ul, ol { padding-left: 30px; }
+        .step-box { background: rgba(74, 158, 255, 0.1); border-left: 4px solid #4A9EFF; padding: 25px; margin: 30px 0; border-radius: 8px; }
+        .step-box h3 { margin-top: 0; }
+        .info-box { background: rgba(40, 167, 69, 0.1); border-left: 4px solid #28A745; padding: 20px; margin: 25px 0; border-radius: 8px; }
+        .warning-box { background: rgba(220, 53, 69, 0.1); border-left: 4px solid #DC3545; padding: 20px; margin: 25px 0; border-radius: 8px; }
+        .tip-box { background: rgba(255, 193, 7, 0.1); border-left: 4px solid #FFC107; padding: 20px; margin: 25px 0; border-radius: 8px; }
+        .nav-links { display: flex; gap: 20px; margin-top: 40px; padding-top: 30px; border-top: 1px solid rgba(255, 255, 255, 0.2); flex-wrap: wrap; }
+        .nav-link { display: inline-block; padding: 15px 30px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 10px; color: #FFFFFF; text-decoration: none; transition: all 0.3s; }
+        .nav-link:hover { background: rgba(255, 255, 255, 0.2); transform: translateY(-2px); }
+        a { color: #4A9EFF; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    {% include 'includes/header.html' %}
+    <div class="container">
+        <h1>📝 議事録整形ツールガイド</h1>
+        <p>議事録整形ツールは、テキストから決定事項、ToDo、担当者、期限を自動抽出し、構造化された議事録や報告書テンプレートを生成するブラウザ内完結型のツールです。</p>
+
+        <h2>このツールで解決できる課題</h2>
+        <ul>
+            <li>議事録を構造化された形式に整形したい</li>
+            <li>決定事項やToDoを自動で抽出したい</li>
+            <li>報告書テンプレートを自動生成したい</li>
+            <li>ToDoリストをCSV/JSONで出力したい</li>
+        </ul>
+
+        <h2>主要機能</h2>
+        <ul>
+            <li><strong>決定事項抽出</strong>: 「決定:」「決定事項:」などのキーワードから抽出</li>
+            <li><strong>ToDo抽出</strong>: 「TODO:」「ToDo:」「タスク:」などのキーワードから抽出</li>
+            <li><strong>担当者抽出</strong>: 「担当:」「担当者:」などのキーワードから抽出</li>
+            <li><strong>期限抽出</strong>: 日付形式（YYYY/MM/DD等）から抽出</li>
+            <li><strong>テンプレート生成</strong>: 議事録形式、報告書形式など</li>
+            <li><strong>CSV/JSON出力</strong>: 抽出データを構造化形式で出力</li>
+        </ul>
+
+        <h2>使い方の流れ（4ステップ）</h2>
+        <div class="step-box">
+            <h3>ステップ1: テキストを入力</h3>
+            <p><a href="/tools/minutes">議事録整形ツール</a>にアクセスし、議事録のテキストを入力エリアに貼り付けます。</p>
+        </div>
+        <div class="step-box">
+            <h3>ステップ2: メタ情報を設定（任意）</h3>
+            <p>会議名、日付、参加者などのメタ情報を入力します（任意）。</p>
+        </div>
+        <div class="step-box">
+            <h3>ステップ3: 抽出と整形を実行</h3>
+            <p>「抽出・整形を開始」ボタンをクリックすると、決定事項、ToDo、担当者、期限が自動抽出され、選択したテンプレート形式で整形されます。</p>
+        </div>
+        <div class="step-box">
+            <h3>ステップ4: 結果をコピーまたはダウンロード</h3>
+            <p>整形された議事録をクリップボードにコピーするか、Markdown/CSV/JSON形式でダウンロードします。</p>
+        </div>
+
+        <h2>入出力仕様</h2>
+        <h3>入力形式</h3>
+        <ul>
+            <li>プレーンテキスト（直接入力または貼り付け）</li>
+            <li>テキストファイル（.txt）</li>
+        </ul>
+        <h3>出力形式</h3>
+        <ul>
+            <li>Markdown（.md）</li>
+            <li>CSV（.csv）</li>
+            <li>JSON（.json）</li>
+        </ul>
+        <h3>制限事項</h3>
+        <ul>
+            <li>テキスト長: ブラウザのメモリ制限に依存（目安: 10,000文字程度）</li>
+            <li>抽出精度: ルールベースのため、形式が不規則な場合は抽出できない場合があります</li>
+        </ul>
+
+        <div class="tip-box">
+            <strong>💡 抽出精度を上げるコツ</strong>
+            <ul style="margin-top: 10px;">
+                <li>「決定:」「TODO:」「担当:」などのキーワードを明確に記載する</li>
+                <li>日付は「YYYY/MM/DD」形式で記載する</li>
+                <li>1行に1つの項目を記載する</li>
+            </ul>
+        </div>
+
+        <h2>よくあるつまずきと対処</h2>
+        <h3>Q: 決定事項が抽出されない</h3>
+        <p><strong>A:</strong> 「決定:」「決定事項:」などのキーワードが含まれているか確認してください。形式が異なる場合は手動で修正が必要です。</p>
+        <h3>Q: 日付が抽出されない</h3>
+        <p><strong>A:</strong> 日付は「YYYY/MM/DD」形式で記載してください。他の形式（例: 2025年1月1日）は認識されない場合があります。</p>
+
+        <h2>セキュリティと注意点</h2>
+        <div class="info-box">
+            <strong>✅ データの安全性</strong>
+            <ul style="margin-top: 10px;">
+                <li>すべての処理はブラウザ内で完結します</li>
+                <li>テキストはサーバーに送信されません</li>
+                <li>処理完了後、メモリから自動的に削除されます</li>
+            </ul>
+        </div>
+
+        <h2>関連リンク</h2>
+        <ul>
+            <li><a href="/tools/minutes">議事録整形ツール</a> - ツール本体</li>
+            <li><a href="/tools">ツール一覧</a> - 他のツールも見る</li>
+            <li><a href="/guide/seo">Web/SEOユーティリティガイド</a> - 関連ツール</li>
+        </ul>
+
+        <div class="nav-links">
+            <a href="/tools/minutes" class="nav-link">← 議事録整形ツールに戻る</a>
+            <a href="/tools" class="nav-link">← ツール一覧へ</a>
+            <a href="/guide/seo" class="nav-link">次のガイド: Web/SEOユーティリティ →</a>
+        </div>
+    </div>
+    {% include 'includes/footer.html' %}
+</body>
+</html>
