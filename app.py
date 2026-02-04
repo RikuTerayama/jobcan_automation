@@ -56,11 +56,29 @@ if not os.path.exists(UPLOAD_FOLDER):
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # === リクエストロギングミドルウェア ===
+# P1: prune_jobs実行頻度制御（メモリ最適化）
+_last_prune_time = 0
+PRUNE_INTERVAL_SECONDS = 300  # 5分ごとにprune_jobsを実行
+
 @app.before_request
 def before_request():
     """リクエスト開始時の処理"""
+    global _last_prune_time
+    
     g.start_time = time.time()
     g.request_id = request.headers.get('X-Request-ID', str(uuid.uuid4())[:8])
+    
+    # P1: 定期的にprune_jobsを実行（メモリ最適化）
+    # ヘルスチェックや静的ファイルリクエストは除外
+    if not request.path.startswith(('/healthz', '/livez', '/readyz', '/static')):
+        current_time = time.time()
+        if current_time - _last_prune_time >= PRUNE_INTERVAL_SECONDS:
+            try:
+                prune_jobs(current_time=current_time)
+                _last_prune_time = current_time
+            except Exception as prune_error:
+                # prune_jobsのエラーはログに記録するが、リクエスト処理は続行
+                logger.warning(f"prune_jobs_error in before_request: {prune_error}")
     
     # ヘルスチェック以外のリクエストをログ
     if not request.path.startswith(('/healthz', '/livez', '/readyz')):
@@ -158,6 +176,10 @@ jobs_lock = threading.Lock()
 
 # P0-3: 完了ジョブの保持期間（秒）
 JOB_RETENTION_SECONDS = 1800  # 30分
+
+# P1: ジョブログの上限設定（メモリ最適化）
+# utils.pyのMAX_JOB_LOGSと同期（1000）
+MAX_JOB_LOGS = 1000  # 1ジョブあたりの最大ログ件数
 
 # セッション管理とリソース監視
 session_manager = {
@@ -864,10 +886,12 @@ def upload_file():
             })
         
         # ジョブ情報を初期化（スレッドセーフ）
+        # P1: collections.dequeを使用して固定長ログを実現
+        from collections import deque
         with jobs_lock:
             jobs[job_id] = {
                 'status': 'running',
-                'logs': [],
+                'logs': deque(maxlen=MAX_JOB_LOGS),  # P1: 固定長ログ（メモリ最適化）
                 'progress': 0,
                 'step_name': 'initializing',
                 'current_data': 0,
@@ -914,7 +938,9 @@ def upload_file():
                         jobs[job_id]['status'] = 'error'
                         jobs[job_id]['login_status'] = 'error'
                         jobs[job_id]['login_message'] = error_message
-                        jobs[job_id]['logs'].append(f"❌ {error_message}")
+                        # P1: add_job_logを使用（deque対応）
+                        from utils import add_job_log
+                        add_job_log(job_id, f"❌ {error_message}", jobs)
                         jobs[job_id]['last_updated'] = time.time()
                         jobs[job_id]['end_time'] = time.time()  # P0-3: エラー時のend_timeを記録
             finally:
@@ -981,6 +1007,23 @@ def get_status(job_id):
             
             job = jobs[job_id]
             
+            # P1: ログページングパラメータを取得
+            last_n = request.args.get('last_n', type=int)
+            if last_n is not None and (last_n < 1 or last_n > 1000):
+                last_n = 1000  # 最大値に制限
+            
+            # P1: ログを取得（dequeの場合はlistに変換、ページング対応）
+            job_logs = job.get('logs', [])
+            from collections import deque
+            if isinstance(job_logs, deque):
+                job_logs = list(job_logs)
+            elif not isinstance(job_logs, list):
+                job_logs = list(job_logs) if job_logs else []
+            
+            # P1: ページング対応（最新last_n件のみ返す）
+            if last_n is not None and len(job_logs) > last_n:
+                job_logs = job_logs[-last_n:]
+            
             # ログイン結果の詳細情報を取得
             login_status = job.get('login_status', 'unknown')
             login_message = job.get('login_message', 'ログイン状態が不明です')
@@ -1002,7 +1045,7 @@ def get_status(job_id):
                 'step_name': job.get('step_name', ''),
                 'current_data': job.get('current_data', 0),
                 'total_data': job.get('total_data', 0),
-                'logs': job.get('logs', []),
+                'logs': job_logs,  # P1: ページング対応済みログ
                 'start_time': job.get('start_time', 0),
                 'login_status': login_status,
                 'login_message': login_message,
