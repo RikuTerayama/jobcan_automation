@@ -35,15 +35,29 @@
 {% endblock %}
 {% block og_description %}{% endblock %}
 <meta property="og:url" content="https://jobcan-automation.onrender.com{{ request.path if request else '/' }}">
-<meta property="og:image" content="https://jobcan-automation.onrender.com{{ url_for('static', filename='JobcanAutofill.png') }}">
+{% block og_image %}
+<meta property="og:image" content="{{ url_for('static', filename='JobcanAutofill.png', _external=True) }}">
+{% endblock %}
+{# Twitter Card - P0-2: Twitter共有時の表示最適化 #}
+{% block twitter_card %}
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{% block twitter_title %}{% block og_title %}Jobcan AutoFill{% endblock %}{% endblock %}">
+<meta name="twitter:description" content="{% block twitter_description %}{% block og_description %}{% endblock %}{% endblock %}">
+<meta name="twitter:image" content="{% block twitter_image %}{{ url_for('static', filename='JobcanAutofill.png', _external=True) }}{% endblock %}">
+{% endblock %}
 {# AdSenseコードスニペット - サイト所有権確認のため全ページに配置 #}
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4232725615106709"
      crossorigin="anonymous"></script>
+{# P1-3: フォント読み込み最適化（preconnect + display=swap） #}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 {# Common Design System CSS #}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/scroll-reveal.css') }}">
 {# Scroll Reveal JS #}
 <script src="{{ url_for('static', filename='js/scroll-reveal.js') }}" defer></script>
+{# 構造化データ（Organization/WebSite/BreadcrumbList） #}
+{% include 'includes/structured_data.html' %}
 {% block extra_head %}{% endblock %}
 
