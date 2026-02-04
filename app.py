@@ -463,27 +463,48 @@ def guide_seo():
 @app.route('/tools/image-batch')
 def tools_image_batch():
     """画像一括変換ツール"""
-    return render_template('tools/image-batch.html')
+    from lib.routes import get_product_by_path, get_available_products
+    product = get_product_by_path('/tools/image-batch')
+    # 関連ツール（同じカテゴリまたは利用可能なツールから3-4件を選択）
+    available_products = get_available_products()
+    related_products = [p for p in available_products if p['id'] != 'image-batch' and p.get('status') == 'available'][:4]
+    return render_template('tools/image-batch.html', product=product, related_products=related_products)
 
 @app.route('/tools/pdf')
 def tools_pdf():
     """PDFユーティリティ"""
-    return render_template('tools/pdf.html')
+    from lib.routes import get_product_by_path, get_available_products
+    product = get_product_by_path('/tools/pdf')
+    available_products = get_available_products()
+    related_products = [p for p in available_products if p['id'] != 'pdf' and p.get('status') == 'available'][:4]
+    return render_template('tools/pdf.html', product=product, related_products=related_products)
 
 @app.route('/tools/image-cleanup')
 def tools_image_cleanup():
     """画像ユーティリティ"""
-    return render_template('tools/image-cleanup.html')
+    from lib.routes import get_product_by_path, get_available_products
+    product = get_product_by_path('/tools/image-cleanup')
+    available_products = get_available_products()
+    related_products = [p for p in available_products if p['id'] != 'image-cleanup' and p.get('status') == 'available'][:4]
+    return render_template('tools/image-cleanup.html', product=product, related_products=related_products)
 
 @app.route('/tools/minutes')
 def tools_minutes():
     """議事録整形ツール"""
-    return render_template('tools/minutes.html')
+    from lib.routes import get_product_by_path, get_available_products
+    product = get_product_by_path('/tools/minutes')
+    available_products = get_available_products()
+    related_products = [p for p in available_products if p['id'] != 'minutes' and p.get('status') == 'available'][:4]
+    return render_template('tools/minutes.html', product=product, related_products=related_products)
 
 @app.route('/tools/seo')
 def tools_seo():
     """Web/SEOユーティリティ"""
-    return render_template('tools/seo.html')
+    from lib.routes import get_product_by_path, get_available_products
+    product = get_product_by_path('/tools/seo')
+    available_products = get_available_products()
+    related_products = [p for p in available_products if p['id'] != 'seo' and p.get('status') == 'available'][:4]
+    return render_template('tools/seo.html', product=product, related_products=related_products)
 
 @app.route('/tools')
 def tools_index():
@@ -1185,69 +1206,88 @@ Allow: /
 
 @app.route('/sitemap.xml')
 def sitemap():
-    """XMLサイトマップを動的生成"""
+    """XMLサイトマップを動的生成（P0-1: PRODUCTSから自動生成）"""
     from flask import url_for
     from datetime import datetime
+    from lib.routes import PRODUCTS
     
     # ベースURL
     base_url = 'https://jobcan-automation.onrender.com'
     
+    # 現在日付を取得（P1: lastmodを動的に設定）
+    today = datetime.now().strftime('%Y-%m-%d')
+    
     # サイトマップに含めるURLのリスト
     # 形式: (url_path, changefreq, priority, lastmod)
+    # P0-1: 固定ページは維持
     urls = [
         # 主要ページ
-        ('/', 'daily', '1.0', '2025-01-26'),
-        ('/autofill', 'daily', '1.0', '2025-01-26'),
-        ('/about', 'monthly', '0.9', '2025-01-26'),
-        ('/contact', 'monthly', '0.8', '2025-01-26'),
-        ('/privacy', 'yearly', '0.5', '2025-01-26'),
-        ('/terms', 'yearly', '0.5', '2025-01-26'),
-        ('/faq', 'weekly', '0.8', '2025-01-26'),
-        ('/glossary', 'monthly', '0.6', '2025-01-26'),
-        ('/best-practices', 'monthly', '0.8', '2025-01-26'),
-        ('/sitemap.html', 'monthly', '0.5', '2025-01-26'),
+        ('/', 'daily', '1.0', today),
+        ('/autofill', 'daily', '1.0', today),
+        ('/about', 'monthly', '0.9', today),
+        ('/contact', 'monthly', '0.8', today),
+        ('/privacy', 'yearly', '0.5', today),
+        ('/terms', 'yearly', '0.5', today),
+        ('/faq', 'weekly', '0.8', today),
+        ('/glossary', 'monthly', '0.6', today),
+        ('/best-practices', 'monthly', '0.8', today),
+        ('/sitemap.html', 'monthly', '0.5', today),
         
-        # ガイドページ
-        ('/guide/complete', 'weekly', '0.9', '2025-01-26'),
-        ('/guide/comprehensive-guide', 'weekly', '0.9', '2025-01-26'),
-        ('/guide/getting-started', 'weekly', '0.9', '2025-01-26'),
-        ('/guide/excel-format', 'weekly', '0.9', '2025-01-26'),
-        ('/guide/troubleshooting', 'weekly', '0.8', '2025-01-26'),
+        # ガイドページ（固定）
+        ('/guide/complete', 'weekly', '0.9', today),
+        ('/guide/comprehensive-guide', 'weekly', '0.9', today),
+        ('/guide/getting-started', 'weekly', '0.9', today),
+        ('/guide/excel-format', 'weekly', '0.9', today),
+        ('/guide/troubleshooting', 'weekly', '0.8', today),
         
-        # ツールページ
-        ('/tools', 'weekly', '0.9', '2025-01-26'),
-        ('/tools/image-batch', 'monthly', '0.7', '2025-01-26'),
-        ('/tools/pdf', 'monthly', '0.7', '2025-01-26'),
-        ('/tools/image-cleanup', 'monthly', '0.7', '2025-01-26'),
-        ('/tools/minutes', 'monthly', '0.7', '2025-01-26'),
-        ('/tools/seo', 'monthly', '0.7', '2025-01-26'),
+        # ツール一覧ページ
+        ('/tools', 'weekly', '0.9', today),
         
         # ブログ一覧
-        ('/blog', 'daily', '0.8', '2025-01-26'),
+        ('/blog', 'daily', '0.8', today),
         
-        # ブログ記事（既存）
-        ('/blog/implementation-checklist', 'monthly', '0.7', '2025-01-26'),
-        ('/blog/automation-roadmap', 'monthly', '0.7', '2025-01-26'),
-        ('/blog/workstyle-reform-automation', 'monthly', '0.7', '2025-01-26'),
-        ('/blog/excel-attendance-limits', 'monthly', '0.7', '2025-01-26'),
-        ('/blog/playwright-security', 'monthly', '0.7', '2025-01-26'),
+        # ブログ記事（固定リストを維持）
+        ('/blog/implementation-checklist', 'monthly', '0.7', today),
+        ('/blog/automation-roadmap', 'monthly', '0.7', today),
+        ('/blog/workstyle-reform-automation', 'monthly', '0.7', today),
+        ('/blog/excel-attendance-limits', 'monthly', '0.7', today),
+        ('/blog/playwright-security', 'monthly', '0.7', today),
+        ('/blog/month-end-closing-hell-and-automation', 'monthly', '0.7', today),
+        ('/blog/excel-format-mistakes-and-design', 'monthly', '0.7', today),
+        ('/blog/convince-it-and-hr-for-automation', 'monthly', '0.7', today),
+        ('/blog/playwright-jobcan-challenges-and-solutions', 'monthly', '0.7', today),
+        ('/blog/jobcan-auto-input-tools-overview', 'monthly', '0.7', today),
+        ('/blog/reduce-manual-work-checklist', 'monthly', '0.7', today),
+        ('/blog/jobcan-month-end-tips', 'monthly', '0.7', today),
+        ('/blog/jobcan-auto-input-dos-and-donts', 'monthly', '0.7', today),
+        ('/blog/month-end-closing-checklist', 'monthly', '0.7', today),
         
-        # ブログ記事（新規3本）
-        ('/blog/month-end-closing-hell-and-automation', 'monthly', '0.7', '2025-01-26'),
-        ('/blog/excel-format-mistakes-and-design', 'monthly', '0.7', '2025-01-26'),
-        ('/blog/convince-it-and-hr-for-automation', 'monthly', '0.7', '2025-01-26'),
-        ('/blog/playwright-jobcan-challenges-and-solutions', 'monthly', '0.7', '2025-01-26'),
-        ('/blog/jobcan-auto-input-tools-overview', 'monthly', '0.7', '2025-01-26'),
-        ('/blog/reduce-manual-work-checklist', 'monthly', '0.7', '2025-01-26'),
-        ('/blog/jobcan-month-end-tips', 'monthly', '0.7', '2025-01-26'),
-        ('/blog/jobcan-auto-input-dos-and-donts', 'monthly', '0.7', '2025-01-28'),
-        ('/blog/month-end-closing-checklist', 'monthly', '0.7', '2025-01-29'),
-        
-        # 導入事例
-        ('/case-study/contact-center', 'monthly', '0.8', '2025-01-26'),
-        ('/case-study/consulting-firm', 'monthly', '0.8', '2025-01-26'),
-        ('/case-study/remote-startup', 'monthly', '0.8', '2025-01-26'),
+        # 導入事例（固定リストを維持）
+        ('/case-study/contact-center', 'monthly', '0.8', today),
+        ('/case-study/consulting-firm', 'monthly', '0.8', today),
+        ('/case-study/remote-startup', 'monthly', '0.8', today),
     ]
+    
+    # P0-1: PRODUCTSから利用可能なツールページとガイドページを自動生成
+    # URL重複を防ぐために、既存のURLパスを集合で管理
+    seen_urls = {url_path for url_path, _, _, _ in urls}
+    
+    for product in PRODUCTS:
+        if product.get('status') == 'available':
+            # product.pathを追加（重複チェック）
+            product_path = product.get('path')
+            if product_path and product_path not in seen_urls:
+                # ツールページの優先度と更新頻度を設定
+                changefreq = 'monthly'
+                priority = '0.7'
+                urls.append((product_path, changefreq, priority, today))
+                seen_urls.add(product_path)
+            
+            # guide_pathを追加（重複チェック）
+            guide_path = product.get('guide_path')
+            if guide_path and guide_path not in seen_urls:
+                urls.append((guide_path, 'monthly', '0.8', today))
+                seen_urls.add(guide_path)
     
     # XMLサイトマップを生成
     xml_parts = [
@@ -1256,6 +1296,7 @@ def sitemap():
     ]
     
     for url_path, changefreq, priority, lastmod in urls:
+        # 末尾スラッシュなしの方針を維持（既に末尾スラッシュなしで定義済み）
         full_url = base_url + url_path
         xml_parts.append('  <url>')
         xml_parts.append(f'    <loc>{full_url}</loc>')
