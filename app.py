@@ -107,79 +107,173 @@ def after_request(response):
     return response
 
 # グローバルエラーハンドラー
+def _generate_error_id():
+    """エラーIDを生成（短いUUID）"""
+    return str(uuid.uuid4())[:8]
+
+def _render_error_page(status_code, error_message, error_id=None):
+    """エラーページをレンダリング（共通関数）"""
+    if error_id is None:
+        error_id = _generate_error_id()
+    
+    try:
+        return render_template(
+            'error.html',
+            error_message=error_message,
+            error_id=error_id,
+            status_code=status_code
+        ), status_code
+    except Exception as render_error:
+        # エラーテンプレートもレンダリングできない場合はシンプルなHTMLを返す
+        import traceback
+        logger.error(f"error_page_render_failed error_id={error_id} render_error={str(render_error)}\n{traceback.format_exc()}")
+        return f'''<html><head><meta charset="utf-8"><title>エラー {status_code}</title></head>
+<body><h1>エラーが発生しました</h1>
+<p>{error_message}</p>
+<p>エラーID: {error_id}</p>
+<p>お問い合わせの際は、このエラーIDをお伝えください。</p>
+</body></html>''', status_code
+
 @app.errorhandler(404)
 def not_found(error):
     """404エラーのハンドリング"""
-    logger.warning(f"not_found rid={getattr(g, 'request_id', 'unknown')} path={request.path} method={request.method} user_agent={request.headers.get('User-Agent', 'Unknown')} error={str(error)}")
-    return jsonify({'error': 'ページが見つかりません。URLを確認してください。'}), 404
+    error_id = _generate_error_id()
+    request_id = getattr(g, 'request_id', 'unknown')
+    logger.warning(
+        f"not_found error_id={error_id} rid={request_id} "
+        f"path={request.path} method={request.method} "
+        f"user_agent={request.headers.get('User-Agent', 'Unknown')} error={str(error)}"
+    )
+    return _render_error_page(
+        404,
+        'お探しのページが見つかりませんでした。URLを確認してください。',
+        error_id
+    )
 
 @app.errorhandler(500)
 def internal_error(error):
     """500エラーのハンドリング"""
-    logger.error(f"internal_server_error rid={getattr(g, 'request_id', 'unknown')} error={str(error)}")
-    return jsonify({'error': '内部サーバーエラーが発生しました。しばらく待ってから再試行してください。'}), 500
+    error_id = _generate_error_id()
+    request_id = getattr(g, 'request_id', 'unknown')
+    
+    # スタックトレースをログに記録
+    import traceback
+    error_traceback = traceback.format_exc()
+    logger.error(
+        f"internal_server_error error_id={error_id} rid={request_id} "
+        f"path={request.path} method={request.method} error={str(error)}\n{error_traceback}"
+    )
+    
+    return _render_error_page(
+        500,
+        'サーバー側でエラーが発生しました。しばらく待ってから再試行してください。',
+        error_id
+    )
 
 @app.errorhandler(503)
 def service_unavailable(error):
     """503エラーのハンドリング"""
-    logger.error(f"service_unavailable rid={getattr(g, 'request_id', 'unknown')} error={str(error)}")
-    return jsonify({'error': 'サービスが一時的に利用できません。しばらく待ってから再試行してください。'}), 503
+    error_id = _generate_error_id()
+    request_id = getattr(g, 'request_id', 'unknown')
+    logger.error(
+        f"service_unavailable error_id={error_id} rid={request_id} "
+        f"path={request.path} method={request.method} error={str(error)}"
+    )
+    return _render_error_page(
+        503,
+        'サービスが一時的に利用できません。しばらく待ってから再試行してください。',
+        error_id
+    )
 
 @app.errorhandler(Exception)
 def handle_exception(e):
     """未処理例外のハンドリング（404以外）"""
+    from werkzeug.exceptions import HTTPException
+    
+    # HTTPException（404, 500等）は適切なハンドラーに委譲
+    if isinstance(e, HTTPException):
+        # FlaskのHTTPExceptionはそのまま通す（適切なハンドラーが処理する）
+        return e
+    
     # 404エラーは上記のハンドラーで処理されるため、ここでは処理しない
     if hasattr(e, 'code') and e.code == 404:
         raise e  # 404エラーハンドラーに委譲
     
+    error_id = _generate_error_id()
+    request_id = getattr(g, 'request_id', 'unknown')
+    
     # 詳細なエラー情報をログに記録
     import traceback
     error_traceback = traceback.format_exc()
-    logger.error(f"unhandled_exception rid={getattr(g, 'request_id', 'unknown')} error={str(e)}\n{error_traceback}")
+    logger.error(
+        f"unhandled_exception error_id={error_id} rid={request_id} "
+        f"path={request.path} method={request.method} error={str(e)}\n{error_traceback}"
+    )
     
-    # テンプレートレンダリングエラーの場合はHTMLエラーページを返す
-    if 'TemplateNotFound' in str(type(e)) or 'TemplateSyntaxError' in str(type(e)) or 'render_template' in error_traceback:
-        try:
-            return render_template('error.html', error_message='ページの表示中にエラーが発生しました。'), 500
-        except:
-            # エラーテンプレートもレンダリングできない場合はシンプルなHTMLを返す
-            return f'<html><body><h1>エラーが発生しました</h1><p>予期しないエラーが発生しました。しばらく待ってから再試行してください。</p></body></html>', 500
-    
-    # その他のエラーはJSONを返す（APIエンドポイント用）
-    return jsonify({'error': '予期しないエラーが発生しました。しばらく待ってから再試行してください。'}), 500
+    # HTMLエラーページを返す（APIエンドポイントでもHTMLを返す）
+    return _render_error_page(
+        500,
+        '予期しないエラーが発生しました。しばらく待ってから再試行してください。',
+        error_id
+    )
 
 # 環境変数をテンプレートコンテキストに注入（AdSense設定用）
 @app.context_processor
 def inject_env_vars():
     """環境変数をテンプレートで使えるようにする"""
-    import json
-    from lib.routes import PRODUCTS
-    app_version = '1.0.0'
     try:
-        with open('package.json', 'r', encoding='utf-8') as f:
-            package_data = json.load(f)
-            app_version = package_data.get('version', '1.0.0')
-    except:
-        pass
-    
-    # P0-1: 運営者情報を環境変数から取得
-    operator_name = os.getenv('OPERATOR_NAME', '')
-    operator_email = os.getenv('OPERATOR_EMAIL', '')
-    operator_location = os.getenv('OPERATOR_LOCATION', '')
-    operator_note = os.getenv('OPERATOR_NOTE', '')
-    
-    return {
-        'ADSENSE_ENABLED': os.getenv('ADSENSE_ENABLED', 'false').lower() == 'true',
-        'app_version': app_version,
-        'products': PRODUCTS,
-        'GA_MEASUREMENT_ID': os.getenv('GA_MEASUREMENT_ID', ''),
-        'GSC_VERIFICATION_CONTENT': os.getenv('GSC_VERIFICATION_CONTENT', ''),
-        # P0-1: 運営者情報
-        'OPERATOR_NAME': operator_name,
-        'OPERATOR_EMAIL': operator_email,
-        'OPERATOR_LOCATION': operator_location,
-        'OPERATOR_NOTE': operator_note
-    }
+        import json
+        from lib.routes import PRODUCTS
+        
+        app_version = '1.0.0'
+        try:
+            with open('package.json', 'r', encoding='utf-8') as f:
+                package_data = json.load(f)
+                app_version = package_data.get('version', '1.0.0')
+        except Exception:
+            # package.jsonが存在しない、または読み込みエラーは無視
+            pass
+        
+        # P0-1: 運営者情報を環境変数から取得
+        operator_name = os.getenv('OPERATOR_NAME', '')
+        operator_email = os.getenv('OPERATOR_EMAIL', '')
+        operator_location = os.getenv('OPERATOR_LOCATION', '')
+        operator_note = os.getenv('OPERATOR_NOTE', '')
+        
+        return {
+            'ADSENSE_ENABLED': os.getenv('ADSENSE_ENABLED', 'false').lower() == 'true',
+            'app_version': app_version,
+            'products': PRODUCTS,
+            'GA_MEASUREMENT_ID': os.getenv('GA_MEASUREMENT_ID', ''),
+            'GSC_VERIFICATION_CONTENT': os.getenv('GSC_VERIFICATION_CONTENT', ''),
+            # P0-1: 運営者情報
+            'OPERATOR_NAME': operator_name,
+            'OPERATOR_EMAIL': operator_email,
+            'OPERATOR_LOCATION': operator_location,
+            'OPERATOR_NOTE': operator_note
+        }
+    except Exception as e:
+        # context_processorでエラーが発生した場合、最小限のコンテキストを返す
+        # エラーをログに記録するが、リクエスト処理は続行（空のdictを返すとテンプレートエラーになる可能性がある）
+        request_id = getattr(g, 'request_id', 'unknown') if hasattr(g, 'request_id') else 'unknown'
+        logger.error(
+            f"context_processor_error rid={request_id} error={str(e)}"
+        )
+        import traceback
+        logger.error(f"context_processor_traceback:\n{traceback.format_exc()}")
+        
+        # 最小限のコンテキストを返す（エラーを隠さない）
+        return {
+            'ADSENSE_ENABLED': False,
+            'app_version': '1.0.0',
+            'products': [],  # 空のリストを返す（テンプレートエラーを防ぐ）
+            'GA_MEASUREMENT_ID': '',
+            'GSC_VERIFICATION_CONTENT': '',
+            'OPERATOR_NAME': '',
+            'OPERATOR_EMAIL': '',
+            'OPERATOR_LOCATION': '',
+            'OPERATOR_NOTE': ''
+        }
 
 # ジョブの状態を管理（スレッドセーフな辞書）
 jobs = {}
@@ -378,18 +472,24 @@ def validate_input_data(email, password, file):
 @app.route('/')
 def index():
     """ランディングページ（製品ハブ）"""
+    # context_processorで既にproductsが注入されているため、明示的に渡す必要はない
+    # ただし、テンプレートでproductsが未定義の場合に備えて、明示的に渡す
     try:
+        # context_processorで既にproductsが注入されているが、念のため確認
         from lib.routes import PRODUCTS
+        # テンプレートに明示的に渡す（context_processorのフォールバック）
         return render_template('landing.html', products=PRODUCTS)
     except Exception as e:
-        logger.error(f"landing_page_error error={str(e)}")
+        # 例外をログに記録してから、エラーハンドラに委譲（例外を再発生）
+        request_id = getattr(g, 'request_id', 'unknown')
         import traceback
-        logger.error(f"traceback:\n{traceback.format_exc()}")
-        # エラーが発生しても最低限のHTMLを返す
-        try:
-            return render_template('error.html', error_message='ページの表示中にエラーが発生しました。'), 500
-        except:
-            return '<html><head><meta charset="utf-8"><title>エラー</title></head><body><h1>エラーが発生しました</h1><p>予期しないエラーが発生しました。しばらく待ってから再試行してください。</p></body></html>', 500
+        error_traceback = traceback.format_exc()
+        logger.error(
+            f"landing_page_error rid={request_id} path={request.path} "
+            f"error={str(e)}\n{error_traceback}"
+        )
+        # 例外を再発生させて、エラーハンドラに処理させる
+        raise
 
 @app.route('/autofill')
 def autofill():
@@ -397,14 +497,16 @@ def autofill():
     try:
         return render_template('autofill.html')
     except Exception as e:
-        logger.error(f"autofill_page_error error={str(e)}")
+        # 例外をログに記録してから、エラーハンドラに委譲（例外を再発生）
+        request_id = getattr(g, 'request_id', 'unknown')
         import traceback
-        logger.error(f"traceback:\n{traceback.format_exc()}")
-        # エラーが発生しても最低限のHTMLを返す
-        try:
-            return render_template('error.html', error_message='ページの表示中にエラーが発生しました。'), 500
-        except:
-            return '<html><head><meta charset="utf-8"><title>エラー</title></head><body><h1>エラーが発生しました</h1><p>予期しないエラーが発生しました。しばらく待ってから再試行してください。</p></body></html>', 500
+        error_traceback = traceback.format_exc()
+        logger.error(
+            f"autofill_page_error rid={request_id} path={request.path} "
+            f"error={str(e)}\n{error_traceback}"
+        )
+        # 例外を再発生させて、エラーハンドラに処理させる
+        raise
 
 @app.route('/privacy')
 def privacy():
