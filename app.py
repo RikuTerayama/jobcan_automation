@@ -135,6 +135,7 @@ def handle_exception(e):
 def inject_env_vars():
     """環境変数をテンプレートで使えるようにする"""
     import json
+    from lib.routes import PRODUCTS
     app_version = '1.0.0'
     try:
         with open('package.json', 'r', encoding='utf-8') as f:
@@ -145,7 +146,8 @@ def inject_env_vars():
     
     return {
         'ADSENSE_ENABLED': os.getenv('ADSENSE_ENABLED', 'false').lower() == 'true',
-        'app_version': app_version
+        'app_version': app_version,
+        'products': PRODUCTS
     }
 
 # ジョブの状態を管理（スレッドセーフな辞書）
