@@ -1481,15 +1481,11 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         add_job_log(job_id, "📊 Excelファイルを読み込み中...", jobs)
         update_progress(job_id, 2, "Excelファイル読み込み中...", jobs)
         
-        # P1-1: Excel読み込み前のメモリ計測
-        if metrics_available:
-            log_memory("excel_before", job_id=job_id, session_id=session_id)
-        
         try:
             data_source, total_data = load_excel_data(file_path)
             add_job_log(job_id, f"✅ Excelファイル読み込み完了: {total_data}件のデータ", jobs)
             
-            # P1-1: Excel読み込み後のメモリ計測
+            # P0-P1: Excel読み込み後のメモリ計測（重要イベントのみ）
             if metrics_available:
                 log_memory("excel_after", job_id=job_id, session_id=session_id)
         except Exception as e:
@@ -1549,10 +1545,6 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         # ステップ4: ブラウザの起動（セッション固有）
         add_job_log(job_id, "🌐 ブラウザを起動中...", jobs)
         update_progress(job_id, 4, "ブラウザ起動中...", jobs)
-        
-        # P1-1: ブラウザ起動前のメモリ計測
-        if metrics_available:
-            log_memory("browser_before", job_id=job_id, session_id=session_id)
         
         # P0-1: Playwrightリソースの確実なクリーンアップのため、変数をNone初期化
         # withブロックの外で定義することで、finallyブロックから確実にアクセス可能にする
@@ -1624,7 +1616,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                         timeout=60000  # ブラウザ起動タイムアウトを60秒に設定
                     )
                     
-                    # P1-1: ブラウザ起動後のメモリ計測
+                    # P0-P1: ブラウザ起動後のメモリ計測（重要イベント）
                     if metrics_available:
                         log_memory("browser_after", job_id=job_id, session_id=session_id)
                     
@@ -1703,7 +1695,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     jobs[job_id]['status'] = 'completed'
                     jobs[job_id]['end_time'] = time.time()  # P0-3: 完了時刻を記録
                     
-                    # P1-1: ジョブ完了時のメモリ計測（ブラウザclose前）
+                    # P0-P1: ジョブ完了時のメモリ計測（重要イベント、ブラウザclose前）
                     if metrics_available:
                         log_memory("job_completed", job_id=job_id, session_id=session_id)
                 
@@ -1727,10 +1719,6 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             # P0-1: 確実にクリーンアップ（page -> context -> browser -> playwright_instance の順）
             # このfinallyブロックは必ず実行される（エラーが発生しても）
             cleanup_errors = []
-            
-            # P1-1: クリーンアップ前のメモリ計測
-            if metrics_available:
-                log_memory("browser_cleanup_before", job_id=job_id, session_id=session_id)
             
             # page を閉じる（最優先）
             if page is not None:
@@ -1766,7 +1754,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             except Exception as e:
                 add_job_log(job_id, f"cleanup_result gc_collect=failed error={str(e)}", jobs)
             
-            # P1-1: クリーンアップ後のメモリ計測
+            # P0-P1: クリーンアップ後のメモリ計測（重要イベント）
             if metrics_available:
                 log_memory("browser_cleanup_after", job_id=job_id, session_id=session_id)
             

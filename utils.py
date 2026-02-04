@@ -327,31 +327,69 @@ def allowed_file(filename):
     """アップロードされたファイルの拡張子をチェック"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'xlsx', 'xls'}
 
-# P0-2: ログの上限設定
-MAX_LOG_ENTRIES = 200  # 最大ログ件数
-MAX_LOG_CHARS = 2000  # 1ログの最大文字数
+# P1: ログの上限設定（メモリ最適化）
+MAX_JOB_LOGS = 1000  # 最大ログ件数（1ジョブあたり）
+MAX_LOG_CHARS = 2000  # 1ログエントリの最大文字数
+MAX_JOB_LOG_BYTES = 200 * 1024  # 最大ログサイズ（200KB、バイト単位）
 
 def add_job_log(job_id: str, message: str, jobs: dict):
-    """ジョブのログを追加（P0-2: 上限設定付き）"""
-    if job_id in jobs:
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        sanitized_message = sanitize_log_message(message)
+    """
+    ジョブのログを追加（P1: メモリ上限設定付き）
+    
+    Args:
+        job_id: ジョブID
+        message: ログメッセージ
+        jobs: ジョブ辞書
+    
+    Note:
+        - collections.deque(maxlen=MAX_JOB_LOGS)を使用して固定長ログを実現
+        - ログサイズがMAX_JOB_LOG_BYTESを超えた場合、古いログから削除
+        - JSON返却時はlist()に変換して互換性を維持
+    """
+    if job_id not in jobs:
+        return
+    
+    from collections import deque
+    
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    sanitized_message = sanitize_log_message(message)
+    
+    # P1: メッセージ長制限
+    if len(sanitized_message) > MAX_LOG_CHARS:
+        sanitized_message = sanitized_message[:MAX_LOG_CHARS - 3] + "..."
+    
+    log_entry = f"[{timestamp}] {sanitized_message}"
+    
+    # P1: dequeを使用して固定長ログを実現（効率的なメモリ管理）
+    if 'logs' not in jobs[job_id]:
+        jobs[job_id]['logs'] = deque(maxlen=MAX_JOB_LOGS)
+    
+    # dequeでない場合は変換（既存データの互換性）
+    if not isinstance(jobs[job_id]['logs'], deque):
+        jobs[job_id]['logs'] = deque(jobs[job_id]['logs'], maxlen=MAX_JOB_LOGS)
+    
+    # ログを追加（maxlenにより自動的に古いログが削除される）
+    jobs[job_id]['logs'].append(log_entry)
+    
+    # P1: ログサイズ制限（バイト単位）
+    # ログサイズが上限を超えた場合、古いログから削除
+    total_bytes = sum(len(log.encode('utf-8')) for log in jobs[job_id]['logs'])
+    if total_bytes > MAX_JOB_LOG_BYTES:
+        # 古いログから削除（末尾のみ保持）
+        logs_list = list(jobs[job_id]['logs'])
+        current_bytes = 0
+        keep_logs = []
         
-        # P0-2: メッセージ長制限
-        if len(sanitized_message) > MAX_LOG_CHARS:
-            sanitized_message = sanitized_message[:MAX_LOG_CHARS - 3] + "..."
+        # 末尾から逆順に追加（新しいログを優先）
+        for log in reversed(logs_list):
+            log_bytes = len(log.encode('utf-8'))
+            if current_bytes + log_bytes <= MAX_JOB_LOG_BYTES:
+                keep_logs.insert(0, log)
+                current_bytes += log_bytes
+            else:
+                break
         
-        log_entry = f"[{timestamp}] {sanitized_message}"
-        
-        # P0-2: ログ件数制限（最新MAX_LOG_ENTRIES件のみ保持）
-        if 'logs' not in jobs[job_id]:
-            jobs[job_id]['logs'] = []
-        
-        jobs[job_id]['logs'].append(log_entry)
-        
-        # ログ件数が上限を超えた場合、古いログを削除（最新MAX_LOG_ENTRIES件のみ保持）
-        if len(jobs[job_id]['logs']) > MAX_LOG_ENTRIES:
-            jobs[job_id]['logs'] = jobs[job_id]['logs'][-MAX_LOG_ENTRIES:]
+        jobs[job_id]['logs'] = deque(keep_logs, maxlen=MAX_JOB_LOGS)
 
 def sanitize_log_message(message):
     """ログメッセージから個人情報を除去"""

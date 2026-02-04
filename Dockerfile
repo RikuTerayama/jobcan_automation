@@ -59,7 +59,9 @@ RUN mkdir -p uploads
 EXPOSE $PORT
 
 # アプリケーションの起動（SRE最適化版）
-# 環境変数: WEB_CONCURRENCY（workers数）、WEB_TIMEOUT（タイムアウト）
+# 環境変数: WEB_CONCURRENCY（workers数）、WEB_TIMEOUT（タイムアウト）、WEB_LOG_LEVEL（ログレベル）
+# P0-P1: メモリ最適化のため、ログレベルをwarningにデフォルト設定（infoはノイズが多い）
+# アクセスログ無効化: 必要に応じて --access-logfile を削除または --no-access-log を追加
 CMD gunicorn --bind 0.0.0.0:$PORT \
   --workers ${WEB_CONCURRENCY:-2} \
   --threads ${WEB_THREADS:-2} \
@@ -71,7 +73,7 @@ CMD gunicorn --bind 0.0.0.0:$PORT \
   --max-requests-jitter ${WEB_MAX_REQUESTS_JITTER:-50} \
   --access-logfile - \
   --error-logfile - \
-  --log-level ${WEB_LOG_LEVEL:-info} \
+  --log-level ${WEB_LOG_LEVEL:-warning} \
   --log-file - \
   --capture-output \
   --enable-stdio-inheritance \
