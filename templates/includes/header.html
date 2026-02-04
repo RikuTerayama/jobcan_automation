@@ -1,28 +1,23 @@
 {# 共通ヘッダーナビゲーション #}
-<header style="background: rgba(30, 30, 30, 0.95); border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding: 15px 0; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px);">
-    <nav style="max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center;">
-        <div style="display: flex; align-items: center; gap: 20px;">
-            <a href="/" style="font-size: 1.3em; font-weight: 600; color: #FFFFFF; text-decoration: none; letter-spacing: 0.05em;">
-                RT Tools
+{% from 'includes/icons.html' import icon %}
+<header class="site-header">
+    <nav class="site-nav">
+        <div class="site-nav__inner">
+            <a href="/" class="site-logo">
+                Automation Hub
             </a>
-            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <div class="site-nav__links">
                 {% set nav_items = [
-                    {'name': 'Home', 'path': '/', 'icon': '🏠'},
-                    {'name': 'AutoFill', 'path': '/autofill', 'icon': '🕒'},
-                    {'name': 'Tools', 'path': '/tools', 'icon': '🛠️'},
-                    {'name': 'Guide', 'path': '/guide/getting-started', 'icon': '📚'},
+                    {'name': 'Home', 'path': '/', 'icon_name': 'home'},
+                    {'name': 'AutoFill', 'path': '/autofill', 'icon_name': 'clock'},
+                    {'name': 'Tools', 'path': '/tools', 'icon_name': 'tools'},
+                    {'name': 'Guide', 'path': '/guide/getting-started', 'icon_name': 'book'},
                 ] %}
                 {% for item in nav_items %}
                     <a href="{{ item.path }}" 
-                       style="color: {% if request.path == item.path or (item.path == '/' and request.path == '/') %}#4A9EFF{% else %}rgba(255, 255, 255, 0.8){% endif %}; 
-                              text-decoration: none; 
-                              padding: 8px 12px; 
-                              border-radius: 6px; 
-                              transition: all 0.3s;
-                              {% if request.path == item.path or (item.path == '/' and request.path == '/') %}background: rgba(74, 158, 255, 0.1);{% endif %}"
-                       onmouseover="this.style.background='rgba(74, 158, 255, 0.15)'"
-                       onmouseout="this.style.background='{% if request.path == item.path or (item.path == '/' and request.path == '/') %}rgba(74, 158, 255, 0.1){% else %}transparent{% endif %}'">
-                        {{ item.icon }} {{ item.name }}
+                       class="site-nav__link {% if request.path == item.path or (item.path == '/' and request.path == '/') %}site-nav__link--active{% endif %}">
+                        {{ icon(item.icon_name, 18, 'site-nav__icon') }}
+                        <span>{{ item.name }}</span>
                     </a>
                 {% endfor %}
             </div>
@@ -31,20 +26,87 @@
 </header>
 
 <style>
+    .site-header {
+        background: rgba(30, 30, 30, 0.95);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 15px 0;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        backdrop-filter: blur(10px);
+    }
+
+    .site-nav {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+
+    .site-nav__inner {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .site-logo {
+        font-size: 1.3em;
+        font-weight: 600;
+        color: var(--color-text-primary, #FFFFFF);
+        text-decoration: none;
+        letter-spacing: var(--letter-spacing-normal, 0.02em);
+        transition: color var(--transition-base, 0.2s);
+    }
+
+    .site-logo:hover {
+        color: var(--color-accent, #4A9EFF);
+        text-decoration: none;
+    }
+
+    .site-nav__links {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .site-nav__link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: rgba(255, 255, 255, 0.8);
+        text-decoration: none;
+        padding: 8px 12px;
+        border-radius: var(--radius-button, 4px);
+        transition: all var(--transition-base, 0.2s);
+        background: transparent;
+    }
+
+    .site-nav__link:hover {
+        background: rgba(74, 158, 255, 0.1);
+        color: var(--color-accent, #4A9EFF);
+        text-decoration: none;
+    }
+
+    .site-nav__link--active {
+        color: var(--color-accent, #4A9EFF);
+        background: rgba(74, 158, 255, 0.1);
+    }
+
+    .site-nav__icon {
+        flex-shrink: 0;
+    }
+
     @media (max-width: 768px) {
-        header nav {
+        .site-nav__inner {
             flex-direction: column;
-            gap: 15px;
+            gap: 16px;
         }
-        header nav > div {
-            flex-direction: column;
-            width: 100%;
-        }
-        header nav > div > div {
+
+        .site-nav__links {
             width: 100%;
             justify-content: center;
         }
-        header nav a {
+
+        .site-nav__link {
             font-size: 0.9em;
             padding: 6px 10px;
         }

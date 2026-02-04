@@ -27,5 +27,10 @@
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4232725615106709"
      crossorigin="anonymous"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+{# Common Design System CSS #}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/scroll-reveal.css') }}">
+{# Scroll Reveal JS #}
+<script src="{{ url_for('static', filename='js/scroll-reveal.js') }}" defer></script>
 {% block extra_head %}{% endblock %}
 
