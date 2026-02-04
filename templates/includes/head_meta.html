@@ -16,6 +16,13 @@
 {# HEADの軽量化 - 必須メタのみ #}
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+{# Scroll Reveal: no-js → js 切り替え（最優先、JSが動く時だけ非表示にするため） #}
+<script>
+    (function() {
+        document.documentElement.classList.remove('no-js');
+        document.documentElement.classList.add('js');
+    })();
+</script>
 <title>{% block title %}Jobcan AutoFill - 勤怠データ自動入力ツール{% endblock %}</title>
 {% block description_meta %}{% endblock %}
 <link rel="canonical" href="https://jobcan-automation.onrender.com{{ request.path if request else '/' }}">
@@ -38,15 +45,5 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/scroll-reveal.css') }}">
 {# Scroll Reveal JS #}
 <script src="{{ url_for('static', filename='js/scroll-reveal.js') }}" defer></script>
-{# Noscript fallback: Force reveal elements to be visible when JS is disabled #}
-<noscript>
-    <style>
-        [data-reveal],
-        [data-reveal-stagger] > * {
-            opacity: 1 !important;
-            transform: none !important;
-        }
-    </style>
-</noscript>
 {% block extra_head %}{% endblock %}
 

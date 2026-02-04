@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ja">
+<html lang="ja" class="no-js">
 <head>
     {% set page_title = 'Jobcan勤怠自動入力ツール' %}
     {% set page_description = 'Jobcanへの勤怠データをExcelから一括入力する自動化ツール。手作業の繰り返しを削減し、月次締め作業を大幅に効率化します。' %}
@@ -743,12 +743,12 @@
     {% include 'includes/header.html' %}
     <main>
         <div class="container">
-            <header class="header" role="banner">
+            <header class="header" role="banner" data-reveal>
                 <img src="{{ url_for('static', filename='JobcanAutofill.png') }}" alt="Jobcan AutoFill ロゴ" width="900" height="240" style="display: none;" />
                 <!-- 背景画像としてロゴを表示 -->
             </header>
             
-            <div class="content">
+            <div class="content" data-reveal data-reveal-delay="50">
                 <h1 class="sr-only">Jobcan勤怠データ自動入力ツール</h1>
             <form id="uploadForm" enctype="multipart/form-data">
                 <div class="form-group">

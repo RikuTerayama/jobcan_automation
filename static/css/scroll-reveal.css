@@ -5,7 +5,9 @@
    ============================================ */
 
 /* Base reveal styles - Default: visible (JS disabled fallback) */
-[data-reveal] {
+/* no-js クラスが付いている時（JS無効時）は常に表示 */
+html.no-js [data-reveal],
+html:not(.js) [data-reveal] {
     opacity: 1;
     transform: none;
 }
@@ -24,7 +26,9 @@ html.js [data-reveal].revealed {
 }
 
 /* Stagger effect for child elements - Default: visible */
-[data-reveal-stagger] > * {
+/* no-js クラスが付いている時（JS無効時）は常に表示 */
+html.no-js [data-reveal-stagger] > *,
+html:not(.js) [data-reveal-stagger] > * {
     opacity: 1;
     transform: none;
 }
