@@ -260,6 +260,7 @@
                     <div class="option-group">
                         <label>プリセットサイズ</label>
                         <select id="ogp-preset">
+                            <option value="">-- 選択してください --</option>
                             <option value="ogp_1200_630">OGP標準 (1200x630)</option>
                             <option value="square_1080">正方形 (1080x1080)</option>
                             <option value="wide_1200_675">ワイド (1200x675)</option>
@@ -646,11 +647,21 @@
 
             const presetSelect = document.getElementById('ogp-preset');
             let presetId = (presetSelect && presetSelect.value) ? presetSelect.value.trim() : '';
-            if (!presetId && presetSelect && presetSelect.options.length > 0) {
-                presetId = presetSelect.options[0].value;
+            if (!presetId && presetSelect && presetSelect.options) {
+                for (let i = 0; i < presetSelect.options.length; i++) {
+                    const v = (presetSelect.options[i].value || '').trim();
+                    if (v) {
+                        presetId = v;
+                        break;
+                    }
+                }
             }
-            if (!presetId || !SeoOgpPresets.getPresetById(presetId)) {
-                alert('プリセットが無効です。サイズを選び直すか、ページを再読み込みしてください。');
+            if (!presetId) {
+                alert('プリセットが選択されていません。サイズを選択するか、ページを再読み込みしてください。');
+                return;
+            }
+            if (!SeoOgpPresets.getPresetById(presetId)) {
+                alert('プリセットが無効です（ID: ' + presetId + '）。サイズを選び直すか、ページを再読み込みしてください。');
                 return;
             }
 
