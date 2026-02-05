@@ -4,6 +4,34 @@
 
 class MinutesParse {
     /**
+     * 行頭の話者ラベルを除去（Speaker1:, 山田:, Yamada: 等）。行頭限定で http: 等は触らない。
+     * @param {string} text - 元のテキスト
+     * @returns {string}
+     */
+    static stripSpeakerLabels(text) {
+        if (!text) return '';
+        const lines = text.split('\n');
+        const result = lines.map(line => {
+            let s = line;
+            // Speaker 1:, Speaker1:, S1: 等（行頭の空白の後）
+            const speakerPattern = /^\s*(?:Speaker\s*\d+|Speaker\d+|S\d+):\s*/i;
+            if (speakerPattern.test(s)) {
+                return s.replace(speakerPattern, '').trimStart();
+            }
+            // 名前: 形式（行頭）。http: / https: / mailto: は除外
+            const nameMatch = s.match(/^\s*([^\s:]+):\s*/);
+            if (nameMatch) {
+                const prefix = nameMatch[1].toLowerCase();
+                if (prefix !== 'http' && prefix !== 'https' && prefix !== 'mailto') {
+                    return s.replace(/^\s*[^\s:]+:\s*/, '').trimStart();
+                }
+            }
+            return s;
+        });
+        return result.join('\n');
+    }
+
+    /**
      * テキストを正規化
      * @param {string} raw - 元のテキスト
      * @returns {string}
