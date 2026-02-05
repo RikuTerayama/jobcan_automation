@@ -39,12 +39,12 @@
 </script>
 
 {% block extra_structured_data %}
-{# BreadcrumbList JSON-LD（パンくずリスト用） #}
-{% if request and request.path != '/' %}
+{# BreadcrumbList JSON-LD（パンくずリスト用・request 未定義耐性） #}
+{% set current_path = request.path|default('/') if request is defined and request else '/' %}
+{% if current_path != '/' %}
 {% set breadcrumb_items = [] %}
 {% set base_url = 'https://jobcan-automation.onrender.com' %}
 {% set _ = breadcrumb_items.append({'name': 'ホーム', 'url': '/'}) %}
-{% set current_path = request.path|default('/') %}
 {% if current_path.startswith('/tools/') and current_path != '/tools' %}
     {% set _ = breadcrumb_items.append({'name': 'ツール一覧', 'url': '/tools'}) %}
     {% if page_title is defined %}
