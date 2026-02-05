@@ -1,21 +1,92 @@
 # -*- coding: utf-8 -*-
 """
 SEO sitemap 用 URL クローラ（同一ホスト・BFS・制限付き）
+SSRF対策: is_url_safe_for_crawl で開始URL・リダイレクト先を検証
 """
 
+import socket
 import time
 from collections import deque
 from urllib.parse import urljoin, urlparse, urlunparse
 
+try:
+    import ipaddress
+except ImportError:
+    ipaddress = None
+
+# 許可しないホスト名（小文字）
+BLOCKED_HOSTNAMES = frozenset({
+    'localhost', 'localhost.localdomain', '0.0.0.0', '::1', '::',
+    'ip6-localhost', 'ip6-loopback', 'ip6-localnet', 'ip6-mcastprefix',
+})
+
 # 収集対象から除外する拡張子（小文字）
 EXCLUDED_EXTENSIONS = (
-    '.pdf', '.zip', '.jpg', '.jpeg', '.png', '.gif', '.webp',
-    '.css', '.js', '.ico', '.svg', '.woff', '.woff2', '.mp4', '.mp3',
-    '.xml', '.json', '.txt', '.rss', '.atom',
+    '.pdf', '.zip', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff',
+    '.css', '.js', '.mjs', '.ico', '.svg', '.woff', '.woff2', '.ttf', '.eot',
+    '.mp4', '.mp3', '.webm', '.ogg', '.wav', '.avi', '.mov', '.m4a',
+    '.xml', '.json', '.txt', '.rss', '.atom', '.yaml', '.yml',
+    '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+    '.exe', '.dmg', '.apk', '.tar', '.gz', '.rar', '.7z',
 )
 
 # User-Agent（robots.txt 取得・ページ取得で使用）
-USER_AGENT = 'SeoSitemapCrawler/1.0'
+USER_AGENT = 'JobcanAutomationBot/1.0 (+contact)'
+
+# HTML として解析する Content-Type（メイン部分のみ一致）
+ALLOWED_HTML_CONTENT_TYPES = frozenset({'text/html', 'application/xhtml+xml'})
+
+
+def is_url_safe_for_crawl(url):
+    """
+    SSRF対策: URL がクロール許可対象か検証する。
+    - scheme は http/https のみ
+    - hostname が禁止リストまたは .local なら拒否
+    - DNS解決したIPが private/loopback/link-local/unspecified なら拒否
+
+    Returns:
+        (True, None) または (False, error_message: str)
+    """
+    if not url or not isinstance(url, str):
+        return False, 'URLが空です'
+    url = url.strip()
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return False, 'URLの解析に失敗しました'
+    if parsed.scheme not in ('http', 'https'):
+        return False, 'http または https のURLのみ許可されています'
+    if not parsed.netloc:
+        return False, 'ホストが指定されていません'
+    hostname = (parsed.hostname or '').strip().lower()
+    if not hostname:
+        return False, 'ホスト名が取得できません'
+    if hostname in BLOCKED_HOSTNAMES:
+        return False, 'このホストは許可されていません'
+    if hostname.endswith('.local'):
+        return False, 'このホストは許可されていません'
+    if not ipaddress:
+        return False, 'IPアドレス検証に必要なモジュールがありません'
+    try:
+        if hostname.startswith('[') and hostname.endswith(']'):
+            hostname = hostname[1:-1]
+        ips = set()
+        for res in socket.getaddrinfo(hostname, None):
+            sockaddr = res[4]
+            ip = sockaddr[0] if isinstance(sockaddr, (list, tuple)) else sockaddr
+            ips.add(ip)
+    except socket.gaierror:
+        return False, 'ホスト名の解決に失敗しました'
+    except Exception:
+        return False, 'ホスト名の解決に失敗しました'
+    for ip in ips:
+        try:
+            addr = ipaddress.ip_address(ip)
+            if addr.is_private or addr.is_loopback or addr.is_link_local or addr.is_unspecified:
+                return False, '内部・ローカル用のアドレスにはアクセスできません'
+        except ValueError:
+            return False, '無効なIPアドレスが解決されました'
+    return True, None
 
 
 def _get_requests():
@@ -52,9 +123,14 @@ def normalize_url(url, strip_query=True):
 
 
 def _should_exclude_by_extension(url):
+    """除外拡張子に該当する場合、その拡張子を返す。該当しなければ None を返す。"""
     path = urlparse(url).path or '/'
     path_lower = path.lower()
-    return any(path_lower.endswith(ext) or path_lower.rstrip('/').endswith(ext) for ext in EXCLUDED_EXTENSIONS)
+    base = path_lower.rstrip('/')
+    for ext in EXCLUDED_EXTENSIONS:
+        if path_lower.endswith(ext) or base.endswith(ext):
+            return ext
+    return None
 
 
 def _fetch_robots_disallow_prefixes(origin, request_timeout, requests_mod):
@@ -149,7 +225,9 @@ def crawl(start_url, max_urls=300, max_depth=3, request_timeout=5, total_timeout
         if _is_disallowed(path, disallow_prefixes):
             warnings.append(f'robots.txt により除外: {norm}')
             continue
-        if _should_exclude_by_extension(norm):
+        ext_reason = _should_exclude_by_extension(norm)
+        if ext_reason:
+            warnings.append(f'除外（拡張子 {ext_reason}）: {norm}')
             continue
 
         visited.add(norm)
@@ -167,8 +245,15 @@ def crawl(start_url, max_urls=300, max_depth=3, request_timeout=5, total_timeout
                 allow_redirects=True
             )
             r.raise_for_status()
+            # リダイレクト先が禁止ホストでないか検証（SSRF対策）
+            safe, err = is_url_safe_for_crawl(r.url)
+            if not safe:
+                warnings.append(f'リダイレクト先が許可されていません: {r.url} ({err})')
+                continue
             ct = r.headers.get('Content-Type', '')
-            if 'text/html' not in ct and 'application/xhtml' not in ct:
+            ct_main = (ct.split(';')[0].strip().lower() if ct else '') or 'application/octet-stream'
+            if ct_main not in ALLOWED_HTML_CONTENT_TYPES:
+                warnings.append(f'除外（HTML以外のContent-Type: {ct_main}）: {current}')
                 continue
         except requests_mod.exceptions.Timeout:
             warnings.append(f'タイムアウト: {current}')
