@@ -6,10 +6,10 @@
                 <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">ツール一覧</h4>
                 <div style="display: flex; flex-direction: column; gap: 8px;">
                     <a href="/tools" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em; font-weight: 500;">すべてのツール</a>
-                    {% if products %}
+                    {% if products|default([]) %}
                         {% for product in products %}
-                            {% if product.status == 'available' %}
-                                <a href="{{ product.path }}" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">{{ product.icon }} {{ product.name }}</a>
+                            {% if product.status|default('coming-soon') == 'available' %}
+                                <a href="{{ product.path|default('#') }}" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">{{ product.icon|default('📦') }} {{ product.name|default('製品') }}</a>
                             {% endif %}
                         {% endfor %}
                     {% endif %}
@@ -22,12 +22,12 @@
                     <a href="/guide/getting-started" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">はじめての使い方</a>
                     <a href="/guide/excel-format" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">Excelファイルの作成方法</a>
                     <a href="/guide/troubleshooting" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">トラブルシューティング</a>
-                    {% if products %}
+                    {% if products|default([]) %}
                         <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.2);">
                             <p style="color: rgba(255, 255, 255, 0.9); font-size: 0.85em; font-weight: 500; margin-bottom: 8px;">ツール別ガイド</p>
                             {% for product in products %}
-                                {% if product.guide_path and product.status == 'available' %}
-                                    <a href="{{ product.guide_path }}" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em; display: block; margin-bottom: 4px;">{{ product.icon }} {{ product.name }}</a>
+                                {% if product.guide_path|default('') and product.status|default('coming-soon') == 'available' %}
+                                    <a href="{{ product.guide_path }}" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em; display: block; margin-bottom: 4px;">{{ product.icon|default('📦') }} {{ product.name|default('製品') }}</a>
                                 {% endif %}
                             {% endfor %}
                         </div>
