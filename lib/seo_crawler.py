@@ -240,17 +240,46 @@ def crawl(start_url, max_urls=300, max_depth=3, request_timeout=5, total_timeout
             break
 
         try:
-            r = requests_mod.get(
-                current,
-                timeout=request_timeout,
-                headers={'User-Agent': USER_AGENT},
-                allow_redirects=True
-            )
-            r.raise_for_status()
-            # リダイレクト先が禁止ホストでないか検証（SSRF対策）
-            safe, err = is_url_safe_for_crawl(r.url)
-            if not safe:
-                warnings.append(f'リダイレクト先が許可されていません: {r.url} ({err})')
+            fetch_url = current
+            r = None
+            max_redirects = 5
+            redirect_count = 0
+            while redirect_count <= max_redirects:
+                r = requests_mod.get(
+                    fetch_url,
+                    timeout=request_timeout,
+                    headers={'User-Agent': USER_AGENT},
+                    allow_redirects=False
+                )
+                if r.status_code in (301, 302, 303, 307, 308):
+                    if redirect_count >= max_redirects:
+                        warnings.append(f'リダイレクトが最大回数（{max_redirects}回）を超えました: {fetch_url}')
+                        r = None
+                        break
+                    location = r.headers.get('Location') or r.headers.get('location') or ''
+                    if not location.strip():
+                        warnings.append(f'リダイレクト先（Location）が空です: {fetch_url}')
+                        r = None
+                        break
+                    next_url = urljoin(fetch_url, location.strip())
+                    safe, err = is_url_safe_for_crawl(next_url)
+                    if not safe:
+                        warnings.append(f'リダイレクト先が許可されていません: {next_url} ({err})')
+                        r = None
+                        break
+                    if urlparse(next_url).netloc.lower() != origin:
+                        warnings.append(f'リダイレクト先が別ホストのためスキップ: {next_url}')
+                        r = None
+                        break
+                    fetch_url = next_url
+                    redirect_count += 1
+                    continue
+                if r.status_code != 200:
+                    warnings.append(f'取得失敗 HTTP {r.status_code}: {fetch_url}')
+                    r = None
+                    break
+                break
+            if r is None:
                 continue
             ct = r.headers.get('Content-Type', '')
             ct_main = (ct.split(';')[0].strip().lower() if ct else '') or 'application/octet-stream'
@@ -272,12 +301,13 @@ def crawl(start_url, max_urls=300, max_depth=3, request_timeout=5, total_timeout
         except Exception:
             continue
 
+        final_url = fetch_url
         for a in soup.find_all('a', href=True):
             href = (a.get('href') or '').strip()
             if not href or href.startswith('#') or href.startswith('javascript:'):
                 continue
             try:
-                abs_url = urljoin(current, href)
+                abs_url = urljoin(final_url, href)
             except Exception:
                 continue
             abs_parsed = urlparse(abs_url)
