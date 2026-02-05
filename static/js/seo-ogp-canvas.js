@@ -169,11 +169,43 @@ class SeoOgpCanvas {
 
     /**
      * dataURLをBlobに変換（toBlob未対応・null時のフォールバック用）
+     * data:<mime>;base64,<payload> を想定。base64でない場合は fetch にフォールバック
      * @param {string} dataURL - data:image/... 形式の文字列
      * @returns {Promise<Blob>}
      */
     static dataURLToBlob(dataURL) {
-        return fetch(dataURL).then(r => r.blob());
+        if (!dataURL || typeof dataURL !== 'string' || !dataURL.startsWith('data:')) {
+            return Promise.reject(new Error('無効な dataURL です'));
+        }
+        const commaIndex = dataURL.indexOf(',');
+        if (commaIndex === -1) {
+            return Promise.reject(new Error('dataURL の形式が不正です'));
+        }
+        const header = dataURL.slice(0, commaIndex);
+        const payload = dataURL.slice(commaIndex + 1);
+        const base64 = header.toLowerCase().endsWith(';base64');
+        const mime = (header.slice(5).split(';')[0] || 'application/octet-stream').trim();
+
+        if (base64 && payload) {
+            try {
+                const binaryString = atob(payload);
+                const len = binaryString.length;
+                const u8 = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    u8[i] = binaryString.charCodeAt(i);
+                }
+                return Promise.resolve(new Blob([u8], { type: mime }));
+            } catch (e) {
+                return Promise.reject(new Error('dataURL の base64 デコードに失敗しました: ' + (e && e.message ? e.message : String(e))));
+            }
+        }
+
+        // base64 でない dataURL（rare）は fetch で取得
+        try {
+            return fetch(dataURL).then(r => r.blob());
+        } catch (e) {
+            return Promise.reject(new Error('dataURL の Blob 変換に失敗しました: ' + (e && e.message ? e.message : String(e))));
+        }
     }
 
     /**
