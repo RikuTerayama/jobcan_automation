@@ -422,7 +422,7 @@ class ToolRunner {
             throw new Error('ダウンロード可能なファイルがありません');
         }
         if (typeof ZipUtils === 'undefined') {
-            throw new Error('ZIPユーティリティが読み込まれていません（zip-utils.js）');
+            throw new Error('ZIP機能の読み込みに失敗しました（zip-utils.js）。ページを再読み込みしてください。');
         }
 
         try {
