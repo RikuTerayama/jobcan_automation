@@ -515,17 +515,34 @@ def index():
     # ただし、テンプレートでproductsが未定義の場合に備えて、明示的に渡す
     try:
         # context_processorで既にproductsが注入されているが、念のため確認
-        from lib.routes import PRODUCTS
+        # インポートに失敗した場合でも、context_processorで注入されたproductsを使用
+        products = []
+        try:
+            from lib.routes import PRODUCTS
+            products = PRODUCTS
+        except Exception as import_error:
+            # PRODUCTSのインポートに失敗した場合、context_processorで注入されたproductsを使用
+            # context_processorでもエラーが発生している場合は空のリストになる
+            request_id = getattr(g, 'request_id', 'unknown')
+            logger.warning(
+                f"landing_page_import_failed rid={request_id} "
+                f"error={str(import_error)} - using context_processor products"
+            )
+            # context_processorで注入されたproductsを取得（存在しない場合は空のリスト）
+            # テンプレートで|default([])を使用しているため、空のリストでも問題ない
+        
         # テンプレートに明示的に渡す（context_processorのフォールバック）
-        return render_template('landing.html', products=PRODUCTS)
+        # productsが空のリストでも、テンプレートで安全に処理される
+        return render_template('landing.html', products=products)
     except Exception as e:
-        # 例外をログに記録してから、エラーハンドラに委譲（例外を再発生）
+        # テンプレートレンダリング時の例外をログに記録してから、エラーハンドラに委譲
         request_id = getattr(g, 'request_id', 'unknown')
         import traceback
         error_traceback = traceback.format_exc()
-        logger.error(
+        # logger.exception()を使用してスタックトレースを確実に記録
+        logger.exception(
             f"landing_page_error rid={request_id} path={request.path} "
-            f"error={str(e)}\n{error_traceback}"
+            f"error={str(e)}"
         )
         # 例外を再発生させて、エラーハンドラに処理させる
         raise

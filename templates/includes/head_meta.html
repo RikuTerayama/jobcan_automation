@@ -25,7 +25,7 @@
 </script>
 <title>{% block title %}Jobcan AutoFill - 勤怠データ自動入力ツール{% endblock %}</title>
 {% block description_meta %}{% endblock %}
-<link rel="canonical" href="https://jobcan-automation.onrender.com{{ request.path if request else '/' }}">
+<link rel="canonical" href="https://jobcan-automation.onrender.com{% if request and request.path %}{{ request.path }}{% else %}/{% endif %}">
 {% if GSC_VERIFICATION_CONTENT %}
 <meta name="google-site-verification" content="{{ GSC_VERIFICATION_CONTENT }}" />
 {% endif %}
@@ -34,7 +34,7 @@
     <meta property="og:title" content="Jobcan AutoFill">
 {% endblock %}
 {% block og_description %}{% endblock %}
-<meta property="og:url" content="https://jobcan-automation.onrender.com{{ request.path if request else '/' }}">
+<meta property="og:url" content="https://jobcan-automation.onrender.com{% if request and request.path %}{{ request.path }}{% else %}/{% endif %}">
 {% block og_image %}
 <meta property="og:image" content="{{ url_for('static', filename='JobcanAutofill.png', _external=True) }}">
 {% endblock %}
