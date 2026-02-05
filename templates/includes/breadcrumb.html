@@ -9,7 +9,7 @@
 {% set _ = breadcrumb_items.append({'name': 'ホーム', 'url': '/'}) %}
 
 {# パスに応じてパンくずを構築 #}
-{% if request.path.startswith('/tools/') and request.path != '/tools' %}
+{% if request and request.path and request.path.startswith('/tools/') and request.path != '/tools' %}
     {# /tools 配下（個別ツールページ） #}
     {% set _ = breadcrumb_items.append({'name': 'ツール一覧', 'url': '/tools'}) %}
     {% if page_title is defined %}
@@ -17,7 +17,7 @@
     {% else %}
         {% set _ = breadcrumb_items.append({'name': request.path.split('/')[-1], 'url': request.path}) %}
     {% endif %}
-{% elif request.path.startswith('/guide/') and request.path != '/guide/getting-started' %}
+{% elif request and request.path and request.path.startswith('/guide/') and request.path != '/guide/getting-started' %}
     {# /guide 配下（個別ガイドページ） #}
     {% set _ = breadcrumb_items.append({'name': 'ガイド', 'url': '/guide/getting-started'}) %}
     {% if page_title is defined %}
@@ -25,7 +25,7 @@
     {% else %}
         {% set _ = breadcrumb_items.append({'name': request.path.split('/')[-1], 'url': request.path}) %}
     {% endif %}
-{% elif request.path.startswith('/blog/') and request.path != '/blog' %}
+{% elif request and request.path and request.path.startswith('/blog/') and request.path != '/blog' %}
     {# /blog 配下（個別ブログ記事） #}
     {% set _ = breadcrumb_items.append({'name': 'ブログ', 'url': '/blog'}) %}
     {% if page_title is defined %}
@@ -33,35 +33,35 @@
     {% else %}
         {% set _ = breadcrumb_items.append({'name': request.path.split('/')[-1], 'url': request.path}) %}
     {% endif %}
-{% elif request.path.startswith('/case-study/') %}
+{% elif request and request.path and request.path.startswith('/case-study/') %}
     {# /case-study 配下（導入事例） #}
     {% if page_title is defined %}
         {% set _ = breadcrumb_items.append({'name': page_title, 'url': request.path}) %}
     {% else %}
         {% set _ = breadcrumb_items.append({'name': '導入事例', 'url': request.path}) %}
     {% endif %}
-{% elif request.path == '/tools' %}
+{% elif request and request.path and request.path == '/tools' %}
     {# /tools 一覧ページ #}
     {% if page_title is defined %}
         {% set _ = breadcrumb_items.append({'name': page_title, 'url': '/tools'}) %}
     {% else %}
         {% set _ = breadcrumb_items.append({'name': 'ツール一覧', 'url': '/tools'}) %}
     {% endif %}
-{% elif request.path == '/blog' %}
+{% elif request and request.path and request.path == '/blog' %}
     {# /blog 一覧ページ #}
     {% if page_title is defined %}
         {% set _ = breadcrumb_items.append({'name': page_title, 'url': '/blog'}) %}
     {% else %}
         {% set _ = breadcrumb_items.append({'name': 'ブログ', 'url': '/blog'}) %}
     {% endif %}
-{% elif request.path == '/guide/getting-started' or request.path.startswith('/guide/') %}
+{% elif request and request.path and (request.path == '/guide/getting-started' or request.path.startswith('/guide/')) %}
     {# /guide/getting-started またはその他のガイドページ #}
     {% if page_title is defined %}
         {% set _ = breadcrumb_items.append({'name': page_title, 'url': request.path}) %}
     {% else %}
         {% set _ = breadcrumb_items.append({'name': 'ガイド', 'url': request.path}) %}
     {% endif %}
-{% elif request.path != '/' %}
+{% elif request and request.path and request.path != '/' %}
     {# その他のページ（/autofill, /faq, /about など） #}
     {% if page_title is defined %}
         {% set _ = breadcrumb_items.append({'name': page_title, 'url': request.path}) %}
@@ -71,7 +71,7 @@
 {% endif %}
 
 {# パンくずリストUI（LPは非表示） #}
-{% if request.path != '/' %}
+{% if request and request.path and request.path != '/' %}
 <nav aria-label="breadcrumb" class="breadcrumb-nav" style="margin-bottom: 20px; padding: 0 20px;">
     <ol class="breadcrumb-list" style="list-style: none; padding: 0; margin: 0; display: inline-flex; gap: 8px; font-size: 0.9em; color: rgba(255, 255, 255, 0.7); flex-wrap: wrap; align-items: center;">
         {% for item in breadcrumb_items %}
