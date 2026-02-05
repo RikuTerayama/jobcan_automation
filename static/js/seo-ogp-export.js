@@ -58,3 +58,6 @@ class SeoOgpExport {
         return meta;
     }
 }
+
+window.SeoOgpExport = SeoOgpExport;
+console.debug('[seo-ogp-export] loaded', true);
