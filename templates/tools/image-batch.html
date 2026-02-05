@@ -737,6 +737,14 @@
         
         // 変換実行
         async function runConversion() {
+            if (typeof ImageBatchConvert === 'undefined') {
+                alert('画像変換機能の読み込みに失敗しました（image-batch-convert.js）。ページを再読み込みしてください。');
+                return;
+            }
+            if (typeof ImageConverter === 'undefined') {
+                alert('画像変換機能の読み込みに失敗しました（image-convert.js）。ページを再読み込みしてください。');
+                return;
+            }
             if (toolRunner.selectedFiles.length === 0) {
                 alert('ファイルを選択してください');
                 return;
