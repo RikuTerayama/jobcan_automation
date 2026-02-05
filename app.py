@@ -782,6 +782,13 @@ def tools_minutes():
     related_products = [p for p in available_products if p['id'] != 'minutes' and p.get('status') == 'available'][:4]
     return render_template('tools/minutes.html', product=product, related_products=related_products)
 
+
+@app.route('/api/minutes/format', methods=['POST'])
+def api_minutes_format():
+    """議事録整形API（将来のLLM連携用スタブ）。現時点では未実装で501を返す。"""
+    return jsonify(success=False, error='Not implemented'), 501
+
+
 @app.route('/tools/seo')
 def tools_seo():
     """Web/SEOユーティリティ"""
