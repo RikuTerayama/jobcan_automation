@@ -1,37 +1,36 @@
-{# 共通フッター #}
+{# 共通フッター（footer_columns でヘッダーと共通のナビ構造を再利用） #}
 <footer style="background: var(--color-bg-primary, #121212); padding: var(--spacing-xl, 48px) var(--spacing-md, 16px); margin-top: var(--spacing-xl, 48px); border-top: 1px solid rgba(255, 255, 255, 0.1);">
     <div style="max-width: 1200px; margin: 0 auto;">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-bottom: 30px; text-align: left;">
+            {% for col in footer_columns|default([]) %}
+            <div>
+                <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">{{ col.title }}</h4>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    {% for link in col.links|default([]) %}
+                    <a href="{{ link.path|default('#') }}" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">{{ link.icon|default('') }}{% if link.icon %} {% endif %}{{ link.name|default('') }}</a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            {# footer_columns が未注入時のフォールバック（従来の products ベース） #}
             <div>
                 <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">ツール一覧</h4>
                 <div style="display: flex; flex-direction: column; gap: 8px;">
                     <a href="/tools" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em; font-weight: 500;">すべてのツール</a>
-                    {% if products|default([]) %}
-                        {% for product in products %}
-                            {% if product.status|default('coming-soon') == 'available' %}
-                                <a href="{{ product.path|default('#') }}" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">{{ product.icon|default('📦') }} {{ product.name|default('製品') }}</a>
-                            {% endif %}
-                        {% endfor %}
-                    {% endif %}
+                    {% for product in products|default([]) %}
+                        {% if product.status|default('coming-soon') == 'available' %}
+                            <a href="{{ product.path|default('#') }}" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">{{ product.icon|default('📦') }} {{ product.name|default('製品') }}</a>
+                        {% endif %}
+                    {% endfor %}
                 </div>
             </div>
             <div>
                 <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">ガイド</h4>
                 <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <a href="/guide/complete" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em; font-weight: 500;">完全ガイド</a>
+                    <a href="/guide/complete" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">完全ガイド</a>
                     <a href="/guide/getting-started" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">はじめての使い方</a>
                     <a href="/guide/excel-format" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">Excelファイルの作成方法</a>
                     <a href="/guide/troubleshooting" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">トラブルシューティング</a>
-                    {% if products|default([]) %}
-                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.2);">
-                            <p style="color: rgba(255, 255, 255, 0.9); font-size: 0.85em; font-weight: 500; margin-bottom: 8px;">ツール別ガイド</p>
-                            {% for product in products %}
-                                {% if product.guide_path|default('') and product.status|default('coming-soon') == 'available' %}
-                                    <a href="{{ product.guide_path }}" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em; display: block; margin-bottom: 4px;">{{ product.icon|default('📦') }} {{ product.name|default('製品') }}</a>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-                    {% endif %}
                 </div>
             </div>
             <div>
@@ -51,6 +50,7 @@
                     <a href="/contact" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">お問い合わせ</a>
                 </div>
             </div>
+            {% endfor %}
         </div>
         
         <div style="border-top: 1px solid rgba(255, 255, 255, 0.2); padding-top: 20px; margin-top: 30px;">
