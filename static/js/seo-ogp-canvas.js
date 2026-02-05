@@ -168,34 +168,58 @@ class SeoOgpCanvas {
     }
 
     /**
+     * dataURLをBlobに変換（toBlob未対応・null時のフォールバック用）
+     * @param {string} dataURL - data:image/... 形式の文字列
+     * @returns {Promise<Blob>}
+     */
+    static dataURLToBlob(dataURL) {
+        return fetch(dataURL).then(r => r.blob());
+    }
+
+    /**
      * CanvasをBlobに変換
+     * toBlob未対応またはblobがnullの場合はtoDataURLでフォールバック
      * @param {HTMLCanvasElement} canvas - Canvas要素
      * @param {string} format - 形式（'png' | 'jpeg'）
      * @param {number} quality - 品質（0.1-1.0、JPEGのみ）
      * @returns {Promise<Blob>}
      */
     static async canvasToBlob(canvas, format = 'png', quality = 0.9) {
-        return new Promise((resolve, reject) => {
-            const mimeType = format === 'jpeg' || format === 'jpg' 
-                ? 'image/jpeg' 
-                : 'image/png';
-            
-            const options = {};
-            if (mimeType === 'image/jpeg') {
-                options.quality = quality;
-            }
+        const mimeType = format === 'jpeg' || format === 'jpg'
+            ? 'image/jpeg'
+            : 'image/png';
+        const isPng = mimeType === 'image/png';
 
-            canvas.toBlob(
-                (blob) => {
-                    if (blob) {
-                        resolve(blob);
-                    } else {
-                        reject(new Error('画像変換に失敗しました'));
-                    }
-                },
-                mimeType,
-                options.quality
-            );
+        const fallbackViaDataURL = () => {
+            try {
+                const qualityArg = isPng ? undefined : quality;
+                const dataURL = canvas.toDataURL(mimeType, qualityArg);
+                return this.dataURLToBlob(dataURL);
+            } catch (e) {
+                return Promise.reject(new Error('画像変換に失敗しました（toDataURL: ' + (e && e.message ? e.message : 'unknown') + ')'));
+            }
+        };
+
+        if (typeof canvas.toBlob !== 'function') {
+            return fallbackViaDataURL();
+        }
+
+        return new Promise((resolve, reject) => {
+            const callback = (blob) => {
+                if (blob) {
+                    resolve(blob);
+                } else {
+                    fallbackViaDataURL().then(resolve).catch(reject);
+                }
+            };
+            if (isPng) {
+                canvas.toBlob(callback, mimeType);
+            } else {
+                canvas.toBlob(callback, mimeType, quality);
+            }
         });
     }
 }
+
+window.SeoOgpCanvas = SeoOgpCanvas;
+console.debug('[seo-ogp-canvas] loaded', true);
