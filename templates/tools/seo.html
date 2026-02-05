@@ -331,6 +331,17 @@
                 
                 <!-- PageSpeedチェックリスト設定 -->
                 <div id="pagespeed-settings" style="display: none;" data-reveal data-reveal-delay="150">
+                    <div class="info-text" style="margin-bottom: 15px; padding: 12px; background: rgba(74, 158, 255, 0.08); border-radius: 8px; border-left: 3px solid rgba(74, 158, 255, 0.5);">
+                        <p style="margin: 0 0 8px 0;">このチェックリストは、PageSpeed Insights や Lighthouse の計測結果を改善するための「やること」をまとめたものです。</p>
+                        <p style="margin: 0 0 4px 0;"><strong>使い方:</strong></p>
+                        <ol style="margin: 0 0 8px 0; padding-left: 20px; line-height: 1.6;">
+                            <li>対象URLで PageSpeed Insights または Lighthouse を実行して課題を確認</li>
+                            <li>このツールで目的や優先指標に合わせてチェックリストを生成</li>
+                            <li>リストに沿って対応（画像、フォント、JS/CSS、キャッシュ等）</li>
+                            <li>再度計測して改善を確認</li>
+                        </ol>
+                        <p style="margin: 0; font-size: 0.95em;">対象URLはメモ用途の任意入力です（このツール自体は計測は行いません）。</p>
+                    </div>
                     <div class="option-group">
                         <label>対象URL（任意）</label>
                         <input type="text" id="ps-url" placeholder="https://example.com">
@@ -423,15 +434,27 @@
                 
                 <!-- v2: sitemap/robots設定 -->
                 <div id="sitemap-settings" style="display: none;">
+                    <div class="info-text" style="margin-bottom: 15px; padding: 10px; background: rgba(255, 152, 0, 0.08); border-radius: 6px; border-left: 3px solid rgba(255, 152, 0, 0.5);">
+                        入力したURLへサーバからアクセスしてリンクを収集します。機密サイトや社内サイトでは使用しないでください。
+                    </div>
                     <div class="option-group">
                         <label>ベースURL <span style="color: #F44336;">*</span></label>
                         <input type="text" id="sitemap-base-url" placeholder="https://example.com">
                     </div>
-                    
+                    <div class="option-group">
+                        <label>URLを自動収集</label>
+                        <p class="info-text">ベースURLを起点に同一ドメイン内をクロールしてURL一覧を取得します（最大URL数・深さで制限あり）。</p>
+                        <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: center; margin-bottom: 10px;">
+                            <label style="display: flex; align-items: center; gap: 6px;">最大URL数 <input type="number" id="sitemap-crawl-max-urls" min="1" max="1000" value="300" style="width: 80px;"></label>
+                            <label style="display: flex; align-items: center; gap: 6px;">深さ <input type="number" id="sitemap-crawl-max-depth" min="0" max="10" value="3" style="width: 60px;"></label>
+                            <button type="button" class="action-button" id="sitemap-crawl-btn" onclick="crawlUrls()">URLを自動収集</button>
+                        </div>
+                        <p class="info-text" id="sitemap-crawl-status" style="min-height: 1.2em;"></p>
+                    </div>
                     <div class="option-group">
                         <label>URLリスト（1行1URLまたは1行1パス）</label>
                         <textarea id="sitemap-url-list" rows="10" placeholder="/&#10;/about&#10;/news&#10;/news/post-1&#10;# コメント行は無視されます"></textarea>
-                        <p class="info-text">パス（/で始まる）または完全なURLを入力。空行と#で始まる行は無視されます。</p>
+                        <p class="info-text">パス（/で始まる）または完全なURLを入力。空行と#で始まる行は無視されます。「URLを自動収集」で取得した内容を流し込めます。</p>
                     </div>
                     
                     <div class="option-group">
@@ -504,6 +527,7 @@
                 </div>
                 
                 <div id="pagespeed-output" style="display: none;">
+                    <p class="info-text" style="margin-bottom: 10px;">使い方: 計測 → チェックリスト生成 → 対応 → 再計測</p>
                     <div id="pagespeed-preview" class="output-preview"></div>
                     <div class="output-actions">
                         <button class="action-button" onclick="copyChecklist()">コピー</button>
@@ -601,15 +625,37 @@
         
         // OGP画像を生成
         async function generateOgp() {
+            if (typeof window.SeoOgpPresets === 'undefined') {
+                alert('OGP機能の読み込みに失敗しました（seo-ogp-presets.js）。ページを再読み込みするか、ハードリロード（キャッシュ削除）を試してください。');
+                return;
+            }
+            if (typeof window.SeoOgpCanvas === 'undefined') {
+                alert('OGP機能の読み込みに失敗しました（seo-ogp-canvas.js）。ページを再読み込みするか、ハードリロード（キャッシュ削除）を試してください。');
+                return;
+            }
+            if (typeof window.SeoOgpExport === 'undefined') {
+                alert('OGP機能の読み込みに失敗しました（seo-ogp-export.js）。ページを再読み込みするか、ハードリロード（キャッシュ削除）を試してください。');
+                return;
+            }
+
             const title = document.getElementById('ogp-title').value.trim();
-            
             if (!title) {
                 alert('タイトルを入力してください');
                 return;
             }
-            
+
+            const presetSelect = document.getElementById('ogp-preset');
+            let presetId = (presetSelect && presetSelect.value) ? presetSelect.value.trim() : '';
+            if (!presetId && presetSelect && presetSelect.options.length > 0) {
+                presetId = presetSelect.options[0].value;
+            }
+            if (!presetId || !SeoOgpPresets.getPresetById(presetId)) {
+                alert('プリセットが無効です。サイズを選び直すか、ページを再読み込みしてください。');
+                return;
+            }
+
             const options = {
-                presetId: document.getElementById('ogp-preset').value,
+                presetId: presetId,
                 title: title,
                 subtitle: document.getElementById('ogp-subtitle').value.trim(),
                 badge: document.getElementById('ogp-badge').value.trim(),
@@ -621,23 +667,22 @@
                 quality: parseFloat(document.getElementById('ogp-quality').value),
                 fileSlug: document.getElementById('ogp-fileslug').value.trim()
             };
-            
+
             try {
                 const result = await SeoOgpExport.exportOgpImage(options);
                 currentOgpBlob = result.blob;
                 currentOgpOptions = options;
-                
-                // プレビューを表示
+
                 const preview = document.getElementById('ogp-preview');
                 const img = document.createElement('img');
                 img.src = URL.createObjectURL(result.blob);
                 preview.innerHTML = '';
                 preview.appendChild(img);
-                
-                // メモリ解放
                 img.onload = () => URL.revokeObjectURL(img.src);
             } catch (error) {
-                alert(`OGP画像生成エラー: ${error.message}`);
+                const errName = error && error.name ? error.name : 'Error';
+                const errMsg = error && error.message ? error.message : String(error);
+                alert('OGP画像生成エラー: ' + errMsg + '\n（開発者: ' + errName + '）');
             }
         }
         
@@ -856,6 +901,54 @@
             MinutesExport.downloadMarkdown(markdown, 'seo_audit');
         }
         
+        // v2: URLを自動収集（サーバAPIでクロール）
+        async function crawlUrls() {
+            const baseUrl = document.getElementById('sitemap-base-url').value.trim();
+            if (!baseUrl) {
+                alert('ベースURLを入力してください');
+                return;
+            }
+            const maxUrlsEl = document.getElementById('sitemap-crawl-max-urls');
+            const maxDepthEl = document.getElementById('sitemap-crawl-max-depth');
+            const maxUrls = Math.max(1, Math.min(1000, parseInt(maxUrlsEl.value, 10) || 300));
+            const maxDepth = Math.max(0, Math.min(10, parseInt(maxDepthEl.value, 10) || 3));
+            const btn = document.getElementById('sitemap-crawl-btn');
+            const statusEl = document.getElementById('sitemap-crawl-status');
+            btn.disabled = true;
+            statusEl.textContent = '収集中...';
+            try {
+                const res = await fetch('{{ url_for("api_seo_crawl_urls") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ start_url: baseUrl, max_urls: maxUrls, max_depth: maxDepth })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    statusEl.textContent = '';
+                    alert(data.error || 'HTTP ' + res.status);
+                    return;
+                }
+                if (!data.success) {
+                    statusEl.textContent = '';
+                    alert(data.error || 'URLの取得に失敗しました');
+                    return;
+                }
+                const urls = data.urls || [];
+                const warnings = data.warnings || [];
+                document.getElementById('sitemap-url-list').value = urls.join('\n');
+                let msg = urls.length + ' 件のURLを取得しました。';
+                if (warnings.length > 0) {
+                    msg += ' 警告: ' + warnings.slice(0, 3).join('; ') + (warnings.length > 3 ? ' ...' : '');
+                }
+                statusEl.textContent = msg;
+            } catch (err) {
+                statusEl.textContent = '';
+                alert('URLの自動収集に失敗しました: ' + (err.message || String(err)));
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
         // v2: sitemap.xmlを生成
         function generateSitemap() {
             const baseUrl = document.getElementById('sitemap-base-url').value.trim();
