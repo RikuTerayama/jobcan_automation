@@ -15,7 +15,7 @@
                 ] %}
                 {% for item in nav_items %}
                     <a href="{{ item.path }}" 
-                       class="site-nav__link {% if request.path == item.path or (item.path == '/' and request.path == '/') %}site-nav__link--active{% endif %}">
+                       class="site-nav__link {% if request and request.path and (request.path == item.path or (item.path == '/' and request.path == '/')) %}site-nav__link--active{% endif %}">
                         {{ icon(item.icon_name, 18, 'site-nav__icon') }}
                         <span>{{ item.name }}</span>
                     </a>
