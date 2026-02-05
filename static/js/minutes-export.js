@@ -10,12 +10,22 @@ class MinutesExport {
      */
     static downloadMarkdown(text, filenameBase = 'minutes') {
         const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
-        
-        // ファイル名を生成
         const sanitized = FileValidation.sanitizeFilename(filenameBase);
         const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
         const filename = `${sanitized}_${date}.md`;
-        
+        FileUtils.downloadBlob(blob, filename);
+    }
+
+    /**
+     * テキストを .txt でダウンロード（同一内容を text/plain で保存）
+     * @param {string} text - テキスト
+     * @param {string} filenameBase - ファイル名のベース
+     */
+    static downloadTxt(text, filenameBase = 'minutes') {
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const sanitized = FileValidation.sanitizeFilename(filenameBase);
+        const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
+        const filename = `${sanitized}_${date}.txt`;
         FileUtils.downloadBlob(blob, filename);
     }
 
