@@ -3,7 +3,7 @@
 <head>
     {% set page_title = '議事録整形ツール - 決定事項・ToDo抽出・CSV/JSON出力 | ブラウザ内処理でアップロード不要' %}
     {% set page_description = '議事録テキストから決定事項・ToDo・担当・期限を自動抽出し、報告書テンプレートを生成。CSV/JSON出力対応。ブラウザ内で処理され、ファイルはアップロードされません。' %}
-    {% block title %}{{ page_title }}{% endblock %}
+    {% set breadcrumb_title = product.name|default('議事録整形') %}
     {% include 'includes/head_meta.html' %}
     {% block description_meta %}
         <meta name="description" content="{% if page_description|length > 110 %}{{ page_description[:107] }}...{% else %}{{ page_description }}{% endif %}">
@@ -35,9 +35,6 @@
     </script>
     {% endblock %}
     {% endif %}
-    {% block og_title %}
-        <meta property="og:title" content="{{ page_title }}">
-    {% endblock %}
     {% block og_description %}
         <meta property="og:description" content="{% if page_description|length > 200 %}{{ page_description[:197] }}...{% else %}{{ page_description }}{% endif %}">
     {% endblock %}

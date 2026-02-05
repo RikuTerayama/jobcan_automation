@@ -3,13 +3,9 @@
 <head>
     {% set page_title = '業務効率化ツール集' %}
     {% set page_description = 'Jobcan自動入力、画像一括変換、PDFユーティリティ、議事録整形など、業務効率化に役立つツールを提供しています。' %}
-    {% block title %}{{ page_title }}{% endblock %}
     {% include 'includes/head_meta.html' %}
     {% block description_meta %}
         <meta name="description" content="{% if page_description|length > 110 %}{{ page_description[:107] }}...{% else %}{{ page_description }}{% endif %}">
-    {% endblock %}
-    {% block og_title %}
-        <meta property="og:title" content="{{ page_title }}">
     {% endblock %}
     {% block og_description %}
         <meta property="og:description" content="{% if page_description|length > 200 %}{{ page_description[:197] }}...{% else %}{{ page_description }}{% endif %}">

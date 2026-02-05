@@ -3,7 +3,7 @@
 <head>
     {% set page_title = 'PDFユーティリティ - 結合・分割・抽出・圧縮・画像変換 | ブラウザ内処理でアップロード不要' %}
     {% set page_description = 'PDFの結合・分割・ページ抽出、PDF→画像変換、圧縮、画像→PDF変換、埋め込み画像抽出に対応した無料ツール。ブラウザ内で実行され、ファイルはアップロードされません。' %}
-    {% block title %}{{ page_title }}{% endblock %}
+    {% set breadcrumb_title = product.name|default('PDFユーティリティ') %}
     {% include 'includes/head_meta.html' %}
     {% block description_meta %}
         <meta name="description" content="{% if page_description|length > 110 %}{{ page_description[:107] }}...{% else %}{{ page_description }}{% endif %}">
@@ -35,9 +35,6 @@
     </script>
     {% endblock %}
     {% endif %}
-    {% block og_title %}
-        <meta property="og:title" content="{{ page_title }}">
-    {% endblock %}
     {% block og_description %}
         <meta property="og:description" content="{% if page_description|length > 200 %}{{ page_description[:197] }}...{% else %}{{ page_description }}{% endif %}">
     {% endblock %}

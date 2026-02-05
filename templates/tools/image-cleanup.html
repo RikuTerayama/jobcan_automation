@@ -3,7 +3,7 @@
 <head>
     {% set page_title = '画像ユーティリティ - 透過→白背景・余白トリム・縦横比統一・背景除去 | ブラウザ内処理でアップロード不要' %}
     {% set page_description = '透過画像を白背景JPEGに変換、余白トリミング、縦横比統一、背景除去をブラウザ内で一括処理できる無料ツール。ファイルはアップロードされません。' %}
-    {% block title %}{{ page_title }}{% endblock %}
+    {% set breadcrumb_title = product.name|default('画像ユーティリティ') %}
     {% include 'includes/head_meta.html' %}
     {% block description_meta %}
         <meta name="description" content="{% if page_description|length > 110 %}{{ page_description[:107] }}...{% else %}{{ page_description }}{% endif %}">
@@ -35,9 +35,6 @@
     </script>
     {% endblock %}
     {% endif %}
-    {% block og_title %}
-        <meta property="og:title" content="{{ page_title }}">
-    {% endblock %}
     {% block og_description %}
         <meta property="og:description" content="{% if page_description|length > 200 %}{{ page_description[:197] }}...{% else %}{{ page_description }}{% endif %}">
     {% endblock %}

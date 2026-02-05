@@ -3,7 +3,7 @@
 <head>
     {% set page_title = '画像一括変換ツール - PNG/JPG/WebP対応、リサイズ・品質調整・複数サイズ同時出力 | ブラウザ内処理でアップロード不要' %}
     {% set page_description = 'PNG、JPG、WebP形式の画像を一括変換・リサイズ・品質圧縮できる無料ツール。複数サイズ同時出力、SNS/Web/EC用プリセット対応。ブラウザ内で完結し、ファイルはサーバーに保存されません。' %}
-    {% block title %}{{ page_title }}{% endblock %}
+    {% set breadcrumb_title = product.name|default('画像一括変換') %}
     {% include 'includes/head_meta.html' %}
     {% block description_meta %}
         <meta name="description" content="{% if page_description|length > 110 %}{{ page_description[:107] }}...{% else %}{{ page_description }}{% endif %}">
@@ -35,9 +35,6 @@
     </script>
     {% endblock %}
     {% endif %}
-    {% block og_title %}
-        <meta property="og:title" content="{{ page_title }}">
-    {% endblock %}
     {% block og_description %}
         <meta property="og:description" content="{% if page_description|length > 200 %}{{ page_description[:197] }}...{% else %}{{ page_description }}{% endif %}">
     {% endblock %}

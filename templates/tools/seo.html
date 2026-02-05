@@ -3,13 +3,10 @@
 <head>
     {% set page_title = 'Web/SEOユーティリティ - OGP画像生成・PageSpeedチェック・メタタグ検査・sitemap生成 | ブラウザ内処理でアップロード不要' %}
     {% set page_description = 'OGP画像ジェネレーター、PageSpeed改善チェックリスト、メタタグ検査、sitemap.xml/robots.txt生成をブラウザ内で実行できる無料ツール。ファイルはアップロードされません。' %}
-    {% block title %}{{ page_title }}{% endblock %}
+    {% set breadcrumb_title = 'Web/SEOユーティリティ' %}
     {% include 'includes/head_meta.html' %}
     {% block description_meta %}
         <meta name="description" content="{% if page_description|length > 110 %}{{ page_description[:107] }}...{% else %}{{ page_description }}{% endif %}">
-    {% endblock %}
-    {% block og_title %}
-        <meta property="og:title" content="{{ page_title }}">
     {% endblock %}
     {% block og_description %}
         <meta property="og:description" content="{% if page_description|length > 200 %}{{ page_description[:197] }}...{% else %}{{ page_description }}{% endif %}">
