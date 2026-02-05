@@ -927,6 +927,7 @@
             const statusEl = document.getElementById('sitemap-crawl-status');
             btn.disabled = true;
             statusEl.textContent = '収集中...';
+            let is429Countdown = false;
             try {
                 const res = await fetch('{{ url_for("api_seo_crawl_urls") }}', {
                     method: 'POST',
@@ -934,6 +935,21 @@
                     body: JSON.stringify({ start_url: baseUrl, max_urls: maxUrls, max_depth: maxDepth })
                 });
                 const data = await res.json().catch(() => ({}));
+                if (res.status === 429) {
+                    is429Countdown = true;
+                    const sec = (data.retry_after_sec != null ? data.retry_after_sec : parseInt(res.headers.get('Retry-After'), 10)) || 60;
+                    let left = Math.max(1, sec);
+                    statusEl.textContent = 'あと ' + left + ' 秒で再試行できます';
+                    const timer = setInterval(function () {
+                        left--;
+                        statusEl.textContent = left > 0 ? 'あと ' + left + ' 秒で再試行できます' : '';
+                        if (left <= 0) {
+                            clearInterval(timer);
+                            btn.disabled = false;
+                        }
+                    }, 1000);
+                    return;
+                }
                 if (!res.ok) {
                     statusEl.textContent = '';
                     alert(data.error || 'HTTP ' + res.status);
@@ -956,7 +972,9 @@
                 statusEl.textContent = '';
                 alert('URLの自動収集に失敗しました: ' + (err.message || String(err)));
             } finally {
-                btn.disabled = false;
+                if (!is429Countdown) {
+                    btn.disabled = false;
+                }
             }
         }
 
