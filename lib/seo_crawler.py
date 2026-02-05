@@ -56,6 +56,8 @@ def is_url_safe_for_crawl(url):
         return False, 'URLの解析に失敗しました'
     if parsed.scheme not in ('http', 'https'):
         return False, 'http または https のURLのみ許可されています'
+    if getattr(parsed, 'username', None) or getattr(parsed, 'password', None) or ('@' in (parsed.netloc or '')):
+        return False, 'URLに認証情報（user:pass@）を含めることはできません'
     if not parsed.netloc:
         return False, 'ホストが指定されていません'
     hostname = (parsed.hostname or '').strip().lower()
