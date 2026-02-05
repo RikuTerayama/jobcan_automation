@@ -799,9 +799,23 @@ def tools_seo():
     return render_template('tools/seo.html', product=product, related_products=related_products)
 
 
+# 簡易レート制限: /api/seo/crawl-urls を IP ごとに 60 秒に 1 回まで
+_crawl_rate_by_ip = {}
+_crawl_rate_lock = threading.Lock()
+_CRAWL_RATE_SEC = 60
+
+
 @app.route('/api/seo/crawl-urls', methods=['POST'])
 def api_seo_crawl_urls():
-    """同一ホスト内でURLをクロールし、URL一覧を返す。sitemap用。"""
+    """同一ホスト内でURLをクロールし、URL一覧を返す。sitemap用。SSRF対策・レート制限あり。"""
+    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip() or 'unknown'
+    now = time.time()
+    with _crawl_rate_lock:
+        last = _crawl_rate_by_ip.get(client_ip, 0)
+        if now - last < _CRAWL_RATE_SEC:
+            return jsonify(success=False, error='しばらく待ってから再度お試しください（1分に1回まで）'), 429
+        _crawl_rate_by_ip[client_ip] = now
+
     try:
         data = request.get_json(force=True, silent=True) or {}
     except Exception:
@@ -809,6 +823,12 @@ def api_seo_crawl_urls():
     start_url = (data.get('start_url') or '').strip()
     if not start_url:
         return jsonify(success=False, error='start_url を指定してください'), 400
+
+    from lib.seo_crawler import crawl, is_url_safe_for_crawl
+    safe, err_msg = is_url_safe_for_crawl(start_url)
+    if not safe:
+        return jsonify(success=False, error=err_msg or 'このURLは許可されていません'), 400
+
     max_urls = data.get('max_urls', 300)
     max_depth = data.get('max_depth', 3)
     try:
@@ -820,7 +840,6 @@ def api_seo_crawl_urls():
     max_urls = max(1, min(1000, max_urls))
     max_depth = max(0, min(10, max_depth))
 
-    from lib.seo_crawler import crawl
     urls, warnings = crawl(
         start_url=start_url,
         max_urls=max_urls,
