@@ -144,19 +144,20 @@ PRODUCTS = [
     {
         'id': 'minutes',
         'name': '議事録整形',
-        'description': 'テキストから決定事項/ToDo/担当/期限を抽出し、報告書テンプレートを生成。CSV/JSON出力対応。ローカル処理でアップロード不要。',
+        'description': '会議の文字起こしテキストから、決定事項・ToDoを中心に構造化された議事録を作成。.md/.txt/CSV/JSON出力。ブラウザ内処理でサーバーに送信しません。',
         'path': '/tools/minutes',
         'guide_path': '/guide/minutes',
         'status': 'available',
         'icon': '📝',
         'category': 'text',
         'tags': ['Writing', 'Text'],
-        'features': ['決定事項抽出', 'ToDo抽出', 'CSV/JSON出力'],
+        'features': ['決定事項抽出', 'ToDo抽出', '話者ラベル除去', 'CSV/JSON出力'],
         'capabilities': [
-            '議事録テキストから決定事項を自動抽出',
+            '文字起こしテキストから決定事項を自動抽出',
             'ToDo項目を自動抽出（担当・期限含む）',
-            '報告書テンプレートを自動生成',
-            'CSV/JSON形式で出力',
+            '話者ラベル（Speaker1:、名前:）の維持または除去',
+            '構造化議事録をMarkdown/テキストで出力',
+            'CSV/JSON形式でToDo一覧を出力',
             '複数のテンプレート形式に対応'
         ],
         'recommended_for': [
