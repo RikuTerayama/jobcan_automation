@@ -57,6 +57,27 @@ def test_autofill_returns_200(client):
     response = client.get('/autofill')
     assert response.status_code == 200, f"Expected 200, got {response.status_code}"
 
+def test_about_returns_200(client):
+    """/about が200を返すことを確認"""
+    response = client.get('/about')
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+
+def test_healthz_returns_200(client):
+    """/healthz が常に200を返すことを確認"""
+    response = client.get('/healthz')
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}"
+
+def test_smoke_multiple_requests_200(client):
+    """/, /autofill, /about を複数回アクセスして全て200かつエラー表示が出ないこと"""
+    paths = ['/', '/autofill', '/about', '/tools']
+    error_phrase = '⚠️ エラーが発生しました'
+    for path in paths:
+        for i in range(3):
+            response = client.get(path)
+            assert response.status_code == 200, f"path={path} run={i+1} status={response.status_code}"
+            body = response.data.decode('utf-8')
+            assert error_phrase not in body, f"path={path} run={i+1} showed error page"
+
 if __name__ == '__main__':
     # pytestがインストールされていない場合のフォールバック
     client = app.test_client()

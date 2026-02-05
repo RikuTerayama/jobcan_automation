@@ -23,26 +23,24 @@
         document.documentElement.classList.add('js');
     })();
 </script>
-<title>{% block title %}Jobcan AutoFill - 勤怠データ自動入力ツール{% endblock %}</title>
+<title>{{ page_title|default('Jobcan AutoFill - 勤怠データ自動入力ツール') }}</title>
 {% block description_meta %}{% endblock %}
 <link rel="canonical" href="https://jobcan-automation.onrender.com{% if request and request.path %}{{ request.path }}{% else %}/{% endif %}">
 {% if GSC_VERIFICATION_CONTENT %}
 <meta name="google-site-verification" content="{{ GSC_VERIFICATION_CONTENT }}" />
 {% endif %}
 <meta property="og:type" content="website">
-{% block og_title %}
-    <meta property="og:title" content="Jobcan AutoFill">
-{% endblock %}
+<meta property="og:title" content="{{ page_title|default('Jobcan AutoFill') }}">
 {% block og_description %}{% endblock %}
 <meta property="og:url" content="https://jobcan-automation.onrender.com{% if request and request.path %}{{ request.path }}{% else %}/{% endif %}">
 {% block og_image %}
 <meta property="og:image" content="{{ url_for('static', filename='JobcanAutofill.png', _external=True) }}">
 {% endblock %}
-{# Twitter Card - P0-2: Twitter共有時の表示最適化 #}
+{# Twitter Card - P0-2: 同一テンプレ内で block 二重定義を避ける（include 時 TemplateAssertionError 対策） #}
 {% block twitter_card %}
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="{% block twitter_title %}{% block og_title %}Jobcan AutoFill{% endblock %}{% endblock %}">
-<meta name="twitter:description" content="{% block twitter_description %}{% block og_description %}{% endblock %}{% endblock %}">
+<meta name="twitter:title" content="{{ page_title|default('Jobcan AutoFill') }}">
+<meta name="twitter:description" content="{% block twitter_description %}Jobcanへの勤怠データをExcelから一括入力する自動化ツール{% endblock %}">
 <meta name="twitter:image" content="{% block twitter_image %}{{ url_for('static', filename='JobcanAutofill.png', _external=True) }}{% endblock %}">
 {% endblock %}
 {# AdSenseコードスニペット - サイト所有権確認のため全ページに配置 #}

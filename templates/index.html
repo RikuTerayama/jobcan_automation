@@ -3,19 +3,10 @@
 <head>
     {% set page_title = 'Jobcan勤怠自動入力ツール' %}
     {% set page_description = 'Jobcanへの勤怠データをExcelから一括入力する自動化ツール。手作業の繰り返しを削減し、月次締め作業を大幅に効率化します。' %}
-    {# titleブロックをオーバーライド（head_meta.htmlの前に定義） #}
-    {% block title %}{{ page_title }}{% endblock %}
-    {# 共通HEADメタタグ - ブロック定義の後にインクルード #}
     {% include 'includes/head_meta.html' %}
-    {# description_metaブロックでdescriptionの内容を設定（長さ制限付き） #}
     {% block description_meta %}
         <meta name="description" content="{% if page_description|length > 110 %}{{ page_description[:107] }}...{% else %}{{ page_description }}{% endif %}">
     {% endblock %}
-    {# og:titleも設定 #}
-    {% block og_title %}
-        <meta property="og:title" content="{{ page_title }}">
-    {% endblock %}
-    {# og:descriptionも設定（長さ制限付き） #}
     {% block og_description %}
         <meta property="og:description" content="{% if page_description|length > 200 %}{{ page_description[:197] }}...{% else %}{{ page_description }}{% endif %}">
     {% endblock %}

@@ -1,9 +1,8 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    {# 共通HEADメタタグ #}
+    {% set page_title = 'サイトについて | Jobcan AutoFill' %}
     {% include 'includes/head_meta.html' %}
-    {% block title %}サイトについて | Jobcan AutoFill{% endblock %}
     {% block description_meta %}
         <meta name="description" content="Jobcan AutoFillについて。開発の背景、設計思想、技術スタック、セキュリティ対策を詳しく解説します。">
     {% endblock %}

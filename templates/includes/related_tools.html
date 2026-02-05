@@ -1,0 +1,34 @@
+{# 関連ツールセクション（フッターの直上に配置すること） #}
+{% if related_products|default([]) %}
+<section class="related-tools-section" aria-labelledby="related-tools-heading">
+    <div class="related-tools-container">
+        <h2 id="related-tools-heading" class="related-tools-heading" data-reveal>関連ツール</h2>
+        <div class="related-tools-grid" data-reveal data-reveal-delay="50">
+            {% for related_product in related_products %}
+            <a href="{{ related_product.path|default('#') }}" class="related-tools-card">
+                <div class="related-tools-card__icon">{{ related_product.icon|default('📦') }}</div>
+                <h3 class="related-tools-card__title">{{ related_product.name|default('') }}</h3>
+                <p class="related-tools-card__desc">{{ related_product.description|default('') }}</p>
+                <span class="related-tools-card__cta">使ってみる →</span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+<style>
+.related-tools-section { margin-top: 60px; padding-top: 40px; border-top: 1px solid rgba(255, 255, 255, 0.1); }
+.related-tools-container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+.related-tools-heading { font-size: 1.8em; margin-bottom: 30px; color: #FFFFFF; text-align: center; }
+.related-tools-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+.related-tools-card {
+    display: block; background: linear-gradient(145deg, #1E1E1E 0%, #2A2A2A 100%); border-radius: 12px; padding: 25px;
+    border: 1px solid rgba(255, 255, 255, 0.1); text-decoration: none; color: #FFFFFF; transition: all 0.3s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.related-tools-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); border-color: rgba(74, 158, 255, 0.4); }
+.related-tools-card__icon { font-size: 2.5em; margin-bottom: 15px; text-align: center; }
+.related-tools-card__title { font-size: 1.3em; margin: 0 0 10px 0; color: #FFFFFF; text-align: center; }
+.related-tools-card__desc { font-size: 0.95em; color: rgba(255, 255, 255, 0.7); margin: 0; line-height: 1.5; text-align: center; }
+.related-tools-card__cta { display: inline-block; margin-top: 15px; padding: 6px 12px; background: rgba(74, 158, 255, 0.2); border: 1px solid rgba(74, 158, 255, 0.5); border-radius: 6px; color: #4A9EFF; font-size: 0.85em; font-weight: 500; width: 100%; text-align: center; box-sizing: border-box; }
+</style>
+{% endif %}

@@ -68,15 +68,15 @@ def validate_startup():
         except Exception as e:
             errors.append(f"Template not found or invalid: {template} - {str(e)}")
     
-    # PRODUCTSのインポート確認
+    # 製品カタログ（products_catalog）のインポート確認（LP/500 根本対策）
     try:
-        from lib.routes import PRODUCTS
+        from lib.products_catalog import PRODUCTS
         if not isinstance(PRODUCTS, list):
-            errors.append("PRODUCTS is not a list")
+            errors.append("products_catalog.PRODUCTS is not a list")
         elif len(PRODUCTS) == 0:
-            errors.append("PRODUCTS is empty")
+            errors.append("products_catalog.PRODUCTS is empty")
     except Exception as e:
-        errors.append(f"Failed to import PRODUCTS: {str(e)}")
+        errors.append(f"Failed to import products_catalog.PRODUCTS: {type(e).__name__}: {str(e)}")
     
     if errors:
         logger.error(f"startup_validation_failed errors={errors}")
@@ -156,22 +156,31 @@ def _render_error_page(status_code, error_message, error_id=None):
         error_id = _generate_error_id()
     
     try:
-        return render_template(
+        response = render_template(
             'error.html',
             error_message=error_message,
             error_id=error_id,
             status_code=status_code
         ), status_code
+        # レスポンスヘッダにX-Error-Idを付与（恒久対策：エラーIDの追跡強化）
+        from flask import make_response
+        resp = make_response(response)
+        resp.headers['X-Error-Id'] = error_id
+        return resp
     except Exception as render_error:
         # エラーテンプレートもレンダリングできない場合はシンプルなHTMLを返す
         import traceback
-        logger.error(f"error_page_render_failed error_id={error_id} render_error={str(render_error)}\n{traceback.format_exc()}")
-        return f'''<html><head><meta charset="utf-8"><title>エラー {status_code}</title></head>
+        logger.exception(f"error_page_render_failed error_id={error_id} render_error={str(render_error)}")
+        from flask import make_response
+        html_content = f'''<html><head><meta charset="utf-8"><title>エラー {status_code}</title></head>
 <body><h1>エラーが発生しました</h1>
 <p>{error_message}</p>
 <p>エラーID: {error_id}</p>
 <p>お問い合わせの際は、このエラーIDをお伝えください。</p>
-</body></html>''', status_code
+</body></html>'''
+        resp = make_response((html_content, status_code))
+        resp.headers['X-Error-Id'] = error_id
+        return resp
 
 @app.errorhandler(404)
 def not_found(error):
@@ -197,9 +206,23 @@ def internal_error(error):
     
     # スタックトレースをログに記録（恒久対策：例外ログの強化）
     # logger.exception()を使用してスタックトレースを確実に記録
+    # user-agent、remote_addr、例外型も含める
+    try:
+        path = request.path if request else 'unknown'
+        method = request.method if request else 'unknown'
+        user_agent = request.headers.get('User-Agent', 'Unknown') if request else 'Unknown'
+        remote_addr = request.remote_addr if request else 'unknown'
+    except Exception:
+        path = 'unknown'
+        method = 'unknown'
+        user_agent = 'Unknown'
+        remote_addr = 'unknown'
+    
     logger.exception(
         f"internal_server_error error_id={error_id} rid={request_id} "
-        f"path={request.path} method={request.method} error={str(error)}"
+        f"path={path} method={method} "
+        f"user_agent={user_agent} remote_addr={remote_addr} "
+        f"exception_type={type(error).__name__} error={str(error)}"
     )
     
     return _render_error_page(
@@ -213,9 +236,13 @@ def service_unavailable(error):
     """503エラーのハンドリング"""
     error_id = _generate_error_id()
     request_id = getattr(g, 'request_id', 'unknown')
-    logger.error(
-        f"service_unavailable error_id={error_id} rid={request_id} "
-        f"path={request.path} method={request.method} error={str(error)}"
+    try:
+        path = request.path if request else 'unknown'
+        method = request.method if request else 'unknown'
+    except Exception:
+        path, method = 'unknown', 'unknown'
+    logger.exception(
+        f"service_unavailable error_id={error_id} rid={request_id} path={path} method={method} error={str(error)}"
     )
     return _render_error_page(
         503,
@@ -242,9 +269,23 @@ def handle_exception(e):
     
     # 詳細なエラー情報をログに記録（恒久対策：例外ログの強化）
     # logger.exception()を使用してスタックトレースを確実に記録
+    # user-agent、remote_addr、例外型も含める
+    try:
+        path = request.path if request else 'unknown'
+        method = request.method if request else 'unknown'
+        user_agent = request.headers.get('User-Agent', 'Unknown') if request else 'Unknown'
+        remote_addr = request.remote_addr if request else 'unknown'
+    except Exception:
+        path = 'unknown'
+        method = 'unknown'
+        user_agent = 'Unknown'
+        remote_addr = 'unknown'
+    
     logger.exception(
         f"unhandled_exception error_id={error_id} rid={request_id} "
-        f"path={request.path} method={request.method} error={str(e)}"
+        f"path={path} method={method} "
+        f"user_agent={user_agent} remote_addr={remote_addr} "
+        f"exception_type={type(e).__name__} error={str(e)}"
     )
     
     # HTMLエラーページを返す（APIエンドポイントでもHTMLを返す）
@@ -257,55 +298,56 @@ def handle_exception(e):
 # 環境変数をテンプレートコンテキストに注入（AdSense設定用）
 @app.context_processor
 def inject_env_vars():
-    """環境変数をテンプレートで使えるようにする"""
+    """環境変数をテンプレートで使えるようにする。製品一覧は products_catalog から取得（外部依存なし）。"""
     try:
         import json
-        from lib.routes import PRODUCTS
-        
+        from lib.products_catalog import PRODUCTS
+
         app_version = '1.0.0'
         try:
             with open('package.json', 'r', encoding='utf-8') as f:
                 package_data = json.load(f)
                 app_version = package_data.get('version', '1.0.0')
         except Exception:
-            # package.jsonが存在しない、または読み込みエラーは無視
             pass
-        
-        # P0-1: 運営者情報を環境変数から取得
-        operator_name = os.getenv('OPERATOR_NAME', '')
-        operator_email = os.getenv('OPERATOR_EMAIL', '')
-        operator_location = os.getenv('OPERATOR_LOCATION', '')
-        operator_note = os.getenv('OPERATOR_NOTE', '')
-        
+
+        products_list = PRODUCTS
+        if not isinstance(products_list, list):
+            logger.warning(
+                f"context_processor products_catalog not a list type={type(products_list).__name__} - using []"
+            )
+            products_list = []
+
+        from lib.nav import get_nav_sections, get_footer_columns
+        nav_sections = get_nav_sections()
+        footer_columns = get_footer_columns()
+
         return {
             'ADSENSE_ENABLED': os.getenv('ADSENSE_ENABLED', 'false').lower() == 'true',
             'app_version': app_version,
-            'products': PRODUCTS,
+            'products': products_list,
+            'nav_sections': nav_sections,
+            'footer_columns': footer_columns,
             'GA_MEASUREMENT_ID': os.getenv('GA_MEASUREMENT_ID', ''),
             'GSC_VERIFICATION_CONTENT': os.getenv('GSC_VERIFICATION_CONTENT', ''),
-            # P0-1: 運営者情報
-            'OPERATOR_NAME': operator_name,
-            'OPERATOR_EMAIL': operator_email,
-            'OPERATOR_LOCATION': operator_location,
-            'OPERATOR_NOTE': operator_note
+            'OPERATOR_NAME': os.getenv('OPERATOR_NAME', ''),
+            'OPERATOR_EMAIL': os.getenv('OPERATOR_EMAIL', ''),
+            'OPERATOR_LOCATION': os.getenv('OPERATOR_LOCATION', ''),
+            'OPERATOR_NOTE': os.getenv('OPERATOR_NOTE', '')
         }
     except Exception as e:
-        # context_processorでエラーが発生した場合、最小限のコンテキストを返す
-        # エラーをログに記録するが、リクエスト処理は続行（空のdictを返すとテンプレートエラーになる可能性がある）
         request_id = getattr(g, 'request_id', 'unknown') if hasattr(g, 'request_id') else 'unknown'
         import traceback
-        error_traceback = traceback.format_exc()
-        # 詳細なエラー情報をログに記録（恒久対策：例外ログの強化）
         logger.exception(
-            f"context_processor_error rid={request_id} error={str(e)}\n{error_traceback}"
+            f"context_processor_error rid={request_id} products_empty_reason={type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
         )
-        
-        # 最小限のコンテキストを返す（エラーを隠さない）
-        # テンプレートでproductsが未定義になるのを防ぐため、空のリストを返す
+        from lib.nav import get_nav_sections_fallback, get_footer_columns
         return {
             'ADSENSE_ENABLED': False,
             'app_version': '1.0.0',
-            'products': [],  # 空のリストを返す（テンプレートエラーを防ぐ）
+            'products': [],
+            'nav_sections': get_nav_sections_fallback(),
+            'footer_columns': get_footer_columns(),
             'GA_MEASUREMENT_ID': '',
             'GSC_VERIFICATION_CONTENT': '',
             'OPERATOR_NAME': '',
@@ -511,47 +553,121 @@ def validate_input_data(email, password, file):
 @app.route('/')
 def index():
     """ランディングページ（製品ハブ）"""
+    # 恒久対策：トップページを絶対に落とさない（依存データが取れない場合でも劣化表示で耐える）
     # context_processorで既にproductsが注入されているため、明示的に渡す必要はない
     # ただし、テンプレートでproductsが未定義の場合に備えて、明示的に渡す
+    
+    # ステップ1: 製品一覧は products_catalog から取得（外部依存なし・落ちない）
+    products = []
     try:
-        # context_processorで既にproductsが注入されているが、念のため確認
-        # インポートに失敗した場合でも、context_processorで注入されたproductsを使用
-        products = []
-        try:
-            from lib.routes import PRODUCTS
-            products = PRODUCTS
-        except Exception as import_error:
-            # PRODUCTSのインポートに失敗した場合、context_processorで注入されたproductsを使用
-            # context_processorでもエラーが発生している場合は空のリストになる
-            request_id = getattr(g, 'request_id', 'unknown')
-            logger.warning(
-                f"landing_page_import_failed rid={request_id} "
-                f"error={str(import_error)} - using context_processor products"
-            )
-            # context_processorで注入されたproductsを取得（存在しない場合は空のリスト）
-            # テンプレートで|default([])を使用しているため、空のリストでも問題ない
-        
+        from lib.products_catalog import PRODUCTS
+        products = list(PRODUCTS) if isinstance(PRODUCTS, list) else []
+    except Exception as import_error:
+        request_id = getattr(g, 'request_id', 'unknown')
+        logger.warning(
+            f"landing_page_products_empty rid={request_id} reason=import_failed "
+            f"exception={type(import_error).__name__} error={str(import_error)}"
+        )
+    
+    # ステップ2: テンプレートレンダリング（失敗しても劣化表示を返す）
+    try:
         # テンプレートに明示的に渡す（context_processorのフォールバック）
         # productsが空のリストでも、テンプレートで安全に処理される
         return render_template('landing.html', products=products)
-    except Exception as e:
-        # テンプレートレンダリング時の例外をログに記録してから、エラーハンドラに委譲
+    except Exception as render_error:
+        # テンプレートレンダリング時の例外をログに記録
         request_id = getattr(g, 'request_id', 'unknown')
-        import traceback
-        error_traceback = traceback.format_exc()
-        # logger.exception()を使用してスタックトレースを確実に記録
         logger.exception(
-            f"landing_page_error rid={request_id} path={request.path} "
-            f"error={str(e)}"
+            f"landing_page_render_failed rid={request_id} path={request.path if request else 'unknown'} "
+            f"error={str(render_error)} exception_type={type(render_error).__name__}"
         )
-        # 例外を再発生させて、エラーハンドラに処理させる
-        raise
+        
+        # 恒久対策：エラーページではなく、劣化表示のHTMLを直接返す
+        # これにより、トップページは常に200を返す
+        from flask import make_response
+        degraded_html = f'''<!doctype html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>業務効率化ツール集</title>
+    <style>
+        body {{
+            font-family: 'Noto Sans JP', sans-serif;
+            margin: 0;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #121212 0%, #1A1A1A 50%, #0F0F0F 100%);
+            color: #FFFFFF;
+            line-height: 1.8;
+            min-height: 100vh;
+        }}
+        .container {{
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 20px;
+            padding: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }}
+        h1 {{
+            color: #FFFFFF;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+        }}
+        p {{
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 20px;
+        }}
+        .warning {{
+            background: rgba(255, 152, 0, 0.1);
+            border-left: 4px solid #FF9800;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }}
+        a {{
+            color: #4A9EFF;
+            text-decoration: none;
+        }}
+        a:hover {{
+            text-decoration: underline;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 業務効率化ツール集</h1>
+        <p>日々の業務を効率化する、シンプルで強力なツールを提供しています。</p>
+        
+        <div class="warning">
+            <p><strong>⚠️ 一時的な表示の問題</strong></p>
+            <p>現在、製品情報の読み込みに問題が発生しています。しばらく待ってから再度お試しください。</p>
+            <p>以下のリンクから直接アクセスできます：</p>
+            <ul>
+                <li><a href="/autofill">Jobcan自動入力</a></li>
+                <li><a href="/tools">ツール一覧</a></li>
+                <li><a href="/about">サイトについて</a></li>
+            </ul>
+        </div>
+        
+        <p style="margin-top: 40px; font-size: 0.9em; color: rgba(255, 255, 255, 0.7);">
+            問題が解決しない場合は、<a href="/contact">お問い合わせ</a>からご連絡ください。
+        </p>
+    </div>
+</body>
+</html>'''
+        resp = make_response(degraded_html, 200)
+        resp.headers['X-Degraded-Mode'] = 'true'
+        return resp
 
 @app.route('/autofill')
 def autofill():
     """Jobcan自動入力ツール（旧ホームページ）"""
     try:
-        return render_template('autofill.html')
+        from lib.routes import get_available_products
+        available = get_available_products()
+        related_products = [p for p in available if p.get('id') != 'autofill'][:4]
+        return render_template('autofill.html', related_products=related_products)
     except Exception as e:
         # 例外をログに記録してから、エラーハンドラに委譲（例外を再発生）
         request_id = getattr(g, 'request_id', 'unknown')
@@ -678,8 +794,15 @@ def tools_seo():
 @app.route('/tools')
 def tools_index():
     """ツール一覧ページ"""
-    from lib.routes import PRODUCTS
-    return render_template('tools/index.html', products=PRODUCTS)
+    try:
+        from lib.products_catalog import PRODUCTS
+        products = list(PRODUCTS) if isinstance(PRODUCTS, list) else []
+    except Exception as import_error:
+        logger.warning(
+            f"tools_page_products_empty reason=import_failed exception={type(import_error).__name__} error={str(import_error)}"
+        )
+        products = []
+    return render_template('tools/index.html', products=products)
 
 @app.route('/faq')
 def faq():
@@ -1378,7 +1501,13 @@ def sitemap():
     """XMLサイトマップを動的生成（P0-1: PRODUCTSから自動生成）"""
     from flask import url_for
     from datetime import datetime
-    from lib.routes import PRODUCTS
+    
+    # PRODUCTSのインポート（失敗しても続行）
+    try:
+        from lib.routes import PRODUCTS
+    except Exception as import_error:
+        logger.warning(f"sitemap_import_failed error={str(import_error)} - using empty list")
+        PRODUCTS = []
     
     # ベースURL
     base_url = 'https://jobcan-automation.onrender.com'
@@ -1441,7 +1570,9 @@ def sitemap():
     # URL重複を防ぐために、既存のURLパスを集合で管理
     seen_urls = {url_path for url_path, _, _, _ in urls}
     
-    for product in PRODUCTS:
+    # PRODUCTSがリストであることを確認（恒久対策：型安全性）
+    products_list = PRODUCTS if isinstance(PRODUCTS, list) else []
+    for product in products_list:
         if product.get('status') == 'available':
             # product.pathを追加（重複チェック）
             product_path = product.get('path')
