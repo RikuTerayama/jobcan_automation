@@ -421,6 +421,9 @@ class ToolRunner {
         if (this.outputs.length === 0) {
             throw new Error('ダウンロード可能なファイルがありません');
         }
+        if (typeof ZipUtils === 'undefined') {
+            throw new Error('ZIPユーティリティが読み込まれていません（zip-utils.js）');
+        }
 
         try {
             const zipBlob = await ZipUtils.createZip(
