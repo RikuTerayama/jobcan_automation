@@ -265,14 +265,16 @@
         <div class="section">
             <h2 data-reveal>📦 製品一覧</h2>
             <div class="products-grid" data-reveal-stagger>
-            {% for product in products %}
-            <a href="{{ product.path }}" class="product-card">
-                <h3>{{ product.icon }} {{ product.name }}</h3>
-                <p>{{ product.description }}</p>
-                <span class="status {{ 'available' if product.status == 'available' else 'coming-soon' }}">
-                    {% if product.status == 'available' %}利用可能{% else %}準備中{% endif %}
+            {% for product in products|default([]) %}
+            <a href="{{ product.path|default('#') }}" class="product-card">
+                <h3>{{ product.icon|default('📦') }} {{ product.name|default('製品') }}</h3>
+                <p>{{ product.description|default('説明がありません') }}</p>
+                <span class="status {{ 'available' if product.status|default('coming-soon') == 'available' else 'coming-soon' }}">
+                    {% if product.status|default('coming-soon') == 'available' %}利用可能{% else %}準備中{% endif %}
                 </span>
             </a>
+            {% else %}
+            <p style="color: rgba(255, 255, 255, 0.7); text-align: center; padding: 20px;">製品情報を読み込めませんでした。しばらく待ってから再試行してください。</p>
             {% endfor %}
             </div>
         </div>
