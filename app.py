@@ -68,15 +68,15 @@ def validate_startup():
         except Exception as e:
             errors.append(f"Template not found or invalid: {template} - {str(e)}")
     
-    # PRODUCTSのインポート確認
+    # 製品カタログ（products_catalog）のインポート確認（LP/500 根本対策）
     try:
-        from lib.routes import PRODUCTS
+        from lib.products_catalog import PRODUCTS
         if not isinstance(PRODUCTS, list):
-            errors.append("PRODUCTS is not a list")
+            errors.append("products_catalog.PRODUCTS is not a list")
         elif len(PRODUCTS) == 0:
-            errors.append("PRODUCTS is empty")
+            errors.append("products_catalog.PRODUCTS is empty")
     except Exception as e:
-        errors.append(f"Failed to import PRODUCTS: {str(e)}")
+        errors.append(f"Failed to import products_catalog.PRODUCTS: {type(e).__name__}: {str(e)}")
     
     if errors:
         logger.error(f"startup_validation_failed errors={errors}")
@@ -236,9 +236,13 @@ def service_unavailable(error):
     """503エラーのハンドリング"""
     error_id = _generate_error_id()
     request_id = getattr(g, 'request_id', 'unknown')
-    logger.error(
-        f"service_unavailable error_id={error_id} rid={request_id} "
-        f"path={request.path} method={request.method} error={str(error)}"
+    try:
+        path = request.path if request else 'unknown'
+        method = request.method if request else 'unknown'
+    except Exception:
+        path, method = 'unknown', 'unknown'
+    logger.exception(
+        f"service_unavailable error_id={error_id} rid={request_id} path={path} method={method} error={str(error)}"
     )
     return _render_error_page(
         503,
@@ -294,61 +298,47 @@ def handle_exception(e):
 # 環境変数をテンプレートコンテキストに注入（AdSense設定用）
 @app.context_processor
 def inject_env_vars():
-    """環境変数をテンプレートで使えるようにする"""
+    """環境変数をテンプレートで使えるようにする。製品一覧は products_catalog から取得（外部依存なし）。"""
     try:
         import json
-        from lib.routes import PRODUCTS
-        
+        from lib.products_catalog import PRODUCTS
+
         app_version = '1.0.0'
         try:
             with open('package.json', 'r', encoding='utf-8') as f:
                 package_data = json.load(f)
                 app_version = package_data.get('version', '1.0.0')
         except Exception:
-            # package.jsonが存在しない、または読み込みエラーは無視
             pass
-        
-        # P0-1: 運営者情報を環境変数から取得
-        operator_name = os.getenv('OPERATOR_NAME', '')
-        operator_email = os.getenv('OPERATOR_EMAIL', '')
-        operator_location = os.getenv('OPERATOR_LOCATION', '')
-        operator_note = os.getenv('OPERATOR_NOTE', '')
-        
-        # PRODUCTSが正しい型であることを確認（恒久対策：型安全性）
+
         products_list = PRODUCTS
         if not isinstance(products_list, list):
-            logger.warning(f"context_processor PRODUCTS is not a list, type={type(products_list)}")
+            logger.warning(
+                f"context_processor products_catalog not a list type={type(products_list).__name__} - using []"
+            )
             products_list = []
-        
+
         return {
             'ADSENSE_ENABLED': os.getenv('ADSENSE_ENABLED', 'false').lower() == 'true',
             'app_version': app_version,
-            'products': products_list,  # 型チェック済みのリストを使用
+            'products': products_list,
             'GA_MEASUREMENT_ID': os.getenv('GA_MEASUREMENT_ID', ''),
             'GSC_VERIFICATION_CONTENT': os.getenv('GSC_VERIFICATION_CONTENT', ''),
-            # P0-1: 運営者情報
-            'OPERATOR_NAME': operator_name,
-            'OPERATOR_EMAIL': operator_email,
-            'OPERATOR_LOCATION': operator_location,
-            'OPERATOR_NOTE': operator_note
+            'OPERATOR_NAME': os.getenv('OPERATOR_NAME', ''),
+            'OPERATOR_EMAIL': os.getenv('OPERATOR_EMAIL', ''),
+            'OPERATOR_LOCATION': os.getenv('OPERATOR_LOCATION', ''),
+            'OPERATOR_NOTE': os.getenv('OPERATOR_NOTE', '')
         }
     except Exception as e:
-        # context_processorでエラーが発生した場合、最小限のコンテキストを返す
-        # エラーをログに記録するが、リクエスト処理は続行（空のdictを返すとテンプレートエラーになる可能性がある）
         request_id = getattr(g, 'request_id', 'unknown') if hasattr(g, 'request_id') else 'unknown'
         import traceback
-        error_traceback = traceback.format_exc()
-        # 詳細なエラー情報をログに記録（恒久対策：例外ログの強化）
         logger.exception(
-            f"context_processor_error rid={request_id} error={str(e)}\n{error_traceback}"
+            f"context_processor_error rid={request_id} products_empty_reason={type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
         )
-        
-        # 最小限のコンテキストを返す（エラーを隠さない）
-        # テンプレートでproductsが未定義になるのを防ぐため、空のリストを返す
         return {
             'ADSENSE_ENABLED': False,
             'app_version': '1.0.0',
-            'products': [],  # 空のリストを返す（テンプレートエラーを防ぐ）
+            'products': [],
             'GA_MEASUREMENT_ID': '',
             'GSC_VERIFICATION_CONTENT': '',
             'OPERATOR_NAME': '',
@@ -558,20 +548,17 @@ def index():
     # context_processorで既にproductsが注入されているため、明示的に渡す必要はない
     # ただし、テンプレートでproductsが未定義の場合に備えて、明示的に渡す
     
-    # ステップ1: PRODUCTSのインポート（失敗しても続行）
+    # ステップ1: 製品一覧は products_catalog から取得（外部依存なし・落ちない）
     products = []
     try:
-        from lib.routes import PRODUCTS
-        products = PRODUCTS
+        from lib.products_catalog import PRODUCTS
+        products = list(PRODUCTS) if isinstance(PRODUCTS, list) else []
     except Exception as import_error:
-        # PRODUCTSのインポートに失敗した場合、context_processorで注入されたproductsを使用
-        # context_processorでもエラーが発生している場合は空のリストになる
         request_id = getattr(g, 'request_id', 'unknown')
         logger.warning(
-            f"landing_page_import_failed rid={request_id} "
-            f"error={str(import_error)} - using context_processor products or empty list"
+            f"landing_page_products_empty rid={request_id} reason=import_failed "
+            f"exception={type(import_error).__name__} error={str(import_error)}"
         )
-        # テンプレートで|default([])を使用しているため、空のリストでも問題ない
     
     # ステップ2: テンプレートレンダリング（失敗しても劣化表示を返す）
     try:
@@ -795,12 +782,13 @@ def tools_seo():
 @app.route('/tools')
 def tools_index():
     """ツール一覧ページ"""
-    # PRODUCTSのインポート（失敗しても続行）
     try:
-        from lib.routes import PRODUCTS
-        products = PRODUCTS
+        from lib.products_catalog import PRODUCTS
+        products = list(PRODUCTS) if isinstance(PRODUCTS, list) else []
     except Exception as import_error:
-        logger.warning(f"tools_page_import_failed error={str(import_error)} - using empty list")
+        logger.warning(
+            f"tools_page_products_empty reason=import_failed exception={type(import_error).__name__} error={str(import_error)}"
+        )
         products = []
     return render_template('tools/index.html', products=products)
 
