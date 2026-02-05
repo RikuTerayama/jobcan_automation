@@ -48,6 +48,45 @@ MAX_ACTIVE_SESSIONS = int(os.getenv("MAX_ACTIVE_SESSIONS", "20"))
 
 app = Flask(__name__)
 
+# 起動時の検証（恒久対策：テンプレートとモジュールの存在確認）
+def validate_startup():
+    """アプリケーション起動時に主要リソースの存在を確認"""
+    errors = []
+    
+    # 主要テンプレートの存在確認
+    required_templates = [
+        'landing.html',
+        'error.html',
+        'includes/header.html',
+        'includes/footer.html',
+        'includes/head_meta.html',
+        'includes/structured_data.html'
+    ]
+    for template in required_templates:
+        try:
+            app.jinja_env.get_template(template)
+        except Exception as e:
+            errors.append(f"Template not found or invalid: {template} - {str(e)}")
+    
+    # PRODUCTSのインポート確認
+    try:
+        from lib.routes import PRODUCTS
+        if not isinstance(PRODUCTS, list):
+            errors.append("PRODUCTS is not a list")
+        elif len(PRODUCTS) == 0:
+            errors.append("PRODUCTS is empty")
+    except Exception as e:
+        errors.append(f"Failed to import PRODUCTS: {str(e)}")
+    
+    if errors:
+        logger.error(f"startup_validation_failed errors={errors}")
+        # エラーがあっても起動は続行（本番環境で起動できないのを防ぐ）
+    else:
+        logger.info("startup_validation_passed all checks OK")
+
+# 起動時に検証を実行
+validate_startup()
+
 # アップロードフォルダの設定
 UPLOAD_FOLDER = 'uploads'
 if not os.path.exists(UPLOAD_FOLDER):
@@ -156,12 +195,11 @@ def internal_error(error):
     error_id = _generate_error_id()
     request_id = getattr(g, 'request_id', 'unknown')
     
-    # スタックトレースをログに記録
-    import traceback
-    error_traceback = traceback.format_exc()
-    logger.error(
+    # スタックトレースをログに記録（恒久対策：例外ログの強化）
+    # logger.exception()を使用してスタックトレースを確実に記録
+    logger.exception(
         f"internal_server_error error_id={error_id} rid={request_id} "
-        f"path={request.path} method={request.method} error={str(error)}\n{error_traceback}"
+        f"path={request.path} method={request.method} error={str(error)}"
     )
     
     return _render_error_page(
@@ -202,12 +240,11 @@ def handle_exception(e):
     error_id = _generate_error_id()
     request_id = getattr(g, 'request_id', 'unknown')
     
-    # 詳細なエラー情報をログに記録
-    import traceback
-    error_traceback = traceback.format_exc()
-    logger.error(
+    # 詳細なエラー情報をログに記録（恒久対策：例外ログの強化）
+    # logger.exception()を使用してスタックトレースを確実に記録
+    logger.exception(
         f"unhandled_exception error_id={error_id} rid={request_id} "
-        f"path={request.path} method={request.method} error={str(e)}\n{error_traceback}"
+        f"path={request.path} method={request.method} error={str(e)}"
     )
     
     # HTMLエラーページを返す（APIエンドポイントでもHTMLを返す）
@@ -256,13 +293,15 @@ def inject_env_vars():
         # context_processorでエラーが発生した場合、最小限のコンテキストを返す
         # エラーをログに記録するが、リクエスト処理は続行（空のdictを返すとテンプレートエラーになる可能性がある）
         request_id = getattr(g, 'request_id', 'unknown') if hasattr(g, 'request_id') else 'unknown'
-        logger.error(
-            f"context_processor_error rid={request_id} error={str(e)}"
-        )
         import traceback
-        logger.error(f"context_processor_traceback:\n{traceback.format_exc()}")
+        error_traceback = traceback.format_exc()
+        # 詳細なエラー情報をログに記録（恒久対策：例外ログの強化）
+        logger.exception(
+            f"context_processor_error rid={request_id} error={str(e)}\n{error_traceback}"
+        )
         
         # 最小限のコンテキストを返す（エラーを隠さない）
+        # テンプレートでproductsが未定義になるのを防ぐため、空のリストを返す
         return {
             'ADSENSE_ENABLED': False,
             'app_version': '1.0.0',
