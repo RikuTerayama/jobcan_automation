@@ -39,3 +39,6 @@ class SeoOgpPresets {
         return this.getPresets().find(p => p.id === presetId) || null;
     }
 }
+
+window.SeoOgpPresets = SeoOgpPresets;
+console.debug('[seo-ogp-presets] loaded', true);
