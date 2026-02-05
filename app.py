@@ -798,6 +798,39 @@ def tools_seo():
     related_products = [p for p in available_products if p['id'] != 'seo' and p.get('status') == 'available'][:4]
     return render_template('tools/seo.html', product=product, related_products=related_products)
 
+
+@app.route('/api/seo/crawl-urls', methods=['POST'])
+def api_seo_crawl_urls():
+    """同一ホスト内でURLをクロールし、URL一覧を返す。sitemap用。"""
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+    except Exception:
+        data = {}
+    start_url = (data.get('start_url') or '').strip()
+    if not start_url:
+        return jsonify(success=False, error='start_url を指定してください'), 400
+    max_urls = data.get('max_urls', 300)
+    max_depth = data.get('max_depth', 3)
+    try:
+        max_urls = int(max_urls)
+        max_depth = int(max_depth)
+    except (TypeError, ValueError):
+        max_urls = 300
+        max_depth = 3
+    max_urls = max(1, min(1000, max_urls))
+    max_depth = max(0, min(10, max_depth))
+
+    from lib.seo_crawler import crawl
+    urls, warnings = crawl(
+        start_url=start_url,
+        max_urls=max_urls,
+        max_depth=max_depth,
+        request_timeout=5,
+        total_timeout=60
+    )
+    return jsonify(success=True, urls=urls, warnings=warnings)
+
+
 @app.route('/tools')
 def tools_index():
     """ツール一覧ページ"""
