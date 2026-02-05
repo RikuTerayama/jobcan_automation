@@ -318,10 +318,16 @@ def inject_env_vars():
             )
             products_list = []
 
+        from lib.nav import get_nav_sections, get_footer_columns
+        nav_sections = get_nav_sections()
+        footer_columns = get_footer_columns()
+
         return {
             'ADSENSE_ENABLED': os.getenv('ADSENSE_ENABLED', 'false').lower() == 'true',
             'app_version': app_version,
             'products': products_list,
+            'nav_sections': nav_sections,
+            'footer_columns': footer_columns,
             'GA_MEASUREMENT_ID': os.getenv('GA_MEASUREMENT_ID', ''),
             'GSC_VERIFICATION_CONTENT': os.getenv('GSC_VERIFICATION_CONTENT', ''),
             'OPERATOR_NAME': os.getenv('OPERATOR_NAME', ''),
@@ -335,10 +341,13 @@ def inject_env_vars():
         logger.exception(
             f"context_processor_error rid={request_id} products_empty_reason={type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
         )
+        from lib.nav import get_nav_sections_fallback, get_footer_columns
         return {
             'ADSENSE_ENABLED': False,
             'app_version': '1.0.0',
             'products': [],
+            'nav_sections': get_nav_sections_fallback(),
+            'footer_columns': get_footer_columns(),
             'GA_MEASUREMENT_ID': '',
             'GSC_VERIFICATION_CONTENT': '',
             'OPERATOR_NAME': '',
@@ -655,7 +664,10 @@ def index():
 def autofill():
     """Jobcan自動入力ツール（旧ホームページ）"""
     try:
-        return render_template('autofill.html')
+        from lib.routes import get_available_products
+        available = get_available_products()
+        related_products = [p for p in available if p.get('id') != 'autofill'][:4]
+        return render_template('autofill.html', related_products=related_products)
     except Exception as e:
         # 例外をログに記録してから、エラーハンドラに委譲（例外を再発生）
         request_id = getattr(g, 'request_id', 'unknown')
