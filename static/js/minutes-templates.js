@@ -86,6 +86,55 @@ class MinutesTemplates {
     }
 
     /**
+     * 標準（サマリ付き）テンプレートを生成
+     * @param {Object} meta - メタ情報
+     * @param {Array} decisions - 決定事項配列
+     * @param {Array} actions - ToDo配列
+     * @param {string} rawText - 原文
+     * @returns {string}
+     */
+    static renderStandardWithSummary(meta, decisions, actions, rawText) {
+        let md = `# ${meta.title || '議事録'}\n\n`;
+        if (meta.date) {
+            md += `**日付:** ${meta.date}\n`;
+        }
+        if (meta.participants) {
+            md += `**参加者:** ${meta.participants}\n`;
+        }
+        if (meta.author) {
+            md += `**作成者:** ${meta.author}\n`;
+        }
+        md += '\n---\n\n';
+        md += '## サマリ\n\n';
+        md += '（必要に応じて追記）\n\n';
+        md += '---\n\n';
+        md += '## 決定事項\n\n';
+        const acceptedDecisions = decisions.filter(dec => dec.accepted !== false);
+        if (acceptedDecisions.length > 0) {
+            acceptedDecisions.forEach(dec => {
+                md += `- ${dec.text}\n`;
+            });
+        } else {
+            md += '（決定事項なし）\n';
+        }
+        md += '\n---\n\n';
+        md += '## ToDo\n\n';
+        const acceptedActions = actions.filter(action => action.accepted !== false);
+        if (acceptedActions.length > 0) {
+            md += '| タスク | 担当 | 期限 | 状態 |\n';
+            md += '|--------|------|------|------|\n';
+            acceptedActions.forEach(action => {
+                const status = action.status === 'done' ? '✅ 完了' : '⏳ 未完了';
+                const dueDisplay = action.dueNormalized || action.dueRaw || action.due || '-';
+                md += `| ${action.title} | ${action.owner || '-'} | ${dueDisplay} | ${status} |\n`;
+            });
+        } else {
+            md += '（ToDoなし）\n';
+        }
+        return md;
+    }
+
+    /**
      * 上司向け報告書テンプレートを生成
      * @param {Object} meta - メタ情報
      * @param {Array} decisions - 決定事項配列
