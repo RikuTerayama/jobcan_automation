@@ -805,15 +805,51 @@ _crawl_rate_lock = threading.Lock()
 _CRAWL_RATE_SEC = 60
 
 
+def _is_valid_ip(s):
+    """妥当な IPv4/IPv6 形式なら True。"""
+    if not s or not isinstance(s, str):
+        return False
+    s = s.strip()
+    try:
+        import ipaddress
+        ipaddress.ip_address(s)
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
+def _get_client_ip_for_crawl():
+    """request.access_route / X-Forwarded-For から妥当なIPを採用し、なければ remote_addr。"""
+    candidates = []
+    if getattr(request, 'access_route', None):
+        candidates.extend(request.access_route)
+    xff = request.headers.get('X-Forwarded-For', '')
+    if xff:
+        candidates.extend(p.strip() for p in xff.split(',') if p.strip())
+    if request.remote_addr:
+        candidates.append(request.remote_addr)
+    for c in candidates:
+        if _is_valid_ip(c):
+            return c
+    return request.remote_addr or 'unknown'
+
+
 @app.route('/api/seo/crawl-urls', methods=['POST'])
 def api_seo_crawl_urls():
     """同一ホスト内でURLをクロールし、URL一覧を返す。sitemap用。SSRF対策・レート制限あり。"""
-    client_ip = request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0].strip() or 'unknown'
+    client_ip = _get_client_ip_for_crawl()
     now = time.time()
     with _crawl_rate_lock:
         last = _crawl_rate_by_ip.get(client_ip, 0)
         if now - last < _CRAWL_RATE_SEC:
-            return jsonify(success=False, error='しばらく待ってから再度お試しください（1分に1回まで）'), 429
+            resp = jsonify(
+                success=False,
+                error='しばらく待ってから再度お試しください（1分に1回まで）',
+                retry_after_sec=_CRAWL_RATE_SEC
+            )
+            resp.status_code = 429
+            resp.headers['Retry-After'] = str(_CRAWL_RATE_SEC)
+            return resp
         _crawl_rate_by_ip[client_ip] = now
 
     try:
