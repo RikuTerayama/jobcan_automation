@@ -183,3 +183,8 @@ class ImageBatchConvert {
         return `w${width}`;
     }
 }
+
+if (typeof window !== 'undefined') {
+    window.ImageBatchConvert = ImageBatchConvert;
+}
+console.debug('[image-batch-convert] loaded', typeof window !== 'undefined' ? !!window.ImageBatchConvert : 'no-window');
