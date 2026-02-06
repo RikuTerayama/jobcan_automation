@@ -6,7 +6,8 @@
     "lint:html": "html-validate 'templates/**/*.html'",
     "audit:ui": "ts-node scripts/generate-ui-audit.ts",
     "report:content": "node scripts/generate-content-reports.mjs",
-    "report:ia": "node scripts/generate-ia-guide-resources-report.mjs"
+    "report:ia": "node scripts/generate-ia-guide-resources-report.mjs",
+    "report:feature-gap": "node scripts/generate-feature-gap-report.mjs"
   },
   "devDependencies": {
     "@types/node": "^20.19.30",
