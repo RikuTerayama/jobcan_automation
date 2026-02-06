@@ -73,6 +73,22 @@ npm run report:content
 
 生成後、各 md を開いて TODO を埋めたり、記事用プロンプトに流し込んで利用してください。
 
+## 📐 IAレポート生成（Guide / Resources 現状監査）
+
+Guide と Resource 周りの情報設計を証拠付きで棚卸しし、整備計画を立てるための「現状理解レポート」を自動生成できます。ルート定義（app.py）とテンプレート配置・内部リンクを走査し、1本の Markdown にまとめます。
+
+### 実行方法
+
+```bash
+npm run report:ia
+```
+
+### 出力
+
+- `docs/ia-reports/guide-resources-audit.md` … Guide/Resources の現状棚卸し、定量（ページ数・階層・URL↔ファイル）、重複/分断/欠落、設計案3案（A/B/C）、整備ToDo、エビデンス
+
+改修は行いません。レポートのみ生成します。
+
 ## 📁 プロジェクト構造
 
 ```
