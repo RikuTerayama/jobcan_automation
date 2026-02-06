@@ -105,6 +105,21 @@ npm run report:feature-gap
 
 リポジトリの `app.py`・`lib/products_catalog.py`・`templates/tools/*.html`・`static/js/*.js` を走査してレポートを生成します。機能の実装は行いません。
 
+## 📊 ステータスレポート（プロダクト・UI・機能監査）
+
+現時点のプロダクト状態を、ChatGPT や改善ロードマップ用に1本のレポートにまとめた監査です。クオリティ評価・UI改善方針・追加推奨サービスの依頼に使えます。
+
+### 実行方法
+
+```bash
+npm run report:status
+```
+
+### 出力
+
+- 標準出力にルート一覧・製品IDの簡易JSONを表示し、フルレポートのパスを案内します。
+- フル監査は手動メンテの `docs/status-reports/2026-02-06_product_ui_and_feature_audit.md` を参照してください（ページ棚卸し、UI/UX採点、SEO/AdSense、実装方式、追加推奨サービス、ChatGPT用要約ブロックを含む）。
+
 ## 📁 プロジェクト構造
 
 ```
