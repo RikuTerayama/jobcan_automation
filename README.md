@@ -89,6 +89,22 @@ npm run report:ia
 
 改修は行いません。レポートのみ生成します。
 
+## 📋 機能ギャップ・優先順位レポート生成
+
+追加機能候補リストに対する現状の実装カバレッジを証拠付きで棚卸しし、次に追加すべき機能の優先順位を提案するレポートを生成できます。
+
+### 実行方法
+
+```bash
+npm run report:feature-gap
+```
+
+### 出力
+
+- `docs/feature-reports/feature-gap-prioritization.md` … 現状ツール一覧、候補10機能との対応表（既にある/一部ある/ない）、ギャップ詳細、スコア表と上位提案、実装方式の推奨、ガイド記事の増え方
+
+リポジトリの `app.py`・`lib/products_catalog.py`・`templates/tools/*.html`・`static/js/*.js` を走査してレポートを生成します。機能の実装は行いません。
+
 ## 📁 プロジェクト構造
 
 ```
