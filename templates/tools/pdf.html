@@ -325,7 +325,7 @@
                     またはクリックしてファイルを選択
                 </p>
                 <p id="dropzone-hint" style="color: rgba(255, 255, 255, 0.5); font-size: 0.85em; margin: 15px 0 0 0;">
-                    対応形式: PDF（最大20ファイル、1ファイル50MBまで）
+                    対応形式: PDF（操作により最大10または20ファイル、1ファイル50MBまで）
                 </p>
                 <input type="file" id="file-input" accept="application/pdf" multiple style="display: none;">
             </div>
@@ -426,6 +426,21 @@
             
             <!-- v2: 埋め込み画像抽出オプション -->
             <div id="extract-images-options" class="option-group" style="display: none;">
+                <div class="info-text" style="margin-bottom: 15px; padding: 12px; background: rgba(74, 158, 255, 0.08); border-radius: 8px; border-left: 3px solid rgba(74, 158, 255, 0.5);">
+                    <strong>埋め込み画像抽出（試験版）について</strong>
+                    <ul style="margin: 10px 0 0 0; padding-left: 20px; line-height: 1.6;">
+                        <li>PDFの中に含まれる画像を取り出し、画像ファイルとして保存します。</li>
+                        <li>PDFの種類によっては「画像だけ」ではなく「ページ全体を画像として保存」する形になることがあります（試験版）。</li>
+                        <li>うまく抽出できない主なケース:
+                            <ul style="margin-top: 4px; padding-left: 18px;">
+                                <li>図形や文字中心（ベクター中心）のPDF</li>
+                                <li>保護（暗号化/権限制限）されたPDF</li>
+                                <li>ページ数が多いPDF（重くなるため、必要ページだけに分割すると安定します）</li>
+                            </ul>
+                        </li>
+                        <li>複数の画像が出力された場合は「ZIPで一括ダウンロード」でまとめて保存できます。</li>
+                    </ul>
+                </div>
                 <label>画像形式</label>
                 <select id="extract-images-format">
                     <option value="png">PNG</option>
@@ -488,6 +503,7 @@
     <!-- 共通ライブラリ -->
     <script src="{{ url_for('static', filename='js/file-validation.js') }}"></script>
     <script src="{{ url_for('static', filename='js/file-utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/zip-utils.js') }}"></script>
     <script src="{{ url_for('static', filename='js/tool-runner.js') }}"></script>
     <script src="{{ url_for('static', filename='js/pdf-range.js') }}"></script>
     <script src="{{ url_for('static', filename='js/pdf-ops.js') }}"></script>
@@ -705,7 +721,8 @@
                 } else {
                     fileInput.removeAttribute('multiple');
                 }
-                dropzoneHint.textContent = '対応形式: PDF（最大20ファイル、1ファイル50MBまで）';
+                const pdfMaxFiles = (mode === 'to-images' || mode === 'extract-images') ? 10 : 20;
+                dropzoneHint.textContent = `対応形式: PDF（最大${pdfMaxFiles}ファイル、1ファイル50MBまで）`;
             }
             
             // ファイルリストをクリア
