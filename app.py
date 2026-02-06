@@ -695,20 +695,33 @@ def contact():
     """お問い合わせページ"""
     return render_template('contact.html')
 
+@app.route('/guide')
+def guide_index():
+    """ガイド一覧ページ（Jobcan / Tools の2セクション）"""
+    try:
+        from lib.products_catalog import PRODUCTS
+        products = [p for p in PRODUCTS if isinstance(p, dict) and p.get('status') == 'available']
+    except Exception:
+        products = []
+    return render_template('guide/index.html', products=products)
+
+
 @app.route('/guide/getting-started')
 def guide_getting_started():
     """はじめての使い方ガイド"""
-    return render_template('guide_getting_started.html')
+    return render_template('guide/getting-started.html')
+
 
 @app.route('/guide/excel-format')
 def guide_excel_format():
     """Excelファイルの作成方法ガイド"""
-    return render_template('guide_excel_format.html')
+    return render_template('guide/excel-format.html')
+
 
 @app.route('/guide/troubleshooting')
 def guide_troubleshooting():
     """トラブルシューティングガイド"""
-    return render_template('guide_troubleshooting.html')
+    return render_template('guide/troubleshooting.html')
 
 @app.route('/guide/complete')
 def guide_complete():
@@ -1626,7 +1639,8 @@ def sitemap():
         ('/best-practices', 'monthly', '0.8', today),
         ('/sitemap.html', 'monthly', '0.5', today),
         
-        # ガイドページ（固定）
+        # ガイドページ（一覧＋固定）
+        ('/guide', 'weekly', '0.9', today),
         ('/guide/complete', 'weekly', '0.9', today),
         ('/guide/comprehensive-guide', 'weekly', '0.9', today),
         ('/guide/getting-started', 'weekly', '0.9', today),

@@ -31,7 +31,8 @@
     {% include 'includes/breadcrumb.html' %}
     <div class="container">
         <h1>🔍 Web/SEOユーティリティガイド</h1>
-        <p>Web/SEOユーティリティは、OGP画像生成、PageSpeedチェックリスト、メタタグ検査、sitemap.xml/robots.txt生成などのSEO関連作業をブラウザ内で完結して実行できるツールです。</p>
+        <p><strong>できること:</strong> OGP画像生成、PageSpeedチェックリスト、メタタグ検査、sitemap.xml/robots.txt生成。OGP・チェックリスト・sitemap/robotsはブラウザ内完結。メタタグ検査はURL入力でHTML取得。URLクロール機能のみ、入力したURLをサーバー経由でアクセスしリンク一覧を返します。</p>
+        <p><strong>想定ユーザー:</strong> Webマスター、デザイナー、マーケター、開発者など、OGP・SEO・サイト構造の確認・生成が必要な方。</p>
 
         <h2>このツールで解決できる課題</h2>
         <ul>
@@ -101,39 +102,59 @@
             <strong>⚠️ その他の制限</strong>
             <ul style="margin-top: 10px;">
                 <li>メタタグ検査は対象サイトのCORS設定に依存します</li>
-                <li>タイムアウト: 10秒（メタタグ検査時）</li>
-                <li>OGP画像生成はブラウザ内で完結しますが、外部画像URLは読み込めない場合があります</li>
+                <li>URLクロール: 1分に1回まで（IPあたり）。最大URL数1〜1000、深さ0〜10（<code>app.py</code> 889–890行）</li>
+                <li>OGP画像生成はブラウザ内で完結しますが、外部画像URLはCORSで読み込めない場合があります</li>
             </ul>
         </div>
 
-        <h2>よくあるつまずきと対処</h2>
-        <h3>Q: メタタグ検査でCORSエラーが出る</h3>
-        <p><strong>A:</strong> 対象サイトがCORSを許可していない場合、ブラウザから直接HTMLを取得できません。その場合は、HTMLを直接貼り付けて検査してください。</p>
-        <h3>Q: OGP画像の背景画像が表示されない</h3>
-        <p><strong>A:</strong> 外部画像URLはCORS制約により読み込めない場合があります。画像は事前にダウンロードして、ローカルで使用することをお勧めします。</p>
-
-        <h2>セキュリティと注意点</h2>
-        <div class="info-box">
-            <strong>✅ データの安全性</strong>
-            <ul style="margin-top: 10px;">
-                <li>OGP画像生成、PageSpeedチェックリスト、sitemap/robots生成は完全にブラウザ内で完結します</li>
-                <li>メタタグ検査のみ、対象URLからHTMLを取得しますが、データは送信されません</li>
-                <li>処理完了後、メモリから自動的に削除されます</li>
-            </ul>
-        </div>
-
-        <h2>関連リンク</h2>
+        <h2 id="data-handling">データの取り扱い</h2>
+        <p>OGP画像・PageSpeedチェックリスト・sitemap/robots生成はすべてブラウザ内で完結し、当サーバーへデータは送信されません。</p>
         <ul>
-            <li><a href="/tools/seo">Web/SEOユーティリティ</a> - ツール本体</li>
-            <li><a href="/tools">ツール一覧</a> - 他のツールも見る</li>
-            <li><a href="/guide/minutes">議事録整形ガイド</a> - 関連ツール</li>
+            <li><strong>OGP・チェックリスト・sitemap/robots</strong>: ブラウザ内のみ。根拠: <code>templates/tools/seo.html</code> および関連JSで完結。アップロードルートなし。</li>
+            <li><strong>メタタグ検査（URL入力）</strong>: ブラウザから対象URLへ直接アクセスするため、当サーバーを経由しません。CORSで取得できない場合はHTML貼り付けで検査できます。</li>
+            <li><strong>URLクロール機能</strong>: 入力した開始URLが当サーバーに送信され、サーバー側でそのURLへHTTP GETしてリンクを収集し、URL一覧をJSONで返します。収集したURLはレスポンスとして返すのみで、当サーバーに保存しません。根拠: <code>app.py</code> 850–896行、<code>lib/seo_crawler.py</code> の <code>crawl()</code>。SSRF対策のため許可ホスト・URL制限あり。</li>
         </ul>
+        <p>詳細は<a href="/privacy">プライバシーポリシー</a>をご確認ください。</p>
+
+        <h2 id="faq">よくある質問（FAQ）</h2>
+        {% set faq_list = [
+            {"q": "OGP画像を自動生成できますか？", "a": "はい。タイトル・サブタイトル・背景色などを入力し、ブラウザ内で1200×630pxのOGP画像を生成できます。サーバーには送信されません。"},
+            {"q": "sitemap.xmlを生成できますか？", "a": "はい。sitemap/robotsタブで開始URLを入力し、URL一覧を取得したうえで、ブラウザ内でsitemap.xml/robots.txtを生成・ダウンロードできます。URLクロールを使う場合は開始URLがサーバー経由でアクセスされますが、収集結果は保存されません。"},
+            {"q": "メタタグ検査でCORSエラーが出ます。", "a": "対象サイトがCORSを許可していないとブラウザから取得できません。その場合は「HTMLを貼り付けて検査」でHTMLを直接貼り付けてメタタグを確認してください。"},
+            {"q": "URLクロールでサーバーにデータが保存されますか？", "a": "いいえ。開始URLでサーバーがHTTP GETしてリンクを収集し、結果のURL一覧をJSONで返すのみです。保存・ログ蓄積は行いません（app.py 850–896行、lib/seo_crawler.py）。"},
+            {"q": "OGP画像の背景画像が表示されません。", "a": "外部画像URLはCORSで読み込めない場合があります。画像をダウンロードしてローカルで指定するか、背景色のみで作成してください。"},
+            {"q": "PageSpeedチェックリストとは？", "a": "画像最適化・CSS/JS最適化など、パフォーマンス改善のためのチェック項目を一覧化したものです。選択した項目をブラウザ内で生成し、ダウンロードできます。"},
+            {"q": "クロールは何回まで使えますか？", "a": "同一IPあたり1分に1回までです。制限に達すると「しばらく待ってから再度お試しください」と表示されます（app.py 815–818行）。"},
+            {"q": "どのURLがクロール対象になりますか？", "a": "入力した開始URLと同じホスト内のリンクが対象です。localhostやプライベートIPはSSRF対策で許可されません（lib/seo_crawler.py の is_url_safe_for_crawl）。"}
+        ] %}
+        <div class="faq-list">
+            {% for item in faq_list %}
+            <div class="faq-item" style="margin-bottom: 24px;">
+                <h3 style="font-size: 1.1em; margin-bottom: 8px;">Q. {{ item.q }}</h3>
+                <p style="margin: 0; padding-left: 1em;">A. {{ item.a }}</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <h2>トラブルシューティング</h2>
+        <ul>
+            <li><strong>「このURLは許可されていません」</strong>: クロールは同一ホスト・http/httpsのみで、localhostやプライベートIPは許可されていません。公開URLでお試しください。</li>
+            <li><strong>「しばらく待ってから再度お試しください」</strong>: 1分に1回のレート制限に達しています。1分後に再度実行してください。</li>
+            <li><strong>メタタグ検査で取得できない</strong>: CORSでブロックされている可能性があります。HTMLを直接貼り付けて検査する方法に切り替えてください。</li>
+            <li><strong>OGP画像がダウンロードできない</strong>: ブラウザのポップアップブロックを確認してください。Canvasを右クリックして「画像を保存」でも保存できます。</li>
+            <li><strong>クロール結果が空になる</strong>: 開始URLのHTMLに同一オリジンのリンクが含まれていない、またはタイムアウトの可能性があります。URLとネットワークを確認してください。</li>
+        </ul>
+
+        {% set tool_path = '/tools/seo' %}
+        {% set tool_name = 'Web/SEOユーティリティ' %}
+        {% include 'guide/_partials/guide_related_links.html' %}
 
         <div class="nav-links">
             <a href="/tools/seo" class="nav-link">← Web/SEOユーティリティに戻る</a>
             <a href="/tools" class="nav-link">← ツール一覧へ</a>
         </div>
     </div>
+    {% include 'guide/_partials/guide_faq_jsonld.html' %}
     {% include 'includes/footer.html' %}
 </body>
 </html>
