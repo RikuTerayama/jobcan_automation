@@ -126,7 +126,8 @@
     {% include 'includes/breadcrumb.html' %}
     <div class="container">
         <h1>🖼️ 画像一括変換ツールガイド</h1>
-        <p>画像一括変換ツールは、複数の画像ファイルを一括で形式変換、リサイズ、品質圧縮できるブラウザ内完結型のツールです。サーバーにアップロードすることなく、すべての処理をローカルで実行します。</p>
+        <p><strong>できること:</strong> PNG・JPG・WebP の一括形式変換、リサイズ（縦横比維持）、品質圧縮、複数サイズの同時出力（バリアント）、ZIP一括ダウンロード。すべてブラウザ内で完結し、サーバーへ画像は送信されません。</p>
+        <p><strong>想定ユーザー:</strong> ECサイト・Webデザイナー、SNS運用、マーケターなど、画像の一括変換・複数サイズ出力が必要な方。</p>
 
         <h2>このツールで解決できる課題</h2>
         <ul>
@@ -204,60 +205,69 @@
             <li>PNG、JPG、WebP（選択可能）</li>
         </ul>
 
-        <h3>制限事項</h3>
+        <h3>制限事項（実装に基づく）</h3>
         <ul>
-            <li>最大ピクセル数: 80,000,000ピクセル（幅 × 高さ）</li>
-            <li>ファイルサイズ: ブラウザのメモリ制限に依存</li>
-            <li>同時処理数: 最大2ファイル</li>
+            <li><strong>最大ファイル数</strong>: 50ファイル（<code>static/js/file-validation.js</code> の maxFiles デフォルト値）</li>
+            <li><strong>1ファイルあたり</strong>: 20MBまで（同 maxFileSize 20*1024*1024）</li>
+            <li><strong>最大ピクセル数</strong>: 80,000,000ピクセル（幅×高さ）。<code>static/js/image-batch-convert.js</code> の MAX_PIXELS で検証</li>
+            <li><strong>同時処理</strong>: 最大2ファイル（UIの並列数）</li>
         </ul>
 
         <div class="warning-box">
             <strong>⚠️ 注意事項</strong>
-            <p>非常に大きな画像ファイルや大量のファイルを処理する場合、ブラウザのメモリ不足により処理が失敗する可能性があります。その場合は、ファイル数を減らすか、画像サイズを事前に縮小してください。</p>
+            <p>非常に大きな画像や大量ファイルを一度に処理すると、ブラウザのメモリ不足で失敗することがあります。ファイル数を減らすか、画像サイズを事前に縮小してからお試しください。</p>
         </div>
 
-        <h2>よくあるつまずきと対処</h2>
+        <h2 id="data-handling">データの取り扱い</h2>
+        <p>当ツールでは、画像ファイルのアップロード・サーバー保存・外部送信は行いません。</p>
+        <ul>
+            <li><strong>アップロード</strong>: 行いません。処理はすべてブラウザ内で完結します。根拠: <code>app.py</code> に <code>/tools/image-batch</code> 向けのファイル受信ルートは存在せず、<code>templates/tools/image-batch.html</code> と <code>static/js/image-batch-convert.js</code> で FileReader / createImageBitmap / Canvas API によりクライアント側のみで変換を行っています。</li>
+            <li><strong>サーバー保存</strong>: なし。画像データはサーバーに送信されません。</li>
+            <li><strong>ログ</strong>: 当ツール単体では、画像内容やファイル名をサーバーに送る処理はありません。</li>
+        </ul>
+        <p>詳細は<a href="/privacy">プライバシーポリシー</a>もご確認ください。</p>
 
-        <h3>Q: 変換が完了しない</h3>
-        <p><strong>A:</strong> ブラウザのメモリ不足が原因の可能性があります。ファイル数を減らすか、画像サイズを小さくしてから再試行してください。</p>
-
-        <h3>Q: 品質を下げたのにファイルサイズが大きい</h3>
-        <p><strong>A:</strong> PNG形式は品質設定が効きません。JPGまたはWebP形式を選択してください。</p>
-
-        <h3>Q: リサイズが効かない</h3>
-        <p><strong>A:</strong> リサイズ幅に0が設定されていないか確認してください。0を指定するとリサイズされません。</p>
-
-        <h3>Q: 複数サイズを同時に出力したい</h3>
-        <p><strong>A:</strong> 「バリアント」機能を使用してください。複数のサイズ設定を追加し、1回の処理で複数サイズを生成できます。</p>
-
-        <h2>セキュリティと注意点</h2>
-
-        <div class="info-box">
-            <strong>✅ データの安全性</strong>
-            <ul style="margin-top: 10px;">
-                <li>すべての処理はブラウザ内で完結します</li>
-                <li>ファイルはサーバーにアップロードされません</li>
-                <li>処理完了後、メモリから自動的に削除されます</li>
-                <li>外部サービスへの送信は一切ありません</li>
-            </ul>
+        <h2 id="faq">よくある質問（FAQ）</h2>
+        {% set faq_list = [
+            {"q": "画像一括変換ツールでサーバーに画像がアップロードされますか？", "a": "いいえ。すべてブラウザ内で処理され、画像データはサーバーに送信されません。処理は static/js/image-batch-convert.js およびブラウザの Canvas API で完結しています。"},
+            {"q": "複数サイズを同時に出力できますか？", "a": "はい。バリアント機能で複数のサイズ（幅）を追加し、1回の変換で複数サイズの画像を同時に生成できます。"},
+            {"q": "対応している画像形式は何ですか？", "a": "入力は PNG、JPEG（.jpg/.jpeg）、WebP です。出力も PNG、JPG、WebP から選択できます。"},
+            {"q": "最大何ファイルまで処理できますか？", "a": "最大50ファイルまでです（1ファイル20MBまで。static/js/file-validation.js で検証）。それ以上はエラーになるか、事前に分割してください。"},
+            {"q": "画像サイズの上限はありますか？", "a": "幅×高さが80,000,000ピクセルまでです。それを超えると「画像サイズが大きすぎます」エラーになります（image-batch-convert.js の MAX_PIXELS）。"},
+            {"q": "品質を下げたのにファイルサイズが大きいです。", "a": "PNG形式では品質スライダーは効きません。JPGまたはWebPを選択すると品質（圧縮）を調整できます。"},
+            {"q": "リサイズが効きません。", "a": "リサイズ幅に 0 を指定しているとリサイズされません。0 は「リサイズなし（元サイズ維持）」です。数値を入力してから変換してください。"},
+            {"q": "変換が途中で止まります。", "a": "ブラウザのメモリ不足の可能性があります。同時に処理するファイル数を減らすか、画像のピクセル数・ファイル数を減らして再試行してください。"}
+        ] %}
+        <div class="faq-list">
+            {% for item in faq_list %}
+            <div class="faq-item" style="margin-bottom: 24px;">
+                <h3 style="font-size: 1.1em; margin-bottom: 8px;">Q. {{ item.q }}</h3>
+                <p style="margin: 0; padding-left: 1em;">A. {{ item.a }}</p>
+            </div>
+            {% endfor %}
         </div>
+
+        <h2>トラブルシューティング</h2>
+        <ul>
+            <li><strong>「画像サイズが大きすぎます」と表示される</strong>: 幅×高さが8,000万ピクセルを超えています。リサイズ幅を小さくするか、元画像を別ツールで縮小してから読み込んでください。</li>
+            <li><strong>「ファイル数が上限を超えています」</strong>: 50ファイルを超えています。複数回に分けて処理するか、不要なファイルを外してください。</li>
+            <li><strong>「ファイルサイズが上限を超えています」</strong>: 1ファイルが20MBを超えています。圧縮するか、解像度を下げてからお試しください。</li>
+            <li><strong>変換後の画像が真っ白・崩れる</strong>: 対応外の形式（GIF、BMP等）や破損したファイルの可能性があります。PNG/JPG/WebPの正常なファイルで再試行してください。</li>
+            <li><strong>ZIPダウンロードが始まらない</strong>: ブラウザのポップアップブロックやダウンロード設定を確認してください。個別ダウンロードで1枚ずつ取得することもできます。</li>
+        </ul>
 
         <div class="tip-box">
             <strong>💡 効率的な使い方</strong>
             <ul style="margin-top: 10px;">
-                <li>プリセット機能を活用して、よく使う設定を保存しましょう</li>
-                <li>複数サイズが必要な場合は、バリアント機能を使用すると効率的です</li>
-                <li>大量のファイルを処理する場合は、一度に処理するファイル数を制限しましょう</li>
+                <li>プリセット機能でよく使う設定を保存すると便利です。</li>
+                <li>複数サイズが必要な場合はバリアントを活用してください。</li>
+                <li>大量ファイルは一度に50枚以内に分けて処理することをおすすめします。</li>
             </ul>
         </div>
 
-        <h2>関連リンク</h2>
-        <ul>
-            <li><a href="/tools/image-batch">画像一括変換ツール</a> - ツール本体</li>
-            <li><a href="/tools">ツール一覧</a> - 他のツールも見る</li>
-            <li><a href="/guide/image-cleanup">画像ユーティリティガイド</a> - 関連ツール</li>
-            <li><a href="/guide/pdf">PDFユーティリティガイド</a> - 関連ツール</li>
-        </ul>
+        {% set tool_path = '/tools/image-batch' %}
+        {% set tool_name = '画像一括変換ツール' %}
+        {% include 'guide/_partials/guide_related_links.html' %}
 
         <div class="nav-links">
             <a href="/tools/image-batch" class="nav-link">← 画像一括変換ツールに戻る</a>
@@ -266,6 +276,7 @@
         </div>
     </div>
 
+    {% include 'guide/_partials/guide_faq_jsonld.html' %}
     {% include 'includes/footer.html' %}
 </body>
 </html>

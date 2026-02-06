@@ -103,15 +103,17 @@
 
         <div style="background: rgba(74, 158, 255, 0.15); border-left: 4px solid #4A9EFF; padding: 25px; margin: 30px 0; border-radius: 8px;">
             <h2 style="margin-top: 0; color: #4A9EFF; font-size: 1.6em;">📚 まずはガイドを読みたい方はこちら</h2>
-            <p style="margin-bottom: 15px; color: rgba(255, 255, 255, 0.9);">詳細な手順や図解が必要な場合は、以下のガイドページをご覧ください：</p>
+            <p style="margin-bottom: 15px; color: rgba(255, 255, 255, 0.9);">詳細な手順はガイドをご覧ください：</p>
             <ul style="margin: 15px 0; padding-left: 25px; line-height: 2.2;">
-                <li><a href="/guide/getting-started" style="color: #4A9EFF; font-weight: 500;">はじめての使い方</a> - テンプレートのダウンロードから自動入力まで、ステップバイステップで詳しく解説</li>
-                <li><a href="/guide/excel-format" style="color: #4A9EFF; font-weight: 500;">Excelファイルの作成方法</a> - 日付・時刻の形式、よくあるエラーと修正方法を詳しく解説</li>
-                <li><a href="/guide/troubleshooting" style="color: #4A9EFF; font-weight: 500;">トラブルシューティング</a> - よくあるエラーと解決方法を詳しく解説</li>
+                <li><a href="/guide" style="color: #4A9EFF; font-weight: 500;">ガイド一覧</a> - 全ガイドへの入口</li>
+                <li><a href="/guide/getting-started" style="color: #4A9EFF; font-weight: 500;">はじめての使い方</a> - Jobcan AutoFillの流れ</li>
+                <li><a href="/guide/excel-format" style="color: #4A9EFF; font-weight: 500;">Excelファイルの作成方法</a> - 形式と注意点</li>
+                <li><a href="/guide/troubleshooting" style="color: #4A9EFF; font-weight: 500;">トラブルシューティング</a> - エラー対処</li>
+                <li>各ツールのFAQは各ガイドの<a href="/guide/image-batch#faq">画像一括変換</a>・<a href="/guide/pdf#faq">PDF</a>・<a href="/guide/image-cleanup#faq">画像ユーティリティ</a>・<a href="/guide/minutes#faq">議事録整形</a>・<a href="/guide/seo#faq">Web/SEO</a>の「よくある質問」をご覧ください。</li>
             </ul>
         </div>
 
-        <h2>サービス全般について</h2>
+        <h2>Jobcan AutoFill</h2>
 
         <div class="faq-item">
             <div class="category">サービス概要</div>
@@ -454,6 +456,124 @@
                 A. エラーが発生した場合は、<a href="/guide/troubleshooting">トラブルシューティングガイド</a>を確認し、もう一度処理を試行してください。問題が解決しない場合は<a href="/contact">お問い合わせ</a>から報告してください。エラーログを添付していただくと、迅速に対応できます。
             </div>
         </div>
+
+        <h2>Tools（各ツールのFAQ）</h2>
+        <p>以下は各ツールの代表的な質問です。詳細は各ガイドの「よくある質問」セクション（#faq）をご覧ください。</p>
+
+        <h3 style="color: #4A9EFF; font-size: 1.3em; margin-top: 28px;">🖼️ 画像一括変換</h3>
+        <div class="faq-item">
+            <div class="faq-question">サーバーに画像は送信されますか？</div>
+            <div class="faq-answer">いいえ。すべてブラウザ内で処理されます。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">複数サイズを同時に出力できますか？</div>
+            <div class="faq-answer">はい。バリアント機能で複数サイズを一度に生成できます。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">対応形式は？</div>
+            <div class="faq-answer">入力・出力とも PNG、JPG、WebP です。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">ファイル数・サイズの上限は？</div>
+            <div class="faq-answer">最大50ファイル、1ファイル20MBまでです。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">変換が完了しない</div>
+            <div class="faq-answer">メモリ不足の可能性があります。ファイル数や画像サイズを減らして再試行してください。</div>
+        </div>
+        <p><a href="/guide/image-batch#faq">→ 画像一括変換ガイドのFAQ（8問）</a></p>
+
+        <h3 style="color: #4A9EFF; font-size: 1.3em; margin-top: 28px;">📄 PDFユーティリティ</h3>
+        <div class="faq-item">
+            <div class="faq-question">PDFはサーバーに送信されますか？</div>
+            <div class="faq-answer">いいえ。処理はブラウザ内で完結します。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">複数PDFを結合できますか？</div>
+            <div class="faq-answer">はい。最大20ファイルまで結合できます。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">PDFを画像に変換できますか？</div>
+            <div class="faq-answer">はい。PNGまたはJPEGで全ページを画像化し、ZIPでダウンロードできます。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">パスワード付きPDFは使えますか？</div>
+            <div class="faq-answer">いいえ。事前にパスワードを解除してください。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">結合が失敗する</div>
+            <div class="faq-answer">ファイル破損やパスワード保護の可能性があります。別のビューアで開けるか確認してください。</div>
+        </div>
+        <p><a href="/guide/pdf#faq">→ PDFユーティリティガイドのFAQ（8問）</a></p>
+
+        <h3 style="color: #4A9EFF; font-size: 1.3em; margin-top: 28px;">✨ 画像ユーティリティ</h3>
+        <div class="faq-item">
+            <div class="faq-question">画像はサーバーに送信されますか？</div>
+            <div class="faq-answer">いいえ。ブラウザ内で処理されます。背景除去もブラウザ内で実行されます。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">透過PNGを白背景JPEGに変換できますか？</div>
+            <div class="faq-answer">はい。透過→白背景変換機能で変換できます。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">背景除去は自動でできますか？</div>
+            <div class="faq-answer">はい。背景除去タブでブラウザ内で自動処理されます。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">何枚まで処理できますか？</div>
+            <div class="faq-answer">通常は最大50ファイル、背景除去時は20ファイルまで（1ファイル20MB）。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">背景除去が遅い</div>
+            <div class="faq-answer">高解像度だと時間がかかります。事前にリサイズしてから処理すると高速化できます。</div>
+        </div>
+        <p><a href="/guide/image-cleanup#faq">→ 画像ユーティリティガイドのFAQ（8問）</a></p>
+
+        <h3 style="color: #4A9EFF; font-size: 1.3em; margin-top: 28px;">📝 議事録整形</h3>
+        <div class="faq-item">
+            <div class="faq-question">テキストはサーバーに送信されますか？</div>
+            <div class="faq-answer">いいえ。すべてブラウザ内で処理されます。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">決定事項を自動抽出できますか？</div>
+            <div class="faq-answer">はい。「決定:」「決定事項:」などのキーワードからルールベースで抽出します。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">CSV/JSONで出力できますか？</div>
+            <div class="faq-answer">はい。出力形式でMarkdown/CSV/JSONを選択できます。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">テキストの長さ制限は？</div>
+            <div class="faq-answer">最大20万文字まで。超えた分は先頭から20万文字のみ処理されます。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">日付が抽出されない</div>
+            <div class="faq-answer">YYYY/MM/DD 形式で記載してください。</div>
+        </div>
+        <p><a href="/guide/minutes#faq">→ 議事録整形ガイドのFAQ（8問）</a></p>
+
+        <h3 style="color: #4A9EFF; font-size: 1.3em; margin-top: 28px;">🔍 Web/SEOユーティリティ</h3>
+        <div class="faq-item">
+            <div class="faq-question">OGP画像はサーバーに送信されますか？</div>
+            <div class="faq-answer">いいえ。OGP・チェックリスト・sitemap/robotsはブラウザ内で完結します。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">URLクロールでデータは保存されますか？</div>
+            <div class="faq-answer">いいえ。開始URLでサーバーがリンクを収集し、結果を返すのみで保存はしません。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">メタタグ検査でCORSエラーが出る</div>
+            <div class="faq-answer">対象サイトがCORSを許可していない場合があります。HTMLを直接貼り付けて検査してください。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">クロールは何回まで？</div>
+            <div class="faq-answer">同一IPあたり1分に1回までです。</div>
+        </div>
+        <div class="faq-item">
+            <div class="faq-question">「このURLは許可されていません」</div>
+            <div class="faq-answer">localhostやプライベートIPはSSRF対策で許可されていません。公開URLでお試しください。</div>
+        </div>
+        <p><a href="/guide/seo#faq">→ Web/SEOユーティリティガイドのFAQ（8問）</a></p>
 
         <h2>さらに詳しく知る</h2>
         <p>その他のリソースもご活用ください：</p>

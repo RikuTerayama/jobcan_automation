@@ -31,7 +31,8 @@
     {% include 'includes/breadcrumb.html' %}
     <div class="container">
         <h1>📝 議事録整形ツールガイド</h1>
-        <p>議事録整形ツールは、テキストから決定事項、ToDo、担当者、期限を自動抽出し、構造化された議事録や報告書テンプレートを生成するブラウザ内完結型のツールです。</p>
+        <p><strong>できること:</strong> 文字起こしテキストから決定事項・ToDo・担当・期限を抽出し、構造化議事録（Markdown/CSV/JSON）を生成。すべてブラウザ内で完結し、テキストはサーバーに送信されません。</p>
+        <p><strong>想定ユーザー:</strong> PM、事務、営業、マネージャーなど、会議メモの整形や報告書テンプレート出力が必要な方。</p>
 
         <h2>このツールで解決できる課題</h2>
         <ul>
@@ -81,10 +82,10 @@
             <li>CSV（.csv）</li>
             <li>JSON（.json）</li>
         </ul>
-        <h3>制限事項</h3>
+        <h3>制限事項（実装に基づく）</h3>
         <ul>
-            <li>テキスト長: ブラウザのメモリ制限に依存（目安: 10,000文字程度）</li>
-            <li>抽出精度: ルールベースのため、形式が不規則な場合は抽出できない場合があります</li>
+            <li><strong>テキスト長</strong>: 最大20万文字（<code>templates/tools/minutes.html</code> の MAX_TEXT_LENGTH）。超えた分は先頭から20万文字のみ処理されます。</li>
+            <li>抽出はルールベースのため、キーワードや形式が不規則な場合は抽出されないことがあります。</li>
         </ul>
 
         <div class="tip-box">
@@ -96,28 +97,46 @@
             </ul>
         </div>
 
-        <h2>よくあるつまずきと対処</h2>
-        <h3>Q: 決定事項が抽出されない</h3>
-        <p><strong>A:</strong> 「決定:」「決定事項:」などのキーワードが含まれているか確認してください。形式が異なる場合は手動で修正が必要です。</p>
-        <h3>Q: 日付が抽出されない</h3>
-        <p><strong>A:</strong> 日付は「YYYY/MM/DD」形式で記載してください。他の形式（例: 2025年1月1日）は認識されない場合があります。</p>
+        <h2 id="data-handling">データの取り扱い</h2>
+        <p>当ツールでは、議事録テキストのアップロード・サーバー保存は行いません。</p>
+        <ul>
+            <li><strong>サーバー送信</strong>: 行いません。処理はすべてブラウザ内で完結します。根拠: <code>app.py</code> の <code>/api/minutes/format</code> は現時点で 501 Not Implemented を返すのみで、テキストを受け取る実装がありません（<code>app.py</code> 799–802行）。抽出・整形は <code>templates/tools/minutes.html</code> 内のJavaScriptで実行されています。</li>
+            <li><strong>ログ・保存</strong>: 当サーバーに議事録内容を保存する処理はありません。</li>
+        </ul>
+        <p>詳細は<a href="/privacy">プライバシーポリシー</a>をご確認ください。</p>
 
-        <h2>セキュリティと注意点</h2>
-        <div class="info-box">
-            <strong>✅ データの安全性</strong>
-            <ul style="margin-top: 10px;">
-                <li>すべての処理はブラウザ内で完結します</li>
-                <li>テキストはサーバーに送信されません</li>
-                <li>処理完了後、メモリから自動的に削除されます</li>
-            </ul>
+        <h2 id="faq">よくある質問（FAQ）</h2>
+        {% set faq_list = [
+            {"q": "議事録整形ツールでテキストがサーバーに送信されますか？", "a": "いいえ。すべてブラウザ内で処理され、議事録テキストはサーバーに送信されません。app.py の /api/minutes/format は 501 を返すのみで、実装はクライアント側です。"},
+            {"q": "決定事項を自動抽出できますか？", "a": "はい。「決定:」「決定事項:」などのキーワードを含む行をルールベースで抽出します。形式が揃っていると精度が上がります。"},
+            {"q": "ToDoをCSV/JSONで出力できますか？", "a": "はい。ToDo抽出後、出力形式でMarkdown/CSV/JSONを選べます。CSV/JSONでは担当・期限も含めて出力できます。"},
+            {"q": "テキストの長さ制限はありますか？", "a": "最大20万文字までです。それを超えると先頭から20万文字のみ処理され、警告が表示されます（templates/tools/minutes.html の MAX_TEXT_LENGTH）。"},
+            {"q": "日付が抽出されません。", "a": "YYYY/MM/DD 形式で記載してください。「2025年1月1日」など他形式は認識されない場合があります。"},
+            {"q": "話者ラベル（Speaker1: など）は残せますか？", "a": "テンプレートによっては話者ラベルを維持するオプションがあります。設定で「話者ラベルを除去」のオン/オフを選べます。"},
+            {"q": "複数テンプレートに対応していますか？", "a": "はい。議事録形式・報告書形式など複数のテンプレートから選択できます。出力形式は .md / .txt / .csv / .json から選べます。"},
+            {"q": "ファイルでテキストを読み込めますか？", "a": "はい。.txt ファイルを選択して読み込めます。ファイルサイズが20万文字を超える場合は先頭から20万文字が使われます。"}
+        ] %}
+        <div class="faq-list">
+            {% for item in faq_list %}
+            <div class="faq-item" style="margin-bottom: 24px;">
+                <h3 style="font-size: 1.1em; margin-bottom: 8px;">Q. {{ item.q }}</h3>
+                <p style="margin: 0; padding-left: 1em;">A. {{ item.a }}</p>
+            </div>
+            {% endfor %}
         </div>
 
-        <h2>関連リンク</h2>
+        <h2>トラブルシューティング</h2>
         <ul>
-            <li><a href="/tools/minutes">議事録整形ツール</a> - ツール本体</li>
-            <li><a href="/tools">ツール一覧</a> - 他のツールも見る</li>
-            <li><a href="/guide/seo">Web/SEOユーティリティガイド</a> - 関連ツール</li>
+            <li><strong>決定事項が1件も抽出されない</strong>: 「決定:」「決定事項:」などのキーワードが含まれているか確認してください。表記を揃えると認識されやすくなります。</li>
+            <li><strong>「テキストが長すぎます」と表示される</strong>: 20万文字を超えています。重要な部分だけをコピーするか、複数回に分けて処理してください。</li>
+            <li><strong>日付が「期限」に反映されない</strong>: YYYY/MM/DD 形式で記載されているか確認してください。同じ行や次の行に担当・期限を書くと抽出されやすくなります。</li>
+            <li><strong>ダウンロードが空になる</strong>: 抽出結果が0件の可能性があります。キーワードを入れたうえで「抽出・整形を開始」を再度実行してください。</li>
+            <li><strong>CSVの文字化け</strong>: UTF-8でダウンロードされています。Excelで開く場合は「データ」→「テキストから」でUTF-8を指定して読み込んでください。</li>
         </ul>
+
+        {% set tool_path = '/tools/minutes' %}
+        {% set tool_name = '議事録整形ツール' %}
+        {% include 'guide/_partials/guide_related_links.html' %}
 
         <div class="nav-links">
             <a href="/tools/minutes" class="nav-link">← 議事録整形ツールに戻る</a>
@@ -125,6 +144,7 @@
             <a href="/guide/seo" class="nav-link">次のガイド: Web/SEOユーティリティ →</a>
         </div>
     </div>
+    {% include 'guide/_partials/guide_faq_jsonld.html' %}
     {% include 'includes/footer.html' %}
 </body>
 </html>
