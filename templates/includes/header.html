@@ -27,9 +27,20 @@
                             </button>
                             <ul class="site-nav__dropdown" id="dropdown-{{ section.id|default(loop.index) }}" role="menu" aria-label="{{ section.label }}">
                                 {% for item in section.children %}
+                                {% if item.get('items') %}
+                                <li role="none" class="site-nav__group">
+                                    <span class="site-nav__group-label">{{ item.group_label|default('') }}</span>
+                                    {% for sub in item['items'] %}
+                                    <li role="none">
+                                        <a href="{{ sub.path|default('#') }}" role="menuitem" class="site-nav__dropdown-link">{{ sub.icon|default('') }}{% if sub.icon %} {% endif %}{{ sub.name|default('') }}</a>
+                                    </li>
+                                    {% endfor %}
+                                </li>
+                                {% else %}
                                 <li role="none">
                                     <a href="{{ item.path|default('#') }}" role="menuitem" class="site-nav__dropdown-link">{{ item.icon|default('') }}{% if item.icon %} {% endif %}{{ item.name|default('') }}</a>
                                 </li>
+                                {% endif %}
                                 {% endfor %}
                             </ul>
                         </div>
@@ -90,6 +101,12 @@
         font-size: 0.95em; transition: background 0.2s;
     }
     .site-nav__dropdown-link:hover { background: rgba(74, 158, 255, 0.15); color: #4A9EFF; }
+    .site-nav__group { list-style: none; padding: 0; margin: 0; }
+    .site-nav__group .site-nav__group { padding-left: 0; }
+    .site-nav__group-label {
+        display: block; padding: 8px 16px 4px; font-size: 0.75em; font-weight: 600;
+        color: rgba(255, 255, 255, 0.6); text-transform: uppercase; letter-spacing: 0.05em;
+    }
     @media (max-width: 768px) {
         .site-nav__inner { flex-direction: column; gap: 16px; }
         .site-nav__links { width: 100%; justify-content: center; }

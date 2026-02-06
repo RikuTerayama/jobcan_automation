@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    {% set page_title = 'ガイド一覧 | Automation Hub' %}
+    {% include 'includes/head_meta.html' %}
+    {% block description_meta %}
+        <meta name="description" content="Jobcan AutoFill・画像一括変換・PDF・議事録整形・Web/SEOなど、各ツールの使い方ガイド一覧。はじめての使い方からトラブルシューティングまで。">
+    {% endblock %}
+    <style>
+        body { font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #121212 0%, #1A1A1A 50%, #0F0F0F 100%); min-height: 100vh; color: #FFFFFF; line-height: 1.8; }
+        .container { max-width: 900px; margin: 0 auto; background: linear-gradient(145deg, #1E1E1E 0%, #2A2A2A 100%); border-radius: 20px; padding: 50px; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5); }
+        h1 { font-size: 2.2em; margin-bottom: 10px; color: #FFFFFF; }
+        .lead { color: rgba(255, 255, 255, 0.8); margin-bottom: 40px; font-size: 1.05em; }
+        .guide-section { margin-bottom: 40px; }
+        .guide-section h2 { font-size: 1.5em; margin-bottom: 16px; color: #4A9EFF; border-bottom: 1px solid rgba(74, 158, 255, 0.3); padding-bottom: 8px; }
+        .guide-list { list-style: none; padding: 0; margin: 0; }
+        .guide-list li { margin-bottom: 12px; }
+        .guide-list a { display: block; padding: 14px 20px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; color: #FFFFFF; text-decoration: none; transition: all 0.2s; }
+        .guide-list a:hover { background: rgba(74, 158, 255, 0.15); border-color: rgba(74, 158, 255, 0.4); color: #4A9EFF; }
+        .nav-links { display: flex; gap: 16px; margin-top: 40px; padding-top: 30px; border-top: 1px solid rgba(255, 255, 255, 0.2); flex-wrap: wrap; }
+        .nav-link { display: inline-block; padding: 12px 24px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 10px; color: #FFFFFF; text-decoration: none; transition: all 0.2s; }
+        .nav-link:hover { background: rgba(255, 255, 255, 0.2); }
+    </style>
+</head>
+<body>
+    {% include 'includes/header.html' %}
+    <div class="container">
+        <h1>📚 ガイド一覧</h1>
+        <p class="lead">各ツールの使い方・トラブルシューティング・形式説明など、ガイドページへの入口です。</p>
+
+        <section class="guide-section">
+            <h2>Jobcan AutoFill</h2>
+            <ul class="guide-list">
+                <li><a href="/guide/getting-started">はじめての使い方</a></li>
+                <li><a href="/guide/excel-format">Excelファイルの作成方法</a></li>
+                <li><a href="/guide/troubleshooting">トラブルシューティング</a></li>
+                <li><a href="/guide/complete">完全ガイド</a></li>
+                <li><a href="/guide/comprehensive-guide">総合ガイド（勤怠管理の効率化）</a></li>
+            </ul>
+        </section>
+
+        <section class="guide-section">
+            <h2>ツール別ガイド</h2>
+            <ul class="guide-list">
+                {% for p in products|default([]) %}
+                    {% if p.get('guide_path') %}
+                <li><a href="{{ p.guide_path }}">{{ p.get('icon', '') }}{% if p.get('icon') %} {% endif %}{{ p.get('name', '') }}</a></li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        </section>
+
+        <div class="nav-links">
+            <a href="/" class="nav-link">← ホーム</a>
+            <a href="/tools" class="nav-link">ツール一覧</a>
+            <a href="/autofill" class="nav-link">Jobcan AutoFill</a>
+        </div>
+    </div>
+    {% include 'includes/footer.html' %}
+</body>
+</html>

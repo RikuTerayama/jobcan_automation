@@ -25,31 +25,39 @@ def get_nav_sections():
             'icon': p.get('icon', '')
         })
 
-    guide_links = [
-        {'name': '完全ガイド', 'path': '/guide/complete', 'icon': ''},
+    jobcan_guides = [
         {'name': 'はじめての使い方', 'path': '/guide/getting-started', 'icon': ''},
         {'name': 'Excelファイルの作成方法', 'path': '/guide/excel-format', 'icon': ''},
         {'name': 'トラブルシューティング', 'path': '/guide/troubleshooting', 'icon': ''},
+        {'name': '完全ガイド', 'path': '/guide/complete', 'icon': ''},
+        {'name': '総合ガイド（勤怠管理の効率化）', 'path': '/guide/comprehensive-guide', 'icon': ''},
     ]
+    tool_guide_items = []
     for p in products:
         gp = p.get('guide_path') or ''
         if gp:
-            guide_links.append({'name': p.get('name', ''), 'path': gp, 'icon': p.get('icon', '')})
+            tool_guide_items.append({'name': p.get('name', ''), 'path': gp, 'icon': p.get('icon', '')})
+
+    guide_links = [
+        {'name': 'ガイド一覧', 'path': '/guide', 'icon': ''},
+        {'group_label': 'Jobcan AutoFill', 'items': jobcan_guides},
+        {'group_label': 'ツール別ガイド', 'items': tool_guide_items},
+    ]
 
     resource_links = [
         {'name': 'よくある質問（FAQ）', 'path': '/faq', 'icon': ''},
         {'name': '用語集', 'path': '/glossary', 'icon': ''},
         {'name': 'ブログ', 'path': '/blog', 'icon': ''},
         {'name': 'サイトについて', 'path': '/about', 'icon': ''},
+        {'name': 'お問い合わせ', 'path': '/contact', 'icon': ''},
         {'name': 'プライバシーポリシー', 'path': '/privacy', 'icon': ''},
         {'name': '利用規約', 'path': '/terms', 'icon': ''},
-        {'name': 'お問い合わせ', 'path': '/contact', 'icon': ''},
     ]
 
     return [
         {'id': 'home', 'label': 'Home', 'path': '/', 'children': None},
         {'id': 'tools', 'label': 'Tools', 'path': '/tools', 'children': tool_links},
-        {'id': 'guide', 'label': 'Guide', 'path': '/guide/getting-started', 'children': guide_links},
+        {'id': 'guide', 'label': 'Guide', 'path': '/guide', 'children': guide_links},
         {'id': 'resource', 'label': 'Resource', 'path': '/faq', 'children': resource_links},
     ]
 
@@ -59,20 +67,24 @@ def get_nav_sections_fallback():
     return [
         {'id': 'home', 'label': 'Home', 'path': '/', 'children': None},
         {'id': 'tools', 'label': 'Tools', 'path': '/tools', 'children': [{'name': 'すべてのツール', 'path': '/tools', 'icon': ''}]},
-        {'id': 'guide', 'label': 'Guide', 'path': '/guide/getting-started', 'children': [
-            {'name': '完全ガイド', 'path': '/guide/complete', 'icon': ''},
-            {'name': 'はじめての使い方', 'path': '/guide/getting-started', 'icon': ''},
-            {'name': 'Excelファイルの作成方法', 'path': '/guide/excel-format', 'icon': ''},
-            {'name': 'トラブルシューティング', 'path': '/guide/troubleshooting', 'icon': ''},
+        {'id': 'guide', 'label': 'Guide', 'path': '/guide', 'children': [
+            {'name': 'ガイド一覧', 'path': '/guide', 'icon': ''},
+            {'group_label': 'Jobcan AutoFill', 'items': [
+                {'name': 'はじめての使い方', 'path': '/guide/getting-started', 'icon': ''},
+                {'name': 'Excelファイルの作成方法', 'path': '/guide/excel-format', 'icon': ''},
+                {'name': 'トラブルシューティング', 'path': '/guide/troubleshooting', 'icon': ''},
+                {'name': '完全ガイド', 'path': '/guide/complete', 'icon': ''},
+                {'name': '総合ガイド（勤怠管理の効率化）', 'path': '/guide/comprehensive-guide', 'icon': ''},
+            ]},
         ]},
         {'id': 'resource', 'label': 'Resource', 'path': '/faq', 'children': [
             {'name': 'よくある質問（FAQ）', 'path': '/faq', 'icon': ''},
             {'name': '用語集', 'path': '/glossary', 'icon': ''},
             {'name': 'ブログ', 'path': '/blog', 'icon': ''},
             {'name': 'サイトについて', 'path': '/about', 'icon': ''},
+            {'name': 'お問い合わせ', 'path': '/contact', 'icon': ''},
             {'name': 'プライバシーポリシー', 'path': '/privacy', 'icon': ''},
             {'name': '利用規約', 'path': '/terms', 'icon': ''},
-            {'name': 'お問い合わせ', 'path': '/contact', 'icon': ''},
         ]},
     ]
 
@@ -89,15 +101,17 @@ def get_footer_columns():
         tool_links.append({'name': p.get('name', ''), 'path': p.get('path', '#'), 'icon': p.get('icon', '')})
 
     guide_links = [
-        {'name': '完全ガイド', 'path': '/guide/complete'},
+        {'name': 'ガイド一覧', 'path': '/guide'},
         {'name': 'はじめての使い方', 'path': '/guide/getting-started'},
         {'name': 'Excelファイルの作成方法', 'path': '/guide/excel-format'},
         {'name': 'トラブルシューティング', 'path': '/guide/troubleshooting'},
+        {'name': '完全ガイド', 'path': '/guide/complete'},
+        {'name': '総合ガイド（勤怠管理の効率化）', 'path': '/guide/comprehensive-guide'},
     ]
     for p in products:
         gp = p.get('guide_path') or ''
         if gp:
-            guide_links.append({'name': p.get('name', ''), 'path': gp, 'icon': p.get('icon', '')})
+            guide_links.append({'name': p.get('name', ''), 'path': gp})
 
     return [
         {'title': 'ツール一覧', 'links': tool_links},

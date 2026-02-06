@@ -695,20 +695,33 @@ def contact():
     """お問い合わせページ"""
     return render_template('contact.html')
 
+@app.route('/guide')
+def guide_index():
+    """ガイド一覧ページ（Jobcan / Tools の2セクション）"""
+    try:
+        from lib.products_catalog import PRODUCTS
+        products = [p for p in PRODUCTS if isinstance(p, dict) and p.get('status') == 'available']
+    except Exception:
+        products = []
+    return render_template('guide/index.html', products=products)
+
+
 @app.route('/guide/getting-started')
 def guide_getting_started():
     """はじめての使い方ガイド"""
-    return render_template('guide_getting_started.html')
+    return render_template('guide/getting-started.html')
+
 
 @app.route('/guide/excel-format')
 def guide_excel_format():
     """Excelファイルの作成方法ガイド"""
-    return render_template('guide_excel_format.html')
+    return render_template('guide/excel-format.html')
+
 
 @app.route('/guide/troubleshooting')
 def guide_troubleshooting():
     """トラブルシューティングガイド"""
-    return render_template('guide_troubleshooting.html')
+    return render_template('guide/troubleshooting.html')
 
 @app.route('/guide/complete')
 def guide_complete():
@@ -782,6 +795,13 @@ def tools_minutes():
     related_products = [p for p in available_products if p['id'] != 'minutes' and p.get('status') == 'available'][:4]
     return render_template('tools/minutes.html', product=product, related_products=related_products)
 
+
+@app.route('/api/minutes/format', methods=['POST'])
+def api_minutes_format():
+    """議事録整形API（将来のLLM連携用スタブ）。現時点では未実装で501を返す。"""
+    return jsonify(success=False, error='Not implemented'), 501
+
+
 @app.route('/tools/seo')
 def tools_seo():
     """Web/SEOユーティリティ"""
@@ -790,6 +810,94 @@ def tools_seo():
     available_products = get_available_products()
     related_products = [p for p in available_products if p['id'] != 'seo' and p.get('status') == 'available'][:4]
     return render_template('tools/seo.html', product=product, related_products=related_products)
+
+
+# 簡易レート制限: /api/seo/crawl-urls を IP ごとに 60 秒に 1 回まで
+_crawl_rate_by_ip = {}
+_crawl_rate_lock = threading.Lock()
+_CRAWL_RATE_SEC = 60
+
+
+def _is_valid_ip(s):
+    """妥当な IPv4/IPv6 形式なら True。"""
+    if not s or not isinstance(s, str):
+        return False
+    s = s.strip()
+    try:
+        import ipaddress
+        ipaddress.ip_address(s)
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
+def _get_client_ip_for_crawl():
+    """request.access_route / X-Forwarded-For から妥当なIPを採用し、なければ remote_addr。"""
+    candidates = []
+    if getattr(request, 'access_route', None):
+        candidates.extend(request.access_route)
+    xff = request.headers.get('X-Forwarded-For', '')
+    if xff:
+        candidates.extend(p.strip() for p in xff.split(',') if p.strip())
+    if request.remote_addr:
+        candidates.append(request.remote_addr)
+    for c in candidates:
+        if _is_valid_ip(c):
+            return c
+    return request.remote_addr or 'unknown'
+
+
+@app.route('/api/seo/crawl-urls', methods=['POST'])
+def api_seo_crawl_urls():
+    """同一ホスト内でURLをクロールし、URL一覧を返す。sitemap用。SSRF対策・レート制限あり。"""
+    client_ip = _get_client_ip_for_crawl()
+    now = time.time()
+    with _crawl_rate_lock:
+        last = _crawl_rate_by_ip.get(client_ip, 0)
+        if now - last < _CRAWL_RATE_SEC:
+            resp = jsonify(
+                success=False,
+                error='しばらく待ってから再度お試しください（1分に1回まで）',
+                retry_after_sec=_CRAWL_RATE_SEC
+            )
+            resp.status_code = 429
+            resp.headers['Retry-After'] = str(_CRAWL_RATE_SEC)
+            return resp
+        _crawl_rate_by_ip[client_ip] = now
+
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+    except Exception:
+        data = {}
+    start_url = (data.get('start_url') or '').strip()
+    if not start_url:
+        return jsonify(success=False, error='start_url を指定してください'), 400
+
+    from lib.seo_crawler import crawl, is_url_safe_for_crawl
+    safe, err_msg = is_url_safe_for_crawl(start_url)
+    if not safe:
+        return jsonify(success=False, error=err_msg or 'このURLは許可されていません'), 400
+
+    max_urls = data.get('max_urls', 300)
+    max_depth = data.get('max_depth', 3)
+    try:
+        max_urls = int(max_urls)
+        max_depth = int(max_depth)
+    except (TypeError, ValueError):
+        max_urls = 300
+        max_depth = 3
+    max_urls = max(1, min(1000, max_urls))
+    max_depth = max(0, min(10, max_depth))
+
+    urls, warnings = crawl(
+        start_url=start_url,
+        max_urls=max_urls,
+        max_depth=max_depth,
+        request_timeout=5,
+        total_timeout=60
+    )
+    return jsonify(success=True, urls=urls, warnings=warnings)
+
 
 @app.route('/tools')
 def tools_index():
@@ -1531,7 +1639,8 @@ def sitemap():
         ('/best-practices', 'monthly', '0.8', today),
         ('/sitemap.html', 'monthly', '0.5', today),
         
-        # ガイドページ（固定）
+        # ガイドページ（一覧＋固定）
+        ('/guide', 'weekly', '0.9', today),
         ('/guide/complete', 'weekly', '0.9', today),
         ('/guide/comprehensive-guide', 'weekly', '0.9', today),
         ('/guide/getting-started', 'weekly', '0.9', today),
