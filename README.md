@@ -55,6 +55,24 @@ npm run audit:ui
 
 レポートをGeminiに貼り付けることで、具体的なUI改善提案を得ることができます。
 
+## 📄 コンテンツレポート生成（記事用素材）
+
+AdSense を意識した記事作成用の「素材レポート」を自動生成できます。各サービスの概要・使い方・FAQ・SEO 素材などの章立てを揃えた Markdown が `docs/content-reports/` に出力されます。後続で ChatGPT や Cursor で記事化する前提のテンプレです。
+
+### 実行方法
+
+```bash
+npm run report:content
+```
+
+### 出力
+
+- `docs/content-reports/00_master_overview.md` … サービス一覧・情報設計・テンプレ構成
+- `docs/content-reports/01_<サービスID>.md` … 各サービスごとのレポート（autofill, image-batch, pdf, image-cleanup, minutes, seo）
+- `docs/content-reports/99_adsense_readiness_checklist.md` … 必須ページ・コンテンツ品質・1記事あたりの目安
+
+生成後、各 md を開いて TODO を埋めたり、記事用プロンプトに流し込んで利用してください。
+
 ## 📁 プロジェクト構造
 
 ```

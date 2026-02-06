@@ -4,7 +4,8 @@
   "description": "Jobcan勤怠データ自動入力ツール",
   "scripts": {
     "lint:html": "html-validate 'templates/**/*.html'",
-    "audit:ui": "ts-node scripts/generate-ui-audit.ts"
+    "audit:ui": "ts-node scripts/generate-ui-audit.ts",
+    "report:content": "node scripts/generate-content-reports.mjs"
   },
   "devDependencies": {
     "@types/node": "^20.19.30",
