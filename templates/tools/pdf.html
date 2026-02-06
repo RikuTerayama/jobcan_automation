@@ -325,7 +325,7 @@
                     またはクリックしてファイルを選択
                 </p>
                 <p id="dropzone-hint" style="color: rgba(255, 255, 255, 0.5); font-size: 0.85em; margin: 15px 0 0 0;">
-                    対応形式: PDF（最大20ファイル、1ファイル50MBまで）
+                    対応形式: PDF（操作により最大10または20ファイル、1ファイル50MBまで）
                 </p>
                 <input type="file" id="file-input" accept="application/pdf" multiple style="display: none;">
             </div>
@@ -721,7 +721,8 @@
                 } else {
                     fileInput.removeAttribute('multiple');
                 }
-                dropzoneHint.textContent = '対応形式: PDF（最大20ファイル、1ファイル50MBまで）';
+                const pdfMaxFiles = (mode === 'to-images' || mode === 'extract-images') ? 10 : 20;
+                dropzoneHint.textContent = `対応形式: PDF（最大${pdfMaxFiles}ファイル、1ファイル50MBまで）`;
             }
             
             // ファイルリストをクリア

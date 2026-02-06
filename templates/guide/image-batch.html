@@ -207,8 +207,8 @@
 
         <h3>制限事項（実装に基づく）</h3>
         <ul>
-            <li><strong>最大ファイル数</strong>: 50ファイル（<code>static/js/file-validation.js</code> の maxFiles デフォルト値）</li>
-            <li><strong>1ファイルあたり</strong>: 20MBまで（同 maxFileSize 20*1024*1024）</li>
+            <li><strong>最大ファイル数</strong>: 50ファイル（<code>templates/tools/image-batch.html</code> の validateFiles）</li>
+            <li><strong>1ファイルあたり</strong>: 20MBまで。合計200MBまで（同）</li>
             <li><strong>最大ピクセル数</strong>: 80,000,000ピクセル（幅×高さ）。<code>static/js/image-batch-convert.js</code> の MAX_PIXELS で検証</li>
             <li><strong>同時処理</strong>: 最大2ファイル（UIの並列数）</li>
         </ul>
