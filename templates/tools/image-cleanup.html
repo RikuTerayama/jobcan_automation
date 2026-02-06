@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="ja" class="no-js">
 <head>
-    {% set page_title = '画像ユーティリティ - 透過→白背景・余白トリム・縦横比統一・背景除去 | ブラウザ内処理でアップロード不要' %}
-    {% set page_description = '透過画像を白背景JPEGに変換、余白トリミング、縦横比統一、背景除去をブラウザ内で一括処理できる無料ツール。ファイルはアップロードされません。' %}
+    {% set page_title = '画像ユーティリティ - 透過→白背景・余白トリム・枠・角丸・縦横比統一・背景除去 | ブラウザ内処理でアップロード不要' %}
+    {% set page_description = '透過画像を白背景JPEGに変換、余白トリミング、枠・余白・角丸、縦横比統一、背景除去をブラウザ内で一括処理できる無料ツール。ファイルはアップロードされません。' %}
     {% set breadcrumb_title = product.name|default('画像ユーティリティ') %}
     {% include 'includes/head_meta.html' %}
     {% block description_meta %}
@@ -394,6 +394,44 @@
                 </div>
             </div>
             
+            <!-- v1: 枠・余白・角丸 -->
+            <div class="option-group">
+                <h4 style="margin: 0 0 12px 0; font-size: 1em; color: rgba(255,255,255,0.9);">枠・余白・角丸</h4>
+                <div style="display: grid; gap: 12px;">
+                    <div>
+                        <label>余白（px） <span id="padding-value">0</span></label>
+                        <input type="range" id="style-padding" min="0" max="200" value="0" oninput="document.getElementById('padding-value').textContent = this.value">
+                    </div>
+                    <div>
+                        <label>角丸（px） <span id="radius-value">0</span></label>
+                        <input type="range" id="style-radius" min="0" max="500" value="0" oninput="document.getElementById('radius-value').textContent = this.value">
+                    </div>
+                    <div>
+                        <label>枠の幅（px） <span id="border-width-value">0</span></label>
+                        <input type="range" id="style-border-width" min="0" max="50" value="0" oninput="document.getElementById('border-width-value').textContent = this.value">
+                    </div>
+                    <div id="style-border-color-wrap">
+                        <label>枠の色</label>
+                        <select id="style-border-color" onchange="toggleStyleBorderCustom()">
+                            <option value="#000000">黒</option>
+                            <option value="#ffffff">白</option>
+                            <option value="custom">任意</option>
+                        </select>
+                        <input type="color" id="style-border-color-custom" value="#000000" style="display: none; margin-left: 8px; vertical-align: middle;">
+                    </div>
+                    <div>
+                        <label>余白・角の背景色</label>
+                        <select id="style-bg-color" onchange="toggleStyleBgCustom()">
+                            <option value="#ffffff">白</option>
+                            <option value="transparent">透明（PNG向け）</option>
+                            <option value="custom">任意</option>
+                        </select>
+                        <input type="color" id="style-bg-color-custom" value="#ffffff" style="display: none; margin-left: 8px; vertical-align: middle;">
+                    </div>
+                </div>
+                <p class="info-text">余白・角丸・枠を指定すると、適用順で反映されます。0の場合は変更なし。</p>
+            </div>
+            
             <div class="option-group">
                 <label>出力形式</label>
                 <select id="output-format" onchange="updateSubOptions()">
@@ -460,6 +498,7 @@
     <script src="{{ url_for('static', filename='js/tool-runner.js') }}"></script>
     <script src="{{ url_for('static', filename='js/image-load.js') }}"></script>
     <script src="{{ url_for('static', filename='js/image-export.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/image-style.js') }}"></script>
     <script src="{{ url_for('static', filename='js/image-cleanup.js') }}"></script>
     <script src="{{ url_for('static', filename='js/image-background-removal.js') }}"></script>
     <script src="{{ url_for('static', filename='js/image-aspect.js') }}"></script>
@@ -467,6 +506,16 @@
     <script>
         let toolRunner = null;
         
+        function toggleStyleBorderCustom() {
+            const sel = document.getElementById('style-border-color');
+            const custom = document.getElementById('style-border-color-custom');
+            custom.style.display = sel.value === 'custom' ? 'inline-block' : 'none';
+        }
+        function toggleStyleBgCustom() {
+            const sel = document.getElementById('style-bg-color');
+            const custom = document.getElementById('style-bg-color-custom');
+            custom.style.display = sel.value === 'custom' ? 'inline-block' : 'none';
+        }
         // 初期化
         document.addEventListener('DOMContentLoaded', () => {
             // 背景除去ONのときはconcurrencyを1に設定
@@ -481,6 +530,8 @@
             
             setupDropzone();
             updateSubOptions();
+            toggleStyleBorderCustom();
+            toggleStyleBgCustom();
         });
         
         // ドロップゾーンの設定
@@ -657,6 +708,13 @@
             const padToAspect = document.getElementById('pad-aspect').checked;
             const aspectRatio = document.getElementById('aspect-ratio').value;
             const aspectFit = document.getElementById('aspect-fit').value;
+            const stylePadding = parseInt(document.getElementById('style-padding').value) || 0;
+            const styleRadius = parseInt(document.getElementById('style-radius').value) || 0;
+            const styleBorderWidth = parseInt(document.getElementById('style-border-width').value) || 0;
+            const styleBorderColorSel = document.getElementById('style-border-color').value;
+            const styleBorderColor = styleBorderColorSel === 'custom' ? document.getElementById('style-border-color-custom').value : styleBorderColorSel;
+            const styleBgSel = document.getElementById('style-bg-color').value;
+            const styleBgColor = styleBgSel === 'custom' ? document.getElementById('style-bg-color-custom').value : styleBgSel;
             const outputFormat = document.getElementById('output-format').value;
             const quality = parseFloat(document.getElementById('quality').value);
             const filenameTemplate = document.getElementById('filename-template').value.trim();
@@ -680,6 +738,13 @@
                     padToAspect,
                     aspectRatio,
                     aspectFit,
+                    style: {
+                        paddingPx: stylePadding,
+                        radiusPx: styleRadius,
+                        borderWidthPx: styleBorderWidth,
+                        borderColor: styleBorderColor,
+                        bgColor: styleBgColor
+                    },
                     backgroundRemoval: {
                         enabled: bgRemovalEnabled,
                         quality: bgRemovalQuality

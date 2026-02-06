@@ -155,12 +155,24 @@ class ImageCleanup {
      * @param {boolean} options.padToAspect - 縦横比統一を適用
      * @param {string} options.aspectRatio - 縦横比（'original', '1:1', '4:5', '16:9'）
      * @param {string} options.aspectFit - フィット方式（'pad' | 'crop'）
+     * @param {Object} options.style - 枠・余白・角丸（v1）
+     * @param {number} options.style.paddingPx - 余白（0〜）
+     * @param {number} options.style.borderWidthPx - 枠の幅（0〜）
+     * @param {string} options.style.borderColor - 枠の色
+     * @param {number} options.style.radiusPx - 角丸半径（0〜）
+     * @param {string} options.style.bgColor - 余白・角丸用背景色
      * @param {Object} options.backgroundRemoval - 背景除去オプション
      * @param {boolean} options.backgroundRemoval.enabled - 背景除去を有効化
      * @param {string} options.backgroundRemoval.quality - 品質（'low' | 'medium' | 'high'）
      * @param {string} options.outputFormat - 出力形式（'jpeg', 'webp', 'png'）
      * @param {number} options.quality - 品質（0.1-1.0）
      * @param {string} options.filename - 出力ファイル名
+     * @param {Object} options.style - 枠・余白・角丸（v1）
+     * @param {number} options.style.paddingPx - 余白（0〜）
+     * @param {number} options.style.radiusPx - 角丸（0〜）
+     * @param {number} options.style.borderWidthPx - 枠幅（0〜）
+     * @param {string} options.style.borderColor - 枠の色
+     * @param {string} options.style.bgColor - 余白・角用背景色
      * @param {Object} ctx - コンテキスト
      * @returns {Promise<Array<{blob: Blob, filename: string, mime: string}>>}
      */
@@ -172,11 +184,20 @@ class ImageCleanup {
             padToAspect = false,
             aspectRatio = 'original',
             aspectFit = 'pad',
+            style = { paddingPx: 0, borderWidthPx: 0, borderColor: '#000000', radiusPx: 0, bgColor: '#ffffff' },
             backgroundRemoval = { enabled: false, quality: 'medium' },
             outputFormat = 'jpeg',
             quality = 0.9,
-            filename = null
+            filename = null,
+            style = {}
         } = options;
+        const {
+            paddingPx = 0,
+            radiusPx = 0,
+            borderWidthPx = 0,
+            borderColor = '#000000',
+            bgColor = '#ffffff'
+        } = style;
 
         if (ctx.setTaskState) {
             ctx.setTaskState(ctx.index || 0, { status: 'running', message: '画像読み込み中...' });
@@ -253,6 +274,26 @@ class ImageCleanup {
                 canvas = ImageAspect.cropToAspect(canvas, aspectRatio);
             } else {
                 canvas = this.padToAspect(canvas, aspectRatio);
+            }
+        }
+
+        if (ctx.signal && ctx.signal.cancelled) {
+            throw new Error('キャンセルされました');
+        }
+
+        // (5b) 枠・余白・角丸（v1）
+        if (typeof ImageStyle !== 'undefined' && (paddingPx > 0 || radiusPx > 0 || borderWidthPx > 0)) {
+            if (ctx.setTaskState) {
+                ctx.setTaskState(ctx.index || 0, { status: 'running', message: 'スタイル適用中...' });
+            }
+            if (paddingPx > 0) {
+                canvas = ImageStyle.applyPadding(canvas, paddingPx, bgColor);
+            }
+            if (radiusPx > 0) {
+                canvas = ImageStyle.applyRoundedCorners(canvas, radiusPx, bgColor);
+            }
+            if (borderWidthPx > 0) {
+                canvas = ImageStyle.applyBorder(canvas, borderWidthPx, borderColor);
             }
         }
 
