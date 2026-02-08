@@ -1043,6 +1043,8 @@
                 } else {
                     if (result.error_code === 'QUEUE_FULL') {
                         updateProgressStatus('warning', '混雑しています', result.error || '現在混雑しています。しばらくしてからお試しください。');
+                    } else if (response.status === 503) {
+                        updateProgressStatus('warning', '一時的に利用できません', result.error || result.message || 'しばらくしてからお試しください。');
                     } else {
                         if (typeof window !== 'undefined' && window.gtag) {
                             window.gtag('event', 'autofill_error', { error_type: result.error || 'unknown' });
