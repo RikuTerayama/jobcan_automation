@@ -248,12 +248,9 @@
     <div class="container">
         <div class="page-header">
             <h1 data-reveal>📝 議事録整形</h1>
-            <p data-reveal data-reveal-delay="50">要約ではなく成果物フォーマットへ整形します。ローカル処理で、テキストはアップロードしません。</p>
+            <p data-reveal data-reveal-delay="50">会議の文字起こしテキストを貼り付けると、決定事項とToDoを中心に議事録として整形します。処理はブラウザ内で完結し、テキストはサーバーに送信されません。</p>
             <a href="/guide/minutes" style="display: inline-block; margin-top: 15px; padding: 10px 20px; background: rgba(74, 158, 255, 0.2); border: 1px solid rgba(74, 158, 255, 0.5); border-radius: 8px; color: #4A9EFF; text-decoration: none; font-weight: 500; transition: all 0.3s;" data-reveal data-reveal-delay="100">📚 ガイドを読む</a>
         </div>
-        
-        {# P0-2: コンテンツ目的の明確化ブロック #}
-        {% include 'includes/tool_content_blocks.html' %}
         
         <div class="main-layout">
             <!-- 左: 入力エリア -->
@@ -263,9 +260,10 @@
                 <div class="option-group">
                     <label>テンプレート</label>
                     <select id="template-select" onchange="updateTemplateOptions()">
-                        <option value="action">決定事項とToDo分解</option>
-                        <option value="report">上司向け報告書</option>
-                        <option value="incident">インシデント用</option>
+                        <option value="action">決定事項とToDo（標準）</option>
+                        <option value="standard-summary">標準（サマリ付き）</option>
+                        <option value="report">上司向けサマリ（報告用）</option>
+                        <option value="incident">インシデント報告（障害用）</option>
                     </select>
                 </div>
                 
@@ -300,16 +298,27 @@
                 </div>
                 
                 <div class="option-group">
-                    <label>原文（貼り付けまたはファイル読み込み）</label>
+                    <label>話者ラベル</label>
+                    <select id="speaker-labels">
+                        <option value="keep">維持（そのまま）</option>
+                        <option value="strip">除去（行頭の「名前:」「Speaker1:」等を除去）</option>
+                    </select>
+                </div>
+                
+                <div class="option-group">
+                    <label>文字起こしテキスト（貼り付けまたはファイル読み込み）</label>
+                    <div class="info-text" style="margin-bottom: 10px; padding: 10px; background: rgba(255, 152, 0, 0.08); border-radius: 6px; border-left: 3px solid rgba(255, 152, 0, 0.5);">
+                        機密情報が含まれる場合は取り扱いにご注意ください。現在の整形処理はブラウザ内で完結し、入力テキストはサーバーに送信されません。
+                    </div>
                     <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <input type="file" id="file-input" accept="text/plain" style="flex: 1;">
+                        <input type="file" id="file-input" accept=".txt,.md,text/plain,text/markdown" style="flex: 1;">
                         <button class="action-button secondary" onclick="loadSampleText()" style="flex: 0 0 auto; padding: 10px 15px;">サンプル入力</button>
                     </div>
-                    <textarea id="raw-text" placeholder="議事録の原文を貼り付けてください"></textarea>
+                    <textarea id="raw-text" placeholder="文字起こしテキストを貼り付けてください（例: Speaker1: では始めます）"></textarea>
                     <p class="info-text">最大200,000文字まで</p>
                 </div>
                 
-                <button id="extract-button" class="action-button" onclick="extractAndFormat()">抽出して整形</button>
+                <button id="extract-button" class="action-button" onclick="extractAndFormat()">構造化して整形</button>
             </div>
             
             <!-- 中央: 編集エリア -->
@@ -354,11 +363,15 @@
                 <div id="output-actions" class="output-actions" style="display: none;">
                     <button class="action-button" onclick="copyOutput()">Markdownをコピー</button>
                     <button class="action-button" onclick="downloadOutput()">Markdownをダウンロード</button>
+                    <button class="action-button" onclick="downloadOutputTxt()">テキスト(.txt)をダウンロード</button>
                     <button class="action-button secondary" onclick="downloadActionsCsv()">ToDo CSVをダウンロード</button>
                     <button class="action-button secondary" onclick="downloadActionsJson()">ToDo JSONをダウンロード</button>
                 </div>
             </div>
         </div>
+
+        <div class="tool-kb-anchor-link" style="text-align: center; margin: 28px 0 16px 0;"><a href="#about-tool" style="color: #4A9EFF;">使い方・FAQを読む ↓</a></div>
+        {% include 'includes/tool_content_blocks.html' %}
     </div>
 
     {% include 'includes/related_tools.html' %}
@@ -444,6 +457,9 @@
                 metaCommon.forEach(el => el.style.display = 'block');
                 metaIncident.forEach(el => el.style.display = 'none');
             }
+            if (templateId === 'standard-summary') {
+                metaCommon.forEach(el => el.style.display = 'block');
+            }
             
             regenerateOutput();
         }
@@ -481,8 +497,14 @@
                 };
             }
             
+            // 話者ラベル: 除去を選んだ場合は行頭の「名前:」「Speaker1:」等を除去
+            let textForExtract = state.rawText;
+            const speakerMode = document.getElementById('speaker-labels') && document.getElementById('speaker-labels').value;
+            if (speakerMode === 'strip') {
+                textForExtract = MinutesParse.stripSpeakerLabels(textForExtract);
+            }
             // テキストを正規化して行に分割
-            const normalized = MinutesParse.normalizeText(state.rawText);
+            const normalized = MinutesParse.normalizeText(textForExtract);
             const lines = MinutesParse.splitLines(normalized);
             
             // v2: 抽出ロジックを使用（confidence、accepted、sources対応）
@@ -739,6 +761,13 @@
                     state.actions,
                     state.rawText
                 );
+            } else if (state.templateId === 'standard-summary') {
+                md = MinutesTemplates.renderStandardWithSummary(
+                    state.meta,
+                    state.decisions,
+                    state.actions,
+                    state.rawText
+                );
             } else if (state.templateId === 'report') {
                 md = MinutesTemplates.renderReportTemplate(
                     state.meta,
@@ -785,7 +814,7 @@
             }
         }
         
-        // 出力をダウンロード
+        // 出力をダウンロード（Markdown）
         function downloadOutput() {
             if (!state.outputMarkdown) return;
             
@@ -793,6 +822,16 @@
                                 (state.templateId === 'incident' ? state.incidentMeta.title : '') ||
                                 'minutes';
             MinutesExport.downloadMarkdown(state.outputMarkdown, filenameBase);
+        }
+        
+        // 出力をダウンロード（テキスト .txt）
+        function downloadOutputTxt() {
+            if (!state.outputMarkdown) return;
+            
+            const filenameBase = state.meta.title || 
+                                (state.templateId === 'incident' ? state.incidentMeta.title : '') ||
+                                'minutes';
+            MinutesExport.downloadTxt(state.outputMarkdown, filenameBase);
         }
         
         // v2: ToDo CSVをダウンロード
