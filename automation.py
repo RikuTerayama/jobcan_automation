@@ -1467,9 +1467,26 @@ def clear_session(page, job_id, jobs):
         add_job_log(job_id, f"❌ セッションクリアでエラー: {e}", jobs)
         return False
 
-def process_jobcan_automation(job_id: str, email: str, password: str, file_path: str, jobs: dict, session_dir: str = None, session_id: str = None, company_id: str = None):
-    """Jobcan自動化処理のメイン関数（セッション固有のブラウザ環境）"""
+def _check_job_timeout(job_id: str, jobs: dict, job_timeout_sec: int) -> bool:
+    """経過時間がjob_timeout_secを超えていればstatusをtimeoutにしTrueを返す。"""
+    if job_id not in jobs or job_timeout_sec <= 0:
+        return False
+    start = jobs[job_id].get('start_time') or 0
+    if time.time() - start > job_timeout_sec:
+        jobs[job_id]['status'] = 'timeout'
+        jobs[job_id]['login_status'] = 'timeout'
+        jobs[job_id]['login_message'] = f'処理が{job_timeout_sec}秒を超えたためタイムアウトしました。'
+        jobs[job_id]['end_time'] = time.time()
+        add_job_log(job_id, f"⏱ ジョブタイムアウト（{job_timeout_sec}秒）", jobs)
+        return True
+    return False
+
+
+def process_jobcan_automation(job_id: str, email: str, password: str, file_path: str, jobs: dict, session_dir: str = None, session_id: str = None, company_id: str = None, job_timeout_sec: int = 0):
+    """Jobcan自動化処理のメイン関数（セッション固有のブラウザ環境）。job_timeout_sec>0のときハードタイムアウトを適用。"""
     try:
+        if _check_job_timeout(job_id, jobs, job_timeout_sec):
+            return
         add_job_log(job_id, "🚀 Jobcan自動化処理を開始", jobs)
         update_progress(job_id, 1, "初期化中...", jobs)
         
@@ -1533,6 +1550,8 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             jobs[job_id]['login_message'] = f'データ検証中にエラーが発生しました: {str(e)}'
             return
         
+        if _check_job_timeout(job_id, jobs, job_timeout_sec):
+            return
         # ステップ3: Playwrightの利用可能性チェック
         if not playwright_available:
             add_job_log(job_id, "❌ Playwrightが利用できません", jobs)
@@ -1542,6 +1561,8 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
             jobs[job_id]['login_message'] = 'ブラウザ自動化機能が利用できません'
             return
         
+        if _check_job_timeout(job_id, jobs, job_timeout_sec):
+            return
         # ステップ4: ブラウザの起動（セッション固有）
         add_job_log(job_id, "🌐 ブラウザを起動中...", jobs)
         update_progress(job_id, 4, "ブラウザ起動中...", jobs)
@@ -1641,7 +1662,9 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     
                     context = browser.new_context(**context_options)
                     page = context.new_page()
-                    
+                    # 監査対応: 待機系のデフォルトタイムアウトを統一（30秒）
+                    page.set_default_timeout(30000)
+                    page.set_default_navigation_timeout(30000)
                     # リダイレクト制御を追加（修正版）
                     def handle_request(route):
                         route.continue_()
@@ -1655,6 +1678,8 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     # ステルスモードを設定
                     setup_stealth_mode(page, job_id, jobs)
                     
+                    if _check_job_timeout(job_id, jobs, job_timeout_sec):
+                        return
                     # ステップ5: ログイン処理
                     add_job_log(job_id, "🔐 Jobcanにログイン中...", jobs)
                     update_progress(job_id, 5, "Jobcanログイン中...", jobs)

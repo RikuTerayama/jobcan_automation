@@ -327,8 +327,8 @@ def allowed_file(filename):
     """アップロードされたファイルの拡張子をチェック"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'xlsx', 'xls'}
 
-# P1: ログの上限設定（メモリ最適化）
-MAX_JOB_LOGS = 1000  # 最大ログ件数（1ジョブあたり）
+# P1: ログの上限設定（メモリ最適化）。監査対応で500に短縮し単調増加を抑制
+MAX_JOB_LOGS = 500  # 最大ログ件数（1ジョブあたり）
 MAX_LOG_CHARS = 2000  # 1ログエントリの最大文字数
 MAX_JOB_LOG_BYTES = 200 * 1024  # 最大ログサイズ（200KB、バイト単位）
 
