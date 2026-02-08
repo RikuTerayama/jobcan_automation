@@ -706,6 +706,12 @@ def guide_index():
     return render_template('guide/index.html', products=products)
 
 
+@app.route('/guide/autofill')
+def guide_autofill():
+    """Jobcan AutoFill 統合ガイド（他ツールと同粒度の1ツール=1ガイド）"""
+    return render_template('guide/autofill.html')
+
+
 @app.route('/guide/getting-started')
 def guide_getting_started():
     """はじめての使い方ガイド"""
@@ -1630,6 +1636,7 @@ def sitemap():
         
         # ガイドページ（一覧＋固定）
         ('/guide', 'weekly', '0.9', today),
+        ('/guide/autofill', 'weekly', '0.9', today),
         ('/guide/complete', 'weekly', '0.9', today),
         ('/guide/comprehensive-guide', 'weekly', '0.9', today),
         ('/guide/getting-started', 'weekly', '0.9', today),
