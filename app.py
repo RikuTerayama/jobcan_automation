@@ -463,19 +463,17 @@ def count_running_jobs():
         return sum(1 for j in jobs.values() if j.get('status') == 'running')
 
 def check_resource_limits():
-    """リソース制限のチェック。上限判定はrunningジョブ数に統一（sessionと二重系統にしない）。"""
+    """リソース制限のチェック（readyz/sessions 等の健全性用）。上限超過時は RuntimeError を投げる。"""
     resources = get_system_resources()
     running_count = count_running_jobs()
     session_count = resources['active_sessions']
     warnings = []
     
-    # メモリ使用量の警告（環境変数で設定可能）
     if resources['memory_mb'] > MEMORY_LIMIT_MB:
         raise RuntimeError(f"メモリ制限を超過しました: {resources['memory_mb']:.1f}MB > {MEMORY_LIMIT_MB}MB")
     elif resources['memory_mb'] > MEMORY_WARNING_MB:
         warnings.append(f"メモリ使用量が高いです: {resources['memory_mb']:.1f}MB")
     
-    # 同時実行数はrunningジョブ数で判定（OOM防止）。session数は参考ログのみ
     if running_count >= MAX_ACTIVE_SESSIONS:
         raise RuntimeError(
             f"同時処理数の上限に達しています（実行中: {running_count}/{MAX_ACTIVE_SESSIONS}）。"
@@ -486,6 +484,21 @@ def check_resource_limits():
     if session_count != running_count:
         logger.warning(f"jobs_session_mismatch running_jobs={running_count} active_sessions={session_count}")
     
+    return warnings
+
+
+def get_resource_warnings():
+    """例外を投げずに警告のみ返す。 /upload の即時開始パスで使用し、成功を阻害しない。"""
+    warnings = []
+    try:
+        resources = get_system_resources()
+        running_count = count_running_jobs()
+        if resources['memory_mb'] > MEMORY_WARNING_MB:
+            warnings.append(f"メモリ使用量が高いです: {resources['memory_mb']:.1f}MB")
+        if running_count > MAX_ACTIVE_SESSIONS * 0.8:
+            warnings.append(f"実行中ジョブが多いです: {running_count}/{MAX_ACTIVE_SESSIONS}件")
+    except Exception as e:
+        logger.warning(f"get_resource_warnings error: {e}")
     return warnings
 
 def create_unique_session_id():
@@ -1576,7 +1589,7 @@ def upload_file():
             }
         log_job_event("job_created", job_id, status="running", elapsed_sec=0)
         
-        resource_warnings = check_resource_limits()
+        resource_warnings = get_resource_warnings()
         if resource_warnings:
             print(f"リソース警告: {', '.join(resource_warnings)}")
         with jobs_lock:
@@ -1653,6 +1666,15 @@ def get_status(job_id):
             # P0-4: 経過秒数を含める（止まった原因の切り分け用）
             start_ts = job.get('start_time') or 0
             elapsed_sec = round(time.time() - start_ts, 1) if start_ts else 0
+            # queued のときキュー内位置を算出（jobs_lock 内のため get_queue_position は使わず自前で取得）
+            queue_position = None
+            if job.get('status') == 'queued':
+                try:
+                    qlist = list(job_queue)
+                    if job_id in qlist:
+                        queue_position = 1 + qlist.index(job_id)
+                except Exception:
+                    pass
             # レスポンスデータを構築
             response_data = {
                 'status': job['status'],
