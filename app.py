@@ -1453,16 +1453,7 @@ def upload_file():
         if validation_errors:
             return jsonify({'error': '入力エラー: ' + '; '.join(validation_errors)})
         
-        # P0-P1: 同時実行数制限（runningジョブ数で判定）。2件目は即時BUSYで待機/拒否
-        running_count = count_running_jobs()
-        if running_count >= MAX_ACTIVE_SESSIONS:
-            return jsonify({
-                'error': '同時処理数の上限に達しています。',
-                'error_code': 'BUSY',
-                'message': f'現在の実行中ジョブ: {running_count}件（上限: {MAX_ACTIVE_SESSIONS}）。しばらく待ってから再試行してください。',
-                'retry_after_sec': 30,
-                'status_code': 503
-            }), 503
+        # 直列実行＋キュー: running が上限でも 503 にせず、後続で queued に積む（キュー満杯時のみ 503 QUEUE_FULL）
 
         # P0-P1: メモリガード（新規ジョブ開始前チェック）。job_idは未生成のためログには含めない
         try:
@@ -1516,7 +1507,7 @@ def upload_file():
                         except Exception:
                             pass
                     return jsonify({
-                        'error': 'キューが満杯です。しばらく待ってから再試行してください。',
+                        'error': '現在混雑しています。しばらくしてからお試しください。',
                         'error_code': 'QUEUE_FULL',
                         'status_code': 503
                     }), 503

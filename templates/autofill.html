@@ -1042,7 +1042,7 @@
                     startProgressPolling();
                 } else {
                     if (result.error_code === 'QUEUE_FULL') {
-                        updateProgressStatus('warning', 'キューが満杯です', result.error || 'しばらく待ってから再試行してください。');
+                        updateProgressStatus('warning', '混雑しています', result.error || '現在混雑しています。しばらくしてからお試しください。');
                     } else {
                         if (typeof window !== 'undefined' && window.gtag) {
                             window.gtag('event', 'autofill_error', { error_type: result.error || 'unknown' });
