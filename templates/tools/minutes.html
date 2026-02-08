@@ -183,6 +183,16 @@
             .minutes-file-picker-meta { min-width: 0; width: 100%; }
         }
         
+        .minutes-error {
+            margin-top: 12px;
+            padding: 12px 16px;
+            background: rgba(220, 53, 69, 0.15);
+            border: 1px solid rgba(220, 53, 69, 0.5);
+            border-radius: 8px;
+            color: #f8d7da;
+            font-size: 0.9em;
+        }
+        
         .action-button {
             padding: 12px 24px;
             background: rgba(74, 158, 255, 0.2);
@@ -375,6 +385,7 @@
                 </div>
                 
                 <button id="extract-button" class="action-button" onclick="extractAndFormat()">構造化して整形</button>
+                <div id="minutes-error" class="minutes-error" style="display: none;" role="alert"></div>
             </div>
             
             <!-- 中央: 編集エリア -->
@@ -466,34 +477,74 @@
         };
         
         const MAX_TEXT_LENGTH = 200000;
+        const DEBUG = typeof URLSearchParams !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1';
+        
+        function showMinutesError(msg) {
+            const el = document.getElementById('minutes-error');
+            if (el) {
+                el.textContent = msg;
+                el.style.display = 'block';
+            }
+        }
+        function hideMinutesError() {
+            const el = document.getElementById('minutes-error');
+            if (el) {
+                el.textContent = '';
+                el.style.display = 'none';
+            }
+        }
         
         // 初期化
         document.addEventListener('DOMContentLoaded', () => {
             setupFileInput();
         });
         
-        // ファイル入力の設定
+        // サンプル入力（ボタン用・埋め込みテキスト）
+        function loadSampleText() {
+            hideMinutesError();
+            const sample = `10:00 司会: 定例ミーティングを始めます。
+
+田中: 先週の決定事項です。予算案は了承いただきました。
+決定: 来月から新ツールを導入する。
+
+山田: ToDoの確認です。
+・担当: 佐藤、期限: 来週金曜までに手順書を作成
+・鈴木が来週月曜までに環境準備
+
+司会: 以上で終わります。`;
+            const el = document.getElementById('raw-text');
+            if (el) el.value = sample;
+        }
+        
+        // ファイル入力の設定（UTF-8・BOM除去・エラー表示）
         function setupFileInput() {
             const fileInput = document.getElementById('file-input');
+            if (!fileInput) return;
             fileInput.addEventListener('change', async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
                 
                 if (file.size > MAX_TEXT_LENGTH) {
-                    alert(`ファイルサイズが大きすぎます（最大${MAX_TEXT_LENGTH}文字）`);
+                    showMinutesError(`ファイルが大きすぎます（最大${MAX_TEXT_LENGTH}文字）。小さなファイルか、貼り付けで先頭部分だけ試してください。`);
                     return;
                 }
                 
+                hideMinutesError();
                 try {
                     const text = await file.text();
-                    if (text.length > MAX_TEXT_LENGTH) {
-                        alert(`テキストが長すぎます（最大${MAX_TEXT_LENGTH}文字）。先頭から処理します。`);
-                        document.getElementById('raw-text').value = text.substring(0, MAX_TEXT_LENGTH);
-                    } else {
-                        document.getElementById('raw-text').value = text;
+                    let content = (text == null ? '' : String(text));
+                    if (content.length > 0 && content.charCodeAt(0) === 0xFEFF) {
+                        content = content.slice(1);
                     }
+                    if (content.length > MAX_TEXT_LENGTH) {
+                        showMinutesError(`テキストが長すぎます（最大${MAX_TEXT_LENGTH}文字）。先頭から処理します。`);
+                        content = content.substring(0, MAX_TEXT_LENGTH);
+                    }
+                    document.getElementById('raw-text').value = content;
                 } catch (error) {
-                    alert(`ファイル読み込みエラー: ${error.message}`);
+                    const msg = `ファイル読み込みエラー: ${error.message}. 対応形式は .txt / .md です。文字コードは UTF-8 を推奨します。`;
+                    showMinutesError(msg);
+                    if (DEBUG) console.error('minutes file read', error);
                 }
             });
         }
@@ -520,59 +571,77 @@
             regenerateOutput();
         }
         
-        // 抽出して整形
+        // 抽出して整形（例外時はエラー表示、サイレント失敗なし）
         function extractAndFormat() {
+            hideMinutesError();
+            
+            if (typeof MinutesParse === 'undefined' || typeof MinutesExtract === 'undefined' || typeof MinutesTemplates === 'undefined') {
+                showMinutesError('処理モジュールの読み込みに失敗しています。ページを再読み込みしてください。');
+                if (DEBUG) console.error('minutes: missing globals', { MinutesParse: typeof MinutesParse, MinutesExtract: typeof MinutesExtract, MinutesTemplates: typeof MinutesTemplates });
+                return;
+            }
+            
             const rawText = document.getElementById('raw-text').value.trim();
             
             if (!rawText) {
-                alert('原文を入力してください');
+                showMinutesError('原文を入力するか、ファイルを選択してください。');
                 return;
             }
             
             if (rawText.length > MAX_TEXT_LENGTH) {
-                alert(`テキストが長すぎます（最大${MAX_TEXT_LENGTH}文字）。先頭から処理します。`);
+                showMinutesError(`テキストが長すぎます（最大${MAX_TEXT_LENGTH}文字）。先頭から処理します。`);
                 state.rawText = rawText.substring(0, MAX_TEXT_LENGTH);
             } else {
                 state.rawText = rawText;
             }
             
-            // メタ情報を取得
-            state.meta = {
-                title: document.getElementById('meta-title').value.trim(),
-                date: document.getElementById('meta-date').value.trim(),
-                participants: document.getElementById('meta-participants').value.trim(),
-                author: document.getElementById('meta-author').value.trim()
-            };
-            
-            if (state.templateId === 'incident') {
-                state.incidentMeta = {
-                    title: document.getElementById('meta-title').value.trim() || state.incidentMeta.title,
-                    date: document.getElementById('meta-date').value.trim() || state.incidentMeta.date,
-                    severity: document.getElementById('meta-severity').value.trim(),
-                    systems: document.getElementById('meta-systems').value.trim()
+            try {
+                // メタ情報を取得
+                state.meta = {
+                    title: document.getElementById('meta-title').value.trim(),
+                    date: document.getElementById('meta-date').value.trim(),
+                    participants: document.getElementById('meta-participants').value.trim(),
+                    author: document.getElementById('meta-author').value.trim()
                 };
+                
+                if (state.templateId === 'incident') {
+                    state.incidentMeta = {
+                        title: document.getElementById('meta-title').value.trim() || state.incidentMeta.title,
+                        date: document.getElementById('meta-date').value.trim() || state.incidentMeta.date,
+                        severity: document.getElementById('meta-severity').value.trim(),
+                        systems: document.getElementById('meta-systems').value.trim()
+                    };
+                }
+                
+                // 話者ラベル: 除去を選んだ場合は行頭の「名前:」「Speaker1:」等を除去
+                let textForExtract = state.rawText;
+                const speakerMode = document.getElementById('speaker-labels') && document.getElementById('speaker-labels').value;
+                if (speakerMode === 'strip') {
+                    textForExtract = MinutesParse.stripSpeakerLabels(textForExtract);
+                }
+                // テキストを正規化して行に分割
+                const normalized = MinutesParse.normalizeText(textForExtract);
+                const lines = MinutesParse.splitLines(normalized);
+                
+                if (DEBUG) console.log('minutes: lines count', lines.length);
+                
+                // v2: 抽出ロジックを使用（confidence、accepted、sources対応）
+                const baseDate = state.meta.date || null;
+                const { decisions, actions } = MinutesExtract.extractCandidates(lines, baseDate);
+                
+                state.decisions = decisions;
+                state.actions = actions;
+                
+                if (DEBUG) console.log('minutes: extracted', { decisions: state.decisions.length, actions: state.actions.length });
+                
+                // UIを更新
+                renderEditPanels();
+                regenerateOutput();
+            } catch (error) {
+                const msg = `整形処理でエラーが発生しました: ${error.message}. 原文の形式（改行・文字コード）を確認するか、短いテキストで試してください。`;
+                showMinutesError(msg);
+                if (DEBUG) console.error('minutes extractAndFormat', error);
             }
-            
-            // 話者ラベル: 除去を選んだ場合は行頭の「名前:」「Speaker1:」等を除去
-            let textForExtract = state.rawText;
-            const speakerMode = document.getElementById('speaker-labels') && document.getElementById('speaker-labels').value;
-            if (speakerMode === 'strip') {
-                textForExtract = MinutesParse.stripSpeakerLabels(textForExtract);
-            }
-            // テキストを正規化して行に分割
-            const normalized = MinutesParse.normalizeText(textForExtract);
-            const lines = MinutesParse.splitLines(normalized);
-            
-            // v2: 抽出ロジックを使用（confidence、accepted、sources対応）
-            const baseDate = state.meta.date || null;
-            const { decisions, actions } = MinutesExtract.extractCandidates(lines, baseDate);
-            
-            state.decisions = decisions;
-            state.actions = actions;
-            
-            // UIを更新
-            renderEditPanels();
-            regenerateOutput();
         }
         
         // 再抽出
@@ -589,16 +658,28 @@
             renderActions();
         }
         
+        function escapeAttr(s) {
+            if (s == null) return '';
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+        }
+        
         // 決定事項を描画
         function renderDecisions() {
             const container = document.getElementById('decisions-list');
+            if (!container) return;
             container.innerHTML = '';
             
             state.decisions.forEach((dec, index) => {
                 const card = document.createElement('div');
                 card.className = 'item-card';
+                const text = escapeAttr(dec.text);
                 card.innerHTML = `
-                    <input type="text" value="${dec.text}" 
+                    <input type="text" value="${text}" 
                            onchange="updateDecision(${index}, this.value)"
                            placeholder="決定事項">
                     <div class="item-card-actions">
