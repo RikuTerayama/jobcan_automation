@@ -288,6 +288,21 @@
             margin-top: 5px;
         }
         
+        .style-preview {
+            margin-top: 20px;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .style-preview__header { margin-bottom: 12px; }
+        .style-preview__header h5 { margin: 0 0 4px 0; font-size: 1em; color: rgba(255,255,255,0.95); }
+        .style-preview__muted { margin: 0; font-size: 0.85em; color: rgba(255,255,255,0.6); }
+        .style-preview #style-preview-canvas { display: block; max-width: 100%; height: auto; border-radius: 8px; background: rgba(0,0,0,0.3); }
+        .style-preview__presets { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+        .style-preview__presets .preset-button { padding: 8px 14px; font-size: 0.9em; background: rgba(74, 158, 255, 0.2); border: 1px solid rgba(74, 158, 255, 0.5); border-radius: 6px; color: #4A9EFF; cursor: pointer; }
+        .style-preview__presets .preset-button:hover { background: rgba(74, 158, 255, 0.3); }
+        
         @media (max-width: 768px) {
             .page-header h1 {
                 font-size: 2em;
@@ -328,10 +343,6 @@
             <div id="file-list" class="file-list"></div>
             <div id="rejected-files" class="rejected-files" style="display: none;"></div>
         </div>
-        
-        <p class="info-text" style="background: rgba(74, 158, 255, 0.1); border-left: 4px solid #4A9EFF; padding: 12px 16px; margin: 0 0 20px 0; border-radius: 8px;">
-            新機能: <a href="#style" style="color: #4A9EFF; font-weight: 500;">枠・余白・角丸</a>（処理設定にあります）
-        </p>
         
         <div class="tool-section">
             <h3>⚙️ 処理設定</h3>
@@ -431,6 +442,18 @@
                     </div>
                 </div>
                 <p class="info-text">余白・角丸・枠を指定すると、適用順で反映されます。0の場合は変更なし。</p>
+                <div class="style-preview">
+                    <div class="style-preview__header">
+                        <h5>仕上がりプレビュー</h5>
+                        <p class="style-preview__muted">設定を動かすとサンプル画像に反映されます（アップロード不要）</p>
+                    </div>
+                    <canvas id="style-preview-canvas" width="360" height="240"></canvas>
+                    <div class="style-preview__presets">
+                        <button type="button" class="preset-button" data-preset="clean">名刺/資料向け</button>
+                        <button type="button" class="preset-button" data-preset="sns">SNS向け</button>
+                        <button type="button" class="preset-button" data-preset="soft">やわらかめ</button>
+                    </div>
+                </div>
             </div>
             
             <div class="option-group">
@@ -504,6 +527,7 @@
     <script src="{{ url_for('static', filename='js/image-export.js') }}"></script>
     <script src="{{ url_for('static', filename='js/image-style.js') }}"></script>
     <script src="{{ url_for('static', filename='js/image-cleanup.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/image-style-preview.js') }}"></script>
     <script src="{{ url_for('static', filename='js/image-background-removal.js') }}"></script>
     <script src="{{ url_for('static', filename='js/image-aspect.js') }}"></script>
     
