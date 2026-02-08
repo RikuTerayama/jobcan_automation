@@ -25,7 +25,7 @@ def get_nav_sections():
             'icon': p.get('icon', '')
         })
 
-    jobcan_guides = [
+    jobcan_sub_guides = [
         {'name': 'はじめての使い方', 'path': '/guide/getting-started', 'icon': ''},
         {'name': 'Excelファイルの作成方法', 'path': '/guide/excel-format', 'icon': ''},
         {'name': 'トラブルシューティング', 'path': '/guide/troubleshooting', 'icon': ''},
@@ -38,10 +38,11 @@ def get_nav_sections():
         if gp:
             tool_guide_items.append({'name': p.get('name', ''), 'path': gp, 'icon': p.get('icon', '')})
 
+    # 1ツール=1ガイドの粒度: トップは「ガイド一覧」+「ツール別ガイド」（autofill含む全ツール）+「Jobcan AutoFill 詳細」（5本はサブ）
     guide_links = [
         {'name': 'ガイド一覧', 'path': '/guide', 'icon': ''},
-        {'group_label': 'Jobcan AutoFill', 'items': jobcan_guides},
         {'group_label': 'ツール別ガイド', 'items': tool_guide_items},
+        {'group_label': 'Jobcan AutoFill 詳細', 'items': jobcan_sub_guides},
     ]
 
     resource_links = [
@@ -69,7 +70,15 @@ def get_nav_sections_fallback():
         {'id': 'tools', 'label': 'Tools', 'path': '/tools', 'children': [{'name': 'すべてのツール', 'path': '/tools', 'icon': ''}]},
         {'id': 'guide', 'label': 'Guide', 'path': '/guide', 'children': [
             {'name': 'ガイド一覧', 'path': '/guide', 'icon': ''},
-            {'group_label': 'Jobcan AutoFill', 'items': [
+            {'group_label': 'ツール別ガイド', 'items': [
+                {'name': 'Jobcan AutoFill', 'path': '/guide/autofill', 'icon': '🕒'},
+                {'name': '画像一括変換', 'path': '/guide/image-batch', 'icon': '🖼️'},
+                {'name': 'PDFユーティリティ', 'path': '/guide/pdf', 'icon': '📄'},
+                {'name': '画像ユーティリティ', 'path': '/guide/image-cleanup', 'icon': '✨'},
+                {'name': '議事録整形', 'path': '/guide/minutes', 'icon': '📝'},
+                {'name': 'Web/SEO', 'path': '/guide/seo', 'icon': '🔍'},
+            ]},
+            {'group_label': 'Jobcan AutoFill 詳細', 'items': [
                 {'name': 'はじめての使い方', 'path': '/guide/getting-started', 'icon': ''},
                 {'name': 'Excelファイルの作成方法', 'path': '/guide/excel-format', 'icon': ''},
                 {'name': 'トラブルシューティング', 'path': '/guide/troubleshooting', 'icon': ''},
@@ -102,6 +111,7 @@ def get_footer_columns():
 
     guide_links = [
         {'name': 'ガイド一覧', 'path': '/guide'},
+        {'name': 'Jobcan AutoFill', 'path': '/guide/autofill'},
         {'name': 'はじめての使い方', 'path': '/guide/getting-started'},
         {'name': 'Excelファイルの作成方法', 'path': '/guide/excel-format'},
         {'name': 'トラブルシューティング', 'path': '/guide/troubleshooting'},
@@ -110,7 +120,7 @@ def get_footer_columns():
     ]
     for p in products:
         gp = p.get('guide_path') or ''
-        if gp:
+        if gp and p.get('id') != 'autofill':
             guide_links.append({'name': p.get('name', ''), 'path': gp})
 
     return [

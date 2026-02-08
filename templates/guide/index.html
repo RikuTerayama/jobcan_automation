@@ -17,6 +17,9 @@
         .guide-list li { margin-bottom: 12px; }
         .guide-list a { display: block; padding: 14px 20px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; color: #FFFFFF; text-decoration: none; transition: all 0.2s; }
         .guide-list a:hover { background: rgba(74, 158, 255, 0.15); border-color: rgba(74, 158, 255, 0.4); color: #4A9EFF; }
+        .guide-details { margin-top: 8px; }
+        .guide-details summary { cursor: pointer; padding: 10px 0; color: #4A9EFF; font-weight: 500; list-style: none; }
+        .guide-details summary::-webkit-details-marker { display: none; }
         .nav-links { display: flex; gap: 16px; margin-top: 40px; padding-top: 30px; border-top: 1px solid rgba(255, 255, 255, 0.2); flex-wrap: wrap; }
         .nav-link { display: inline-block; padding: 12px 24px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 10px; color: #FFFFFF; text-decoration: none; transition: all 0.2s; }
         .nav-link:hover { background: rgba(255, 255, 255, 0.2); }
@@ -29,18 +32,8 @@
         <p class="lead">各ツールの使い方・トラブルシューティング・形式説明など、ガイドページへの入口です。</p>
 
         <section class="guide-section">
-            <h2>Jobcan AutoFill</h2>
-            <ul class="guide-list">
-                <li><a href="/guide/getting-started">はじめての使い方</a></li>
-                <li><a href="/guide/excel-format">Excelファイルの作成方法</a></li>
-                <li><a href="/guide/troubleshooting">トラブルシューティング</a></li>
-                <li><a href="/guide/complete">完全ガイド</a></li>
-                <li><a href="/guide/comprehensive-guide">総合ガイド（勤怠管理の効率化）</a></li>
-            </ul>
-        </section>
-
-        <section class="guide-section">
             <h2>ツール別ガイド</h2>
+            <p class="lead" style="margin-bottom: 16px;">各ツールごとに1本のガイドでまとめています（1ツール＝1ガイド）。</p>
             <ul class="guide-list">
                 {% for p in products|default([]) %}
                     {% if p.get('guide_path') %}
@@ -48,6 +41,20 @@
                     {% endif %}
                 {% endfor %}
             </ul>
+        </section>
+
+        <section class="guide-section">
+            <details class="guide-details">
+                <summary>Jobcan AutoFill 詳細ガイド（サブガイド）</summary>
+                <p style="margin-top: 12px; margin-bottom: 12px; color: rgba(255,255,255,0.7); font-size: 0.95em;">統合ガイドは <a href="/guide/autofill">Jobcan AutoFill ガイド</a> です。以下はより細かいトピック別のページです。</p>
+                <ul class="guide-list">
+                    <li><a href="/guide/getting-started">はじめての使い方</a></li>
+                    <li><a href="/guide/excel-format">Excelファイルの作成方法</a></li>
+                    <li><a href="/guide/troubleshooting">トラブルシューティング</a></li>
+                    <li><a href="/guide/complete">完全ガイド</a></li>
+                    <li><a href="/guide/comprehensive-guide">総合ガイド（勤怠管理の効率化）</a></li>
+                </ul>
+            </details>
         </section>
 
         <div class="nav-links">

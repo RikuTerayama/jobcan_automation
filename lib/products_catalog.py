@@ -10,6 +10,7 @@ PRODUCTS = [
         'name': 'Jobcan AutoFill',
         'description': 'Jobcanへの勤怠データをExcelから一括入力。月次締め作業を大幅に短縮します。',
         'path': '/autofill',
+        'guide_path': '/guide/autofill',
         'status': 'available',
         'icon': '🕒',
         'category': 'attendance'
