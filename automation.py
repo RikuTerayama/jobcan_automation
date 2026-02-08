@@ -3,8 +3,11 @@ import time
 import random
 import tempfile
 import gc
+import logging
 from datetime import datetime
 from typing import Tuple, List, Optional
+
+logger = logging.getLogger(__name__)
 
 # ライブラリの利用可能性をチェック
 try:
@@ -1672,6 +1675,9 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     page.route("**/*", handle_request)
                     
                     add_job_log(job_id, "✅ ブラウザ起動完了", jobs)
+                    # P0-4: 構造化ログ（止まった原因の切り分け用）
+                    _start = jobs.get(job_id, {}).get('start_time') or 0
+                    logger.info(f"event=browser_launch job_id={job_id} elapsed_sec={round(time.time() - _start, 1)}")
                     if session_id:
                         add_job_log(job_id, f"🔑 セッション固有ブラウザ環境: {session_id}", jobs)
                     
@@ -1683,7 +1689,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     # ステップ5: ログイン処理
                     add_job_log(job_id, "🔐 Jobcanにログイン中...", jobs)
                     update_progress(job_id, 5, "Jobcanログイン中...", jobs)
-                    
+                    logger.info(f"event=login_start job_id={job_id} elapsed_sec={round(time.time() - (jobs.get(job_id, {}).get('start_time') or 0), 1)}")
                     # ログイン処理開始時の状態を初期化
                     jobs[job_id]['login_status'] = 'processing'
                     jobs[job_id]['login_message'] = '🔄 ログイン処理中...'
@@ -1696,7 +1702,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     # ログイン結果をジョブ情報に保存
                     jobs[job_id]['login_status'] = login_status
                     jobs[job_id]['login_message'] = login_message
-                    
+                    logger.info(f"event=login_done job_id={job_id} elapsed_sec={round(time.time() - (jobs.get(job_id, {}).get('start_time') or 0), 1)} success={login_success}")
                     if not login_success:
                         add_job_log(job_id, "❌ ログインに失敗したため、処理を停止します", jobs)
                         jobs[job_id]['status'] = 'completed'
@@ -1706,8 +1712,9 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     # ステップ6: 実際のデータ入力処理
                     add_job_log(job_id, "🔧 ログイン成功のため、実際のデータ入力を試行します", jobs)
                     update_progress(job_id, 6, "勤怠データ入力中...", jobs)
-                    
+                    logger.info(f"event=fill_start job_id={job_id} elapsed_sec={round(time.time() - (jobs.get(job_id, {}).get('start_time') or 0), 1)}")
                     perform_actual_data_input(page, data_source, total_data, pandas_available, job_id, jobs)
+                    logger.info(f"event=fill_done job_id={job_id} elapsed_sec={round(time.time() - (jobs.get(job_id, {}).get('start_time') or 0), 1)}")
                     
                     # ステップ7: 最終確認
                     add_job_log(job_id, "🔍 最終確認中...", jobs)
@@ -1791,6 +1798,8 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                 add_job_log(job_id, f"⚠️ クリーンアップ中にエラーが発生: {', '.join(cleanup_errors)}", jobs)
             else:
                 add_job_log(job_id, "🔒 ブラウザセッションを正常に終了しました", jobs)
+            _start = jobs.get(job_id, {}).get('start_time') or 0
+            logger.info(f"event=cleanup_done job_id={job_id} elapsed_sec={round(time.time() - _start, 1)}")
         
     except Exception as e:
         add_job_log(job_id, f"❌ 予期しないエラーが発生しました: {e}", jobs)

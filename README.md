@@ -457,14 +457,8 @@ Alert: Uptime < 99%
 
 **制限の仕組み:**
 - **512MB（Render free）では `MAX_ACTIVE_SESSIONS=1` を推奨**（render.yaml で設定済み。RENDER 環境では未設定時も default 1）
-- 同時実行は1件のみ。**2件目以降は 503 で弾かず、待機キュー（FIFO）に積み、`job_id` を返す**（HTTP 202 Accepted）
-- UI は「待機中 → 実行中 → 完了/失敗」をポーリングで表示。キューが満杯のときのみ **503 + `error_code: "QUEUE_FULL"`** を返す
-
-**待機キュー（インメモリ）の制約:**
-- キューは **プロセス内メモリ**（Redis 等は未使用）のため、**サーバー再起動でキューと未実行の待機ジョブは消えます**
-- 待機中のジョブは最大 **`QUEUED_MAX_WAIT_SEC`**（既定 30 分）を超えると timeout 扱いで終了・ファイル削除
-- キュー長の上限は **`MAX_QUEUE_SIZE`**（既定 50）で、超過時は 503 QUEUE_FULL
-- 環境変数（任意）: `QUEUED_MAX_WAIT_SEC`, `MAX_QUEUE_SIZE`
+- 実行中に別ユーザーが `/upload` すると **503 + `error_code: "BUSY"` + `retry_after_sec: 30`** で返し、全体が止まらないようにする
+- ユーザーに「しばらく待って再試行」を促す
 
 ### Gunicorn 設定
 
@@ -475,7 +469,7 @@ workers: ${WEB_CONCURRENCY:-2}        # デフォルト2
 threads: ${WEB_THREADS:-2}            # デフォルト2  
 timeout: ${WEB_TIMEOUT:-180}          # デフォルト180秒
 max-requests: 500                     # メモリリーク対策
-MAX_ACTIVE_SESSIONS: 1                # 512MBでは1推奨。2件目以降は待機キューで受付
+MAX_ACTIVE_SESSIONS: 1                # 512MBでは1推奨。2件目はBUSY(503)で拒否
 ```
 
 ### メモリ管理
