@@ -453,8 +453,8 @@ Alert: Uptime < 99%
 | Standard | 2GB+ | 6-8人 | $25 | 中規模チーム |
 
 **制限の仕組み:**
-- `MAX_ACTIVE_SESSIONS=2`（free plan）
-- 同時処理数が上限に達すると、エラーメッセージを表示
+- **512MB（Render free）では `MAX_ACTIVE_SESSIONS=1` を推奨**（render.yaml で設定済み。RENDER 環境では未設定時も default 1）
+- 実行中に別ユーザーが `/upload` すると **503 + `error_code: "BUSY"` + `retry_after_sec: 30`** で返し、全体が止まらないようにする
 - ユーザーに「しばらく待って再試行」を促す
 
 ### Gunicorn 設定
@@ -466,7 +466,7 @@ workers: ${WEB_CONCURRENCY:-2}        # デフォルト2
 threads: ${WEB_THREADS:-2}            # デフォルト2  
 timeout: ${WEB_TIMEOUT:-180}          # デフォルト180秒
 max-requests: 500                     # メモリリーク対策
-MAX_ACTIVE_SESSIONS: 2                # 同時実行制限（OOM防止）
+MAX_ACTIVE_SESSIONS: 1                # 512MBでは1推奨。2件目はBUSY(503)で拒否
 ```
 
 ### メモリ管理
