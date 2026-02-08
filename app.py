@@ -367,6 +367,15 @@ def inject_env_vars():
 jobs = {}
 jobs_lock = threading.Lock()
 
+# 直列実行＋待機キュー（インメモリFIFO）。サーバ再起動でキューは消える
+from collections import deque
+job_queue = deque()
+# queued ジョブの実行用パラメータ（start時にpopして使用。資格情報はstart後即参照しない）
+queued_job_params = {}
+# queued の最大待機時間（超過でtimeout扱い・ファイル削除）
+QUEUED_MAX_WAIT_SEC = int(os.getenv("QUEUED_MAX_WAIT_SEC", "1800"))  # 30分
+MAX_QUEUE_SIZE = int(os.getenv("MAX_QUEUE_SIZE", "50"))  # キュー上限（メモリ保護）
+
 # P0-3: 完了ジョブの保持期間（秒）
 JOB_RETENTION_SECONDS = 1800  # 30分
 
@@ -411,6 +420,42 @@ def get_system_resources():
     except Exception as e:
         logger.error(f"resource_monitoring_error error={str(e)}")
         return {'memory_mb': 0, 'cpu_percent': 0, 'active_sessions': len(session_manager['active_sessions'])}
+
+def get_elapsed_sec(job):
+    """ジョブの経過秒数を返す。start_time が無い/不正なら None。"""
+    if not job:
+        return None
+    st = job.get('start_time')
+    if not st:
+        return None
+    try:
+        return int(time.time() - st)
+    except Exception:
+        return None
+
+
+def get_queue_position(job_id):
+    """queued 時のキュー内位置（1-based）。見つからなければ None。jobs_lock で保護。"""
+    with jobs_lock:
+        qlist = list(job_queue)
+        if job_id in qlist:
+            return 1 + qlist.index(job_id)
+    return None
+
+
+def log_job_event(event, job_id, status=None, queue_position=None, elapsed_sec=None, extra=None):
+    """AutoFill ジョブのライフサイクルイベントを構造化ログに出力。"""
+    payload = {
+        "event": event,
+        "job_id": job_id,
+        "status": status,
+        "queue_position": queue_position,
+        "elapsed_sec": elapsed_sec,
+    }
+    if extra:
+        payload.update(extra)
+    logger.info("autofill_event %s", payload)
+
 
 def count_running_jobs():
     """statusがrunningのジョブ数（同時実行数）を返す。"""
@@ -483,10 +528,133 @@ def unregister_session(session_id):
             del session_manager['active_sessions'][session_id]
             print(f"セッション解除: {session_id}")
 
+
+def maybe_start_next_job():
+    """running が 0 のときキュー先頭を running にしてスレッド起動。jobs_lock は内部で取得。"""
+    with jobs_lock:
+        running_count = sum(1 for j in jobs.values() if j.get('status') == 'running')
+        if running_count >= MAX_ACTIVE_SESSIONS:
+            return
+        if not job_queue:
+            return
+        queue_position = 1  # 先頭を開始する
+        job_id = job_queue.popleft()
+        params = queued_job_params.pop(job_id, None)
+        if not params or job_id not in jobs:
+            return
+        # ジョブを running に更新
+        jobs[job_id]['status'] = 'running'
+        jobs[job_id]['step_name'] = 'initializing'
+        jobs[job_id]['login_status'] = 'initializing'
+        jobs[job_id]['login_message'] = '🔄 処理を初期化中...'
+        jobs[job_id]['start_time'] = time.time()
+        jobs[job_id]['last_updated'] = time.time()
+        elapsed = get_elapsed_sec(jobs[job_id])
+        email = params['email']
+        password = params['password']
+        file_path = params['file_path']
+        session_dir = params['session_dir']
+        session_id = params['session_id']
+        company_id = params.get('company_id', '')
+        file_size = params.get('file_size', 0)
+    log_job_event("job_started", job_id, status="running", queue_position=queue_position, elapsed_sec=elapsed, extra={"source": "queue"})
+    # ロック外でスレッド起動（run_automation_impl 内で process が重い）
+    thread = threading.Thread(
+        target=run_automation_impl,
+        args=(job_id, email, password, file_path, session_dir, session_id, company_id, file_size)
+    )
+    thread.daemon = True
+    thread.start()
+
+
+def run_automation_impl(job_id, email, password, file_path, session_dir, session_id, company_id, file_size):
+    """1ジョブ分の自動化実行。完了後 maybe_start_next_job で次を起動。"""
+    from automation import process_jobcan_automation
+    bg_start_time = time.time()
+    logger.info(f"bg_job_start job_id={job_id} session_id={session_id} file_size={file_size}")
+    try:
+        process_jobcan_automation(
+            job_id, email, password, file_path, jobs, session_dir, session_id, company_id,
+            job_timeout_sec=JOB_TIMEOUT_SEC
+        )
+        duration = time.time() - bg_start_time
+        logger.info(f"bg_job_success job_id={job_id} duration_sec={duration:.1f}")
+        with jobs_lock:
+            job = jobs.get(job_id)
+            st = job.get('status') if job else None
+            elapsed = get_elapsed_sec(job)
+        if st == 'completed':
+            log_job_event("job_completed", job_id, status="completed", elapsed_sec=elapsed)
+        elif st == 'timeout':
+            log_job_event("job_timeout", job_id, status="timeout", elapsed_sec=elapsed)
+        else:
+            log_job_event("job_completed", job_id, status=st or "completed", elapsed_sec=elapsed)
+    except Exception as e:
+        error_message = f'処理中にエラーが発生しました: {str(e)}'
+        duration = time.time() - bg_start_time
+        logger.error(f"bg_job_error job_id={job_id} duration_sec={duration:.1f} error={str(e)}")
+        with jobs_lock:
+            if job_id in jobs:
+                jobs[job_id]['status'] = 'error'
+                jobs[job_id]['login_status'] = 'error'
+                jobs[job_id]['login_message'] = error_message
+                from utils import add_job_log
+                add_job_log(job_id, f"❌ {error_message}", jobs)
+                jobs[job_id]['last_updated'] = time.time()
+                jobs[job_id]['end_time'] = time.time()
+            err_elapsed = get_elapsed_sec(jobs.get(job_id))
+        log_job_event("job_error", job_id, status="error", elapsed_sec=err_elapsed, extra={"error": str(e)[:200]})
+    finally:
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                logger.info(f"cleanup_file job_id={job_id} path={file_path}")
+            cleanup_user_session(session_id)
+            unregister_session(session_id)
+            prune_jobs()
+        except Exception as cleanup_error:
+            logger.error(f"cleanup_error job_id={job_id} session_id={session_id} error={str(cleanup_error)}")
+            try:
+                prune_jobs()
+            except Exception:
+                pass
+        maybe_start_next_job()
+
+
 def prune_jobs(current_time=None, retention_sec=JOB_RETENTION_SECONDS):
-    """P0-3: 完了/エラー状態のジョブを一定時間保持後に削除"""
+    """P0-3: 完了/エラー/timeout のジョブを一定時間保持後に削除。queued の最大待機超過は timeout 化してクリーンアップ。"""
     if current_time is None:
         current_time = time.time()
+    
+    # フェーズ1: queued の最大待機超過を timeout 扱いし、ファイル・セッションを削除
+    cleanup_queued = []
+    with jobs_lock:
+        for job_id, job_info in list(jobs.items()):
+            if job_info.get('status') != 'queued':
+                continue
+            queued_at = job_info.get('queued_at') or job_info.get('start_time') or 0
+            if current_time - queued_at <= QUEUED_MAX_WAIT_SEC:
+                continue
+            # キューから除去
+            global job_queue
+            job_queue = deque([x for x in job_queue if x != job_id])
+            queued_job_params.pop(job_id, None)
+            jobs[job_id]['status'] = 'timeout'
+            jobs[job_id]['end_time'] = current_time
+            jobs[job_id]['login_message'] = '待機時間が上限を超えたためキャンセルされました。'
+            fp = job_info.get('file_path')
+            sid = job_info.get('session_id')
+            if fp or sid:
+                cleanup_queued.append((fp, sid))
+    for fp, sid in cleanup_queued:
+        try:
+            if fp and os.path.exists(fp):
+                os.remove(fp)
+            if sid:
+                cleanup_user_session(sid)
+                unregister_session(sid)
+        except Exception as e:
+            logger.error(f"prune_queued_cleanup job_id cleanup_error={e}")
     
     removed_count = 0
     removed_job_ids = []
@@ -1312,11 +1480,6 @@ def upload_file():
             logger.error(f"memory_guard_check_error: {memory_check_error}")
             # エラー時は警告のみ（処理は継続）
         
-        # リソース監視と警告（処理は継続）
-        resource_warnings = check_resource_limits()
-        if resource_warnings:
-            print(f"リソース警告: {', '.join(resource_warnings)}")
-        
         # ユニークなセッションIDを生成
         session_id = create_unique_session_id()
         job_id = str(uuid.uuid4())
@@ -1340,92 +1503,100 @@ def upload_file():
                 'sessions_count': len(session_manager['active_sessions'])
             })
         
-        # ジョブ情報を初期化（スレッドセーフ）
-        # P1: collections.dequeを使用して固定長ログを実現
-        from collections import deque
+        # 直列実行＋キュー: running が上限なら queued に積み、そうでなければ即 running で開始
         with jobs_lock:
+            running_count = sum(1 for j in jobs.values() if j.get('status') == 'running')
+            if running_count >= MAX_ACTIVE_SESSIONS:
+                if len(job_queue) >= MAX_QUEUE_SIZE:
+                    cleanup_user_session(session_id)
+                    unregister_session(session_id)
+                    if os.path.exists(file_path):
+                        try:
+                            os.remove(file_path)
+                        except Exception:
+                            pass
+                    return jsonify({
+                        'error': 'キューが満杯です。しばらく待ってから再試行してください。',
+                        'error_code': 'QUEUE_FULL',
+                        'status_code': 503
+                    }), 503
+                # キューに登録
+                jobs[job_id] = {
+                    'status': 'queued',
+                    'logs': deque(maxlen=MAX_JOB_LOGS),
+                    'progress': 0,
+                    'step_name': '待機中',
+                    'current_data': 0,
+                    'total_data': 0,
+                    'start_time': time.time(),
+                    'queued_at': time.time(),
+                    'end_time': None,
+                    'login_status': 'initializing',
+                    'login_message': '現在、他ユーザーが作業中。順番に処理します。',
+                    'session_id': session_id,
+                    'session_dir': session_dir,
+                    'file_path': file_path,
+                    'email_hash': hash(email),
+                    'company_id': company_id,
+                    'resource_warnings': [],
+                    'last_updated': time.time()
+                }
+                job_queue.append(job_id)
+                queued_job_params[job_id] = {
+                    'email': email,
+                    'password': password,
+                    'file_path': file_path,
+                    'session_dir': session_dir,
+                    'session_id': session_id,
+                    'company_id': company_id,
+                    'file_size': file_size
+                }
+                queue_position = len(job_queue)
+                log_job_event("job_created", job_id, status="queued", elapsed_sec=0)
+                log_job_event("job_queued", job_id, status="queued", queue_position=queue_position, elapsed_sec=0)
+                return jsonify({
+                    'job_id': job_id,
+                    'session_id': session_id,
+                    'status': 'queued',
+                    'queue_position': queue_position,
+                    'message': '現在、他ユーザーが作業中です。順番に処理します。このまま開いておくと自動で開始します。',
+                    'status_url': f'/status/{job_id}'
+                }), 202
+            
+            # 即時開始
             jobs[job_id] = {
                 'status': 'running',
-                'logs': deque(maxlen=MAX_JOB_LOGS),  # P1: 固定長ログ（メモリ最適化）
+                'logs': deque(maxlen=MAX_JOB_LOGS),
                 'progress': 0,
                 'step_name': 'initializing',
                 'current_data': 0,
                 'total_data': 0,
-                'start_time': datetime.now().timestamp(),
-                'end_time': None,  # P0-3: 完了時に設定
+                'start_time': time.time(),
+                'end_time': None,
                 'login_status': 'initializing',
                 'login_message': '🔄 処理を初期化中...',
                 'session_id': session_id,
                 'session_dir': session_dir,
                 'file_path': file_path,
-                'email_hash': hash(email),  # 個人情報はハッシュ化
-                'company_id': company_id,  # 会社IDを保存
-                'resource_warnings': resource_warnings,
+                'email_hash': hash(email),
+                'company_id': company_id,
+                'resource_warnings': [],
                 'last_updated': time.time()
             }
+        log_job_event("job_created", job_id, status="running", elapsed_sec=0)
         
-        # バックグラウンドで処理を実行（エラーハンドリング強化 + 観測性）
-        def run_automation():
-            bg_start_time = time.time()
-            logger.info(f"bg_job_start job_id={job_id} session_id={session_id} file_size={file_size}")
-            
-            # P0-P1: ジョブ開始時のメモリ計測は削除（重要度低、ログノイズ削減）
-            
-            try:
-                # セッション固有のブラウザ環境で処理を実行
-                process_jobcan_automation(job_id, email, password, file_path, jobs, session_dir, session_id, company_id, job_timeout_sec=JOB_TIMEOUT_SEC)
-                
-                duration = time.time() - bg_start_time
-                logger.info(f"bg_job_success job_id={job_id} duration_sec={duration:.1f}")
-                
-            except Exception as e:
-                error_message = f'処理中にエラーが発生しました: {str(e)}'
-                duration = time.time() - bg_start_time
-                logger.error(f"bg_job_error job_id={job_id} duration_sec={duration:.1f} error={str(e)}")
-                
-                with jobs_lock:
-                    if job_id in jobs:
-                        jobs[job_id]['status'] = 'error'
-                        jobs[job_id]['login_status'] = 'error'
-                        jobs[job_id]['login_message'] = error_message
-                        # P1: add_job_logを使用（deque対応）
-                        from utils import add_job_log
-                        add_job_log(job_id, f"❌ {error_message}", jobs)
-                        jobs[job_id]['last_updated'] = time.time()
-                        jobs[job_id]['end_time'] = time.time()  # P0-3: エラー時のend_timeを記録
-            finally:
-                # 処理完了後の完全クリーンアップ（エラーが発生しても必ず実行）
-                try:
-                    cleanup_start_time = time.time()
-                    if os.path.exists(file_path):
-                        os.remove(file_path)
-                        logger.info(f"cleanup_file job_id={job_id} path={file_path}")
-                    
-                    cleanup_user_session(session_id)
-                    unregister_session(session_id)
-                    
-                    cleanup_time = time.time() - cleanup_start_time
-                    logger.info(f"cleanup_complete job_id={job_id} session_id={session_id} cleanup_sec={cleanup_time:.2f}")
-                    
-                    # P0-3: 完了ジョブの間引きを実行
-                    prune_jobs()
-                    
-                except Exception as cleanup_error:
-                    logger.error(f"cleanup_error job_id={job_id} session_id={session_id} error={str(cleanup_error)}")
-                    # クリーンアップエラーでも処理は継続
-                    # P0-3: エラー時も間引きを試行
-                    try:
-                        prune_jobs()
-                    except:
-                        pass
-                    # P0-3: エラー時も間引きを試行
-                    try:
-                        prune_jobs()
-                    except:
-                        pass
+        resource_warnings = check_resource_limits()
+        if resource_warnings:
+            print(f"リソース警告: {', '.join(resource_warnings)}")
+        with jobs_lock:
+            if job_id in jobs:
+                jobs[job_id]['resource_warnings'] = resource_warnings
         
-        thread = threading.Thread(target=run_automation)
-        thread.daemon = True  # メインプロセス終了時に自動終了
+        thread = threading.Thread(
+            target=run_automation_impl,
+            args=(job_id, email, password, file_path, session_dir, session_id, company_id, file_size)
+        )
+        thread.daemon = True
         thread.start()
         
         return jsonify({
@@ -1508,6 +1679,8 @@ def get_status(job_id):
                 'resources': resources,
                 'resource_warnings': job.get('resource_warnings', [])
             }
+            if queue_position is not None:
+                response_data['queue_position'] = queue_position
             
             # ステータスに応じたHTTPステータスコードを設定
             if job['status'] == 'error':
@@ -1602,6 +1775,8 @@ def generate_user_message(status, login_status, login_message, progress):
         return f"❌ エラーが発生しました: {login_message}"
     elif status == 'timeout':
         return f"⏱ タイムアウト - {login_message}" if login_message else "⏱ 処理が時間切れになりました"
+    elif status == 'queued':
+        return login_message or "現在、他ユーザーが作業中。順番に処理します。"
     else:
         return "🔄 処理中..."
 

@@ -265,6 +265,9 @@ jobcan_automation-main/
 - `ADSENSE_ENABLED`: Google AdSense有効化フラグ（本番環境のみ `true` に設定）
   - デフォルト: `false`（開発環境）
   - 本番環境: `true` に設定することでAdSenseスクリプトが読み込まれます
+- `MAX_ACTIVE_SESSIONS`: Jobcan AutoFill の同時実行数（Render 512MB では 1 推奨）
+- `QUEUED_MAX_WAIT_SEC`: 待機キュー内ジョブの最大待機秒数（既定 1800＝30分）。超過で timeout 扱い
+- `MAX_QUEUE_SIZE`: 待機キューの最大長（既定 50）。超過時は 503 QUEUE_FULL
 
 ## 📊 モニタリング
 
