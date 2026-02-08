@@ -44,8 +44,9 @@ if MEMORY_WARNING_MB >= MEMORY_LIMIT_MB:
     MEMORY_WARNING_MB = int(MEMORY_LIMIT_MB * 0.9)
     logger.warning(f"memory_threshold_auto_corrected WARNING_MB={MEMORY_WARNING_MB} LIMIT_MB={MEMORY_LIMIT_MB}")
 MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", "10"))
-# Render等では環境変数で1に設定推奨（例: MAX_ACTIVE_SESSIONS=1）
-MAX_ACTIVE_SESSIONS = int(os.getenv("MAX_ACTIVE_SESSIONS", "20"))
+# Render本番では同時実行を直列化（512MB/0.5CPUで複数Playwrightは高リスク）。未設定時はRENDER検知で1に寄せる
+_default_sessions = "1" if os.getenv("RENDER") else "20"
+MAX_ACTIVE_SESSIONS = int(os.getenv("MAX_ACTIVE_SESSIONS", _default_sessions))
 # ジョブ全体のハードタイムアウト（秒）。超過でstatus=timeoutに遷移
 JOB_TIMEOUT_SEC = int(os.getenv("JOB_TIMEOUT_SEC", "300"))  # 5分
 
@@ -417,9 +418,10 @@ def count_running_jobs():
         return sum(1 for j in jobs.values() if j.get('status') == 'running')
 
 def check_resource_limits():
-    """リソース制限のチェック（メモリ制限チェック強化）"""
+    """リソース制限のチェック。上限判定はrunningジョブ数に統一（sessionと二重系統にしない）。"""
     resources = get_system_resources()
-    
+    running_count = count_running_jobs()
+    session_count = resources['active_sessions']
     warnings = []
     
     # メモリ使用量の警告（環境変数で設定可能）
@@ -428,14 +430,16 @@ def check_resource_limits():
     elif resources['memory_mb'] > MEMORY_WARNING_MB:
         warnings.append(f"メモリ使用量が高いです: {resources['memory_mb']:.1f}MB")
     
-    # アクティブセッション数の制限（OOM防止）
-    if resources['active_sessions'] >= MAX_ACTIVE_SESSIONS:
+    # 同時実行数はrunningジョブ数で判定（OOM防止）。session数は参考ログのみ
+    if running_count >= MAX_ACTIVE_SESSIONS:
         raise RuntimeError(
-            f"同時処理数の上限に達しています（{resources['active_sessions']}/{MAX_ACTIVE_SESSIONS}）。"
+            f"同時処理数の上限に達しています（実行中: {running_count}/{MAX_ACTIVE_SESSIONS}）。"
             f"しばらく待ってから再試行してください。"
         )
-    elif resources['active_sessions'] > MAX_ACTIVE_SESSIONS * 0.8:
-        warnings.append(f"アクティブセッション数が多いです: {resources['active_sessions']}/{MAX_ACTIVE_SESSIONS}個")
+    elif running_count > MAX_ACTIVE_SESSIONS * 0.8:
+        warnings.append(f"実行中ジョブが多いです: {running_count}/{MAX_ACTIVE_SESSIONS}件")
+    if session_count != running_count:
+        logger.warning(f"jobs_session_mismatch running_jobs={running_count} active_sessions={session_count}")
     
     return warnings
 
@@ -491,8 +495,8 @@ def prune_jobs(current_time=None, retention_sec=JOB_RETENTION_SECONDS):
         jobs_to_remove = []
         
         for job_id, job_info in list(jobs.items()):
-            # completed または error 状態のジョブのみ対象
-            if job_info.get('status') not in ('completed', 'error'):
+            # completed / error / timeout を削除対象（timeoutはend_timeを_check_job_timeoutで設定済み）
+            if job_info.get('status') not in ('completed', 'error', 'timeout'):
                 continue
             
             # タイムスタンプを取得
@@ -1281,12 +1285,14 @@ def upload_file():
         if validation_errors:
             return jsonify({'error': '入力エラー: ' + '; '.join(validation_errors)})
         
-        # P0-P1: 同時実行数制限（runningジョブ数で判定。RenderではMAX_ACTIVE_SESSIONS=1推奨）
+        # P0-P1: 同時実行数制限（runningジョブ数で判定）。2件目は即時BUSYで待機/拒否
         running_count = count_running_jobs()
         if running_count >= MAX_ACTIVE_SESSIONS:
             return jsonify({
                 'error': '同時処理数の上限に達しています。',
+                'error_code': 'BUSY',
                 'message': f'現在の実行中ジョブ: {running_count}件（上限: {MAX_ACTIVE_SESSIONS}）。しばらく待ってから再試行してください。',
+                'retry_after_sec': 30,
                 'status_code': 503
             }), 503
 
@@ -1482,6 +1488,9 @@ def get_status(job_id):
                 print(f"リソース情報取得エラー: {resource_error}")
                 resources = {'memory_mb': 0, 'cpu_percent': 0, 'active_sessions': 0}
             
+            # P0-4: 経過秒数を含める（止まった原因の切り分け用）
+            start_ts = job.get('start_time') or 0
+            elapsed_sec = round(time.time() - start_ts, 1) if start_ts else 0
             # レスポンスデータを構築
             response_data = {
                 'status': job['status'],
@@ -1490,7 +1499,8 @@ def get_status(job_id):
                 'current_data': job.get('current_data', 0),
                 'total_data': job.get('total_data', 0),
                 'logs': job_logs,  # P1: ページング対応済みログ
-                'start_time': job.get('start_time', 0),
+                'start_time': start_ts,
+                'elapsed_sec': elapsed_sec,
                 'login_status': login_status,
                 'login_message': login_message,
                 'user_message': user_message,
