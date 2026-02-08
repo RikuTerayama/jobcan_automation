@@ -576,6 +576,11 @@
             border-color: rgba(0, 51, 102, 0.3);
         }
         
+        .login-result.pending {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        
         .message-content {
             background: rgba(0, 0, 0, 0.05);
             border-radius: 8px;
@@ -1103,15 +1108,14 @@
             const loginResultDiv = document.getElementById('loginResult');
             const loginResultContent = document.getElementById('loginResultContent');
             
-            // processing状態の場合は表示しない
-            if (loginStatus === 'processing') {
+            // 監査対応: 未確定状態（initializing, processing, running, starting）はブロック非表示またはpending
+            const pendingStatuses = ['initializing', 'processing', 'running', 'starting'];
+            if (pendingStatuses.indexOf(loginStatus) !== -1) {
                 loginResultDiv.style.display = 'none';
                 return;
             }
             
-            // クラスをリセット
             loginResultDiv.className = 'login-result';
-            
             let statusIcon = '';
             let statusClass = '';
             
@@ -1121,22 +1125,22 @@
             } else if (loginStatus === 'captcha_detected') {
                 statusIcon = '⚠️';
                 statusClass = 'warning';
-            } else {
+            } else if (['failed', 'error', 'timeout', 'aborted'].indexOf(loginStatus) !== -1) {
                 statusIcon = '❌';
                 statusClass = 'error';
+            } else {
+                // その他はpending（中立表示）
+                statusIcon = '🔄';
+                statusClass = 'pending';
             }
             
             loginResultDiv.classList.add(statusClass);
-            
-            // 改行を適切に処理
-            const formattedMessage = loginMessage.replace(/\n/g, '<br>');
-            
+            const formattedMessage = (loginMessage || '').replace(/\n/g, '<br>');
             loginResultContent.innerHTML = `
                 <p><strong>${statusIcon} ログイン状態:</strong></p>
                 <div class="message-content ${statusClass}">${formattedMessage}</div>
                 <p><strong>ステータスコード:</strong> ${loginStatus}</p>
             `;
-            
             loginResultDiv.style.display = 'block';
         }
         
@@ -1184,13 +1188,15 @@
                     const response = await fetch(`/status/${currentJobId}`);
                     const result = await response.json();
                     
-                    // ログイン結果を表示（processing状態以外の場合のみ、かつ状態が変わった場合のみ）
-                    if (result.login_status && result.login_message && result.login_status !== 'processing') {
-                        // 状態が変わった場合のみ表示
+                    // 監査対応: ログイン結果が確定した状態のみ表示（initializing/processingでは呼ばない）
+                    const determinedStatuses = ['success', 'captcha_detected', 'failed', 'error', 'timeout', 'aborted'];
+                    if (result.login_status && determinedStatuses.indexOf(result.login_status) !== -1) {
                         if (lastLoginStatus !== result.login_status) {
                             showLoginResult(result.login_status, result.login_message);
                             lastLoginStatus = result.login_status;
                         }
+                    } else if (['initializing', 'processing', 'running', 'starting'].indexOf(result.login_status) !== -1) {
+                        document.getElementById('loginResult').style.display = 'none';
                     }
                     
                     if (result.status === 'completed') {
@@ -1205,7 +1211,12 @@
                         addProgressLog('❌ エラー: ' + (result.user_message || '不明なエラー'));
                         clearInterval(pollInterval);
                         document.getElementById('retryBtn').style.display = 'inline-block';
-                        // ポーリング完了フラグを設定
+                        window.pollingCompleted = true;
+                    } else if (result.status === 'timeout') {
+                        updateProgressStatus('error', 'タイムアウト', result.user_message || '処理が時間切れになりました');
+                        addProgressLog('⏱ タイムアウト');
+                        clearInterval(pollInterval);
+                        document.getElementById('retryBtn').style.display = 'inline-block';
                         window.pollingCompleted = true;
                     } else {
                         // 進行中
@@ -1217,13 +1228,10 @@
                         }
                         
                         if (result.logs && result.logs.length > 0) {
-                            // 新しいログのみを追加
-                            const currentLogs = document.getElementById('progressLog').textContent;
-                            result.logs.forEach(log => {
-                                if (!currentLogs.includes(log)) {
-                                    addProgressLog(log);
-                                }
-                            });
+                            // 監査対応: サーバー状態で置換して同一行の増殖を防ぐ
+                            const logDiv = document.getElementById('progressLog');
+                            logDiv.textContent = result.logs.join('\n');
+                            logDiv.scrollTop = logDiv.scrollHeight;
                         }
                     }
                     

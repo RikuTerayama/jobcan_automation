@@ -44,7 +44,10 @@ if MEMORY_WARNING_MB >= MEMORY_LIMIT_MB:
     MEMORY_WARNING_MB = int(MEMORY_LIMIT_MB * 0.9)
     logger.warning(f"memory_threshold_auto_corrected WARNING_MB={MEMORY_WARNING_MB} LIMIT_MB={MEMORY_LIMIT_MB}")
 MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", "10"))
+# Render等では環境変数で1に設定推奨（例: MAX_ACTIVE_SESSIONS=1）
 MAX_ACTIVE_SESSIONS = int(os.getenv("MAX_ACTIVE_SESSIONS", "20"))
+# ジョブ全体のハードタイムアウト（秒）。超過でstatus=timeoutに遷移
+JOB_TIMEOUT_SEC = int(os.getenv("JOB_TIMEOUT_SEC", "300"))  # 5分
 
 app = Flask(__name__)
 
@@ -366,9 +369,8 @@ jobs_lock = threading.Lock()
 # P0-3: 完了ジョブの保持期間（秒）
 JOB_RETENTION_SECONDS = 1800  # 30分
 
-# P1: ジョブログの上限設定（メモリ最適化）
-# utils.pyのMAX_JOB_LOGSと同期（1000）
-MAX_JOB_LOGS = 1000  # 1ジョブあたりの最大ログ件数
+# P1: ジョブログの上限設定（メモリ最適化）。utils.MAX_JOB_LOGSと同期（500）
+MAX_JOB_LOGS = 500  # 1ジョブあたりの最大ログ件数
 
 # セッション管理とリソース監視
 session_manager = {
@@ -408,6 +410,11 @@ def get_system_resources():
     except Exception as e:
         logger.error(f"resource_monitoring_error error={str(e)}")
         return {'memory_mb': 0, 'cpu_percent': 0, 'active_sessions': len(session_manager['active_sessions'])}
+
+def count_running_jobs():
+    """statusがrunningのジョブ数（同時実行数）を返す。"""
+    with jobs_lock:
+        return sum(1 for j in jobs.values() if j.get('status') == 'running')
 
 def check_resource_limits():
     """リソース制限のチェック（メモリ制限チェック強化）"""
@@ -1051,14 +1058,15 @@ def readyz():
             logger.error(f"memory_limit_exceeded current={resources['memory_mb']:.1f}MB limit={MEMORY_LIMIT_MB}MB")
             return Response(f'memory limit exceeded: {resources["memory_mb"]:.1f}MB', status=503, mimetype='text/plain')
         
-        # 同時接続数チェック
-        if len(jobs) > MAX_ACTIVE_SESSIONS:
-            logger.error(f"max_sessions_exceeded current={len(jobs)} limit={MAX_ACTIVE_SESSIONS}")
-            return Response(f'max sessions exceeded: {len(jobs)}/{MAX_ACTIVE_SESSIONS}', status=503, mimetype='text/plain')
+        # 同時実行数チェック（runningジョブ数で判定）
+        running_count = count_running_jobs()
+        if running_count > MAX_ACTIVE_SESSIONS:
+            logger.error(f"max_sessions_exceeded running={running_count} limit={MAX_ACTIVE_SESSIONS}")
+            return Response(f'max sessions exceeded: {running_count}/{MAX_ACTIVE_SESSIONS}', status=503, mimetype='text/plain')
         
         # リソース使用率をログに記録（詳細版）
         memory_usage_percent = (resources['memory_mb'] / MEMORY_LIMIT_MB) * 100
-        logger.info(f"system_resources memory={resources['memory_mb']:.1f}MB/{MEMORY_LIMIT_MB}MB ({memory_usage_percent:.1f}%) cpu={resources['cpu_percent']:.1f}% active_sessions={len(jobs)}/{MAX_ACTIVE_SESSIONS}")
+        logger.info(f"system_resources memory={resources['memory_mb']:.1f}MB/{MEMORY_LIMIT_MB}MB ({memory_usage_percent:.1f}%) cpu={resources['cpu_percent']:.1f}% running_jobs={running_count}/{MAX_ACTIVE_SESSIONS}")
         
         # メモリ使用率が高い場合は警告
         if memory_usage_percent > 80:
@@ -1273,13 +1281,20 @@ def upload_file():
         if validation_errors:
             return jsonify({'error': '入力エラー: ' + '; '.join(validation_errors)})
         
-        # P0-P1: メモリガード（新規ジョブ開始前チェック）
-        # MEMORY_WARNING_MBを超えていたら、新規ジョブ開始を拒否してユーザーにリトライ案内
-        # これにより「ギリギリ状態でPlaywright起動→即死」を減らす
+        # P0-P1: 同時実行数制限（runningジョブ数で判定。RenderではMAX_ACTIVE_SESSIONS=1推奨）
+        running_count = count_running_jobs()
+        if running_count >= MAX_ACTIVE_SESSIONS:
+            return jsonify({
+                'error': '同時処理数の上限に達しています。',
+                'message': f'現在の実行中ジョブ: {running_count}件（上限: {MAX_ACTIVE_SESSIONS}）。しばらく待ってから再試行してください。',
+                'status_code': 503
+            }), 503
+
+        # P0-P1: メモリガード（新規ジョブ開始前チェック）。job_idは未生成のためログには含めない
         try:
             resources = get_system_resources()
             if resources['memory_mb'] > MEMORY_WARNING_MB:
-                logger.warning(f"memory_guard_blocked memory_mb={resources['memory_mb']:.1f} warning_threshold={MEMORY_WARNING_MB} job_id={job_id}")
+                logger.warning(f"memory_guard_blocked memory_mb={resources['memory_mb']:.1f} warning_threshold={MEMORY_WARNING_MB}")
                 return jsonify({
                     'error': f'メモリ使用量が高いため、現在新しい処理を開始できません。',
                     'message': f'現在のメモリ使用量: {resources["memory_mb"]:.1f}MB（警告閾値: {MEMORY_WARNING_MB}MB）',
@@ -1352,7 +1367,7 @@ def upload_file():
             
             try:
                 # セッション固有のブラウザ環境で処理を実行
-                process_jobcan_automation(job_id, email, password, file_path, jobs, session_dir, session_id, company_id)
+                process_jobcan_automation(job_id, email, password, file_path, jobs, session_dir, session_id, company_id, job_timeout_sec=JOB_TIMEOUT_SEC)
                 
                 duration = time.time() - bg_start_time
                 logger.info(f"bg_job_success job_id={job_id} duration_sec={duration:.1f}")
@@ -1556,7 +1571,7 @@ def cleanup_expired_sessions():
         return jsonify({'error': f'セッションクリーンアップエラー: {str(e)}'})
 
 def generate_user_message(status, login_status, login_message, progress):
-    """ユーザー向けメッセージを生成"""
+    """ユーザー向けメッセージを生成（二重表示防止: processing時はlogin_messageが「ログイン処理中」系なら1文のみ返す）"""
     if status == 'running':
         if login_status == 'success':
             return f"✅ ログイン成功 - {login_message}"
@@ -1565,13 +1580,18 @@ def generate_user_message(status, login_status, login_message, progress):
         elif login_status == 'captcha':
             return f"🔄 画像認証が必要です - {login_message}"
         elif login_status == 'processing':
-            return f"🔄 ログイン処理中... - {login_message}"
+            # 監査対応: login_messageがすでに「ログイン処理中」系ならprefixを付けず重複を防ぐ
+            if login_message and 'ログイン処理中' in (login_message or ''):
+                return login_message.strip()
+            return f"🔄 ログイン処理中... - {login_message}" if login_message else "🔄 ログイン処理中..."
         else:
-            return f"🔄 処理中... - {login_message}"
+            return f"🔄 処理中... - {login_message}" if login_message else "🔄 処理中..."
     elif status == 'completed':
         return "✅ 処理完了 勤怠データの入力が完了しました。"
     elif status == 'error':
         return f"❌ エラーが発生しました: {login_message}"
+    elif status == 'timeout':
+        return f"⏱ タイムアウト - {login_message}" if login_message else "⏱ 処理が時間切れになりました"
     else:
         return "🔄 処理中..."
 
