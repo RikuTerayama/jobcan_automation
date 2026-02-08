@@ -134,6 +134,55 @@
             padding: 8px;
         }
         
+        /* minutes: ファイル選択行（つぶれ防止・タップ領域確保） */
+        .minutes-file-picker-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .minutes-file-picker-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 44px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            white-space: nowrap;
+            background: rgba(74, 158, 255, 0.2);
+            border: 1px solid rgba(74, 158, 255, 0.5);
+            color: #4A9EFF;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+        .minutes-file-picker-btn:hover {
+            background: rgba(74, 158, 255, 0.3);
+        }
+        .minutes-file-picker-btn input[type="file"] {
+            position: absolute;
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            z-index: -1;
+        }
+        .minutes-file-picker-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 220px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85em;
+        }
+        @media (max-width: 520px) {
+            .minutes-file-picker-btn { width: 100%; min-width: 0; }
+            .minutes-file-picker-meta { min-width: 0; width: 100%; }
+        }
+        
         .action-button {
             padding: 12px 24px;
             background: rgba(74, 158, 255, 0.2);
@@ -310,9 +359,16 @@
                     <div class="info-text" style="margin-bottom: 10px; padding: 10px; background: rgba(255, 152, 0, 0.08); border-radius: 6px; border-left: 3px solid rgba(255, 152, 0, 0.5);">
                         機密情報が含まれる場合は取り扱いにご注意ください。現在の整形処理はブラウザ内で完結し、入力テキストはサーバーに送信されません。
                     </div>
-                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                        <input type="file" id="file-input" accept=".txt,.md,text/plain,text/markdown" style="flex: 1;">
-                        <button class="action-button secondary" onclick="loadSampleText()" style="flex: 0 0 auto; padding: 10px 15px;">サンプル入力</button>
+                    <div class="minutes-file-picker-row">
+                        <label class="minutes-file-picker-btn">
+                            ファイルを選択
+                            <input type="file" id="file-input" accept=".txt,.md,text/plain,text/markdown" multiple>
+                        </label>
+                        <div class="minutes-file-picker-meta">
+                            <span>対応: .txt / .md（複数可）</span>
+                            <span>上限: 200,000文字</span>
+                        </div>
+                        <button class="action-button secondary" onclick="loadSampleText()" style="flex: 0 0 auto; padding: 10px 15px; min-height: 44px; margin-top: 0;">サンプル入力</button>
                     </div>
                     <textarea id="raw-text" placeholder="文字起こしテキストを貼り付けてください（例: Speaker1: では始めます）"></textarea>
                     <p class="info-text">最大200,000文字まで</p>
