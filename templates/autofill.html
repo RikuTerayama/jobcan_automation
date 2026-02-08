@@ -1033,8 +1033,9 @@
                 if (result.job_id) {
                     currentJobId = result.job_id;
                     if (result.status === 'queued') {
-                        const pos = result.queue_position ? `（${result.queue_position}番目）` : '';
-                        updateProgressStatus('queued', '少々お待ちください', result.message || '順番待ちです。このまま開いておくと自動で開始します。' + pos);
+                        const posText = result.queue_position ? `順番待ちです（あなたの順番: ${result.queue_position}番目）。` : '順番待ちです。';
+                        const autoStart = 'このタブを開いたままにすると、自分の順番になったとき自動で開始します。';
+                        updateProgressStatus('queued', '少々お待ちください', posText + autoStart);
                     } else {
                         updateProgressStatus('processing', '処理が開始されました', 'Jobcanへのログインとデータ処理を開始しています...');
                     }
@@ -1233,8 +1234,9 @@
                         document.getElementById('retryBtn').style.display = 'inline-block';
                         window.pollingCompleted = true;
                     } else if (result.status === 'queued') {
-                        const pos = result.queue_position ? `（${result.queue_position}番目）` : '';
-                        updateProgressStatus('queued', '少々お待ちください', (result.user_message || '順番待ちです。このまま開いておくと自動で開始します。') + pos);
+                        const posText = result.queue_position ? `順番待ちです（あなたの順番: ${result.queue_position}番目）。` : '順番待ちです。';
+                        const autoStart = 'このタブを開いたままにすると、自分の順番になったとき自動で開始します。';
+                        updateProgressStatus('queued', '少々お待ちください', posText + autoStart);
                     } else {
                         // 進行中 (running 等)
                         updateProgressStatus('processing', result.step_name || '処理中', result.user_message || '処理を実行中です...');

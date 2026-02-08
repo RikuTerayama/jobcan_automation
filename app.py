@@ -421,6 +421,42 @@ def get_system_resources():
         logger.error(f"resource_monitoring_error error={str(e)}")
         return {'memory_mb': 0, 'cpu_percent': 0, 'active_sessions': len(session_manager['active_sessions'])}
 
+def get_elapsed_sec(job):
+    """ジョブの経過秒数を返す。start_time が無い/不正なら None。"""
+    if not job:
+        return None
+    st = job.get('start_time')
+    if not st:
+        return None
+    try:
+        return int(time.time() - st)
+    except Exception:
+        return None
+
+
+def get_queue_position(job_id):
+    """queued 時のキュー内位置（1-based）。見つからなければ None。jobs_lock で保護。"""
+    with jobs_lock:
+        qlist = list(job_queue)
+        if job_id in qlist:
+            return 1 + qlist.index(job_id)
+    return None
+
+
+def log_job_event(event, job_id, status=None, queue_position=None, elapsed_sec=None, extra=None):
+    """AutoFill ジョブのライフサイクルイベントを構造化ログに出力。"""
+    payload = {
+        "event": event,
+        "job_id": job_id,
+        "status": status,
+        "queue_position": queue_position,
+        "elapsed_sec": elapsed_sec,
+    }
+    if extra:
+        payload.update(extra)
+    logger.info("autofill_event %s", payload)
+
+
 def count_running_jobs():
     """statusがrunningのジョブ数（同時実行数）を返す。"""
     with jobs_lock:
@@ -501,6 +537,7 @@ def maybe_start_next_job():
             return
         if not job_queue:
             return
+        queue_position = 1  # 先頭を開始する
         job_id = job_queue.popleft()
         params = queued_job_params.pop(job_id, None)
         if not params or job_id not in jobs:
@@ -512,6 +549,7 @@ def maybe_start_next_job():
         jobs[job_id]['login_message'] = '🔄 処理を初期化中...'
         jobs[job_id]['start_time'] = time.time()
         jobs[job_id]['last_updated'] = time.time()
+        elapsed = get_elapsed_sec(jobs[job_id])
         email = params['email']
         password = params['password']
         file_path = params['file_path']
@@ -519,6 +557,7 @@ def maybe_start_next_job():
         session_id = params['session_id']
         company_id = params.get('company_id', '')
         file_size = params.get('file_size', 0)
+    log_job_event("job_started", job_id, status="running", queue_position=queue_position, elapsed_sec=elapsed, extra={"source": "queue"})
     # ロック外でスレッド起動（run_automation_impl 内で process が重い）
     thread = threading.Thread(
         target=run_automation_impl,
@@ -526,7 +565,6 @@ def maybe_start_next_job():
     )
     thread.daemon = True
     thread.start()
-    logger.info(f"queue_started job_id={job_id} from_queue=1")
 
 
 def run_automation_impl(job_id, email, password, file_path, session_dir, session_id, company_id, file_size):
@@ -541,6 +579,16 @@ def run_automation_impl(job_id, email, password, file_path, session_dir, session
         )
         duration = time.time() - bg_start_time
         logger.info(f"bg_job_success job_id={job_id} duration_sec={duration:.1f}")
+        with jobs_lock:
+            job = jobs.get(job_id)
+            st = job.get('status') if job else None
+            elapsed = get_elapsed_sec(job)
+        if st == 'completed':
+            log_job_event("job_completed", job_id, status="completed", elapsed_sec=elapsed)
+        elif st == 'timeout':
+            log_job_event("job_timeout", job_id, status="timeout", elapsed_sec=elapsed)
+        else:
+            log_job_event("job_completed", job_id, status=st or "completed", elapsed_sec=elapsed)
     except Exception as e:
         error_message = f'処理中にエラーが発生しました: {str(e)}'
         duration = time.time() - bg_start_time
@@ -554,6 +602,8 @@ def run_automation_impl(job_id, email, password, file_path, session_dir, session
                 add_job_log(job_id, f"❌ {error_message}", jobs)
                 jobs[job_id]['last_updated'] = time.time()
                 jobs[job_id]['end_time'] = time.time()
+            err_elapsed = get_elapsed_sec(jobs.get(job_id))
+        log_job_event("job_error", job_id, status="error", elapsed_sec=err_elapsed, extra={"error": str(e)[:200]})
     finally:
         try:
             if os.path.exists(file_path):
@@ -1491,6 +1541,8 @@ def upload_file():
                     'file_size': file_size
                 }
                 queue_position = len(job_queue)
+                log_job_event("job_created", job_id, status="queued", elapsed_sec=0)
+                log_job_event("job_queued", job_id, status="queued", queue_position=queue_position, elapsed_sec=0)
                 return jsonify({
                     'job_id': job_id,
                     'session_id': session_id,
@@ -1520,6 +1572,7 @@ def upload_file():
                 'resource_warnings': [],
                 'last_updated': time.time()
             }
+        log_job_event("job_created", job_id, status="running", elapsed_sec=0)
         
         resource_warnings = check_resource_limits()
         if resource_warnings:
