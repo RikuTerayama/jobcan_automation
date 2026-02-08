@@ -265,6 +265,9 @@ jobcan_automation-main/
 - `ADSENSE_ENABLED`: Google AdSense有効化フラグ（本番環境のみ `true` に設定）
   - デフォルト: `false`（開発環境）
   - 本番環境: `true` に設定することでAdSenseスクリプトが読み込まれます
+- `MAX_ACTIVE_SESSIONS`: Jobcan AutoFill の同時実行数（Render 512MB では 1 推奨）
+- `QUEUED_MAX_WAIT_SEC`: 待機キュー内ジョブの最大待機秒数（既定 1800＝30分）。超過で timeout 扱い
+- `MAX_QUEUE_SIZE`: 待機キューの最大長（既定 50）。超過時は 503 QUEUE_FULL
 
 ## 📊 モニタリング
 
@@ -453,9 +456,15 @@ Alert: Uptime < 99%
 | Standard | 2GB+ | 6-8人 | $25 | 中規模チーム |
 
 **制限の仕組み:**
-- `MAX_ACTIVE_SESSIONS=2`（free plan）
-- 同時処理数が上限に達すると、エラーメッセージを表示
-- ユーザーに「しばらく待って再試行」を促す
+- **512MB（Render free）では `MAX_ACTIVE_SESSIONS=1` を推奨**（render.yaml で設定済み。RENDER 環境では未設定時も default 1）
+- 同時実行は1件のみ。**2件目以降は 503 で弾かず、待機キュー（FIFO）に積み、`job_id` を返す**（HTTP 202 Accepted）
+- UI は「待機中 → 実行中 → 完了/失敗」をポーリングで表示。キューが満杯のときのみ **503 + `error_code: "QUEUE_FULL"`** を返す
+
+**待機キュー（インメモリ）の制約:**
+- キューは **プロセス内メモリ**（Redis 等は未使用）のため、**サーバー再起動でキューと未実行の待機ジョブは消えます**
+- 待機中のジョブは最大 **`QUEUED_MAX_WAIT_SEC`**（既定 30 分）を超えると timeout 扱いで終了・ファイル削除
+- キュー長の上限は **`MAX_QUEUE_SIZE`**（既定 50）で、超過時は 503 QUEUE_FULL
+- 環境変数（任意）: `QUEUED_MAX_WAIT_SEC`, `MAX_QUEUE_SIZE`
 
 ### Gunicorn 設定
 
@@ -466,7 +475,7 @@ workers: ${WEB_CONCURRENCY:-2}        # デフォルト2
 threads: ${WEB_THREADS:-2}            # デフォルト2  
 timeout: ${WEB_TIMEOUT:-180}          # デフォルト180秒
 max-requests: 500                     # メモリリーク対策
-MAX_ACTIVE_SESSIONS: 2                # 同時実行制限（OOM防止）
+MAX_ACTIVE_SESSIONS: 1                # 512MBでは1推奨。2件目以降は待機キューで受付
 ```
 
 ### メモリ管理
