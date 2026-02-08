@@ -1453,6 +1453,17 @@ def upload_file():
         if validation_errors:
             return jsonify({'error': '入力エラー: ' + '; '.join(validation_errors)})
         
+        # P0-P1: 同時実行数制限（runningジョブ数で判定）。2件目は即時BUSYで待機/拒否
+        running_count = count_running_jobs()
+        if running_count >= MAX_ACTIVE_SESSIONS:
+            return jsonify({
+                'error': '同時処理数の上限に達しています。',
+                'error_code': 'BUSY',
+                'message': f'現在の実行中ジョブ: {running_count}件（上限: {MAX_ACTIVE_SESSIONS}）。しばらく待ってから再試行してください。',
+                'retry_after_sec': 30,
+                'status_code': 503
+            }), 503
+
         # P0-P1: メモリガード（新規ジョブ開始前チェック）。job_idは未生成のためログには含めない
         try:
             resources = get_system_resources()
@@ -1651,22 +1662,14 @@ def get_status(job_id):
             # P0-4: 経過秒数を含める（止まった原因の切り分け用）
             start_ts = job.get('start_time') or 0
             elapsed_sec = round(time.time() - start_ts, 1) if start_ts else 0
-            # queued のときキュー内位置を付与
-            queue_position = None
-            if job.get('status') == 'queued':
-                try:
-                    qlist = list(job_queue)
-                    if job_id in qlist:
-                        queue_position = 1 + qlist.index(job_id)
-                except Exception:
-                    pass
+            # レスポンスデータを構築
             response_data = {
                 'status': job['status'],
                 'progress': job.get('progress', 0),
                 'step_name': job.get('step_name', ''),
                 'current_data': job.get('current_data', 0),
                 'total_data': job.get('total_data', 0),
-                'logs': job_logs,
+                'logs': job_logs,  # P1: ページング対応済みログ
                 'start_time': start_ts,
                 'elapsed_sec': elapsed_sec,
                 'login_status': login_status,

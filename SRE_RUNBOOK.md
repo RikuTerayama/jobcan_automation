@@ -8,12 +8,17 @@
 
 ## 📊 同時処理能力
 
+### **運用前提（512MB / Render free）**
+- **同時実行は直列化**: `MAX_ACTIVE_SESSIONS=1` を推奨（render.yaml で設定済み）
+- RENDER 環境では環境変数未設定時も default が 1 になる
+- 2件目の `/upload` は **503 + error_code=BUSY, retry_after_sec=30** で即時拒否し、全体ハングを防ぐ
+
 ### **現在の設定値**
 
 ```yaml
-WEB_CONCURRENCY: 2        # Gunicorn workers
-WEB_THREADS: 2            # Threads per worker
-MAX_ACTIVE_SESSIONS: 2    # 同時ブラウザ自動化制限（OOM防止）
+WEB_CONCURRENCY: 1        # Gunicorn workers（512MB安定化）
+WEB_THREADS: 1            # Threads per worker
+MAX_ACTIVE_SESSIONS: 1    # 同時ブラウザ自動化＝1（OOM防止）
 ```
 
 ### **プラン別の同時処理能力**
@@ -50,10 +55,9 @@ Playwright処理1件あたり:
 ### **制限の仕組み**
 
 ```python
-# app.py の check_resource_limits() で制限
-if active_sessions >= MAX_ACTIVE_SESSIONS:
-    raise RuntimeError("同時処理数の上限に達しています")
-    # → HTTP 500 エラーを返す
+# app.py: 上限判定は running ジョブ数に統一（count_running_jobs）
+if running_count >= MAX_ACTIVE_SESSIONS:
+    return 503, error_code=BUSY, retry_after_sec=30
     # → ユーザーに「しばらく待って再試行」を促す
 ```
 
