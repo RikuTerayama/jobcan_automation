@@ -317,6 +317,7 @@ def inject_env_vars():
                 f"context_processor products_catalog not a list type={type(products_list).__name__} - using []"
             )
             products_list = []
+        products_catalog = [p for p in products_list if isinstance(p, dict) and p.get('status') == 'available']
 
         from lib.nav import get_nav_sections, get_footer_columns
         nav_sections = get_nav_sections()
@@ -326,6 +327,7 @@ def inject_env_vars():
             'ADSENSE_ENABLED': os.getenv('ADSENSE_ENABLED', 'false').lower() == 'true',
             'app_version': app_version,
             'products': products_list,
+            'products_catalog': products_catalog,
             'nav_sections': nav_sections,
             'footer_columns': footer_columns,
             'GA_MEASUREMENT_ID': os.getenv('GA_MEASUREMENT_ID', ''),
@@ -346,6 +348,7 @@ def inject_env_vars():
             'ADSENSE_ENABLED': False,
             'app_version': '1.0.0',
             'products': [],
+            'products_catalog': [],
             'nav_sections': get_nav_sections_fallback(),
             'footer_columns': get_footer_columns(),
             'GA_MEASUREMENT_ID': '',
@@ -664,10 +667,7 @@ def index():
 def autofill():
     """Jobcan自動入力ツール（旧ホームページ）"""
     try:
-        from lib.routes import get_available_products
-        available = get_available_products()
-        related_products = [p for p in available if p.get('id') != 'autofill'][:4]
-        return render_template('autofill.html', related_products=related_products)
+        return render_template('autofill.html')
     except Exception as e:
         # 例外をログに記録してから、エラーハンドラに委譲（例外を再発生）
         request_id = getattr(g, 'request_id', 'unknown')
@@ -761,39 +761,30 @@ def guide_seo():
 @app.route('/tools/image-batch')
 def tools_image_batch():
     """画像一括変換ツール"""
-    from lib.routes import get_product_by_path, get_available_products
+    from lib.routes import get_product_by_path
     product = get_product_by_path('/tools/image-batch')
-    # 関連ツール（同じカテゴリまたは利用可能なツールから3-4件を選択）
-    available_products = get_available_products()
-    related_products = [p for p in available_products if p['id'] != 'image-batch' and p.get('status') == 'available'][:4]
-    return render_template('tools/image-batch.html', product=product, related_products=related_products)
+    return render_template('tools/image-batch.html', product=product)
 
 @app.route('/tools/pdf')
 def tools_pdf():
     """PDFユーティリティ"""
-    from lib.routes import get_product_by_path, get_available_products
+    from lib.routes import get_product_by_path
     product = get_product_by_path('/tools/pdf')
-    available_products = get_available_products()
-    related_products = [p for p in available_products if p['id'] != 'pdf' and p.get('status') == 'available'][:4]
-    return render_template('tools/pdf.html', product=product, related_products=related_products)
+    return render_template('tools/pdf.html', product=product)
 
 @app.route('/tools/image-cleanup')
 def tools_image_cleanup():
     """画像ユーティリティ"""
-    from lib.routes import get_product_by_path, get_available_products
+    from lib.routes import get_product_by_path
     product = get_product_by_path('/tools/image-cleanup')
-    available_products = get_available_products()
-    related_products = [p for p in available_products if p['id'] != 'image-cleanup' and p.get('status') == 'available'][:4]
-    return render_template('tools/image-cleanup.html', product=product, related_products=related_products)
+    return render_template('tools/image-cleanup.html', product=product)
 
 @app.route('/tools/minutes')
 def tools_minutes():
     """議事録整形ツール"""
-    from lib.routes import get_product_by_path, get_available_products
+    from lib.routes import get_product_by_path
     product = get_product_by_path('/tools/minutes')
-    available_products = get_available_products()
-    related_products = [p for p in available_products if p['id'] != 'minutes' and p.get('status') == 'available'][:4]
-    return render_template('tools/minutes.html', product=product, related_products=related_products)
+    return render_template('tools/minutes.html', product=product)
 
 
 @app.route('/api/minutes/format', methods=['POST'])
@@ -805,11 +796,9 @@ def api_minutes_format():
 @app.route('/tools/seo')
 def tools_seo():
     """Web/SEOユーティリティ"""
-    from lib.routes import get_product_by_path, get_available_products
+    from lib.routes import get_product_by_path
     product = get_product_by_path('/tools/seo')
-    available_products = get_available_products()
-    related_products = [p for p in available_products if p['id'] != 'seo' and p.get('status') == 'available'][:4]
-    return render_template('tools/seo.html', product=product, related_products=related_products)
+    return render_template('tools/seo.html', product=product)
 
 
 # 簡易レート制限: /api/seo/crawl-urls を IP ごとに 60 秒に 1 回まで
