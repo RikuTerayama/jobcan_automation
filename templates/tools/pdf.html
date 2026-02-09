@@ -590,7 +590,9 @@
             });
             
             fileInput.addEventListener('change', (e) => {
-                handleFiles(Array.from(e.target.files));
+                const files = Array.from(e.target.files || []);
+                fileInput.value = '';
+                handleFiles(files);
             });
         }
         
@@ -725,10 +727,11 @@
                 dropzoneHint.textContent = `対応形式: PDF（最大${pdfMaxFiles}ファイル、1ファイル50MBまで）`;
             }
             
-            // ファイルリストをクリア
-            toolRunner.clearFiles();
+            // 実行状態のみリセット（選択ファイルは維持）
+            toolRunner.resetRunState();
             updateFileList();
             updateRunButton();
+            fileInput.value = '';
         }
         
         // 実行ボタンの状態を更新
