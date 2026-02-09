@@ -59,6 +59,23 @@ class ToolRunner {
     }
 
     /**
+     * ファイルは維持し、実行状態のみリセット（モード変更時用）
+     */
+    resetRunState() {
+        this.tasksState.clear();
+        this.outputs = [];
+        this.errors = [];
+        this.selectedFiles.forEach((file, index) => {
+            this.tasksState.set(index, {
+                status: 'queued',
+                message: '',
+                progress: 0
+            });
+        });
+        this.onProgress(this.getProgress());
+    }
+
+    /**
      * 状態を再構築（ファイル削除後に呼ぶ）
      */
     rebuildState() {
