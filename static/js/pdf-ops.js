@@ -2,6 +2,32 @@
  * PDF操作ユーティリティ（pdf-lib使用）
  */
 
+/** pdf-lib の暗号化PDFエラーかどうか判定 */
+function isEncryptedPdfLibError(e) {
+    return String(e?.message || '').toLowerCase().includes('encrypted');
+}
+
+/**
+ * PDFDocument.load を実行し、暗号化PDFの場合はユーザー向けメッセージで throw
+ * @param {ArrayBuffer} arrayBuffer
+ * @param {string} filename - 表示用
+ * @returns {Promise<PDFDocument>}
+ */
+async function loadPdfOrThrowUserMessage(arrayBuffer, filename) {
+    if (typeof PDFLib === 'undefined') {
+        throw new Error('PDFLibライブラリが読み込まれていません');
+    }
+    const { PDFDocument } = PDFLib;
+    try {
+        return await PDFDocument.load(arrayBuffer);
+    } catch (e) {
+        if (isEncryptedPdfLibError(e)) {
+            throw new Error('このPDFはパスワード保護されています。保護を外したPDFを使用してください。');
+        }
+        throw e;
+    }
+}
+
 class PdfOps {
     /**
      * PDFを結合
@@ -28,7 +54,7 @@ class PdfOps {
 
             try {
                 const arrayBuffer = await file.arrayBuffer();
-                const pdf = await PDFDocument.load(arrayBuffer);
+                const pdf = await loadPdfOrThrowUserMessage(arrayBuffer, file.name);
                 const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
                 pages.forEach(page => mergedPdf.addPage(page));
 
@@ -80,7 +106,7 @@ class PdfOps {
         ctx.setProgress(10);
 
         const arrayBuffer = await file.arrayBuffer();
-        const pdf = await PDFDocument.load(arrayBuffer);
+        const pdf = await loadPdfOrThrowUserMessage(arrayBuffer, file.name);
         const totalPages = pdf.getPageCount();
 
         // ページ番号のバリデーション
@@ -138,7 +164,7 @@ class PdfOps {
         ctx.setProgress(10);
 
         const arrayBuffer = await file.arrayBuffer();
-        const pdf = await PDFDocument.load(arrayBuffer);
+        const pdf = await loadPdfOrThrowUserMessage(arrayBuffer, file.name);
         const totalPages = pdf.getPageCount();
 
         // すべてのページグループをバリデーション
@@ -199,10 +225,8 @@ class PdfOps {
         if (typeof PDFLib === 'undefined') {
             throw new Error('PDFLibライブラリが読み込まれていません');
         }
-
-        const { PDFDocument } = PDFLib;
         const arrayBuffer = await file.arrayBuffer();
-        const pdf = await PDFDocument.load(arrayBuffer);
+        const pdf = await loadPdfOrThrowUserMessage(arrayBuffer, file.name);
         return pdf.getPageCount();
     }
 }

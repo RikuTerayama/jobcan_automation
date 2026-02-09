@@ -3,6 +3,14 @@
  * 注意: PDFによっては抽出できない場合があります
  */
 
+const ENCRYPTED_PDF_USER_MESSAGE = 'このPDFはパスワード保護されています。保護を外したPDFを使用してください。';
+
+function isEncryptedPdfJsError(e) {
+    const msg = String(e?.message || '').toLowerCase();
+    const name = String(e?.name || '').toLowerCase();
+    return name.includes('password') || msg.includes('password') || msg.includes('encrypted');
+}
+
 class PdfExtractImages {
     /**
      * PDFから埋め込み画像を抽出
@@ -43,8 +51,17 @@ class PdfExtractImages {
         }
 
         const arrayBuffer = await file.arrayBuffer();
-        const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
-        const pdf = await loadingTask.promise;
+        let pdf;
+        try {
+            const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+            pdf = await loadingTask.promise;
+        } catch (e) {
+            console.error('[PdfExtractImages] load_failed', { fileName: file.name, error: e });
+            if (isEncryptedPdfJsError(e)) {
+                throw new Error(ENCRYPTED_PDF_USER_MESSAGE);
+            }
+            throw e;
+        }
         const numPages = pdf.numPages;
 
         if (ctx.setProgress) {
@@ -98,8 +115,12 @@ class PdfExtractImages {
                     canvasContext: context,
                     viewport: viewport
                 };
-
-                await page.render(renderContext).promise;
+                try {
+                    await page.render(renderContext).promise;
+                } catch (e) {
+                    console.error('[PdfExtractImages] render_failed', { fileName: file.name, pageNum, format, error: e });
+                    throw e;
+                }
 
                 // 画像として出力
                 const mimeType = format === 'jpeg' || format === 'jpg' ? 'image/jpeg' : 'image/png';
@@ -108,7 +129,20 @@ class PdfExtractImages {
                 const blob = await new Promise((resolve, reject) => {
                     const options = format === 'jpeg' || format === 'jpg' ? { quality } : undefined;
                     canvas.toBlob(
-                        (b) => b ? resolve(b) : reject(new Error('画像変換に失敗しました')),
+                        (b) => {
+                            if (b) {
+                                resolve(b);
+                                return;
+                            }
+                            console.error('[PdfExtractImages] toBlob_failed', {
+                                fileName: file.name,
+                                pageNum,
+                                format,
+                                canvasWidth: canvas.width,
+                                canvasHeight: canvas.height
+                            });
+                            reject(new Error('画像変換に失敗しました'));
+                        },
                         mimeType,
                         options?.quality
                     );

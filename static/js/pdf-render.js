@@ -2,6 +2,54 @@
  * PDF→画像レンダリングユーティリティ（pdfjs-dist使用）
  */
 
+const ENCRYPTED_PDF_USER_MESSAGE = 'このPDFはパスワード保護されています。保護を外したPDFを使用してください。';
+
+/** pdf.js の暗号化/パスワード系エラーかどうか判定 */
+function isEncryptedPdfJsError(e) {
+    const msg = String(e?.message || '').toLowerCase();
+    const name = String(e?.name || '').toLowerCase();
+    return name.includes('password') || msg.includes('password') || msg.includes('encrypted');
+}
+
+/**
+ * canvas を Blob に変換。null の場合は toBlob_failed をログし、toDataURL フォールバックを試す
+ */
+function toBlobWithLog(canvas, mimeType, quality, fileName, pageNum, format) {
+    return new Promise((resolve, reject) => {
+        canvas.toBlob((b) => {
+            if (b) {
+                resolve(b);
+                return;
+            }
+            console.error('[PdfRender] toBlob_failed', {
+                fileName,
+                pageNum,
+                format,
+                canvasWidth: canvas.width,
+                canvasHeight: canvas.height,
+                mimeType
+            });
+            // フォールバック: toDataURL → Blob
+            try {
+                const dataURL = quality != null
+                    ? canvas.toDataURL(mimeType, quality)
+                    : canvas.toDataURL(mimeType);
+                if (!dataURL || dataURL.slice(0, 5) !== 'data:') {
+                    reject(new Error('画像変換に失敗しました'));
+                    return;
+                }
+                const bin = atob(dataURL.split(',')[1]);
+                const arr = new Uint8Array(bin.length);
+                for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+                resolve(new Blob([arr], { type: mimeType }));
+            } catch (e) {
+                console.error('[PdfRender] toBlob_failed (toDataURL fallback error)', { fileName, pageNum, format, error: e });
+                reject(new Error('画像変換に失敗しました'));
+            }
+        }, mimeType, quality);
+    });
+}
+
 class PdfRender {
     /**
      * PDFを画像に変換
@@ -41,8 +89,17 @@ class PdfRender {
         }
 
         const arrayBuffer = await file.arrayBuffer();
-        const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
-        const pdf = await loadingTask.promise;
+        let pdf;
+        try {
+            const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+            pdf = await loadingTask.promise;
+        } catch (e) {
+            console.error('[PdfRender] load_failed', { fileName: file.name, format, error: e });
+            if (isEncryptedPdfJsError(e)) {
+                throw new Error(ENCRYPTED_PDF_USER_MESSAGE);
+            }
+            throw e;
+        }
         const numPages = pdf.numPages;
 
         if (ctx.setProgress) {
@@ -77,8 +134,12 @@ class PdfRender {
                 canvasContext: context,
                 viewport: viewport
             };
-
-            await page.render(renderContext).promise;
+            try {
+                await page.render(renderContext).promise;
+            } catch (e) {
+                console.error('[PdfRender] render_failed', { fileName: file.name, pageNum, format, error: e });
+                throw e;
+            }
 
             // Blobに変換
             let blob;
@@ -88,22 +149,11 @@ class PdfRender {
             if (format === 'jpeg' || format === 'jpg') {
                 mimeType = 'image/jpeg';
                 ext = 'jpg';
-                blob = await new Promise((resolve, reject) => {
-                    canvas.toBlob(
-                        (b) => b ? resolve(b) : reject(new Error('画像変換に失敗しました')),
-                        mimeType,
-                        quality
-                    );
-                });
+                blob = await toBlobWithLog(canvas, mimeType, quality, file.name, pageNum, format);
             } else {
                 mimeType = 'image/png';
                 ext = 'png';
-                blob = await new Promise((resolve, reject) => {
-                    canvas.toBlob(
-                        (b) => b ? resolve(b) : reject(new Error('画像変換に失敗しました')),
-                        mimeType
-                    );
-                });
+                blob = await toBlobWithLog(canvas, mimeType, undefined, file.name, pageNum, format);
             }
 
             const baseName = FileUtils.getFilenameWithoutExtension(file.name);
