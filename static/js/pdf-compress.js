@@ -3,6 +3,14 @@
  * 注意: この方式は文字検索やテキスト選択ができなくなります（ページが画像になります）
  */
 
+const ENCRYPTED_PDF_USER_MESSAGE = 'このPDFはパスワード保護されています。保護を外したPDFを使用してください。';
+
+function isEncryptedPdfJsError(e) {
+    const msg = String(e?.message || '').toLowerCase();
+    const name = String(e?.name || '').toLowerCase();
+    return name.includes('password') || msg.includes('password') || msg.includes('encrypted');
+}
+
 class PdfCompress {
     /**
      * PDFを圧縮（レンダリング→画像化→再PDF化）
@@ -46,8 +54,17 @@ class PdfCompress {
 
         // PDFを読み込み
         const arrayBuffer = await file.arrayBuffer();
-        const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
-        const pdf = await loadingTask.promise;
+        let pdf;
+        try {
+            const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+            pdf = await loadingTask.promise;
+        } catch (e) {
+            console.error('[PdfCompress] load_failed', { fileName: file.name, error: e });
+            if (isEncryptedPdfJsError(e)) {
+                throw new Error(ENCRYPTED_PDF_USER_MESSAGE);
+            }
+            throw e;
+        }
         const numPages = pdf.numPages;
 
         if (ctx.setProgress) {
@@ -97,13 +114,29 @@ class PdfCompress {
                 canvasContext: context,
                 viewport: viewport
             };
-
-            await page.render(renderContext).promise;
+            try {
+                await page.render(renderContext).promise;
+            } catch (e) {
+                console.error('[PdfCompress] render_failed', { fileName: file.name, pageNum, error: e });
+                throw e;
+            }
 
             // JPEGに変換
             const imageBlob = await new Promise((resolve, reject) => {
                 canvas.toBlob(
-                    (blob) => blob ? resolve(blob) : reject(new Error('画像変換に失敗しました')),
+                    (blob) => {
+                        if (blob) {
+                            resolve(blob);
+                            return;
+                        }
+                        console.error('[PdfCompress] toBlob_failed', {
+                            fileName: file.name,
+                            pageNum,
+                            canvasWidth: canvas.width,
+                            canvasHeight: canvas.height
+                        });
+                        reject(new Error('画像変換に失敗しました'));
+                    },
                     'image/jpeg',
                     quality
                 );
