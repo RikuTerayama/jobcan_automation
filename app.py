@@ -102,6 +102,9 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # P1: prune_jobs実行頻度制御（メモリ最適化）
 _last_prune_time = 0
 PRUNE_INTERVAL_SECONDS = 300  # 5分ごとにprune_jobsを実行
+# get_status 内での prune 間引き（ポーリング負荷軽減）
+_last_status_prune_time = 0
+STATUS_PRUNE_INTERVAL_SEC = 30  # 30秒に1回まで
 
 @app.before_request
 def before_request():
@@ -443,8 +446,8 @@ def get_queue_position(job_id):
     return None
 
 
-def log_job_event(event, job_id, status=None, queue_position=None, elapsed_sec=None, extra=None):
-    """AutoFill ジョブのライフサイクルイベントを構造化ログに出力。"""
+def log_job_event(event, job_id, status=None, queue_position=None, elapsed_sec=None, queue_length=None, running_count=None, extra=None):
+    """AutoFill ジョブのライフサイクルイベントを構造化ログに出力。秘匿情報は絶対に含めない。"""
     payload = {
         "event": event,
         "job_id": job_id,
@@ -452,6 +455,10 @@ def log_job_event(event, job_id, status=None, queue_position=None, elapsed_sec=N
         "queue_position": queue_position,
         "elapsed_sec": elapsed_sec,
     }
+    if queue_length is not None:
+        payload["queue_length"] = queue_length
+    if running_count is not None:
+        payload["running_count"] = running_count
     if extra:
         payload.update(extra)
     logger.info("autofill_event %s", payload)
@@ -618,6 +625,13 @@ def run_automation_impl(job_id, email, password, file_path, session_dir, session
             err_elapsed = get_elapsed_sec(jobs.get(job_id))
         log_job_event("job_error", job_id, status="error", elapsed_sec=err_elapsed, extra={"error": str(e)[:200]})
     finally:
+        with jobs_lock:
+            j = jobs.get(job_id, {})
+            st = j.get('status')
+            el = get_elapsed_sec(j)
+            rcount = sum(1 for x in jobs.values() if x.get('status') == 'running')
+            qlen = len(job_queue)
+        log_job_event("cleanup_started", job_id, status=st, elapsed_sec=el, running_count=rcount, queue_length=qlen)
         try:
             if os.path.exists(file_path):
                 os.remove(file_path)
@@ -631,6 +645,7 @@ def run_automation_impl(job_id, email, password, file_path, session_dir, session
                 prune_jobs()
             except Exception:
                 pass
+        log_job_event("cleanup_finished", job_id, status=st, elapsed_sec=get_elapsed_sec(jobs.get(job_id)))
         maybe_start_next_job()
 
 
@@ -676,8 +691,8 @@ def prune_jobs(current_time=None, retention_sec=JOB_RETENTION_SECONDS):
         jobs_to_remove = []
         
         for job_id, job_info in list(jobs.items()):
-            # completed / error / timeout を削除対象（timeoutはend_timeを_check_job_timeoutで設定済み）
-            if job_info.get('status') not in ('completed', 'error', 'timeout'):
+            # completed / error / timeout / cancelled を削除対象
+            if job_info.get('status') not in ('completed', 'error', 'timeout', 'cancelled'):
                 continue
             
             # タイムスタンプを取得
@@ -1614,11 +1629,56 @@ def upload_file():
     except Exception as e:
         return jsonify({'error': f'予期しないエラーが発生しました: {str(e)}'})
 
+@app.route('/cancel/<job_id>', methods=['POST'])
+def cancel_job(job_id):
+    """queued のジョブのみキャンセル可能。running は 409。"""
+    global job_queue
+    with jobs_lock:
+        if job_id not in jobs:
+            return jsonify({'ok': False, 'error': 'ジョブが見つかりません'}), 404
+        job = jobs[job_id]
+        if job.get('status') != 'queued':
+            return jsonify({'ok': False, 'error': '実行中はキャンセルできません。待機中のみキャンセル可能です。', 'status': job.get('status')}), 409
+        # キューから除去
+        job_queue = deque([x for x in job_queue if x != job_id])
+        queued_job_params.pop(job_id, None)
+        jobs[job_id]['status'] = 'cancelled'
+        jobs[job_id]['end_time'] = time.time()
+        jobs[job_id]['login_message'] = 'キャンセルされました。'
+        jobs[job_id]['last_updated'] = time.time()
+        fp = job.get('file_path')
+        sid = job.get('session_id')
+        qlen = len(job_queue)
+        rcount = sum(1 for j in jobs.values() if j.get('status') == 'running')
+    elapsed = get_elapsed_sec(job)
+    log_job_event("cancelled", job_id, status="cancelled", elapsed_sec=elapsed, queue_length=qlen, running_count=rcount)
+    if fp and os.path.exists(fp):
+        try:
+            os.remove(fp)
+            logger.info(f"cancel_cleanup_file job_id={job_id} path={fp}")
+        except Exception as e:
+            logger.warning(f"cancel_cleanup_file_error job_id={job_id} error={e}")
+    if sid:
+        try:
+            cleanup_user_session(sid)
+            unregister_session(sid)
+        except Exception as e:
+            logger.warning(f"cancel_cleanup_session_error job_id={job_id} session_id={sid} error={e}")
+    return jsonify({'ok': True, 'status': 'cancelled'})
+
+
 @app.route('/status/<job_id>')
 def get_status(job_id):
     try:
-        # P0-3: 参照エンドポイントの冒頭で完了ジョブを間引く
-        prune_jobs()
+        # P0-3: 完了ジョブの間引きは間隔制御（ポーリング負荷軽減）
+        global _last_status_prune_time
+        now = time.time()
+        if now - _last_status_prune_time >= STATUS_PRUNE_INTERVAL_SEC:
+            try:
+                prune_jobs(current_time=now)
+                _last_status_prune_time = now
+            except Exception as prune_err:
+                logger.warning(f"prune_jobs_error in get_status: {prune_err}")
         
         with jobs_lock:
             if job_id not in jobs:
@@ -1790,6 +1850,8 @@ def generate_user_message(status, login_status, login_message, progress):
         return f"⏱ タイムアウト - {login_message}" if login_message else "⏱ 処理が時間切れになりました"
     elif status == 'queued':
         return login_message or "現在、他ユーザーが作業中。順番に処理します。"
+    elif status == 'cancelled':
+        return login_message or "キャンセルされました。"
     else:
         return "🔄 処理中..."
 

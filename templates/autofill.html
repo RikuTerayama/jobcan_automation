@@ -984,6 +984,7 @@
             
             <div class="progress-actions">
                 <button class="progress-btn" id="closeBtn" onclick="closeProgressPopup()">閉じる</button>
+                <button class="progress-btn secondary" id="cancelQueuedBtn" onclick="cancelQueuedJob()" style="display: none;">キャンセル</button>
                 <button class="progress-btn secondary" id="retryBtn" onclick="retryProcess()" style="display: none;">再試行</button>
             </div>
         </div>
@@ -1034,8 +1035,11 @@
                     currentJobId = result.job_id;
                     if (result.status === 'queued') {
                         const posText = result.queue_position ? `順番待ちです（あなたの順番: ${result.queue_position}番目）。` : '順番待ちです。';
-                        const autoStart = 'このタブを開いたままにすると、自分の順番になったとき自動で開始します。';
-                        updateProgressStatus('queued', '少々お待ちください', posText + autoStart);
+                        const delayNote = result.queue_position === 1 ? '前の処理の終了作業（後片付け）で最大数十秒かかることがあります。' : '';
+                        const autoStart = 'このタブを開いたままにすると、自分の順番になったとき自動で開始します。自動開始のため再試行は不要です。';
+                        const tabNote = 'タブを閉じてもキャンセルにはなりません。止めたい場合はキャンセルを押してください。';
+                        updateProgressStatus('queued', '少々お待ちください', [posText, delayNote, autoStart, tabNote].filter(Boolean).join(' '));
+                        document.getElementById('cancelQueuedBtn').style.display = 'inline-block';
                     } else {
                         updateProgressStatus('processing', '処理が開始されました', 'Jobcanへのログインとデータ処理を開始しています...');
                     }
@@ -1074,6 +1078,7 @@
             document.getElementById('loginResult').style.display = 'none';
             document.getElementById('errorDetails').style.display = 'none';
             document.getElementById('retryBtn').style.display = 'none';
+            document.getElementById('cancelQueuedBtn').style.display = 'none';
             lastLoginStatus = null; // ログイン状態をリセット
         }
         
@@ -1106,8 +1111,14 @@
             } else if (type === 'queued') {
                 statusDiv.classList.add('status-queued');
                 titleElement.innerHTML = '⏳ ' + title;
+                document.getElementById('cancelQueuedBtn').style.display = 'inline-block';
+            } else if (type === 'cancelled') {
+                statusDiv.classList.add('status-warning');
+                titleElement.innerHTML = '🚫 ' + title;
+                document.getElementById('cancelQueuedBtn').style.display = 'none';
             } else {
                 titleElement.innerHTML = '<span class="loading-spinner"></span>' + title;
+                document.getElementById('cancelQueuedBtn').style.display = 'none';
             }
             
             messageElement.textContent = message;
@@ -1190,14 +1201,13 @@
         
         function startProgressPolling() {
             if (!currentJobId) return;
-            
-            // ポーリング完了フラグをリセット
+            if (window.progressPollInterval) { clearInterval(window.progressPollInterval); window.progressPollInterval = null; }
             window.pollingCompleted = false;
             
             const pollInterval = setInterval(async () => {
-                // ポーリングが完了している場合は処理をスキップ
                 if (window.pollingCompleted) {
                     clearInterval(pollInterval);
+                    window.progressPollInterval = null;
                     return;
                 }
                 try {
@@ -1219,26 +1229,39 @@
                         updateProgressStatus('success', '処理完了', result.user_message || '勤怠データの入力が完了しました。');
                         addProgressLog('✅ 処理が正常に完了しました');
                         clearInterval(pollInterval);
+                        window.progressPollInterval = null;
                         document.getElementById('retryBtn').style.display = 'none';
+                        document.getElementById('cancelQueuedBtn').style.display = 'none';
                         window.pollingCompleted = true;
                     } else if (result.status === 'error') {
                         updateProgressStatus('error', 'エラーが発生しました', result.user_message || '処理中にエラーが発生しました');
                         addProgressLog('❌ エラー: ' + (result.user_message || '不明なエラー'));
                         showErrorDetails(result.user_message || '不明なエラー');
                         clearInterval(pollInterval);
+                        window.progressPollInterval = null;
                         document.getElementById('retryBtn').style.display = 'inline-block';
+                        document.getElementById('cancelQueuedBtn').style.display = 'none';
                         window.pollingCompleted = true;
                     } else if (result.status === 'timeout') {
                         updateProgressStatus('error', 'タイムアウト', result.user_message || '処理が時間切れになりました');
                         addProgressLog('⏱ タイムアウト');
                         showErrorDetails(result.user_message || '処理が時間切れになりました');
                         clearInterval(pollInterval);
+                        window.progressPollInterval = null;
                         document.getElementById('retryBtn').style.display = 'inline-block';
+                        document.getElementById('cancelQueuedBtn').style.display = 'none';
+                        window.pollingCompleted = true;
+                    } else if (result.status === 'cancelled') {
+                        updateProgressStatus('cancelled', 'キャンセルしました', result.user_message || '処理をキャンセルしました。');
+                        if (window.progressPollInterval) { clearInterval(window.progressPollInterval); window.progressPollInterval = null; }
+                        document.getElementById('cancelQueuedBtn').style.display = 'none';
                         window.pollingCompleted = true;
                     } else if (result.status === 'queued') {
                         const posText = result.queue_position ? `順番待ちです（あなたの順番: ${result.queue_position}番目）。` : '順番待ちです。';
-                        const autoStart = 'このタブを開いたままにすると、自分の順番になったとき自動で開始します。';
-                        updateProgressStatus('queued', '少々お待ちください', posText + autoStart);
+                        const delayNote = result.queue_position === 1 ? '前の処理の終了作業（後片付け）で最大数十秒かかることがあります。' : '';
+                        const autoStart = 'このタブを開いたままにすると、自分の順番になったとき自動で開始します。自動開始のため再試行は不要です。';
+                        const tabNote = 'タブを閉じてもキャンセルにはなりません。止めたい場合はキャンセルを押してください。';
+                        updateProgressStatus('queued', '少々お待ちください', [posText, delayNote, autoStart, tabNote].filter(Boolean).join(' '));
                     } else {
                         // 進行中 (running 等)
                         updateProgressStatus('processing', result.step_name || '処理中', result.user_message || '処理を実行中です...');
@@ -1270,10 +1293,35 @@
                     if (window.pollingErrorCount > 5) {
                         console.warn('Too many polling errors, stopping polling');
                         clearInterval(pollInterval);
+                        window.progressPollInterval = null;
                         window.pollingCompleted = true;
                     }
                 }
-            }, 2000); // 2秒ごとにポーリング
+            }, 2000);
+            window.progressPollInterval = pollInterval;
+        }
+        
+        async function cancelQueuedJob() {
+            if (!currentJobId) return;
+            const btn = document.getElementById('cancelQueuedBtn');
+            if (btn) btn.disabled = true;
+            try {
+                const response = await fetch(`/cancel/${currentJobId}`, { method: 'POST' });
+                const result = await response.json();
+                if (response.ok && result.ok) {
+                    updateProgressStatus('cancelled', 'キャンセルしました', '処理をキャンセルしました。');
+                    if (btn) btn.style.display = 'none';
+                    if (window.progressPollInterval) { clearInterval(window.progressPollInterval); window.progressPollInterval = null; }
+                    window.pollingCompleted = true;
+                } else {
+                    const msg = result.error || 'キャンセルに失敗しました。';
+                    if (btn) btn.disabled = false;
+                    alert(msg);
+                }
+            } catch (e) {
+                if (btn) btn.disabled = false;
+                alert('キャンセル要求の送信に失敗しました。');
+            }
         }
         
         function retryProcess() {
