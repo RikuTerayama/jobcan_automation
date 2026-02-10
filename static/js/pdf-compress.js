@@ -199,3 +199,10 @@ class PdfCompress {
         }];
     }
 }
+
+if (typeof globalThis !== 'undefined') {
+    globalThis.PdfCompress = PdfCompress;
+}
+if (typeof window !== 'undefined') {
+    window.PdfCompress = PdfCompress;
+}
