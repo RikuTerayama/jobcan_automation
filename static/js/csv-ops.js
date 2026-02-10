@@ -120,5 +120,50 @@ const CsvOps = {
         const safe = typeof FileValidation !== 'undefined' ? FileValidation.sanitizeFilename(base) : base.replace(/[<>:"/\\|?*]/g, '_');
         const date = new Date().toISOString().split('T')[0].replace(/-/g, '');
         return `${safe}_${suffix}_${date}.${ext}`;
+    },
+
+    /**
+     * ファイルを ArrayBuffer で読み込む（XLSX用）
+     * @param {File} file
+     * @returns {Promise<ArrayBuffer>}
+     */
+    readFileAsArrayBuffer(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error('ファイルの読み込みに失敗しました'));
+            reader.readAsArrayBuffer(file);
+        });
+    },
+
+    /**
+     * XLSX をパースして先頭シートを二次元配列に（SheetJS）
+     * @param {ArrayBuffer} buf
+     * @param {Object} options - { sheetIndex: number }
+     * @returns {string[][]}
+     */
+    xlsxToRows(buf, options = {}) {
+        if (typeof XLSX === 'undefined') throw new Error('SheetJS が読み込まれていません');
+        const wb = XLSX.read(buf, { type: 'array' });
+        const sheetIndex = options.sheetIndex != null ? options.sheetIndex : 0;
+        const sheetName = wb.SheetNames[sheetIndex];
+        if (!sheetName) throw new Error('シートがありません');
+        const sheet = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        return rows.map(row => Array.isArray(row) ? row : [row]);
+    },
+
+    /**
+     * 二次元配列を XLSX にして Blob で返す（SheetJS）
+     * @param {string[][]} rows
+     * @returns {Blob}
+     */
+    rowsToXLSXBlob(rows) {
+        if (typeof XLSX === 'undefined') throw new Error('SheetJS が読み込まれていません');
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+        const out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        return new Blob([out], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     }
 };
