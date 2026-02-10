@@ -21,6 +21,23 @@ const CsvOps = {
     },
 
     /**
+     * ファイルをバイナリで読み、指定エンコーディングで文字列に変換
+     * @param {File} file
+     * @param {string} encoding - 'UTF-8' | 'SJIS'
+     * @returns {Promise<string>}
+     */
+    readFileAsTextWithEncoding(file, encoding) {
+        if (encoding === 'UTF-8' || !encoding) {
+            return this.readFileAsText(file);
+        }
+        return this.readFileAsArrayBuffer(file).then(buf => {
+            const arr = new Uint8Array(buf);
+            if (typeof Encoding === 'undefined') throw new Error('encoding-japanese が読み込まれていません');
+            return Encoding.convert(arr, { to: 'UNICODE', from: 'SJIS', type: 'string' });
+        });
+    },
+
+    /**
      * CSV をパース（PapaParse）。プレビュー用は先頭のみ
      * @param {string} text
      * @param {Object} options - { preview: number }
@@ -100,13 +117,27 @@ const CsvOps = {
     },
 
     /**
-     * 配列を Blob に
+     * 配列を Blob に（UTF-8）
      * @param {string[][]} rows
+     * @param {Object} options - { bom: boolean } BOM を付けるか
      * @returns {Blob}
      */
-    rowsToBlob(rows) {
+    rowsToBlob(rows, options = {}) {
         const csv = this.toCSVString(rows);
-        return new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+        const bom = options.bom !== false ? '\uFEFF' : '';
+        return new Blob([bom + csv], { type: 'text/csv;charset=utf-8' });
+    },
+
+    /**
+     * 文字列を Shift-JIS の Blob に（encoding-japanese 使用）
+     * @param {string} text - UTF-8 文字列
+     * @returns {Blob}
+     */
+    textToSJISBlob(text) {
+        if (typeof Encoding === 'undefined') throw new Error('encoding-japanese が読み込まれていません');
+        const unicodeArray = Encoding.stringToCode(text);
+        const sjisArray = Encoding.convert(unicodeArray, { to: 'SJIS', from: 'UNICODE' });
+        return new Blob([new Uint8Array(sjisArray)], { type: 'text/csv;charset=shift_jis' });
     },
 
     /**

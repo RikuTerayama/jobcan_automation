@@ -62,6 +62,22 @@
         </div>
         <div class="tool-section" id="options-section" style="display: none;">
             <h3>⚙️ 操作</h3>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 4px;">入力ファイルの文字コード</label>
+                <select id="input-encoding">
+                    <option value="UTF-8">UTF-8</option>
+                    <option value="SJIS">Shift-JIS</option>
+                </select>
+                <p id="encoding-hint" style="margin: 6px 0 0 0; font-size: 0.85em; color: rgba(255,255,255,0.6);">Shift-JIS は機種依存文字などで文字化けすることがあります。変換後はプレビューで確認してください。</p>
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 4px;">出力CSVの文字コード（CSV出力時のみ）</label>
+                <select id="output-encoding">
+                    <option value="UTF-8-BOM">UTF-8（BOMあり）</option>
+                    <option value="UTF-8">UTF-8（BOMなし）</option>
+                    <option value="SJIS">Shift-JIS</option>
+                </select>
+            </div>
             <label style="display: block; margin-bottom: 8px;">操作モード</label>
             <select id="mode">
                 <option value="column_extract">列の抽出・並べ替え</option>
@@ -88,6 +104,7 @@
     <script src="{{ url_for('static', filename='js/zip-utils.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/encoding-japanese@2.0.0/encoding.min.js"></script>
     <script src="{{ url_for('static', filename='js/csv-ops.js') }}"></script>
     <script>
 (function() {
@@ -205,6 +222,10 @@
         parsedMeta = null;
         previewSection.style.display = 'none';
         outputSection.style.display = 'none';
+        const inputEncodingSelect = document.getElementById('input-encoding');
+        const outputEncodingSelect = document.getElementById('output-encoding');
+        function getInputEncoding() { return inputEncodingSelect ? inputEncodingSelect.value : 'UTF-8'; }
+        function getOutputEncoding() { return outputEncodingSelect ? outputEncodingSelect.value : 'UTF-8-BOM'; }
         function loadPreview(file) {
             const ext = (file.name || '').toLowerCase();
             if (ext.endsWith('.xlsx') || ext.endsWith('.xls')) {
@@ -219,7 +240,7 @@
                     }
                 }).catch(err => setOutput(err.message || 'ファイルの読み込みに失敗しました。', true));
             } else {
-                CsvOps.readFileAsText(file).then(text => {
+                CsvOps.readFileAsTextWithEncoding(file, getInputEncoding()).then(text => {
                     try {
                         const r = CsvOps.parseCSV(text, { preview: 50 });
                         parsedRows = r.data;
@@ -247,12 +268,18 @@
         outputArea.innerHTML = '<p>処理中...</p>';
         const mode = modeSelect.value;
         const outputs = [];
+        const outEnc = getOutputEncoding();
+        const csvBlobOptions = { bom: outEnc === 'UTF-8-BOM' };
+        function makeCsvBlob(rows) {
+            if (outEnc === 'SJIS') return CsvOps.textToSJISBlob(CsvOps.toCSVString(rows));
+            return CsvOps.rowsToBlob(rows, csvBlobOptions);
+        }
         const processOne = (file, fileIndex) => {
             const base = FileUtils.getFilenameWithoutExtension(file.name) || 'output';
             const ext = (file.name || '').toLowerCase();
-            const isXlsx = ext.endsWith('.xlsx') || ext.endsWith('.xls');
+            const enc = getInputEncoding();
             if (mode === 'csv2xlsx') {
-                return CsvOps.readFileAsText(file).then(text => {
+                return CsvOps.readFileAsTextWithEncoding(file, enc).then(text => {
                     const r = CsvOps.parseCSV(text);
                     const blob = CsvOps.rowsToXLSXBlob(r.data);
                     outputs.push({ blob, filename: CsvOps.outputFilename(base, 'xlsx', 'xlsx') });
@@ -261,11 +288,11 @@
             if (mode === 'xlsx2csv') {
                 return CsvOps.readFileAsArrayBuffer(file).then(buf => {
                     const rows = CsvOps.xlsxToRows(buf, { sheetIndex: 0 });
-                    const blob = CsvOps.rowsToBlob(rows);
+                    const blob = makeCsvBlob(rows);
                     outputs.push({ blob, filename: CsvOps.outputFilename(base, 'csv', 'csv') });
                 });
             }
-            return CsvOps.readFileAsText(file).then(text => {
+            return CsvOps.readFileAsTextWithEncoding(file, enc).then(text => {
                 const r = CsvOps.parseCSV(text);
                 let rows = r.data;
                 if (mode === 'column_extract') {
@@ -280,12 +307,12 @@
                     if (n < 1) throw new Error('Nは1以上を指定してください');
                     const chunks = CsvOps.splitByNRows(rows, n);
                     chunks.forEach((chunk, i) => {
-                        const blob = CsvOps.rowsToBlob(chunk);
+                        const blob = makeCsvBlob(chunk);
                         outputs.push({ blob, filename: CsvOps.outputFilename(base, 'part' + (i+1), 'csv') });
                     });
                     return;
                 }
-                const blob = CsvOps.rowsToBlob(rows);
+                const blob = makeCsvBlob(rows);
                 const suffix = mode === 'column_extract' ? 'columns' : mode === 'dedupe' ? 'dedupe' : 'split';
                 outputs.push({ blob, filename: CsvOps.outputFilename(base, suffix, 'csv') });
             });
