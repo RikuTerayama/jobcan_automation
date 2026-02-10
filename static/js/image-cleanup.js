@@ -375,3 +375,8 @@ class ImageCleanup {
         return `${nameWithoutExt}_clean${bgSuffix}_${index}.${ext}`;
     }
 }
+
+// 古典 script で読み込んだ場合にグローバルから参照できるよう明示的に露出（スコープ不整合対策）
+if (typeof window !== 'undefined') {
+    window.ImageCleanup = ImageCleanup;
+}

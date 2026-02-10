@@ -17,11 +17,14 @@ from pypdf import PdfReader, PdfWriter
 def decrypt_pdf(pdf_bytes: bytes, password: str) -> bytes:
     """
     パスワード保護されたPDFを復号してバイト列で返す。
-    パスワードが誤っている場合は ValueError を投げる。パスワードはログに一切出さない。
+    非暗号化PDFの場合はそのまま返す。暗号化PDFでパスワード未入力は need_password、
+    誤りは invalid_password を投げる。パスワードはログに一切出さない。
     """
     reader = PdfReader(BytesIO(pdf_bytes))
     if not reader.is_encrypted:
         return pdf_bytes
+    if not (password and password.strip()):
+        raise ValueError("need_password")
     try:
         ok = reader.decrypt(password)
     except Exception:
@@ -45,7 +48,7 @@ def encrypt_pdf(pdf_bytes: bytes, password: str) -> bytes:
     writer = PdfWriter()
     for page in reader.pages:
         writer.add_page(page)
-    writer.encrypt(password)
+    writer.encrypt(user_password=password)
     out = BytesIO()
     writer.write(out)
     return out.getvalue()

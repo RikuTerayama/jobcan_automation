@@ -935,7 +935,8 @@
                         const res = await fetch('/api/pdf/unlock', { method: 'POST', body: form, signal: pdfApiAbortController.signal });
                         if (!res.ok) {
                             const data = await res.json().catch(() => ({}));
-                            const msg = data.error === 'invalid_password' ? 'パスワードが違います。' : data.error === 'password_required' ? 'パスワードを入力してください。' : data.error === 'file_required' ? 'ファイルを選択してください。' : data.message || 'ロック解除に失敗しました。';
+                            const e = data.error;
+                            const msg = e === 'invalid_password' ? 'パスワードが違います。' : e === 'need_password' ? 'このPDFはパスワード保護されています。パスワードを入力してください。' : e === 'password_required' ? 'パスワードを入力してください。' : e === 'file_required' ? 'ファイルを選択してください。' : e === 'file_too_large' ? 'ファイルが大きすぎます。' : e === 'read_failed' ? 'ファイルの読み込みに失敗しました。' : data.message || 'ロック解除に失敗しました。';
                             handleError(new Error(msg));
                             return;
                         }
@@ -966,7 +967,8 @@
                         const res = await fetch('/api/pdf/lock', { method: 'POST', body: form, signal: pdfApiAbortController.signal });
                         if (!res.ok) {
                             const data = await res.json().catch(() => ({}));
-                            const msg = data.error === 'password_required' ? '出力用パスワードを入力してください。' : data.error === 'file_required' ? 'ファイルを選択してください。' : data.message || 'ロック付与に失敗しました。';
+                            const e = data.error;
+                            const msg = e === 'password_required' ? '出力用パスワードを入力してください。' : e === 'file_required' ? 'ファイルを選択してください。' : e === 'file_too_large' ? 'ファイルが大きすぎます（50MB以下）。' : e === 'read_failed' ? 'ファイルの読み込みに失敗しました。' : e === 'encrypt_failed' ? 'ロック付与に失敗しました。PDFの形式やサイズを確認してください。' : data.message || 'ロック付与に失敗しました。';
                             handleError(new Error(msg));
                             return;
                         }
