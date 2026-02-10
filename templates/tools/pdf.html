@@ -935,9 +935,11 @@
                         const res = await fetch('/api/pdf/unlock', { method: 'POST', body: form, signal: pdfApiAbortController.signal });
                         if (!res.ok) {
                             const data = await res.json().catch(() => ({}));
-                            const e = data.error;
-                            const msg = e === 'invalid_password' ? 'パスワードが違います。' : e === 'need_password' ? 'このPDFはパスワード保護されています。パスワードを入力してください。' : e === 'password_required' ? 'パスワードを入力してください。' : e === 'file_required' ? 'ファイルを選択してください。' : e === 'file_too_large' ? 'ファイルが大きすぎます。' : e === 'read_failed' ? 'ファイルの読み込みに失敗しました。' : data.message || 'ロック解除に失敗しました。';
-                            handleError(new Error(msg));
+                            const code = data.error_code || data.error;
+                            const rid = data.request_id ? ` (request_id: ${data.request_id})` : '';
+                            const msgMap = { need_password: 'このPDFはパスワード保護されています。パスワードを入力してください。', incorrect_password: 'パスワードが違います。', file_required: 'ファイルを選択してください。', file_too_large: 'ファイルが大きすぎます。', read_failed: 'ファイルの読み込みに失敗しました。', decrypt_failed: 'ロック解除に失敗しました。', not_encrypted_but_failed: 'ロック解除に失敗しました。', unsupported: 'ロック解除に失敗しました。' };
+                            const msg = msgMap[code] || 'ロック解除に失敗しました。';
+                            handleError(new Error(msg + rid));
                             return;
                         }
                         const blob = await res.blob();
@@ -967,9 +969,11 @@
                         const res = await fetch('/api/pdf/lock', { method: 'POST', body: form, signal: pdfApiAbortController.signal });
                         if (!res.ok) {
                             const data = await res.json().catch(() => ({}));
-                            const e = data.error;
-                            const msg = e === 'password_required' ? '出力用パスワードを入力してください。' : e === 'file_required' ? 'ファイルを選択してください。' : e === 'file_too_large' ? 'ファイルが大きすぎます（50MB以下）。' : e === 'read_failed' ? 'ファイルの読み込みに失敗しました。' : e === 'encrypt_failed' ? 'ロック付与に失敗しました。PDFの形式やサイズを確認してください。' : data.message || 'ロック付与に失敗しました。';
-                            handleError(new Error(msg));
+                            const code = data.error_code || data.error;
+                            const rid = data.request_id ? ` (request_id: ${data.request_id})` : '';
+                            const msgMap = { missing_password: '出力用パスワードを入力してください。', file_required: 'ファイルを選択してください。', file_too_large: 'ファイルが大きすぎます（50MB以下）。', read_failed: 'ファイルの読み込みに失敗しました。', encrypt_failed: 'ロック付与に失敗しました。PDFの形式やサイズを確認してください。', unsupported: 'ロック付与に失敗しました。' };
+                            const msg = msgMap[code] || 'ロック付与に失敗しました。';
+                            handleError(new Error(msg + rid));
                             return;
                         }
                         const blob = await res.blob();
