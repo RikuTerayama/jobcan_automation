@@ -573,7 +573,7 @@
     <!-- 共通ライブラリ -->
     <script src="{{ url_for('static', filename='js/file-validation.js') }}"></script>
     <script src="{{ url_for('static', filename='js/file-utils.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/minutes-export.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/export-utils.js') }}"></script>
     <script src="{{ url_for('static', filename='js/seo-ogp-presets.js') }}"></script>
     <script src="{{ url_for('static', filename='js/seo-ogp-canvas.js') }}"></script>
     <script src="{{ url_for('static', filename='js/seo-ogp-export.js') }}"></script>
@@ -714,12 +714,12 @@
             if (!currentOgpOptions) return;
             
             const metaTags = SeoOgpExport.generateMetaTags(currentOgpOptions);
-            const success = await MinutesExport.copyToClipboard(metaTags);
+            const success = await ExportUtils.copyToClipboard(metaTags);
             
             if (success) {
-                MinutesExport.showToast('メタタグ例をコピーしました', 'success');
+                ExportUtils.showToast('メタタグ例をコピーしました', 'success');
             } else {
-                MinutesExport.showToast('コピーに失敗しました', 'error');
+                ExportUtils.showToast('コピーに失敗しました', 'error');
             }
         }
         
@@ -751,12 +751,12 @@
         async function copyChecklist() {
             if (!currentChecklist) return;
             
-            const success = await MinutesExport.copyToClipboard(currentChecklist);
+            const success = await ExportUtils.copyToClipboard(currentChecklist);
             
             if (success) {
-                MinutesExport.showToast('チェックリストをコピーしました', 'success');
+                ExportUtils.showToast('チェックリストをコピーしました', 'success');
             } else {
-                MinutesExport.showToast('コピーに失敗しました', 'error');
+                ExportUtils.showToast('コピーに失敗しました', 'error');
             }
         }
         
@@ -807,7 +807,7 @@
                 }
                 const html = await response.text();
                 document.getElementById('meta-html').value = html;
-                MinutesExport.showToast('HTMLを取得しました', 'success');
+                ExportUtils.showToast('HTMLを取得しました', 'success');
             } catch (error) {
                 alert(`HTMLの取得に失敗しました: ${error.message}\n\nCORS制約により取得できない場合は、HTMLを直接貼り付けてください。`);
             }
@@ -895,12 +895,12 @@
             if (!currentMetaResult) return;
             
             const markdown = SeoHtmlInspector.buildMetaAuditMarkdown(currentMetaResult);
-            const success = await MinutesExport.copyToClipboard(markdown);
+            const success = await ExportUtils.copyToClipboard(markdown);
             
             if (success) {
-                MinutesExport.showToast('結果をコピーしました', 'success');
+                ExportUtils.showToast('結果をコピーしました', 'success');
             } else {
-                MinutesExport.showToast('コピーに失敗しました', 'error');
+                ExportUtils.showToast('コピーに失敗しました', 'error');
             }
         }
         
@@ -909,7 +909,7 @@
             if (!currentMetaResult) return;
             
             const markdown = SeoHtmlInspector.buildMetaAuditMarkdown(currentMetaResult);
-            MinutesExport.downloadMarkdown(markdown, 'seo_audit');
+            ExportUtils.downloadMarkdown(markdown, 'seo_audit');
         }
         
         // v2: URLを自動収集（サーバAPIでクロール）
