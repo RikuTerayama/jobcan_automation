@@ -125,6 +125,10 @@
     const previewWrap = document.getElementById('preview-table-wrap');
     const outputSection = document.getElementById('output-section');
     const outputArea = document.getElementById('output-area');
+    const inputEncodingSelect = document.getElementById('input-encoding');
+    const outputEncodingSelect = document.getElementById('output-encoding');
+    function getInputEncoding() { return inputEncodingSelect ? inputEncodingSelect.value : 'UTF-8'; }
+    function getOutputEncoding() { return outputEncodingSelect ? outputEncodingSelect.value : 'UTF-8-BOM'; }
 
     function showRejected(rejected) {
         if (!rejected.length) { rejectedEl.style.display = 'none'; return; }
@@ -222,10 +226,6 @@
         parsedMeta = null;
         previewSection.style.display = 'none';
         outputSection.style.display = 'none';
-        const inputEncodingSelect = document.getElementById('input-encoding');
-        const outputEncodingSelect = document.getElementById('output-encoding');
-        function getInputEncoding() { return inputEncodingSelect ? inputEncodingSelect.value : 'UTF-8'; }
-        function getOutputEncoding() { return outputEncodingSelect ? outputEncodingSelect.value : 'UTF-8-BOM'; }
         function loadPreview(file) {
             const ext = (file.name || '').toLowerCase();
             if (ext.endsWith('.xlsx') || ext.endsWith('.xls')) {
