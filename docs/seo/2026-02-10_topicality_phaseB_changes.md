@@ -9,7 +9,7 @@
 
 | 項目 | 内容 |
 |------|------|
-| **P0-1** | 末尾スラッシュの正規化。`/path/` でアクセスされた場合、`/path` へ 301 リダイレクト。ルート `/` と `/static/`・`/api/` は除外。 |
+| **P0-1** | 末尾スラッシュの正規化。**存在するルートのみ** 301 で `/path` へリダイレクト。末尾スラッシュを除いたパスが Flask の `url_map` で解決できない場合は何もしない（404 のまま）。`/path/`（存在しないURL）を `/path` に飛ばさない。ルート `/` と `/static/`・`/api/` は除外。GET/HEAD のみ対象。 |
 | **P0-2** | 動的・一時的URLに `X-Robots-Tag: noindex, nofollow` を付与。対象は `/status/*`、`/api/*`、`/download-template`、`/download-previous-template`、`/sessions`、`/cleanup-sessions`。 |
 | **P1-1** | `head_meta.html` の `description_meta` ブロックにデフォルトの `<meta name="description">` を追加。ブロック未定義ページで description が空になるのを防止。 |
 | **P1-2** | ツール詳細ページからガイドへの導線を共通パーツ化し、アンカーを「〇〇の使い方ガイド」に変更。`product.guide_path` がある場合のみ表示。 |
@@ -20,7 +20,7 @@
 
 | ファイル | 変更内容 |
 |----------|----------|
-| `app.py` | `redirect` を import。`@app.before_request` で末尾スラッシュ時 301。`_NOINDEX_PATHS` と `@app.after_request` で X-Robots-Tag 付与。 |
+| `app.py` | `redirect` と `werkzeug.exceptions.NotFound, MethodNotAllowed` を import。`@app.before_request` で末尾スラッシュ時、`url_map.bind_to_environ` でルート存在確認し、存在する場合のみ 301。GET/HEAD のみ対象。`_NOINDEX_PATHS` と `@app.after_request` で X-Robots-Tag 付与。 |
 | `templates/includes/head_meta.html` | `{% block description_meta %}` 内にデフォルトの meta description を記述。 |
 | `templates/includes/tool_guide_link.html` | **新規**。`product` と `product.guide_path` があるときのみ「📚 {{ product.name }}の使い方ガイド」リンクを出力。 |
 | `templates/tools/pdf.html` | ガイドリンクを `{% include 'includes/tool_guide_link.html' %}` に変更。 |
@@ -31,14 +31,27 @@
 
 ---
 
+## 2.1 Phase A 事実確認結果
+
+- **実施メモ**: `docs/seo/2026-02-10_phaseA_fact_check.md` に URL ステータス確認表・ツールのガイドリンク有無・meta description の確認内容を記載。
+- **本番・ローカル**: 上記ドキュメントの表の「本番 ステータス」「ローカル ステータス」は手動確認で記入する。
+- **実装後の期待**:
+  - 存在するページの末尾スラッシュ（例: `/tools/pdf/`）→ 301 で `/tools/pdf` へ。
+  - 存在しない URL（例: `/path/`）→ **301 にしない。404 のまま。**
+
+---
+
 ## 3. 手動テスト手順と確認内容
 
-### P0-1 末尾スラッシュ
+### P0-1 末尾スラッシュ（安全なリダイレクト）
 
 - **GET /tools/pdf/** → 301、Location: `/tools/pdf`（クエリがあれば `?...` 付き）。ブラウザで /tools/pdf/ にアクセスし、アドレスバーが /tools/pdf になること。
 - **GET /guide/pdf/** → 301、Location: `/guide/pdf`。
+- **GET /blog/** → 301、Location: `/blog`（ルートが存在する場合）。
+- **GET /path/** → **404 のまま。301 で /path にリダイレクトされないこと**（存在しない URL はリダイレクトしない）。
 - **GET /** → 200 のまま。リダイレクトされないこと。
-- **静的**: `/static/robots.txt` や `/static/css/common.css` が 200 で取得できること（末尾スラッシュ除外のため /static/xxx/ は通常発生しないが、除外対象であることを確認）。
+- **POST /tools/pdf/** → リダイレクト対象外（GET/HEAD のみ）。ルートが POST を許可していなければ 404 等のまま。
+- **静的・API**: `/static/`・`/api/` は除外対象。通常の静的・API アクセスに影響しないこと。
 - **canonical**: 主要ページ（例: /tools/pdf）の HTML で `<link rel="canonical" href=".../tools/pdf">` となり、末尾にスラッシュが付いていないこと。
 
 ### P0-2 X-Robots-Tag

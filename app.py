@@ -11,6 +11,7 @@ import time
 import logging
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template, send_file, Response, redirect, g
+from werkzeug.exceptions import NotFound, MethodNotAllowed
 
 from utils import allowed_file, create_template_excel, create_previous_month_template_excel
 from automation import process_jobcan_automation
@@ -367,7 +368,7 @@ def inject_env_vars():
         }
 
 
-# P0-1 SEO: 末尾スラッシュ正規化（重複URL対策）。canonical は末尾スラッシュなし前提のため 301 で統一
+# P0-1 SEO: 末尾スラッシュ正規化（重複URL対策）。存在するルートのみ 301 で canonical へ。存在しない URL はリダイレクトしない。
 @app.before_request
 def normalize_trailing_slash():
     path = request.path
@@ -375,7 +376,14 @@ def normalize_trailing_slash():
         return None
     if path.startswith('/static/') or path.startswith('/api/'):
         return None
+    if request.method not in ('GET', 'HEAD'):
+        return None
     new_path = path.rstrip('/') or '/'
+    try:
+        adapter = app.url_map.bind_to_environ(request.environ)
+        adapter.match(new_path, method=request.method)
+    except (NotFound, MethodNotAllowed):
+        return None  # 存在しないルートにはリダイレクトしない（404のまま）
     location = new_path + ('?' + request.query_string.decode() if request.query_string else '')
     return redirect(location, code=301)
 
