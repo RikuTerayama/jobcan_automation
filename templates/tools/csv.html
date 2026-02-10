@@ -62,13 +62,221 @@
         </div>
         <div class="tool-section" id="options-section" style="display: none;">
             <h3>⚙️ 操作</h3>
-            <p style="color: rgba(255, 255, 255, 0.7);">ファイルを選択すると操作モードを選べます。</p>
+            <label style="display: block; margin-bottom: 8px;">操作モード</label>
+            <select id="mode">
+                <option value="column_extract">列の抽出・並べ替え</option>
+                <option value="dedupe">重複削除（キー列指定）</option>
+                <option value="split">N行ごと分割</option>
+            </select>
+            <div id="mode-options" style="margin-top: 15px;"></div>
+            <button type="button" id="run-btn" style="margin-top: 20px; padding: 12px 24px; background: #4A9EFF; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 1em;">実行</button>
+        </div>
+        <div class="tool-section" id="preview-section" style="display: none;">
+            <h3>👁 プレビュー（先頭50行）</h3>
+            <div id="preview-table-wrap" style="overflow: auto; max-height: 300px;"></div>
         </div>
         <div class="tool-section" id="output-section" style="display: none;">
             <h3>📤 結果</h3>
             <div id="output-area"></div>
         </div>
     </div>
+    <script src="{{ url_for('static', filename='js/file-validation.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/file-utils.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="{{ url_for('static', filename='js/zip-utils.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="{{ url_for('static', filename='js/csv-ops.js') }}"></script>
+    <script>
+(function() {
+    const CSV_RULES = { maxFiles: 10, maxFileSize: 10 * 1024 * 1024, maxTotalSize: 50 * 1024 * 1024, allowedExtensions: ['.csv'] };
+    let acceptedFiles = [];
+    let parsedRows = null;
+    let parsedMeta = null;
+
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('file-input');
+    const fileList = document.getElementById('file-list');
+    const rejectedEl = document.getElementById('rejected-files');
+    const optionsSection = document.getElementById('options-section');
+    const modeSelect = document.getElementById('mode');
+    const modeOptions = document.getElementById('mode-options');
+    const runBtn = document.getElementById('run-btn');
+    const previewSection = document.getElementById('preview-section');
+    const previewWrap = document.getElementById('preview-table-wrap');
+    const outputSection = document.getElementById('output-section');
+    const outputArea = document.getElementById('output-area');
+
+    function showRejected(rejected) {
+        if (!rejected.length) { rejectedEl.style.display = 'none'; return; }
+        rejectedEl.style.display = 'block';
+        rejectedEl.innerHTML = rejected.map(r => '<div class="rejected-file">' + (r.file.name || '') + ': ' + (r.reason || '') + '</div>').join('');
+    }
+
+    function renderFileList() {
+        fileList.innerHTML = acceptedFiles.map((f, i) => '<div style="padding:8px;background:rgba(0,0,0,0.2);border-radius:6px;margin-bottom:6px;">' + (f.name || '') + ' (' + (f.size ? Math.round(f.size/1024) + ' KB' : '') + ')</div>').join('');
+    }
+
+    function buildModeOptions() {
+        if (!parsedRows || !parsedRows.length) return;
+        const header = parsedRows[0];
+        const mode = modeSelect.value;
+        modeOptions.innerHTML = '';
+        if (mode === 'column_extract') {
+            header.forEach((h, i) => {
+                const label = document.createElement('label');
+                label.style.display = 'block';
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.checked = true;
+                cb.dataset.index = i;
+                cb.style.marginRight = '8px';
+                label.appendChild(cb);
+                label.appendChild(document.createTextNode((i + 1) + ': ' + (h || '列' + (i+1))));
+                modeOptions.appendChild(label);
+            });
+        } else if (mode === 'dedupe') {
+            const label = document.createElement('label');
+            label.textContent = 'キー列: ';
+            const sel = document.createElement('select');
+            sel.id = 'dedupe-key';
+            header.forEach((h, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = (h || '列' + (i+1));
+                sel.appendChild(opt);
+            });
+            label.appendChild(sel);
+            modeOptions.appendChild(label);
+        } else if (mode === 'split') {
+            const label = document.createElement('label');
+            label.textContent = 'N行ごと: ';
+            const inp = document.createElement('input');
+            inp.type = 'number';
+            inp.id = 'split-n';
+            inp.min = 1;
+            inp.value = 1000;
+            inp.style.width = '100px';
+            label.appendChild(inp);
+            modeOptions.appendChild(label);
+        }
+    }
+
+    function renderPreview(rows) {
+        if (!rows || !rows.length) return;
+        const head = rows[0];
+        const body = rows.slice(1, 51);
+        let html = '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-size:0.9em;background:rgba(0,0,0,0.2);">';
+        html += '<thead><tr>' + head.map(h => '<th style="text-align:left;">' + (h != null ? String(h).replace(/</g,'&lt;') : '') + '</th>').join('') + '</tr></thead><tbody>';
+        body.forEach(row => {
+            html += '<tr>' + row.map(c => '<td>' + (c != null ? String(c).replace(/</g,'&lt;') : '') + '</td>').join('') + '</tr>';
+        });
+        html += '</tbody></table>';
+        previewWrap.innerHTML = html;
+        previewSection.style.display = 'block';
+    }
+
+    function setOutput(msg, isError) {
+        outputSection.style.display = 'block';
+        outputArea.innerHTML = '<p style="color:' + (isError ? '#f44' : 'rgba(255,255,255,0.9)') + ';">' + (msg || '').replace(/</g,'&lt;') + '</p>';
+    }
+
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.style.background = 'rgba(74,158,255,0.15)'; });
+    dropzone.addEventListener('dragleave', () => { dropzone.style.background = ''; });
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.style.background = '';
+        if (e.dataTransfer.files.length) fileInput.files = e.dataTransfer.files;
+        fileInput.dispatchEvent(new Event('change'));
+    });
+    fileInput.addEventListener('change', () => {
+        const files = Array.from(fileInput.files || []);
+        const result = FileValidation.validateFiles(files, CSV_RULES);
+        acceptedFiles = result.okFiles;
+        showRejected(result.rejected);
+        renderFileList();
+        optionsSection.style.display = acceptedFiles.length ? 'block' : 'none';
+        parsedRows = null;
+        parsedMeta = null;
+        previewSection.style.display = 'none';
+        outputSection.style.display = 'none';
+        if (acceptedFiles.length === 1) {
+            CsvOps.readFileAsText(acceptedFiles[0]).then(text => {
+                try {
+                    const r = CsvOps.parseCSV(text, { preview: 50 });
+                    parsedRows = r.data;
+                    parsedMeta = r.meta;
+                    renderPreview(parsedRows);
+                    buildModeOptions();
+                } catch (err) {
+                    setOutput(err.message || 'CSVの解析に失敗しました。', true);
+                }
+            }).catch(err => setOutput(err.message || 'ファイルの読み込みに失敗しました。', true));
+        } else if (acceptedFiles.length > 1) {
+            setOutput('複数ファイルの場合は先頭1件のみプレビューします。実行時に1件ずつ処理します。', false);
+            CsvOps.readFileAsText(acceptedFiles[0]).then(text => {
+                try {
+                    const r = CsvOps.parseCSV(text, { preview: 50 });
+                    parsedRows = r.data;
+                    parsedMeta = r.meta;
+                    renderPreview(parsedRows);
+                    buildModeOptions();
+                } catch (e) { buildModeOptions(); }
+            }).catch(() => buildModeOptions());
+        }
+    });
+    modeSelect.addEventListener('change', buildModeOptions);
+
+    runBtn.addEventListener('click', () => {
+        if (!acceptedFiles.length) { setOutput('ファイルを選択してください。', true); return; }
+        outputSection.style.display = 'block';
+        outputArea.innerHTML = '<p>処理中...</p>';
+        const mode = modeSelect.value;
+        const outputs = [];
+        const processOne = (file, fileIndex) => {
+            return CsvOps.readFileAsText(file).then(text => {
+                const r = CsvOps.parseCSV(text);
+                let rows = r.data;
+                const base = FileUtils.getFilenameWithoutExtension(file.name) || 'output';
+                if (mode === 'column_extract') {
+                    const indexes = Array.from(modeOptions.querySelectorAll('input[type=checkbox]:checked')).map(cb => parseInt(cb.dataset.index, 10)).sort((a,b)=>a-b);
+                    if (!indexes.length) throw new Error('1列以上選択してください');
+                    rows = CsvOps.selectColumns(rows, indexes);
+                } else if (mode === 'dedupe') {
+                    const keyCol = parseInt(document.getElementById('dedupe-key').value, 10);
+                    rows = CsvOps.dedupeByKey(rows, keyCol);
+                } else if (mode === 'split') {
+                    const n = parseInt(document.getElementById('split-n').value, 10) || 1000;
+                    if (n < 1) throw new Error('Nは1以上を指定してください');
+                    const chunks = CsvOps.splitByNRows(rows, n);
+                    chunks.forEach((chunk, i) => {
+                        const blob = CsvOps.rowsToBlob(chunk);
+                        outputs.push({ blob, filename: CsvOps.outputFilename(base, 'part' + (i+1), 'csv') });
+                    });
+                    return;
+                }
+                const blob = CsvOps.rowsToBlob(rows);
+                const suffix = mode === 'column_extract' ? 'columns' : mode === 'dedupe' ? 'dedupe' : 'split';
+                outputs.push({ blob, filename: CsvOps.outputFilename(base, suffix, 'csv') });
+            });
+        };
+        let chain = Promise.resolve();
+        acceptedFiles.forEach((f, i) => { chain = chain.then(() => processOne(f, i)); });
+        chain.then(() => {
+            if (outputs.length === 0) { setOutput('出力がありません。', true); return; }
+            if (outputs.length === 1) {
+                FileUtils.downloadBlob(outputs[0].blob, outputs[0].filename);
+                setOutput('1件ダウンロードしました: ' + outputs[0].filename, false);
+            } else {
+                ZipUtils.createZip(outputs.map(o => ({ blob: o.blob, filename: o.filename })), 'csv_output.zip').then(zipBlob => {
+                    FileUtils.downloadBlob(zipBlob, 'csv_output.zip');
+                    setOutput(outputs.length + '件をZIPでダウンロードしました。', false);
+                }).catch(err => setOutput(err.message || 'ZIPの作成に失敗しました。', true));
+            }
+        }).catch(err => setOutput(err.message || '処理に失敗しました。', true));
+    });
+})();
+    </script>
     {% include 'includes/footer.html' %}
 </body>
 </html>
