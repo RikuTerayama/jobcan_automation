@@ -377,6 +377,9 @@ class ImageCleanup {
 }
 
 // 古典 script で読み込んだ場合にグローバルから参照できるよう明示的に露出（スコープ不整合対策）
+if (typeof globalThis !== 'undefined') {
+    globalThis.ImageCleanup = ImageCleanup;
+}
 if (typeof window !== 'undefined') {
     window.ImageCleanup = ImageCleanup;
 }

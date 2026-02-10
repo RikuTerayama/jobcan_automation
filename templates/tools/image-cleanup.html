@@ -544,8 +544,9 @@
             const custom = document.getElementById('style-bg-color-custom');
             custom.style.display = sel.value === 'custom' ? 'inline-block' : 'none';
         }
-        // 初期化
+        // 初期化（読み込み状態の確認用: パスワードは一切出さない）
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('[image-cleanup] load check: globalThis.ImageCleanup', typeof globalThis.ImageCleanup);
             // 背景除去ONのときはconcurrencyを1に設定
             const bgRemovalEnabled = document.getElementById('background-removal').checked;
             toolRunner = new ToolRunner({
@@ -754,16 +755,17 @@
             document.getElementById('error-section').style.display = 'none';
             
             const processor = async (file, ctx) => {
-                if (typeof ImageCleanup === 'undefined') {
-                    console.error('[image-cleanup] ImageCleanup not loaded; check script path and Network tab for image-cleanup.js');
+                const Cleanup = globalThis.ImageCleanup;
+                if (!Cleanup) {
+                    console.error('[image-cleanup] globalThis.ImageCleanup not available; check Network tab for /static/js/image-cleanup.js (200 expected)');
                     throw new Error('画像クリーンアップ機能の読み込みに失敗しました。ページを再読み込みしてください。');
                 }
                 const bgRemoved = bgRemovalEnabled;
                 const filename = filenameTemplate 
-                    ? ImageCleanup.generateFilename(file.name, outputFormat === 'jpg' ? 'jpg' : outputFormat, ctx.index + 1, filenameTemplate, bgRemoved)
+                    ? Cleanup.generateFilename(file.name, outputFormat === 'jpg' ? 'jpg' : outputFormat, ctx.index + 1, filenameTemplate, bgRemoved)
                     : null;
                 
-                return await ImageCleanup.runCleanupPipeline(file, {
+                return await Cleanup.runCleanupPipeline(file, {
                     whiteBackground,
                     trimMargins,
                     trimTolerance,

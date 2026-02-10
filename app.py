@@ -988,80 +988,95 @@ def tools_pdf():
 
 # PDF ロック解除・ロック付与 API（案B: サーバ併用）
 # パスワードはログ・永続化しない。正しいパスワードを知っている前提のみ。推測/迂回は行わない。
+# エラー時は error_code と request_id を返す（message は返さない。パスワードは絶対に出さない）。
 PDF_API_MAX_BYTES = 50 * 1024 * 1024  # 50MB
+
+def _pdf_api_error(error_code, status=400):
+    rid = uuid.uuid4().hex[:12]
+    return jsonify(success=False, error_code=error_code, request_id=rid), status
 
 
 @app.route('/api/pdf/unlock', methods=['POST'])
 def api_pdf_unlock():
     """パスワード保護PDFを復号して返す。非暗号化PDFはそのまま返す。password は form で受け取り、ログに出さない。"""
-    file = request.files.get('file')
-    password = (request.form.get('password') or '').strip()
-    if not file or file.filename == '':
-        return jsonify(success=False, error='file_required'), 400
     try:
-        pdf_bytes = file.read()
-    except Exception:
-        return jsonify(success=False, error='read_failed'), 400
-    if len(pdf_bytes) > PDF_API_MAX_BYTES:
-        return jsonify(success=False, error='file_too_large'), 400
-    try:
-        from lib.pdf_lock_unlock import decrypt_pdf
-        out_bytes = decrypt_pdf(pdf_bytes, password)
-    except ValueError as e:
-        err = str(e)
-        if err == 'need_password':
-            return jsonify(success=False, error='need_password'), 400
-        if err == 'invalid_password':
-            return jsonify(success=False, error='invalid_password'), 400
-        raise
-    except Exception:
-        return jsonify(success=False, error='decrypt_failed'), 400
-    from io import BytesIO
-    name = file.filename or 'document.pdf'
-    if not name.lower().endswith('.pdf'):
-        name += '.pdf'
-    return send_file(
-        BytesIO(out_bytes),
-        mimetype='application/pdf',
-        as_attachment=True,
-        download_name=name
-    )
+        file = request.files.get('file')
+        password = (request.form.get('password') or '').strip()
+        if not file or file.filename == '':
+            return _pdf_api_error('file_required')
+        try:
+            pdf_bytes = file.read()
+        except Exception:
+            return _pdf_api_error('read_failed')
+        if len(pdf_bytes) > PDF_API_MAX_BYTES:
+            return _pdf_api_error('file_too_large')
+        try:
+            from lib.pdf_lock_unlock import decrypt_pdf
+            out_bytes = decrypt_pdf(pdf_bytes, password)
+        except ValueError as e:
+            err = str(e)
+            if err == 'need_password':
+                return _pdf_api_error('need_password')
+            if err == 'invalid_password':
+                return _pdf_api_error('incorrect_password')
+            return _pdf_api_error('decrypt_failed')
+        except Exception:
+            return _pdf_api_error('decrypt_failed')
+        from io import BytesIO
+        name = file.filename or 'document.pdf'
+        if not name.lower().endswith('.pdf'):
+            name += '.pdf'
+        return send_file(
+            BytesIO(out_bytes),
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=name
+        )
+    except Exception as e:
+        rid = uuid.uuid4().hex[:12]
+        logging.getLogger(__name__).exception('pdf unlock request_id=%s %s', rid, type(e).__name__)
+        return jsonify(success=False, error_code='unsupported', request_id=rid), 500
 
 
 @app.route('/api/pdf/lock', methods=['POST'])
 def api_pdf_lock():
     """PDFにパスワードを付与して暗号化して返す。password は form で受け取り、ログに出さない。"""
-    file = request.files.get('file')
-    password = (request.form.get('password') or '').strip()
-    if not file or file.filename == '':
-        return jsonify(success=False, error='file_required'), 400
-    if not password:
-        return jsonify(success=False, error='password_required'), 400
     try:
-        pdf_bytes = file.read()
-    except Exception:
-        return jsonify(success=False, error='read_failed'), 400
-    if len(pdf_bytes) > PDF_API_MAX_BYTES:
-        return jsonify(success=False, error='file_too_large'), 400
-    try:
-        from lib.pdf_lock_unlock import encrypt_pdf
-        out_bytes = encrypt_pdf(pdf_bytes, password)
+        file = request.files.get('file')
+        password = (request.form.get('password') or '').strip()
+        if not file or file.filename == '':
+            return _pdf_api_error('file_required')
+        if not password:
+            return _pdf_api_error('missing_password')
+        try:
+            pdf_bytes = file.read()
+        except Exception:
+            return _pdf_api_error('read_failed')
+        if len(pdf_bytes) > PDF_API_MAX_BYTES:
+            return _pdf_api_error('file_too_large')
+        try:
+            from lib.pdf_lock_unlock import encrypt_pdf
+            out_bytes = encrypt_pdf(pdf_bytes, password)
+        except Exception as e:
+            rid = uuid.uuid4().hex[:12]
+            logging.getLogger(__name__).warning('pdf lock encrypt_failed request_id=%s %s', rid, type(e).__name__)
+            logging.getLogger(__name__).debug('pdf lock encrypt_failed traceback', exc_info=True)
+            return jsonify(success=False, error_code='encrypt_failed', request_id=rid), 400
+        from io import BytesIO
+        name = file.filename or 'document.pdf'
+        if not name.lower().endswith('.pdf'):
+            name += '.pdf'
+        base = name[:-4] if name.lower().endswith('.pdf') else name
+        return send_file(
+            BytesIO(out_bytes),
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=f'{base}_locked.pdf'
+        )
     except Exception as e:
-        # 開発者向けに例外種別のみログ（パスワードは絶対に出さない）
-        import logging
-        logging.getLogger(__name__).warning('pdf lock encrypt_failed: %s', type(e).__name__)
-        return jsonify(success=False, error='encrypt_failed'), 400
-    from io import BytesIO
-    name = file.filename or 'document.pdf'
-    if not name.lower().endswith('.pdf'):
-        name += '.pdf'
-    base = name[:-4] if name.lower().endswith('.pdf') else name
-    return send_file(
-        BytesIO(out_bytes),
-        mimetype='application/pdf',
-        as_attachment=True,
-        download_name=f'{base}_locked.pdf'
-    )
+        rid = uuid.uuid4().hex[:12]
+        logging.getLogger(__name__).exception('pdf lock request_id=%s %s', rid, type(e).__name__)
+        return jsonify(success=False, error_code='unsupported', request_id=rid), 500
 
 
 @app.route('/tools/image-cleanup')
