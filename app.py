@@ -1008,6 +1008,11 @@ def guide_seo():
     """Web/SEOユーティリティガイド"""
     return render_template('guide/seo.html')
 
+@app.route('/guide/csv')
+def guide_csv():
+    """CSV/Excelユーティリティガイド"""
+    return render_template('guide/csv.html')
+
 @app.route('/tools/image-batch')
 def tools_image_batch():
     """画像一括変換ツール"""
@@ -1154,6 +1159,13 @@ def tools_seo():
     from lib.routes import get_product_by_path
     product = get_product_by_path('/tools/seo')
     return render_template('tools/seo.html', product=product)
+
+@app.route('/tools/csv')
+def tools_csv():
+    """CSV/Excelユーティリティ"""
+    from lib.routes import get_product_by_path
+    product = get_product_by_path('/tools/csv')
+    return render_template('tools/csv.html', product=product)
 
 
 # 簡易レート制限: /api/seo/crawl-urls を IP ごとに 60 秒に 1 回まで
