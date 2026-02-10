@@ -380,6 +380,21 @@ def normalize_trailing_slash():
     return redirect(location, code=301)
 
 
+# P0-2 SEO: 動的・一時的URLのインデックス制御（X-Robots-Tag）
+_NOINDEX_PATHS = frozenset((
+    '/download-template', '/download-previous-template', '/sessions', '/cleanup-sessions'
+))
+
+@app.after_request
+def add_noindex_for_dynamic(response):
+    path = request.path
+    if path.startswith('/status/') or path.startswith('/api/'):
+        response.headers['X-Robots-Tag'] = 'noindex, nofollow'
+    elif path in _NOINDEX_PATHS:
+        response.headers['X-Robots-Tag'] = 'noindex, nofollow'
+    return response
+
+
 # ジョブの状態を管理（スレッドセーフな辞書）
 jobs = {}
 jobs_lock = threading.Lock()
