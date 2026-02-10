@@ -1019,6 +1019,10 @@ def api_pdf_unlock():
                 return _pdf_api_error('need_password')
             if err == 'invalid_password':
                 return _pdf_api_error('incorrect_password')
+            if err == 'corrupt_pdf':
+                return _pdf_api_error('corrupt_pdf')
+            if err == 'unsupported_encryption':
+                return _pdf_api_error('unsupported_encryption')
             return _pdf_api_error('decrypt_failed')
         except Exception:
             return _pdf_api_error('decrypt_failed')
@@ -1057,6 +1061,15 @@ def api_pdf_lock():
         try:
             from lib.pdf_lock_unlock import encrypt_pdf
             out_bytes = encrypt_pdf(pdf_bytes, password)
+        except ValueError as e:
+            err = str(e)
+            if err == 'already_encrypted':
+                return _pdf_api_error('already_encrypted')
+            if err == 'corrupt_pdf':
+                return _pdf_api_error('corrupt_pdf')
+            if err == 'unsupported_pdf':
+                return _pdf_api_error('unsupported_pdf')
+            return _pdf_api_error('encrypt_failed')
         except Exception as e:
             rid = uuid.uuid4().hex[:12]
             logging.getLogger(__name__).warning('pdf lock encrypt_failed request_id=%s %s', rid, type(e).__name__)

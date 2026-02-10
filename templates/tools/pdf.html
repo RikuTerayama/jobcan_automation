@@ -876,13 +876,19 @@
                         }, ctx);
                     });
                 } else if (mode === 'compress') {
+                    const PC = globalThis.PdfCompress;
+                    if (!PC) {
+                        console.error('[pdf] globalThis.PdfCompress not available; check Network for /static/js/pdf-compress.js');
+                        handleError(new Error('圧縮機能の読み込みに失敗しました。ページを再読み込みしてください。'));
+                        return;
+                    }
                     const quality = parseFloat(document.getElementById('compress-quality').value);
                     const scale = parseFloat(document.getElementById('compress-scale').value);
                     const maxLongEdge = parseInt(document.getElementById('compress-max-long-edge').value);
                     const inputPdfPassword = document.getElementById('input-pdf-password').value;
                     
                     await toolRunner.runBatch(async (files, ctx) => {
-                        return await PdfCompress.compressPdfByRasterize(files[0], {
+                        return await PC.compressPdfByRasterize(files[0], {
                             quality,
                             scale,
                             maxLongEdge,
@@ -937,7 +943,7 @@
                             const data = await res.json().catch(() => ({}));
                             const code = data.error_code || data.error;
                             const rid = data.request_id ? ` (request_id: ${data.request_id})` : '';
-                            const msgMap = { need_password: 'このPDFはパスワード保護されています。パスワードを入力してください。', incorrect_password: 'パスワードが違います。', file_required: 'ファイルを選択してください。', file_too_large: 'ファイルが大きすぎます。', read_failed: 'ファイルの読み込みに失敗しました。', decrypt_failed: 'ロック解除に失敗しました。', not_encrypted_but_failed: 'ロック解除に失敗しました。', unsupported: 'ロック解除に失敗しました。' };
+                            const msgMap = { need_password: 'このPDFはパスワード保護されています。パスワードを入力してください。', incorrect_password: 'パスワードが違います。', file_required: 'ファイルを選択してください。', file_too_large: 'ファイルが大きすぎます。', read_failed: 'ファイルの読み込みに失敗しました。', decrypt_failed: 'ロック解除に失敗しました。', corrupt_pdf: 'PDFの構造に問題があるか、対応していない形式です。', unsupported_encryption: 'このPDFの暗号方式には対応していません。', not_encrypted_but_failed: 'ロック解除に失敗しました。', unsupported: 'ロック解除に失敗しました。' };
                             const msg = msgMap[code] || 'ロック解除に失敗しました。';
                             handleError(new Error(msg + rid));
                             return;
@@ -971,7 +977,7 @@
                             const data = await res.json().catch(() => ({}));
                             const code = data.error_code || data.error;
                             const rid = data.request_id ? ` (request_id: ${data.request_id})` : '';
-                            const msgMap = { missing_password: '出力用パスワードを入力してください。', file_required: 'ファイルを選択してください。', file_too_large: 'ファイルが大きすぎます（50MB以下）。', read_failed: 'ファイルの読み込みに失敗しました。', encrypt_failed: 'ロック付与に失敗しました。PDFの形式やサイズを確認してください。', unsupported: 'ロック付与に失敗しました。' };
+                            const msgMap = { missing_password: '出力用パスワードを入力してください。', file_required: 'ファイルを選択してください。', file_too_large: 'ファイルが大きすぎます（50MB以下）。', read_failed: 'ファイルの読み込みに失敗しました。', already_encrypted: 'このPDFは既にパスワード保護されています。ロック解除してから再度ロック付与してください。', corrupt_pdf: 'PDFの構造に問題があるか、対応していない形式です。', unsupported_pdf: 'このPDFにはロック付与に対応していません。', encrypt_failed: 'ロック付与に失敗しました。PDFの形式やサイズを確認してください。', unsupported: 'ロック付与に失敗しました。' };
                             const msg = msgMap[code] || 'ロック付与に失敗しました。';
                             handleError(new Error(msg + rid));
                             return;
