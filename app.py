@@ -10,7 +10,7 @@ import psutil
 import time
 import logging
 from datetime import datetime
-from flask import Flask, request, jsonify, render_template, send_file, Response, g
+from flask import Flask, request, jsonify, render_template, send_file, Response, redirect, g
 
 from utils import allowed_file, create_template_excel, create_previous_month_template_excel
 from automation import process_jobcan_automation
@@ -365,6 +365,20 @@ def inject_env_vars():
             'OPERATOR_LOCATION': '',
             'OPERATOR_NOTE': ''
         }
+
+
+# P0-1 SEO: 末尾スラッシュ正規化（重複URL対策）。canonical は末尾スラッシュなし前提のため 301 で統一
+@app.before_request
+def normalize_trailing_slash():
+    path = request.path
+    if path == '/' or not path.endswith('/'):
+        return None
+    if path.startswith('/static/') or path.startswith('/api/'):
+        return None
+    new_path = path.rstrip('/') or '/'
+    location = new_path + ('?' + request.query_string.decode() if request.query_string else '')
+    return redirect(location, code=301)
+
 
 # ジョブの状態を管理（スレッドセーフな辞書）
 jobs = {}
