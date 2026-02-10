@@ -1000,8 +1000,8 @@ def guide_image_cleanup():
 
 @app.route('/guide/minutes')
 def guide_minutes():
-    """議事録整形ツールガイド"""
-    return render_template('guide/minutes.html')
+    """旧議事録ガイドURL: 301で /guide へ"""
+    return redirect('/guide', code=301)
 
 @app.route('/guide/seo')
 def guide_seo():
@@ -1138,16 +1138,14 @@ def tools_image_cleanup():
 
 @app.route('/tools/minutes')
 def tools_minutes():
-    """議事録整形ツール"""
-    from lib.routes import get_product_by_path
-    product = get_product_by_path('/tools/minutes')
-    return render_template('tools/minutes.html', product=product)
+    """旧議事録ツールURL: 301で /tools へ"""
+    return redirect('/tools', code=301)
 
 
 @app.route('/api/minutes/format', methods=['POST'])
 def api_minutes_format():
-    """議事録整形API（将来のLLM連携用スタブ）。現時点では未実装で501を返す。"""
-    return jsonify(success=False, error='Not implemented'), 501
+    """旧議事録API: 410 Gone"""
+    return jsonify(error_code='gone'), 410
 
 
 @app.route('/tools/seo')

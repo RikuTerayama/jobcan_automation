@@ -75,7 +75,6 @@ def get_nav_sections_fallback():
                 {'name': '画像一括変換', 'path': '/guide/image-batch', 'icon': '🖼️'},
                 {'name': 'PDFユーティリティ', 'path': '/guide/pdf', 'icon': '📄'},
                 {'name': '画像ユーティリティ', 'path': '/guide/image-cleanup', 'icon': '✨'},
-                {'name': '議事録整形', 'path': '/guide/minutes', 'icon': '📝'},
                 {'name': 'Web/SEO', 'path': '/guide/seo', 'icon': '🔍'},
             ]},
             {'group_label': 'Jobcan AutoFill 詳細', 'items': [
