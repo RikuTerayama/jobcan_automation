@@ -993,13 +993,11 @@ PDF_API_MAX_BYTES = 50 * 1024 * 1024  # 50MB
 
 @app.route('/api/pdf/unlock', methods=['POST'])
 def api_pdf_unlock():
-    """パスワード保護PDFを復号して返す。password は form で受け取り、ログに出さない。"""
+    """パスワード保護PDFを復号して返す。非暗号化PDFはそのまま返す。password は form で受け取り、ログに出さない。"""
     file = request.files.get('file')
-    password = request.form.get('password') or ''
+    password = (request.form.get('password') or '').strip()
     if not file or file.filename == '':
         return jsonify(success=False, error='file_required'), 400
-    if not password.strip():
-        return jsonify(success=False, error='password_required'), 400
     try:
         pdf_bytes = file.read()
     except Exception:
@@ -1010,7 +1008,10 @@ def api_pdf_unlock():
         from lib.pdf_lock_unlock import decrypt_pdf
         out_bytes = decrypt_pdf(pdf_bytes, password)
     except ValueError as e:
-        if str(e) == 'invalid_password':
+        err = str(e)
+        if err == 'need_password':
+            return jsonify(success=False, error='need_password'), 400
+        if err == 'invalid_password':
             return jsonify(success=False, error='invalid_password'), 400
         raise
     except Exception:
@@ -1031,10 +1032,10 @@ def api_pdf_unlock():
 def api_pdf_lock():
     """PDFにパスワードを付与して暗号化して返す。password は form で受け取り、ログに出さない。"""
     file = request.files.get('file')
-    password = request.form.get('password') or ''
+    password = (request.form.get('password') or '').strip()
     if not file or file.filename == '':
         return jsonify(success=False, error='file_required'), 400
-    if not password.strip():
+    if not password:
         return jsonify(success=False, error='password_required'), 400
     try:
         pdf_bytes = file.read()
@@ -1045,7 +1046,10 @@ def api_pdf_lock():
     try:
         from lib.pdf_lock_unlock import encrypt_pdf
         out_bytes = encrypt_pdf(pdf_bytes, password)
-    except Exception:
+    except Exception as e:
+        # 開発者向けに例外種別のみログ（パスワードは絶対に出さない）
+        import logging
+        logging.getLogger(__name__).warning('pdf lock encrypt_failed: %s', type(e).__name__)
         return jsonify(success=False, error='encrypt_failed'), 400
     from io import BytesIO
     name = file.filename or 'document.pdf'
