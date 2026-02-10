@@ -985,6 +985,81 @@ def tools_pdf():
     product = get_product_by_path('/tools/pdf')
     return render_template('tools/pdf.html', product=product)
 
+
+# PDF ロック解除・ロック付与 API（案B: サーバ併用）
+# パスワードはログ・永続化しない。正しいパスワードを知っている前提のみ。推測/迂回は行わない。
+PDF_API_MAX_BYTES = 50 * 1024 * 1024  # 50MB
+
+
+@app.route('/api/pdf/unlock', methods=['POST'])
+def api_pdf_unlock():
+    """パスワード保護PDFを復号して返す。password は form で受け取り、ログに出さない。"""
+    file = request.files.get('file')
+    password = request.form.get('password') or ''
+    if not file or file.filename == '':
+        return jsonify(success=False, error='file_required'), 400
+    if not password.strip():
+        return jsonify(success=False, error='password_required'), 400
+    try:
+        pdf_bytes = file.read()
+    except Exception:
+        return jsonify(success=False, error='read_failed'), 400
+    if len(pdf_bytes) > PDF_API_MAX_BYTES:
+        return jsonify(success=False, error='file_too_large'), 400
+    try:
+        from lib.pdf_lock_unlock import decrypt_pdf
+        out_bytes = decrypt_pdf(pdf_bytes, password)
+    except ValueError as e:
+        if str(e) == 'invalid_password':
+            return jsonify(success=False, error='invalid_password'), 400
+        raise
+    except Exception:
+        return jsonify(success=False, error='decrypt_failed'), 400
+    from io import BytesIO
+    name = file.filename or 'document.pdf'
+    if not name.lower().endswith('.pdf'):
+        name += '.pdf'
+    return send_file(
+        BytesIO(out_bytes),
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=name
+    )
+
+
+@app.route('/api/pdf/lock', methods=['POST'])
+def api_pdf_lock():
+    """PDFにパスワードを付与して暗号化して返す。password は form で受け取り、ログに出さない。"""
+    file = request.files.get('file')
+    password = request.form.get('password') or ''
+    if not file or file.filename == '':
+        return jsonify(success=False, error='file_required'), 400
+    if not password.strip():
+        return jsonify(success=False, error='password_required'), 400
+    try:
+        pdf_bytes = file.read()
+    except Exception:
+        return jsonify(success=False, error='read_failed'), 400
+    if len(pdf_bytes) > PDF_API_MAX_BYTES:
+        return jsonify(success=False, error='file_too_large'), 400
+    try:
+        from lib.pdf_lock_unlock import encrypt_pdf
+        out_bytes = encrypt_pdf(pdf_bytes, password)
+    except Exception:
+        return jsonify(success=False, error='encrypt_failed'), 400
+    from io import BytesIO
+    name = file.filename or 'document.pdf'
+    if not name.lower().endswith('.pdf'):
+        name += '.pdf'
+    base = name[:-4] if name.lower().endswith('.pdf') else name
+    return send_file(
+        BytesIO(out_bytes),
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=f'{base}_locked.pdf'
+    )
+
+
 @app.route('/tools/image-cleanup')
 def tools_image_cleanup():
     """画像ユーティリティ"""

@@ -3,7 +3,7 @@
  * 注意: PDFによっては抽出できない場合があります
  */
 
-const ENCRYPTED_PDF_USER_MESSAGE = 'このPDFはパスワード保護されています。保護を外したPDFを使用してください。';
+const ENCRYPTED_PDF_USER_MESSAGE = 'このPDFはパスワード保護されています。正しいパスワードを入力してください。';
 
 function isEncryptedPdfJsError(e) {
     const msg = String(e?.message || '').toLowerCase();
@@ -51,15 +51,16 @@ class PdfExtractImages {
         }
 
         const arrayBuffer = await file.arrayBuffer();
+        const password = (options.password != null && options.password !== '') ? options.password : undefined;
         let pdf;
         try {
-            const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+            const loadingTask = pdfjs.getDocument({ data: arrayBuffer, password });
             pdf = await loadingTask.promise;
         } catch (e) {
-            console.error('[PdfExtractImages] load_failed', { fileName: file.name, error: e });
             if (isEncryptedPdfJsError(e)) {
                 throw new Error(ENCRYPTED_PDF_USER_MESSAGE);
             }
+            console.error('[PdfExtractImages] load_failed', { fileName: file.name });
             throw e;
         }
         const numPages = pdf.numPages;
