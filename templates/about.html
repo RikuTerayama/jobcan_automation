@@ -332,6 +332,12 @@
                 {% endif %}
             </div>
         </article>
+        {% else %}
+        {# Phase1: OPERATOR_* 未設定時も問い合わせ導線を残す #}
+        <h2>運営者情報</h2>
+        <article style="background: rgba(74, 158, 255, 0.1); border-left: 4px solid #4A9EFF; border-radius: 12px; padding: 30px; margin: 30px 0;">
+            <p style="line-height: 1.9; margin-bottom: 0; color: rgba(255, 255, 255, 0.9);">本サービスに関するお問い合わせは、<a href="/contact" style="color: #4A9EFF; text-decoration: none;">お問い合わせページ</a>からお願いいたします。フォームまたは記載の方法でご連絡ください。</p>
+        </article>
         {% endif %}
 
         <h2>開発者について</h2>

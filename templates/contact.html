@@ -146,6 +146,12 @@
                 </p>
                 <p style="font-size: 0.9em; color: rgba(255, 255, 255, 0.7);">※ 原則として3営業日以内に返信いたします。</p>
             </div>
+            {% else %}
+            {# Phase1: OPERATOR_EMAIL 未設定時 — フォームが主導線である旨を明示 #}
+            <div class="contact-method" style="background: rgba(74, 158, 255, 0.1); border: 2px solid rgba(74, 158, 255, 0.3);">
+                <h3>📬 お問い合わせの受け付けについて</h3>
+                <p>上記のフォームがお問い合わせの主な窓口です。フォーム送信時にご記入いただいたメールアドレスへ、返信いたします。表示されない場合は「お問い合わせフォームを別タブで開く」ボタンからご利用ください。</p>
+            </div>
             {% endif %}
 
             <div class="contact-method">
