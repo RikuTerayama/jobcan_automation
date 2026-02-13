@@ -128,7 +128,7 @@
                     <li>その他のご意見・ご感想</li>
                 </ul>
                 <p style="margin-bottom: 20px;">
-                    <a href="https://docs.google.com/forms/d/e/1FAIpQLSfAV8D2vxo7sCIvd3z9_1PBbFf3wLpST_bA8Y-P0Ab6WRM3gQ/viewform?usp=publish-editor" target="_blank" style="display: inline-block; padding: 15px 30px; background: rgba(74, 158, 255, 0.3); border: 1px solid rgba(74, 158, 255, 0.6); border-radius: 8px; color: #FFFFFF; text-decoration: none; font-weight: 600; transition: all 0.3s;" onmouseover="this.style.background='rgba(74, 158, 255, 0.4)'; this.style.borderColor='rgba(74, 158, 255, 0.8)'" onmouseout="this.style.background='rgba(74, 158, 255, 0.3)'; this.style.borderColor='rgba(74, 158, 255, 0.6)'">お問い合わせフォームを別タブで開く</a>
+                    <a id="contact-form-newtab" href="https://docs.google.com/forms/d/e/1FAIpQLSfAV8D2vxo7sCIvd3z9_1PBbFf3wLpST_bA8Y-P0Ab6WRM3gQ/viewform?usp=publish-editor" target="_blank" style="display: inline-block; padding: 15px 30px; background: rgba(74, 158, 255, 0.3); border: 1px solid rgba(74, 158, 255, 0.6); border-radius: 8px; color: #FFFFFF; text-decoration: none; font-weight: 600; transition: all 0.3s;" onmouseover="this.style.background='rgba(74, 158, 255, 0.4)'; this.style.borderColor='rgba(74, 158, 255, 0.8)'" onmouseout="this.style.background='rgba(74, 158, 255, 0.3)'; this.style.borderColor='rgba(74, 158, 255, 0.6)'">お問い合わせフォームを別タブで開く</a>
                 </p>
                 <p style="font-size: 0.9em; color: rgba(255, 255, 255, 0.7);">※ 下のフォームはGoogleフォームです。表示されない場合は上のリンクから別タブで開いてください。</p>
                 <div id="contact-form" style="margin-top: 20px; width: 100%; overflow: hidden;">
@@ -224,6 +224,15 @@
         <a href="/" class="back-link">← トップページに戻る</a>
     </div>
     
+    {# Phase 4: contact_submit_intent — iframe 内の Google Form 送信完了は同一オリジンで取れないため、別タブリンククリックを代理指標とする #}
+    <script>
+    (function() {
+        var el = document.getElementById('contact-form-newtab');
+        if (el && typeof window.gaEvent === 'function') {
+            el.addEventListener('click', function() { window.gaEvent('contact_submit_intent', { method: 'google_form_newtab' }); });
+        }
+    })();
+    </script>
     {# P1-1: ナビゲーションの一貫性 #}
     {% include 'includes/footer.html' %}
 </body>

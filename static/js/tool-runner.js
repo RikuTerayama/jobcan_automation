@@ -134,8 +134,20 @@ class ToolRunner {
         try {
             await this.processFiles(processor);
         } catch (error) {
+            if (typeof window !== 'undefined' && typeof window.gaEvent === 'function') {
+                window.gaEvent('tool_action_fail', {
+                    tool_id: this.toolId || 'unknown',
+                    error_type: (error && error.name) || 'error'
+                });
+            }
             this.onError(error);
         } finally {
+            if (!this.cancelled && this.errors.length === 0 && typeof window !== 'undefined' && typeof window.gaEvent === 'function') {
+                window.gaEvent('tool_action_success', {
+                    tool_id: this.toolId || 'unknown',
+                    file_count: this.selectedFiles.length
+                });
+            }
             this.isRunning = false;
             this.onComplete({
                 outputs: this.outputs,
@@ -334,8 +346,21 @@ class ToolRunner {
             });
             this.onProgress(this.getProgress());
         } catch (error) {
+            this.errors.push({ sourceIndex: -1, message: error.message || 'batch_failed' });
+            if (typeof window !== 'undefined' && typeof window.gaEvent === 'function') {
+                window.gaEvent('tool_action_fail', {
+                    tool_id: this.toolId || 'unknown',
+                    error_type: (error && error.name) || 'error'
+                });
+            }
             this.onError(error);
         } finally {
+            if (!this.cancelled && this.errors.length === 0 && typeof window !== 'undefined' && typeof window.gaEvent === 'function') {
+                window.gaEvent('tool_action_success', {
+                    tool_id: this.toolId || 'unknown',
+                    file_count: this.selectedFiles.length
+                });
+            }
             this.isRunning = false;
             this.onComplete({
                 outputs: this.outputs,
