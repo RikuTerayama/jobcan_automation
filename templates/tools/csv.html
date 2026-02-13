@@ -353,6 +353,7 @@
     runBtn.addEventListener('click', () => {
         if (isRunning) { setOutput('処理中です。完了までお待ちください。', true); return; }
         if (!acceptedFiles.length) { setOutput('ファイルを選択してください。', true); return; }
+        if (typeof window.gaEvent === 'function') { window.gaEvent('tool_action_start', { tool_id: 'csv', file_count: acceptedFiles.length }); }
         isRunning = true;
         runBtn.disabled = true;
         runBtn.textContent = '処理中...';
@@ -417,10 +418,12 @@
         chain.then(() => {
             if (outputs.length === 0) { setOutput('出力がありません。', true); return; }
             if (outputs.length === 1) {
+                if (typeof window.gaEvent === 'function') { window.gaEvent('download_click', { tool_id: 'csv', download_type: 'single', file_count: 1 }); }
                 FileUtils.downloadBlob(outputs[0].blob, outputs[0].filename);
                 setOutput('1件ダウンロードしました: ' + outputs[0].filename, false);
             } else {
                 ZipUtils.createZip(outputs.map(o => ({ blob: o.blob, filename: o.filename })), 'csv_output.zip').then(zipBlob => {
+                    if (typeof window.gaEvent === 'function') { window.gaEvent('download_click', { tool_id: 'csv', download_type: 'zip', file_count: outputs.length }); }
                     FileUtils.downloadBlob(zipBlob, 'csv_output.zip');
                     setOutput(outputs.length + '件をZIPでダウンロードしました。', false);
                 }).catch(err => setOutput(err.message || 'ZIPの作成に失敗しました。', true));
