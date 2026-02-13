@@ -59,9 +59,11 @@
 <meta name="twitter:description" content="{% block twitter_description %}Jobcanへの勤怠データをExcelから一括入力する自動化ツール{% endblock %}">
 <meta name="twitter:image" content="{% block twitter_image %}{{ url_for('static', filename='JobcanAutofill.png', _external=True) }}{% endblock %}">
 {% endblock %}
-{# AdSenseコードスニペット - サイト所有権確認のため全ページに配置 #}
+{# AdSenseコードスニペット - ADSENSE_ENABLED が true のときのみ（緊急停止用） #}
+{% if ADSENSE_ENABLED %}
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4232725615106709"
      crossorigin="anonymous"></script>
+{% endif %}
 {# P1-3: フォント読み込み最適化（preconnect + display=swap） #}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

@@ -12,6 +12,7 @@ import logging
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template, send_file, Response, redirect, g
 from werkzeug.exceptions import NotFound, MethodNotAllowed
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from utils import allowed_file, create_template_excel, create_previous_month_template_excel
 from automation import process_jobcan_automation
@@ -52,6 +53,8 @@ MAX_ACTIVE_SESSIONS = int(os.getenv("MAX_ACTIVE_SESSIONS", _default_sessions))
 JOB_TIMEOUT_SEC = int(os.getenv("JOB_TIMEOUT_SEC", "300"))  # 5分
 
 app = Flask(__name__)
+# Phase 5: Render 等プロキシ配下で実クライアント IP を request.remote_addr に反映（単段プロキシ前提）
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 # 起動時の検証（恒久対策：テンプレートとモジュールの存在確認）
 def validate_startup():
@@ -99,6 +102,72 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+# === Phase 5: インメモリレート制限（固定窓） ===
+from collections import deque as _deque
+
+def _rate_limit_path_group(path, method):
+    """path と method からレート制限グループを返す。除外なら None。"""
+    if path.startswith(('/healthz', '/livez', '/readyz', '/ping', '/health', '/ready', '/static/')):
+        return None
+    if path in ('/robots.txt', '/sitemap.xml', '/ads.txt'):
+        return None
+    if path == '/upload' and method == 'POST':
+        return 'upload'
+    if path.startswith('/status/'):
+        return 'status'
+    if path.startswith('/api/'):
+        if path.startswith('/api/seo/crawl-urls'):
+            return None  # 既存の 1/min 制限に任せる
+        return 'api'
+    return None
+
+class RateLimiter:
+    """固定窓: (key -> deque of timestamps)。窓秒を超えた古いものを捨ててから件数判定。"""
+    def __init__(self, window_sec=60):
+        self.window_sec = window_sec
+        self._data = {}
+        self._lock = threading.Lock()
+
+    def is_allowed(self, key, max_per_window):
+        with self._lock:
+            now = time.time()
+            if key not in self._data:
+                self._data[key] = _deque(maxlen=max_per_window * 2)
+            q = self._data[key]
+            while q and now - q[0] > self.window_sec:
+                q.popleft()
+            if len(q) >= max_per_window:
+                return False, self.window_sec
+            q.append(now)
+            return True, self.window_sec
+
+# 制限値（弱めから）: upload 10/min, status 120/min, api 60/min
+_RATE_LIMITS = {'upload': 10, 'status': 120, 'api': 60}
+_rate_limiter = RateLimiter(window_sec=60)
+
+@app.before_request
+def rate_limit_check():
+    """Phase 5: レート制限。超過時は 429 + Retry-After。"""
+    path = request.path
+    method = request.method
+    group = _rate_limit_path_group(path, method)
+    if group is None:
+        return None
+    client_ip = request.remote_addr or 'unknown'
+    key = f"{client_ip}:{group}"
+    max_per = _RATE_LIMITS.get(group, 60)
+    allowed, window_sec = _rate_limiter.is_allowed(key, max_per)
+    if not allowed:
+        resp = jsonify(
+            error='リクエストが多すぎます。しばらく待ってからお試しください。',
+            error_code='RATE_LIMIT_EXCEEDED',
+            retry_after_sec=window_sec
+        )
+        resp.status_code = 429
+        resp.headers['Retry-After'] = str(int(window_sec))
+        return resp
+    return None
+
 # === リクエストロギングミドルウェア ===
 # P1: prune_jobs実行頻度制御（メモリ最適化）
 _last_prune_time = 0
@@ -127,9 +196,14 @@ def before_request():
                 # prune_jobsのエラーはログに記録するが、リクエスト処理は続行
                 logger.warning(f"prune_jobs_error in before_request: {prune_error}")
     
-    # ヘルスチェック以外のリクエストをログ
+    # ヘルスチェック以外のリクエストをログ（Phase 5: ua/ref 追加、200文字で切る）
     if not request.path.startswith(('/healthz', '/livez', '/readyz')):
-        logger.info(f"req_start rid={g.request_id} method={request.method} path={request.path} ip={request.remote_addr}")
+        ua = (request.headers.get('User-Agent') or '')[:200]
+        ref = (request.headers.get('Referer') or '')[:200]
+        logger.info(
+            f"req_start rid={g.request_id} method={request.method} path={request.path} "
+            f"ip={request.remote_addr} ua={ua!r} ref={ref!r}"
+        )
 
 @app.after_request
 def after_request(response):
