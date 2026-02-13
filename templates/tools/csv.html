@@ -47,6 +47,7 @@
         <div class="page-header">
             <h1 data-reveal>📊 CSV/Excelユーティリティ</h1>
             <p data-reveal data-reveal-delay="50">ローカル処理。ファイルはアップロードせず、ブラウザ内で変換します。</p>
+            <p data-reveal data-reveal-delay="60" style="font-size: 0.95em; color: rgba(255,255,255,0.75); margin-top: 8px;">ファイル内容はサーバーに送信しません。計測・広告のために外部サービス（Google等）へ通信することがあります。</p>
             {% include 'includes/tool_guide_link.html' %}
         </div>
         <div class="tool-section">
@@ -112,6 +113,8 @@
     let acceptedFiles = [];
     let parsedRows = null;
     let parsedMeta = null;
+    let isRunning = false;
+    const RUN_BTN_LABEL = '実行';
 
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('file-input');
@@ -130,14 +133,58 @@
     function getInputEncoding() { return inputEncodingSelect ? inputEncodingSelect.value : 'UTF-8'; }
     function getOutputEncoding() { return outputEncodingSelect ? outputEncodingSelect.value : 'UTF-8-BOM'; }
 
+    function checkDeps() {
+        const deps = [
+            ['FileValidation', typeof FileValidation],
+            ['FileUtils', typeof FileUtils],
+            ['CsvOps', typeof CsvOps],
+            ['ZipUtils', typeof ZipUtils],
+            ['Papa', typeof Papa],
+            ['XLSX', typeof XLSX],
+            ['Encoding', typeof Encoding],
+            ['JSZip', typeof JSZip]
+        ];
+        const missing = deps.filter(([, t]) => t === 'undefined').map(([n]) => n);
+        if (missing.length === 0) return true;
+        outputSection.style.display = 'block';
+        outputArea.textContent = '';
+        const p = document.createElement('p');
+        p.style.color = '#f44';
+        p.textContent = '必要なスクリプトの読み込みに失敗しました。ネットワーク設定・広告ブロッカー・ブラウザ拡張を確認するか、ページを再読み込みしてください。';
+        outputArea.appendChild(p);
+        if (runBtn) runBtn.disabled = true;
+        if (fileInput) fileInput.disabled = true;
+        if (dropzone) dropzone.style.pointerEvents = 'none';
+        return false;
+    }
+
     function showRejected(rejected) {
         if (!rejected.length) { rejectedEl.style.display = 'none'; return; }
         rejectedEl.style.display = 'block';
-        rejectedEl.innerHTML = rejected.map(r => '<div class="rejected-file">' + (r.file.name || '') + ': ' + (r.reason || '') + '</div>').join('');
+        rejectedEl.textContent = '';
+        const ul = document.createElement('ul');
+        ul.style.margin = '0'; ul.style.paddingLeft = '20px';
+        rejected.forEach(r => {
+            const li = document.createElement('li');
+            li.textContent = (r.file.name || '') + ' - ' + (r.reason || '');
+            li.className = 'rejected-file';
+            ul.appendChild(li);
+        });
+        rejectedEl.appendChild(ul);
     }
 
     function renderFileList() {
-        fileList.innerHTML = acceptedFiles.map((f, i) => '<div style="padding:8px;background:rgba(0,0,0,0.2);border-radius:6px;margin-bottom:6px;">' + (f.name || '') + ' (' + (f.size ? Math.round(f.size/1024) + ' KB' : '') + ')</div>').join('');
+        fileList.textContent = '';
+        const ul = document.createElement('ul');
+        ul.style.margin = '0'; ul.style.paddingLeft = '20px'; ul.style.listStyle = 'none';
+        acceptedFiles.forEach(f => {
+            const li = document.createElement('li');
+            const sizeKB = f.size ? Math.round(f.size / 1024) + ' KB' : '';
+            li.textContent = (f.name || '') + (sizeKB ? ' (' + sizeKB + ')' : '');
+            li.style.padding = '8px'; li.style.background = 'rgba(0,0,0,0.2)'; li.style.borderRadius = '6px'; li.style.marginBottom = '6px';
+            ul.appendChild(li);
+        });
+        fileList.appendChild(ul);
     }
 
     function buildModeOptions() {
@@ -189,21 +236,46 @@
 
     function renderPreview(rows) {
         if (!rows || !rows.length) return;
-        const head = rows[0];
-        const body = rows.slice(1, 51);
-        let html = '<table border="1" cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-size:0.9em;background:rgba(0,0,0,0.2);">';
-        html += '<thead><tr>' + head.map(h => '<th style="text-align:left;">' + (h != null ? String(h).replace(/</g,'&lt;') : '') + '</th>').join('') + '</tr></thead><tbody>';
-        body.forEach(row => {
-            html += '<tr>' + row.map(c => '<td>' + (c != null ? String(c).replace(/</g,'&lt;') : '') + '</td>').join('') + '</tr>';
+        previewWrap.textContent = '';
+        const table = document.createElement('table');
+        table.setAttribute('border', '1');
+        table.setAttribute('cellpadding', '6');
+        table.setAttribute('cellspacing', '0');
+        table.style.borderCollapse = 'collapse';
+        table.style.fontSize = '0.9em';
+        table.style.background = 'rgba(0,0,0,0.2)';
+        const thead = document.createElement('thead');
+        const trHead = document.createElement('tr');
+        (rows[0] || []).forEach(h => {
+            const th = document.createElement('th');
+            th.style.textAlign = 'left';
+            th.textContent = h != null ? String(h) : '';
+            trHead.appendChild(th);
         });
-        html += '</tbody></table>';
-        previewWrap.innerHTML = html;
+        thead.appendChild(trHead);
+        table.appendChild(thead);
+        const tbody = document.createElement('tbody');
+        rows.slice(1, 51).forEach(row => {
+            const tr = document.createElement('tr');
+            (row || []).forEach(c => {
+                const td = document.createElement('td');
+                td.textContent = c != null ? String(c) : '';
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);
+        previewWrap.appendChild(table);
         previewSection.style.display = 'block';
     }
 
     function setOutput(msg, isError) {
         outputSection.style.display = 'block';
-        outputArea.innerHTML = '<p style="color:' + (isError ? '#f44' : 'rgba(255,255,255,0.9)') + ';">' + (msg || '').replace(/</g,'&lt;') + '</p>';
+        outputArea.textContent = '';
+        const p = document.createElement('p');
+        p.style.color = isError ? '#f44' : 'rgba(255,255,255,0.9)';
+        p.textContent = msg || '';
+        outputArea.appendChild(p);
     }
 
     dropzone.addEventListener('click', () => fileInput.click());
@@ -216,16 +288,25 @@
         fileInput.dispatchEvent(new Event('change'));
     });
     fileInput.addEventListener('change', () => {
-        const files = Array.from(fileInput.files || []);
-        const result = FileValidation.validateFiles(files, CSV_RULES);
-        acceptedFiles = result.okFiles;
-        showRejected(result.rejected);
-        renderFileList();
-        optionsSection.style.display = acceptedFiles.length ? 'block' : 'none';
-        parsedRows = null;
-        parsedMeta = null;
-        previewSection.style.display = 'none';
-        outputSection.style.display = 'none';
+        try {
+            const files = Array.from(fileInput.files || []);
+            if (typeof FileValidation === 'undefined') {
+                setOutput('ファイル検証機能の読み込みに失敗しました。ページを再読み込みしてください。', true);
+                return;
+            }
+            const result = FileValidation.validateFiles(files, CSV_RULES);
+            acceptedFiles = result.okFiles;
+            showRejected(result.rejected);
+            renderFileList();
+            optionsSection.style.display = acceptedFiles.length ? 'block' : 'none';
+            parsedRows = null;
+            parsedMeta = null;
+            previewSection.style.display = 'none';
+            outputSection.style.display = 'none';
+        } catch (err) {
+            setOutput(err.message || 'ファイルの検証に失敗しました。ページを再読み込みしてください。', true);
+            return;
+        }
         function loadPreview(file) {
             const ext = (file.name || '').toLowerCase();
             if (ext.endsWith('.xlsx') || ext.endsWith('.xls')) {
@@ -262,10 +343,24 @@
     });
     modeSelect.addEventListener('change', buildModeOptions);
 
+    if (!checkDeps()) { /* deps missing: runBtn/fileInput already disabled */ }
+    else {
+        runBtn.disabled = false;
+        if (fileInput) fileInput.disabled = false;
+        if (dropzone) dropzone.style.pointerEvents = '';
+    }
+
     runBtn.addEventListener('click', () => {
+        if (isRunning) { setOutput('処理中です。完了までお待ちください。', true); return; }
         if (!acceptedFiles.length) { setOutput('ファイルを選択してください。', true); return; }
+        isRunning = true;
+        runBtn.disabled = true;
+        runBtn.textContent = '処理中...';
         outputSection.style.display = 'block';
-        outputArea.innerHTML = '<p>処理中...</p>';
+        outputArea.textContent = '';
+        const runningP = document.createElement('p');
+        runningP.textContent = '処理中...';
+        outputArea.appendChild(runningP);
         const mode = modeSelect.value;
         const outputs = [];
         const outEnc = getOutputEncoding();
@@ -330,7 +425,11 @@
                     setOutput(outputs.length + '件をZIPでダウンロードしました。', false);
                 }).catch(err => setOutput(err.message || 'ZIPの作成に失敗しました。', true));
             }
-        }).catch(err => setOutput(err.message || '処理に失敗しました。', true));
+        }).catch(err => setOutput(err.message || '処理に失敗しました。', true)).finally(() => {
+            isRunning = false;
+            runBtn.disabled = false;
+            runBtn.textContent = RUN_BTN_LABEL;
+        });
     });
 })();
     </script>
