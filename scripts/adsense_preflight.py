@@ -29,6 +29,9 @@ DISALLOWED_STRINGS = [
     '検索条件に一致するツールが見つかりませんでした。',
 ]
 
+# /tools サーバ返却HTMLに含まれてはいけない文言（本文・script 含む）
+NO_RESULTS_FORBIDDEN = '検索条件に一致するツールが見つかりませんでした。'
+
 # Googlebot UA
 GOOGLEBOT_UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
 
@@ -88,7 +91,19 @@ def _run_checks(get_fn, base_url, use_headers=True):
         rows.append(('2_googlebot', '/', f'ERROR {e}', False))
         all_ok = False
 
-    # 3) 不整合文字列 0 件（/tools, /, /privacy）
+    # 3a) /tools サーバ返却HTMLに no-results 日本語文言が含まれないこと（必須）
+    try:
+        resp = get('/tools')
+        body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+        found = NO_RESULTS_FORBIDDEN in body
+        rows.append(('3a_tools_no_results', '/tools', 'OK HTML has no no-results text' if not found else 'FAIL no-results text in server HTML', not found))
+        if found:
+            all_ok = False
+    except Exception as e:
+        rows.append(('3a_tools_no_results', '/tools', f'ERROR {e}', False))
+        all_ok = False
+
+    # 3b) 不整合文字列 0 件（/tools, /, /privacy）
     disallow_found = []
     for path in ['/tools', '/', '/privacy']:
         try:
@@ -100,11 +115,11 @@ def _run_checks(get_fn, base_url, use_headers=True):
         except Exception as e:
             disallow_found.append((path, str(e)))
     if disallow_found:
-        for path, msg in disallow_found[:5]:  # 最大5件
-            rows.append(('3_disallowed', path, f'FAIL found: {msg}...', False))
+        for path, msg in disallow_found[:5]:
+            rows.append(('3b_disallowed', path, f'FAIL found: {msg}...', False))
         all_ok = False
     else:
-        rows.append(('3_disallowed', '/, /tools, /privacy', 'OK 0 disallowed strings', True))
+        rows.append(('3b_disallowed', '/, /tools, /privacy', 'OK 0 disallowed strings', True))
 
     # 4) Cache-Control
     try:
@@ -119,32 +134,32 @@ def _run_checks(get_fn, base_url, use_headers=True):
         rows.append(('4_cache_control', '/tools', f'ERROR {e}', False))
         all_ok = False
 
-    # 5) ads.txt
+    # 5) ads.txt は 200 必須。Google AdSense publisher 行（pub-）を含むこと
     try:
         resp = get('/ads.txt')
         status = resp.status_code if hasattr(resp, 'status_code') else resp[0]
         body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
         has_pub = 'pub-' in body or 'google.com' in body
         ok = status == 200 and has_pub
-        rows.append(('5_ads_txt', '/ads.txt', f'OK 200 pub_id' if ok else f'FAIL status={status} pub={has_pub}', ok))
+        rows.append(('5_ads_txt', '/ads.txt', f'OK 200 pub_id' if ok else f'FAIL status={status} (200 required) pub={has_pub}', ok))
         if not ok:
             all_ok = False
     except Exception as e:
-        rows.append(('5_ads_txt', '/ads.txt', f'ERROR {e}', False))
+        rows.append(('5_ads_txt', '/ads.txt', f'FAIL ERROR {e}', False))
         all_ok = False
 
-    # 6) robots.txt
+    # 6) robots.txt は 200 必須。主要ページをブロックしていないこと
     try:
         resp = get('/robots.txt')
         status = resp.status_code if hasattr(resp, 'status_code') else resp[0]
         body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
         blocks_main = 'Disallow: /' in body and 'Allow: /' not in body.split('Disallow: /')[0]
         ok = status == 200 and not blocks_main
-        rows.append(('6_robots_txt', '/robots.txt', f'OK 200 allow /' if ok else f'WARN status={status} blocks_main={blocks_main}', ok))
-        if status != 200:
+        rows.append(('6_robots_txt', '/robots.txt', f'OK 200 allow /' if ok else f'FAIL status={status} (200 required)', ok))
+        if not ok:
             all_ok = False
     except Exception as e:
-        rows.append(('6_robots_txt', '/robots.txt', f'WARN ERROR {e}', False))
+        rows.append(('6_robots_txt', '/robots.txt', f'FAIL ERROR {e}', False))
         all_ok = False
 
     return rows, all_ok
