@@ -18,8 +18,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 BASE_URL_DEFAULT = 'https://jobcan-automation.onrender.com'
 
-# 主要ページ
-MAJOR_PATHS = ['/', '/autofill', '/tools', '/privacy', '/contact', '/about']
+# 主要ページ（GSC 404 解消対象含む）
+MAJOR_PATHS = ['/', '/autofill', '/tools', '/privacy', '/contact', '/about', '/best-practices']
+
+# sitemap.xml に含まれるべき重要URL（完全一致：末尾スラッシュなし）
+SITEMAP_REQUIRED_URLS = ['/', '/autofill', '/tools', '/privacy', '/blog', '/glossary', '/guide/excel-format', '/best-practices']
+
+# インデックス対象ページ（noindex なし・canonical 自己参照の確認用）
+INDEXABLE_PATHS = ['/', '/privacy', '/blog', '/glossary', '/guide/excel-format']
 
 # 不整合文字列（ヒット0が必須）
 DISALLOWED_STRINGS = [
@@ -28,6 +34,9 @@ DISALLOWED_STRINGS = [
     'ファイルやテキストはアップロードせず、ブラウザ内で処理します。サーバーには保存されません。',
     '検索条件に一致するツールが見つかりませんでした。',
 ]
+
+# /tools サーバ返却HTMLに含まれてはいけない文言（本文・script 含む）
+NO_RESULTS_FORBIDDEN = '検索条件に一致するツールが見つかりませんでした。'
 
 # Googlebot UA
 GOOGLEBOT_UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
@@ -88,7 +97,19 @@ def _run_checks(get_fn, base_url, use_headers=True):
         rows.append(('2_googlebot', '/', f'ERROR {e}', False))
         all_ok = False
 
-    # 3) 不整合文字列 0 件（/tools, /, /privacy）
+    # 3a) /tools サーバ返却HTMLに no-results 日本語文言が含まれないこと（必須）
+    try:
+        resp = get('/tools')
+        body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+        found = NO_RESULTS_FORBIDDEN in body
+        rows.append(('3a_tools_no_results', '/tools', 'OK HTML has no no-results text' if not found else 'FAIL no-results text in server HTML', not found))
+        if found:
+            all_ok = False
+    except Exception as e:
+        rows.append(('3a_tools_no_results', '/tools', f'ERROR {e}', False))
+        all_ok = False
+
+    # 3b) 不整合文字列 0 件（/tools, /, /privacy）
     disallow_found = []
     for path in ['/tools', '/', '/privacy']:
         try:
@@ -100,11 +121,11 @@ def _run_checks(get_fn, base_url, use_headers=True):
         except Exception as e:
             disallow_found.append((path, str(e)))
     if disallow_found:
-        for path, msg in disallow_found[:5]:  # 最大5件
-            rows.append(('3_disallowed', path, f'FAIL found: {msg}...', False))
+        for path, msg in disallow_found[:5]:
+            rows.append(('3b_disallowed', path, f'FAIL found: {msg}...', False))
         all_ok = False
     else:
-        rows.append(('3_disallowed', '/, /tools, /privacy', 'OK 0 disallowed strings', True))
+        rows.append(('3b_disallowed', '/, /tools, /privacy', 'OK 0 disallowed strings', True))
 
     # 4) Cache-Control
     try:
@@ -119,33 +140,91 @@ def _run_checks(get_fn, base_url, use_headers=True):
         rows.append(('4_cache_control', '/tools', f'ERROR {e}', False))
         all_ok = False
 
-    # 5) ads.txt
+    # 5) ads.txt は 200 必須。Google AdSense publisher 行（pub-）を含むこと
     try:
         resp = get('/ads.txt')
         status = resp.status_code if hasattr(resp, 'status_code') else resp[0]
         body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
         has_pub = 'pub-' in body or 'google.com' in body
         ok = status == 200 and has_pub
-        rows.append(('5_ads_txt', '/ads.txt', f'OK 200 pub_id' if ok else f'FAIL status={status} pub={has_pub}', ok))
+        rows.append(('5_ads_txt', '/ads.txt', f'OK 200 pub_id' if ok else f'FAIL status={status} (200 required) pub={has_pub}', ok))
         if not ok:
             all_ok = False
     except Exception as e:
-        rows.append(('5_ads_txt', '/ads.txt', f'ERROR {e}', False))
+        rows.append(('5_ads_txt', '/ads.txt', f'FAIL ERROR {e}', False))
         all_ok = False
 
-    # 6) robots.txt
+    # 6) robots.txt は 200 必須。主要ページをブロックしていないこと
     try:
         resp = get('/robots.txt')
         status = resp.status_code if hasattr(resp, 'status_code') else resp[0]
         body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
         blocks_main = 'Disallow: /' in body and 'Allow: /' not in body.split('Disallow: /')[0]
         ok = status == 200 and not blocks_main
-        rows.append(('6_robots_txt', '/robots.txt', f'OK 200 allow /' if ok else f'WARN status={status} blocks_main={blocks_main}', ok))
-        if status != 200:
+        rows.append(('6_robots_txt', '/robots.txt', f'OK 200 allow /' if ok else f'FAIL status={status} (200 required)', ok))
+        if not ok:
             all_ok = False
     except Exception as e:
-        rows.append(('6_robots_txt', '/robots.txt', f'WARN ERROR {e}', False))
+        rows.append(('6_robots_txt', '/robots.txt', f'FAIL ERROR {e}', False))
         all_ok = False
+
+    # 7) sitemap.xml に重要URLが含まれること（完全一致）
+    try:
+        resp = get('/sitemap.xml')
+        status = resp.status_code if hasattr(resp, 'status_code') else resp[0]
+        body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+        if status != 200:
+            rows.append(('7_sitemap', '/sitemap.xml', f'FAIL status={status}', False))
+            all_ok = False
+        else:
+            base = BASE_URL_DEFAULT.rstrip('/')
+            missing = []
+            for u in SITEMAP_REQUIRED_URLS:
+                loc_url = base + (u if u != '/' else '/')
+                if f'<loc>{loc_url}</loc>' not in body:
+                    missing.append(u)
+            if missing:
+                rows.append(('7_sitemap', '/sitemap.xml', f'FAIL missing in sitemap: {missing[:3]}', False))
+                all_ok = False
+            else:
+                rows.append(('7_sitemap', '/sitemap.xml', 'OK required URLs in sitemap', True))
+    except Exception as e:
+        rows.append(('7_sitemap', '/sitemap.xml', f'FAIL ERROR {e}', False))
+        all_ok = False
+
+    # 8) robots.txt が複数行形式で Sitemap を含むこと
+    try:
+        resp = get('/robots.txt')
+        body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+        has_newlines = '\n' in body
+        has_sitemap = 'Sitemap:' in body or 'sitemap' in body.lower()
+        ok = has_newlines and has_sitemap
+        rows.append(('8_robots_format', '/robots.txt', f'OK multiline+Sitemap' if ok else f'FAIL multiline={has_newlines} Sitemap={has_sitemap}', ok))
+        if not ok:
+            all_ok = False
+    except Exception as e:
+        rows.append(('8_robots_format', '/robots.txt', f'FAIL ERROR {e}', False))
+        all_ok = False
+
+    # 9) インデックス対象ページに noindex が無く canonical が自己参照であること
+    for path in INDEXABLE_PATHS:
+        try:
+            resp = get(path)
+            body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+            has_noindex = 'noindex, nofollow' in body or ('name="robots"' in body and 'noindex' in body)
+            # canonical 自己参照: BASE_URL + path が含まれる（path が / のときは base/ または base/）
+            base = BASE_URL_DEFAULT.rstrip('/')
+            expected_canonical = base + (path if path != '/' else '') or '/'
+            if path == '/':
+                expected_canonical = base + '/'
+            has_canonical_self = expected_canonical in body and 'rel="canonical"' in body
+            ok = not has_noindex and has_canonical_self
+            rows.append(('9_indexable', path, 'OK no noindex, canonical self' if ok else f'FAIL noindex={has_noindex} canonical={has_canonical_self}', ok))
+            if not ok:
+                all_ok = False
+        except Exception as e:
+            rows.append(('9_indexable', path, f'ERROR {e}', False))
+            all_ok = False
 
     return rows, all_ok
 
