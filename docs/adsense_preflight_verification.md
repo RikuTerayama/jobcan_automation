@@ -23,6 +23,9 @@ python scripts/adsense_preflight.py --live https://jobcan-automation.onrender.co
 - `3a_tools_no_results` … /tools のサーバ返却HTMLに no-results 文言が含まれない → **OK**
 - `5_ads_txt` … /ads.txt が 200 かつ pub- 行あり → **OK**
 - `6_robots_txt` … /robots.txt が 200 かつ主要ページをブロックしていない → **OK**
+- **7_sitemap** … sitemap.xml に /, /autofill, /tools, /privacy, /blog, /glossary, /guide/excel-format, /best-practices が含まれる → **OK**
+- **8_robots_format** … robots.txt が複数行で Sitemap 行あり → **OK**
+- **9_indexable** … /, /privacy, /blog, /glossary, /guide/excel-format に noindex が無く canonical 自己参照 → **OK**
 - 上記を含め全チェック PASS で exit 0。
 
 ## 本番反映確認用コマンド

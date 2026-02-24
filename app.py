@@ -2116,15 +2116,35 @@ def robots_txt():
     try:
         return send_file('static/robots.txt', mimetype='text/plain')
     except Exception as e:
-        # ファイルがない場合のフォールバック
+        # ファイルがない場合のフォールバック（static/robots.txt と同構成）
         content = """User-agent: *
 Allow: /
+Disallow: /status/
+Disallow: /api/
+Disallow: /sessions
+Disallow: /download-template
+Disallow: /download-previous-template
+Disallow: /cleanup-sessions
 
 User-agent: Googlebot
 Allow: /
+Disallow: /status/
+Disallow: /api/
+Disallow: /sessions
+Disallow: /download-template
+Disallow: /download-previous-template
+Disallow: /cleanup-sessions
 
 User-agent: AdsBot-Google
 Allow: /
+Disallow: /status/
+Disallow: /api/
+Disallow: /sessions
+Disallow: /download-template
+Disallow: /download-previous-template
+Disallow: /cleanup-sessions
+
+Sitemap: https://jobcan-automation.onrender.com/sitemap.xml
 """
         return Response(content, mimetype='text/plain')
 

@@ -18,8 +18,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 BASE_URL_DEFAULT = 'https://jobcan-automation.onrender.com'
 
-# 主要ページ
-MAJOR_PATHS = ['/', '/autofill', '/tools', '/privacy', '/contact', '/about']
+# 主要ページ（GSC 404 解消対象含む）
+MAJOR_PATHS = ['/', '/autofill', '/tools', '/privacy', '/contact', '/about', '/best-practices']
+
+# sitemap.xml に含まれるべき重要URL（完全一致：末尾スラッシュなし）
+SITEMAP_REQUIRED_URLS = ['/', '/autofill', '/tools', '/privacy', '/blog', '/glossary', '/guide/excel-format', '/best-practices']
+
+# インデックス対象ページ（noindex なし・canonical 自己参照の確認用）
+INDEXABLE_PATHS = ['/', '/privacy', '/blog', '/glossary', '/guide/excel-format']
 
 # 不整合文字列（ヒット0が必須）
 DISALLOWED_STRINGS = [
@@ -161,6 +167,64 @@ def _run_checks(get_fn, base_url, use_headers=True):
     except Exception as e:
         rows.append(('6_robots_txt', '/robots.txt', f'FAIL ERROR {e}', False))
         all_ok = False
+
+    # 7) sitemap.xml に重要URLが含まれること（完全一致）
+    try:
+        resp = get('/sitemap.xml')
+        status = resp.status_code if hasattr(resp, 'status_code') else resp[0]
+        body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+        if status != 200:
+            rows.append(('7_sitemap', '/sitemap.xml', f'FAIL status={status}', False))
+            all_ok = False
+        else:
+            base = BASE_URL_DEFAULT.rstrip('/')
+            missing = []
+            for u in SITEMAP_REQUIRED_URLS:
+                loc_url = base + (u if u != '/' else '/')
+                if f'<loc>{loc_url}</loc>' not in body:
+                    missing.append(u)
+            if missing:
+                rows.append(('7_sitemap', '/sitemap.xml', f'FAIL missing in sitemap: {missing[:3]}', False))
+                all_ok = False
+            else:
+                rows.append(('7_sitemap', '/sitemap.xml', 'OK required URLs in sitemap', True))
+    except Exception as e:
+        rows.append(('7_sitemap', '/sitemap.xml', f'FAIL ERROR {e}', False))
+        all_ok = False
+
+    # 8) robots.txt が複数行形式で Sitemap を含むこと
+    try:
+        resp = get('/robots.txt')
+        body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+        has_newlines = '\n' in body
+        has_sitemap = 'Sitemap:' in body or 'sitemap' in body.lower()
+        ok = has_newlines and has_sitemap
+        rows.append(('8_robots_format', '/robots.txt', f'OK multiline+Sitemap' if ok else f'FAIL multiline={has_newlines} Sitemap={has_sitemap}', ok))
+        if not ok:
+            all_ok = False
+    except Exception as e:
+        rows.append(('8_robots_format', '/robots.txt', f'FAIL ERROR {e}', False))
+        all_ok = False
+
+    # 9) インデックス対象ページに noindex が無く canonical が自己参照であること
+    for path in INDEXABLE_PATHS:
+        try:
+            resp = get(path)
+            body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+            has_noindex = 'noindex, nofollow' in body or ('name="robots"' in body and 'noindex' in body)
+            # canonical 自己参照: BASE_URL + path が含まれる（path が / のときは base/ または base/）
+            base = BASE_URL_DEFAULT.rstrip('/')
+            expected_canonical = base + (path if path != '/' else '') or '/'
+            if path == '/':
+                expected_canonical = base + '/'
+            has_canonical_self = expected_canonical in body and 'rel="canonical"' in body
+            ok = not has_noindex and has_canonical_self
+            rows.append(('9_indexable', path, 'OK no noindex, canonical self' if ok else f'FAIL noindex={has_noindex} canonical={has_canonical_self}', ok))
+            if not ok:
+                all_ok = False
+        except Exception as e:
+            rows.append(('9_indexable', path, f'ERROR {e}', False))
+            all_ok = False
 
     return rows, all_ok
 
