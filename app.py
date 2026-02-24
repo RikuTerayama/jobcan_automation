@@ -225,6 +225,12 @@ def after_request(response):
             if duration_ms > 5000:
                 logger.warning(f"SLOW_REQUEST rid={g.request_id} path={request.path} ms={duration_ms:.1f}")
     
+    # キャッシュ対策: text/html のみ no-store（静的ファイルには適用しない）
+    if not request.path.startswith('/static/'):
+        ct = response.content_type or ''
+        if 'text/html' in ct:
+            response.headers['Cache-Control'] = 'no-store, max-age=0'
+    
     return response
 
 # グローバルエラーハンドラー
