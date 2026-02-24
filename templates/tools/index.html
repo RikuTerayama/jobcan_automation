@@ -283,9 +283,7 @@
             {% endfor %}
         </div>
         
-        <div id="no-results" hidden style="display: none; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.6);" aria-hidden="true">
-            <p>検索条件に一致するツールが見つかりませんでした。</p>
-        </div>
+        <div id="no-results" hidden style="display: none; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.6);" aria-hidden="true"></div>
         
         <script>
             document.addEventListener('DOMContentLoaded', () => {
@@ -294,10 +292,16 @@
                 const noResults = document.getElementById('no-results');
                 const productCards = Array.from(productsGrid.querySelectorAll('.product-card'));
 
+                const NO_RESULTS_MSG = '検索条件に一致するツールが見つかりませんでした。';
                 function setNoResultsVisible(show) {
                     noResults.hidden = !show;
                     noResults.style.display = show ? 'block' : 'none';
                     noResults.setAttribute('aria-hidden', show ? 'false' : 'true');
+                    if (show) {
+                        if (!noResults.textContent) noResults.innerHTML = '<p>' + NO_RESULTS_MSG + '</p>';
+                    } else {
+                        noResults.textContent = '';
+                    }
                 }
                 setNoResultsVisible(false);
 
