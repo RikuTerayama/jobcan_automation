@@ -283,7 +283,7 @@
             {% endfor %}
         </div>
         
-        <div id="no-results" style="display: none; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.6);">
+        <div id="no-results" hidden style="text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.6);">
             <p>検索条件に一致するツールが見つかりませんでした。</p>
         </div>
         
@@ -294,14 +294,16 @@
                 const noResults = document.getElementById('no-results');
                 const productCards = Array.from(productsGrid.querySelectorAll('.product-card'));
 
-                noResults.style.display = 'none';
+                function setNoResultsVisible(show) {
+                    noResults.hidden = !show;
+                }
 
                 searchInput.addEventListener('input', (e) => {
                     const query = e.target.value.toLowerCase().trim();
 
                     if (query === '') {
                         productCards.forEach(card => { card.style.display = 'block'; });
-                        noResults.style.display = 'none';
+                        setNoResultsVisible(false);
                         return;
                     }
 
@@ -316,7 +318,7 @@
                         if (matches) visibleCount++;
                     });
 
-                    noResults.style.display = (query !== '' && visibleCount === 0) ? 'block' : 'none';
+                    setNoResultsVisible(query !== '' && visibleCount === 0);
                 });
             });
         </script>
