@@ -283,7 +283,7 @@
             {% endfor %}
         </div>
         
-        <div id="no-results" hidden style="text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.6);">
+        <div id="no-results" hidden style="display: none; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.6);" aria-hidden="true">
             <p>検索条件に一致するツールが見つかりませんでした。</p>
         </div>
         
@@ -296,7 +296,10 @@
 
                 function setNoResultsVisible(show) {
                     noResults.hidden = !show;
+                    noResults.style.display = show ? 'block' : 'none';
+                    noResults.setAttribute('aria-hidden', show ? 'false' : 'true');
                 }
+                setNoResultsVisible(false);
 
                 searchInput.addEventListener('input', (e) => {
                     const query = e.target.value.toLowerCase().trim();
