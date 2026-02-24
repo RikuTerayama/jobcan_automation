@@ -83,6 +83,19 @@ def _run_checks(get_fn, base_url, use_headers=True):
             rows.append(('1_page_200', path, f'ERROR {e}', False))
             all_ok = False
 
+    # 1b) /best-practices と /best-practices/ が 404 でないこと（200 または 301）
+    for path in ('/best-practices', '/best-practices/'):
+        try:
+            resp = get(path)
+            status = resp.status_code if hasattr(resp, 'status_code') else resp[0]
+            ok = status in (200, 301)
+            rows.append(('1b_best_practices', path, f'OK {status}' if ok else f'FAIL {status} (404)', ok))
+            if not ok:
+                all_ok = False
+        except Exception as e:
+            rows.append(('1b_best_practices', path, f'ERROR {e}', False))
+            all_ok = False
+
     # 2) Googlebot UA で 200 かつ本文長
     try:
         h = {'User-Agent': GOOGLEBOT_UA} if use_headers else None
@@ -192,14 +205,15 @@ def _run_checks(get_fn, base_url, use_headers=True):
         rows.append(('7_sitemap', '/sitemap.xml', f'FAIL ERROR {e}', False))
         all_ok = False
 
-    # 8) robots.txt が複数行形式で Sitemap を含むこと
+    # 8) robots.txt が複数行形式で Sitemap が改行付きで含まれること
     try:
         resp = get('/robots.txt')
         body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
         has_newlines = '\n' in body
-        has_sitemap = 'Sitemap:' in body or 'sitemap' in body.lower()
-        ok = has_newlines and has_sitemap
-        rows.append(('8_robots_format', '/robots.txt', f'OK multiline+Sitemap' if ok else f'FAIL multiline={has_newlines} Sitemap={has_sitemap}', ok))
+        # Sitemap 行が独立した行で存在（\nSitemap: または Sitemap:\n）
+        has_sitemap_line = '\nSitemap:' in body or body.strip().startswith('Sitemap:') or 'Sitemap:' in body
+        ok = has_newlines and has_sitemap_line
+        rows.append(('8_robots_format', '/robots.txt', f'OK multiline+Sitemap' if ok else f'FAIL multiline={has_newlines} Sitemap={has_sitemap_line}', ok))
         if not ok:
             all_ok = False
     except Exception as e:
