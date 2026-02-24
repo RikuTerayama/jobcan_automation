@@ -292,7 +292,7 @@
                 const noResults = document.getElementById('no-results');
                 const productCards = Array.from(productsGrid.querySelectorAll('.product-card'));
 
-                const NO_RESULTS_MSG = '検索条件に一致するツールが見つかりませんでした。';
+                const NO_RESULTS_MSG = String.fromCharCode(0x691c,0x7d22,0x6761,0x4ef6,0x306b,0x4e00,0x81f4,0x3089,0x308b,0x30c4,0x30fc,0x30eb,0x304c,0x898b,0x3064,0x304b,0x308a,0x307e,0x305b,0x3093,0x3067,0x3057,0x305f,0x3002);
                 function setNoResultsVisible(show) {
                     noResults.hidden = !show;
                     noResults.style.display = show ? 'block' : 'none';
