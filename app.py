@@ -1682,6 +1682,8 @@ def download_previous_template():
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    session_id = None
+    file_path = None
     try:
         # 入力データの検証
         if 'file' not in request.files:
@@ -1857,6 +1859,17 @@ def upload_file():
         })
         
     except Exception as e:
+        if file_path and os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception:
+                pass
+        if session_id:
+            try:
+                cleanup_user_session(session_id)
+                unregister_session(session_id)
+            except Exception:
+                pass
         return jsonify({'error': f'予期しないエラーが発生しました: {str(e)}'})
 
 @app.route('/cancel/<job_id>', methods=['POST'])
