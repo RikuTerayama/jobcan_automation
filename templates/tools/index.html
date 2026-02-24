@@ -2,7 +2,7 @@
 <html lang="ja" class="no-js">
 <head>
     {% set page_title = 'ツール一覧 - 業務効率化ツール集 | Automation Hub' %}
-    {% set page_description = 'Jobcan自動入力、画像一括変換、PDFユーティリティ、Web/SEOユーティリティなど、業務効率化に役立つ無料ツールを提供。ブラウザ内で処理され、ファイルはアップロードされません。' %}
+    {% set page_description = 'Jobcan自動入力、画像一括変換、PDFユーティリティ、Web/SEOユーティリティなど、業務効率化に役立つ無料ツールを提供。処理方式は各ツールの説明をご確認ください。' %}
     {% set breadcrumb_title = 'ツール一覧' %}
     {% include 'includes/head_meta.html' %}
     {% block description_meta %}
@@ -293,28 +293,30 @@
                 const productsGrid = document.getElementById('products-grid');
                 const noResults = document.getElementById('no-results');
                 const productCards = Array.from(productsGrid.querySelectorAll('.product-card'));
-                
+
+                noResults.style.display = 'none';
+
                 searchInput.addEventListener('input', (e) => {
                     const query = e.target.value.toLowerCase().trim();
-                    
+
                     if (query === '') {
-                        productCards.forEach(card => card.style.display = 'block');
+                        productCards.forEach(card => { card.style.display = 'block'; });
                         noResults.style.display = 'none';
                         return;
                     }
-                    
+
                     let visibleCount = 0;
                     productCards.forEach(card => {
-                        const name = card.dataset.name.toLowerCase();
-                        const description = card.dataset.description.toLowerCase();
-                        const tags = card.dataset.tags.toLowerCase();
+                        const name = (card.dataset.name || '').toLowerCase();
+                        const description = (card.dataset.description || '').toLowerCase();
+                        const tags = (card.dataset.tags || '').toLowerCase();
                         const matches = name.includes(query) || description.includes(query) || tags.includes(query);
-                        
+
                         card.style.display = matches ? 'block' : 'none';
                         if (matches) visibleCount++;
                     });
-                    
-                    noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+
+                    noResults.style.display = (query !== '' && visibleCount === 0) ? 'block' : 'none';
                 });
             });
         </script>
