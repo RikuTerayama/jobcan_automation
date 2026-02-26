@@ -2150,6 +2150,41 @@ Sitemap: {base_url}/sitemap.xml
 """
     return Response(content, mimetype='text/plain')
 
+def _sitemap_lastmod_for_path(url_path):
+    """url_path に対応するテンプレートの mtime を YYYY-MM-DD で返す。取得できない場合は None。"""
+    path = (url_path or '').strip('/') or ''
+    special = {
+        '': 'landing.html',
+        'autofill': 'autofill.html',
+        'guide': 'guide/index.html',
+        'guide/complete': 'guide/complete-guide.html',
+        'guide/comprehensive-guide': 'guide/comprehensive-guide.html',
+        'blog': 'blog/index.html',
+        'tools': 'tools/index.html',
+        'sitemap.html': 'sitemap.html',
+        'case-studies': 'case-studies.html',
+        'case-study/contact-center': 'case-study-contact-center.html',
+        'case-study/consulting-firm': 'case-study-consulting-firm.html',
+        'case-study/remote-startup': 'case-study-remote-startup.html',
+    }
+    if path in special:
+        rel = special[path]
+    elif path.startswith('guide/'):
+        rel = 'guide/' + path.split('/', 1)[1] + '.html'
+    elif path.startswith('blog/'):
+        rel = 'blog/' + path.split('/', 1)[1] + '.html'
+    elif path.startswith('tools/'):
+        rel = 'tools/' + path.split('/', 1)[1] + '.html'
+    else:
+        rel = (path + '.html') if path else 'landing.html'
+    fpath = os.path.join(app.root_path, 'templates', rel.replace('/', os.sep))
+    try:
+        mtime = os.path.getmtime(fpath)
+        return datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
+    except (OSError, TypeError):
+        return None
+
+
 @app.route('/sitemap.xml')
 def sitemap():
     """XMLサイトマップを動的生成（P0-1: PRODUCTSから自動生成）"""
@@ -2252,7 +2287,8 @@ def sitemap():
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
     ]
     
-    for url_path, changefreq, priority, lastmod in urls:
+    for url_path, changefreq, priority, lastmod_default in urls:
+        lastmod = _sitemap_lastmod_for_path(url_path) or lastmod_default
         full_url = base_url + url_path
         xml_parts.append('  <url>')
         xml_parts.append(f'    <loc>{full_url}</loc>')
