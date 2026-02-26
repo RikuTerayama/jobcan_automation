@@ -96,10 +96,11 @@
     {% include 'includes/breadcrumb.html' %}
     <div class="container">
         <h1>📖 勤怠管理・Jobcan用語集</h1>
-        <p>この用語集では、勤怠管理・Jobcan AutoFill・自動化に関連する用語を一覧で解説しています。導入検討や社内説明の際にご利用ください。</p>
+        <p>この用語集では、勤怠管理・Jobcan AutoFill・自動化に関連する用語を一覧で解説しています。社内説明や導入検討で頻出する用語を、このページで素早く確認できます。導入検討や社内説明の際にご利用ください。</p>
         <p>用語の前提となる操作手順は<a href="/guide/excel-format" style="color: #4A9EFF;">Excel形式ガイド</a>、運用のポイントは<a href="/best-practices" style="color: #4A9EFF;">ベストプラクティス</a>、よくある質問は<a href="/faq" style="color: #4A9EFF;">FAQ</a>でまとめています。</p>
+        <p style="font-size: 0.95em; color: rgba(255, 255, 255, 0.8);">よく参照される項目：<a href="#basic-terms" style="color: #4A9EFF;">勤怠管理の基本用語</a>｜<a href="#jobcan-terms" style="color: #4A9EFF;">Jobcan関連用語</a>｜<a href="#autofill-terms" style="color: #4A9EFF;">Jobcan AutoFill関連用語</a>｜<a href="#it-security" style="color: #4A9EFF;">IT・セキュリティ用語</a></p>
 
-        <h2>勤怠管理の基本用語</h2>
+        <h2 id="basic-terms">勤怠管理の基本用語</h2>
 
         <div class="term-item">
             <div class="term-name">勤怠管理（きんたいかんり）</div>
@@ -136,7 +137,7 @@
             <div class="term-example">例：ExcelファイルのC列に「22:30」と入力すると、本ツールは「⏰ 2回目: 終了時刻を入力: 2230」というログを出力し、Jobcanに「2230」と入力します。</div>
         </div>
 
-        <h2>Jobcan関連用語</h2>
+        <h2 id="jobcan-terms">Jobcan関連用語</h2>
 
         <div class="term-item">
             <div class="term-name">Jobcan（ジョブカン）</div>
@@ -163,7 +164,7 @@
             <div class="term-example">例：本ツールは、「🔗 打刻修正ページに移動: https://ssl.jobcan.jp/employee/adit/modify?year=2025&month=11&day=13」というログを出力し、該当ページにアクセスします。</div>
         </div>
 
-        <h2>Jobcan AutoFill関連用語</h2>
+        <h2 id="autofill-terms">Jobcan AutoFill関連用語</h2>
 
         <div class="term-item">
             <div class="term-name">自動入力（じどうにゅうりょく）</div>
@@ -220,7 +221,7 @@
             </div>
         </div>
 
-        <h2>IT・セキュリティ用語</h2>
+        <h2 id="it-security">IT・セキュリティ用語</h2>
 
         <div class="term-item">
             <div class="term-name">HTTPS（エイチティーティーピーエス）</div>
