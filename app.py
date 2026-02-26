@@ -1370,6 +1370,11 @@ def best_practices():
     """ベストプラクティス"""
     return render_template('best-practices.html')
 
+@app.route('/case-studies')
+def case_studies_index():
+    """導入事例一覧"""
+    return render_template('case-studies.html')
+
 @app.route('/case-study/contact-center')
 def case_study_contact_center():
     """導入事例：コンタクトセンター"""
@@ -2178,6 +2183,7 @@ def sitemap():
         ('/faq', 'weekly', '0.8', today),
         ('/glossary', 'monthly', '0.6', today),
         ('/best-practices', 'monthly', '0.8', today),
+        ('/case-studies', 'monthly', '0.8', today),
         ('/sitemap.html', 'monthly', '0.5', today),
         
         # ガイドページ（一覧＋固定）
