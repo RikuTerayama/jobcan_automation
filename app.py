@@ -2112,12 +2112,9 @@ def ads_txt():
 
 @app.route('/robots.txt')
 def robots_txt():
-    """robots.txt を配信"""
-    try:
-        return send_file('static/robots.txt', mimetype='text/plain')
-    except Exception as e:
-        # ファイルがない場合のフォールバック（static/robots.txt と同構成）
-        content = """User-agent: *
+    """robots.txt を配信（Sitemap 行は BASE_URL から動的生成）"""
+    base_url = (os.getenv('BASE_URL') or 'https://jobcan-automation.onrender.com').rstrip('/')
+    content = f"""User-agent: *
 Allow: /
 Disallow: /status/
 Disallow: /api/
@@ -2144,9 +2141,9 @@ Disallow: /download-template
 Disallow: /download-previous-template
 Disallow: /cleanup-sessions
 
-Sitemap: https://jobcan-automation.onrender.com/sitemap.xml
+Sitemap: {base_url}/sitemap.xml
 """
-        return Response(content, mimetype='text/plain')
+    return Response(content, mimetype='text/plain')
 
 @app.route('/sitemap.xml')
 def sitemap():
@@ -2164,7 +2161,7 @@ def sitemap():
     # ベースURL（環境変数があれば採用、末尾スラッシュは除去して二重スラッシュを防ぐ）
     base_url = (os.getenv('BASE_URL') or 'https://jobcan-automation.onrender.com').rstrip('/')
     
-    # 現在日付を取得（P1: lastmodを動的に設定）
+    # 現在日付を取得（lastmod のフォールバック）
     today = datetime.now().strftime('%Y-%m-%d')
     
     # サイトマップに含めるURLのリスト
@@ -2250,7 +2247,6 @@ def sitemap():
     ]
     
     for url_path, changefreq, priority, lastmod in urls:
-        # 末尾スラッシュなしの方針を維持（既に末尾スラッシュなしで定義済み）
         full_url = base_url + url_path
         xml_parts.append('  <url>')
         xml_parts.append(f'    <loc>{full_url}</loc>')
