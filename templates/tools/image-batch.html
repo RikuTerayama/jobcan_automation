@@ -394,9 +394,11 @@
         <div class="page-header">
             <h1 data-reveal>🖼️ 画像一括変換ツール</h1>
             <p data-reveal data-reveal-delay="50">png/jpg/webpの一括変換、リサイズ、品質圧縮に対応。すべてブラウザ内で処理され、ファイルは保存されません。</p>
-            {% include 'includes/tool_guide_link.html' %}
         </div>
-        
+        {% set tool_intro_what = 'PNG/JPG/WebPの一括変換・リサイズ・品質圧縮、複数サイズ同時出力をブラウザ内で実行します。' %}
+        {% set tool_intro_steps = ['画像ファイルを選択', '形式・サイズ・品質を設定', '実行してダウンロード'] %}
+        {% set tool_intro_notice = '個人情報が含まれる画像は取り扱いにお気をつけください。' %}
+        {% include 'includes/tool_intro.html' %}
         <div class="tool-section" data-reveal data-reveal-delay="150">
             <h3>📁 ファイル選択</h3>
             <div id="dropzone" class="file-dropzone" style="border: 2px dashed rgba(74, 158, 255, 0.5); border-radius: 12px; padding: 60px 20px; text-align: center; background: rgba(74, 158, 255, 0.05); transition: all 0.3s; cursor: pointer;">

@@ -48,6 +48,7 @@ def get_nav_sections():
     resource_links = [
         {'name': 'よくある質問（FAQ）', 'path': '/faq', 'icon': ''},
         {'name': '用語集', 'path': '/glossary', 'icon': ''},
+        {'name': 'ベストプラクティス', 'path': '/best-practices', 'icon': ''},
         {'name': 'ブログ', 'path': '/blog', 'icon': ''},
         {'name': 'サイトについて', 'path': '/about', 'icon': ''},
         {'name': 'お問い合わせ', 'path': '/contact', 'icon': ''},
@@ -89,6 +90,7 @@ def get_nav_sections_fallback():
         {'id': 'resource', 'label': 'Resource', 'path': '/faq', 'children': [
             {'name': 'よくある質問（FAQ）', 'path': '/faq', 'icon': ''},
             {'name': '用語集', 'path': '/glossary', 'icon': ''},
+            {'name': 'ベストプラクティス', 'path': '/best-practices', 'icon': ''},
             {'name': 'ブログ', 'path': '/blog', 'icon': ''},
             {'name': 'サイトについて', 'path': '/about', 'icon': ''},
             {'name': 'お問い合わせ', 'path': '/contact', 'icon': ''},
@@ -129,8 +131,10 @@ def get_footer_columns():
         {'title': 'リソース', 'links': [
             {'name': 'よくある質問（FAQ）', 'path': '/faq'},
             {'name': '用語集', 'path': '/glossary'},
+            {'name': 'ベストプラクティス', 'path': '/best-practices'},
             {'name': 'ブログ', 'path': '/blog'},
             {'name': 'サイトについて', 'path': '/about'},
+            {'name': 'サイトマップ', 'path': '/sitemap.html'},
         ]},
         {'title': '法的情報', 'links': [
             {'name': 'プライバシーポリシー', 'path': '/privacy'},

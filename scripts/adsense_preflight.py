@@ -30,6 +30,7 @@ INDEXABLE_PATHS = ['/', '/privacy', '/blog', '/glossary', '/guide/excel-format']
 # 不整合文字列（ヒット0が必須）
 DISALLOWED_STRINGS = [
     'github.com/your-repo',
+    'example.com',
     'ローカル処理優先',
     'ファイルやテキストはアップロードせず、ブラウザ内で処理します。サーバーには保存されません。',
     '検索条件に一致するツールが見つかりませんでした。',
