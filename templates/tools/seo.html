@@ -237,9 +237,11 @@
         <div class="page-header">
             <h1 data-reveal>🔍 Web/SEOユーティリティ</h1>
             <p data-reveal data-reveal-delay="50">OGP画像生成、PageSpeed改善チェックリスト、メタタグ検査、sitemap.xml/robots.txt生成をローカルで実行できます。アップロード不要。</p>
-            {% include 'includes/tool_guide_link.html' %}
         </div>
-        
+        {% set tool_intro_what = 'OGP画像ジェネレーター、PageSpeed改善チェック、メタタグ検査、sitemap/robots生成をブラウザ内で実行します。' %}
+        {% set tool_intro_steps = ['モードを選択（OGP/PageSpeed/メタタグ/sitemap/robots）', 'URLや設定を入力', '実行して結果を確認・ダウンロード'] %}
+        {% set tool_intro_notice = '入力したURL・テキストはサーバーに送信されません。' %}
+        {% include 'includes/tool_intro.html' %}
         <div class="main-layout">
             <!-- 左: 設定エリア -->
             <div class="panel">

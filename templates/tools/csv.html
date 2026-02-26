@@ -48,8 +48,11 @@
             <h1 data-reveal>📊 CSV/Excelユーティリティ</h1>
             <p data-reveal data-reveal-delay="50">ローカル処理。ファイルはアップロードせず、ブラウザ内で変換します。</p>
             <p data-reveal data-reveal-delay="60" style="font-size: 0.95em; color: rgba(255,255,255,0.75); margin-top: 8px;">ファイル内容はサーバーに送信しません。計測・広告のために外部サービス（Google等）へ通信することがあります。</p>
-            {% include 'includes/tool_guide_link.html' %}
         </div>
+        {% set tool_intro_what = '文字コード変換（Shift-JIS/UTF-8）、CSV⇄XLSX変換、重複削除、列の抽出・並べ替え・分割をブラウザ内で実行します。' %}
+        {% set tool_intro_steps = ['ファイルを選択（ドラッグ＆ドロップまたはボタン）', '文字コード・操作モードを選択', '実行してプレビュー確認のうえダウンロード'] %}
+        {% set tool_intro_notice = '個人情報・機密情報を含むファイルは取り扱いにお気をつけください。' %}
+        {% include 'includes/tool_intro.html' %}
         <div class="tool-section">
             <h3>📁 ファイル選択</h3>
             <p style="color: rgba(255, 255, 255, 0.8);">CSV または Excel ファイルをドラッグ＆ドロップ、または下のボタンで選択してください。（対応: .csv, .xlsx）</p>
