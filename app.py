@@ -2161,8 +2161,8 @@ def sitemap():
         logger.warning(f"sitemap_import_failed error={str(import_error)} - using empty list")
         PRODUCTS = []
     
-    # ベースURL
-    base_url = 'https://jobcan-automation.onrender.com'
+    # ベースURL（環境変数があれば採用、末尾スラッシュは除去して二重スラッシュを防ぐ）
+    base_url = (os.getenv('BASE_URL') or 'https://jobcan-automation.onrender.com').rstrip('/')
     
     # 現在日付を取得（P1: lastmodを動的に設定）
     today = datetime.now().strftime('%Y-%m-%d')
