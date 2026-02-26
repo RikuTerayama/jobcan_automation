@@ -1370,6 +1370,11 @@ def best_practices():
     """ベストプラクティス"""
     return render_template('best-practices.html')
 
+@app.route('/case-studies')
+def case_studies_index():
+    """導入事例一覧"""
+    return render_template('case-studies.html')
+
 @app.route('/case-study/contact-center')
 def case_study_contact_center():
     """導入事例：コンタクトセンター"""
@@ -2112,12 +2117,9 @@ def ads_txt():
 
 @app.route('/robots.txt')
 def robots_txt():
-    """robots.txt を配信"""
-    try:
-        return send_file('static/robots.txt', mimetype='text/plain')
-    except Exception as e:
-        # ファイルがない場合のフォールバック（static/robots.txt と同構成）
-        content = """User-agent: *
+    """robots.txt を配信（Sitemap 行は BASE_URL から動的生成）"""
+    base_url = (os.getenv('BASE_URL') or 'https://jobcan-automation.onrender.com').rstrip('/')
+    content = f"""User-agent: *
 Allow: /
 Disallow: /status/
 Disallow: /api/
@@ -2144,9 +2146,44 @@ Disallow: /download-template
 Disallow: /download-previous-template
 Disallow: /cleanup-sessions
 
-Sitemap: https://jobcan-automation.onrender.com/sitemap.xml
+Sitemap: {base_url}/sitemap.xml
 """
-        return Response(content, mimetype='text/plain')
+    return Response(content, mimetype='text/plain')
+
+def _sitemap_lastmod_for_path(url_path):
+    """url_path に対応するテンプレートの mtime を YYYY-MM-DD で返す。取得できない場合は None。"""
+    path = (url_path or '').strip('/') or ''
+    special = {
+        '': 'landing.html',
+        'autofill': 'autofill.html',
+        'guide': 'guide/index.html',
+        'guide/complete': 'guide/complete-guide.html',
+        'guide/comprehensive-guide': 'guide/comprehensive-guide.html',
+        'blog': 'blog/index.html',
+        'tools': 'tools/index.html',
+        'sitemap.html': 'sitemap.html',
+        'case-studies': 'case-studies.html',
+        'case-study/contact-center': 'case-study-contact-center.html',
+        'case-study/consulting-firm': 'case-study-consulting-firm.html',
+        'case-study/remote-startup': 'case-study-remote-startup.html',
+    }
+    if path in special:
+        rel = special[path]
+    elif path.startswith('guide/'):
+        rel = 'guide/' + path.split('/', 1)[1] + '.html'
+    elif path.startswith('blog/'):
+        rel = 'blog/' + path.split('/', 1)[1] + '.html'
+    elif path.startswith('tools/'):
+        rel = 'tools/' + path.split('/', 1)[1] + '.html'
+    else:
+        rel = (path + '.html') if path else 'landing.html'
+    fpath = os.path.join(app.root_path, 'templates', rel.replace('/', os.sep))
+    try:
+        mtime = os.path.getmtime(fpath)
+        return datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
+    except (OSError, TypeError):
+        return None
+
 
 @app.route('/sitemap.xml')
 def sitemap():
@@ -2164,7 +2201,7 @@ def sitemap():
     # ベースURL（環境変数があれば採用、末尾スラッシュは除去して二重スラッシュを防ぐ）
     base_url = (os.getenv('BASE_URL') or 'https://jobcan-automation.onrender.com').rstrip('/')
     
-    # 現在日付を取得（P1: lastmodを動的に設定）
+    # 現在日付を取得（lastmod のフォールバック）
     today = datetime.now().strftime('%Y-%m-%d')
     
     # サイトマップに含めるURLのリスト
@@ -2181,6 +2218,7 @@ def sitemap():
         ('/faq', 'weekly', '0.8', today),
         ('/glossary', 'monthly', '0.6', today),
         ('/best-practices', 'monthly', '0.8', today),
+        ('/case-studies', 'monthly', '0.8', today),
         ('/sitemap.html', 'monthly', '0.5', today),
         
         # ガイドページ（一覧＋固定）
@@ -2249,8 +2287,8 @@ def sitemap():
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
     ]
     
-    for url_path, changefreq, priority, lastmod in urls:
-        # 末尾スラッシュなしの方針を維持（既に末尾スラッシュなしで定義済み）
+    for url_path, changefreq, priority, lastmod_default in urls:
+        lastmod = _sitemap_lastmod_for_path(url_path) or lastmod_default
         full_url = base_url + url_path
         xml_parts.append('  <url>')
         xml_parts.append(f'    <loc>{full_url}</loc>')
