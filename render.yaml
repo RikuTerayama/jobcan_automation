@@ -44,4 +44,4 @@ services:
       - key: MAX_ACTIVE_SESSIONS
         value: "1"  # 同時接続数制限（free plan 512MB）
       - key: MAX_FILE_SIZE_MB
-        value: "10" 
+        value: "10"
