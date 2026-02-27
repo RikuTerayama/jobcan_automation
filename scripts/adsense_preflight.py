@@ -182,7 +182,8 @@ def _run_checks(get_fn, base_url, use_headers=True):
         rows.append(('6_robots_txt', '/robots.txt', f'FAIL ERROR {e}', False))
         all_ok = False
 
-    # 7) sitemap.xml に重要URLが含まれること（完全一致）
+    # 7) sitemap.xml に重要URLが含まれること（完全一致）+ lastmod ユニーク数
+    import re
     try:
         resp = get('/sitemap.xml')
         status = resp.status_code if hasattr(resp, 'status_code') else resp[0]
@@ -202,6 +203,12 @@ def _run_checks(get_fn, base_url, use_headers=True):
                 all_ok = False
             else:
                 rows.append(('7_sitemap', '/sitemap.xml', 'OK required URLs in sitemap', True))
+            lastmods = re.findall(r'<lastmod>([^<]+)</lastmod>', body)
+            lastmods_unique = len(set(lastmods)) if lastmods else 0
+            ok_lastmod = lastmods_unique >= 2
+            rows.append(('7b_sitemap_lastmod', '/sitemap.xml', f'OK lastmod unique={lastmods_unique}' if ok_lastmod else f'FAIL lastmod unique={lastmods_unique} (need >=2)', ok_lastmod))
+            if not ok_lastmod:
+                all_ok = False
     except Exception as e:
         rows.append(('7_sitemap', '/sitemap.xml', f'FAIL ERROR {e}', False))
         all_ok = False

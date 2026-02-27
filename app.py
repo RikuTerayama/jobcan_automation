@@ -2150,8 +2150,26 @@ Sitemap: {base_url}/sitemap.xml
 """
     return Response(content, mimetype='text/plain')
 
+_SITEMAP_LASTMOD_MANIFEST = None
+
+
+def _load_sitemap_lastmod_manifest():
+    """data/sitemap_lastmod.json を読み込む。存在しなければ空 dict。"""
+    global _SITEMAP_LASTMOD_MANIFEST
+    if _SITEMAP_LASTMOD_MANIFEST is not None:
+        return _SITEMAP_LASTMOD_MANIFEST
+    import json
+    manifest_path = os.path.join(app.root_path, 'data', 'sitemap_lastmod.json')
+    try:
+        with open(manifest_path, 'r', encoding='utf-8') as f:
+            _SITEMAP_LASTMOD_MANIFEST = json.load(f)
+    except (OSError, TypeError, json.JSONDecodeError):
+        _SITEMAP_LASTMOD_MANIFEST = {}
+    return _SITEMAP_LASTMOD_MANIFEST
+
+
 def _sitemap_lastmod_for_path(url_path):
-    """url_path に対応するテンプレートの mtime を YYYY-MM-DD で返す。取得できない場合は None。"""
+    """url_path に対応する lastmod を YYYY-MM-DD で返す。manifest 優先、取得できない場合は None。"""
     path = (url_path or '').strip('/') or ''
     special = {
         '': 'landing.html',
@@ -2177,6 +2195,9 @@ def _sitemap_lastmod_for_path(url_path):
         rel = 'tools/' + path.split('/', 1)[1] + '.html'
     else:
         rel = (path + '.html') if path else 'landing.html'
+    manifest = _load_sitemap_lastmod_manifest()
+    if rel in manifest:
+        return manifest[rel]
     fpath = os.path.join(app.root_path, 'templates', rel.replace('/', os.sep))
     try:
         mtime = os.path.getmtime(fpath)
