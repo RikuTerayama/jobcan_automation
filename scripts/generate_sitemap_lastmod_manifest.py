@@ -5,7 +5,13 @@ sitemap lastmod マニフェスト生成スクリプト
 ビルド/起動前に実行し、data/sitemap_lastmod.json を生成する。
 - 優先: git log -1 --format=%cs で最終コミット日 (YYYY-MM-DD)
 - fallback: ファイル mtime（本番Dockerでは同一化し得る）
+
+CLI:
+  --write : マニフェストを書き込む（デフォルト動作）
+  --check : 現行 data/sitemap_lastmod.json と一致するか検査。不一致なら exit 1。
+            .git が無い場合は exit 2（判定不能）
 """
+import argparse
 import json
 import os
 import subprocess
@@ -102,8 +108,26 @@ def get_mtime_date(filepath):
         return None
 
 
-def main():
-    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
+def has_git():
+    """.git が存在し git コマンドが使えるか"""
+    git_dir = os.path.join(REPO_ROOT, ".git")
+    if not os.path.isdir(git_dir):
+        return False
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--is-inside-work-tree"],
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+        return result.returncode == 0 and result.stdout.strip() == "true"
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+        return False
+
+
+def generate_manifest(use_git=True):
+    """マニフェスト dict を生成。use_git=False のときは mtime のみ使用。"""
     manifest = {}
     url_paths = get_sitemap_url_paths()
     seen_templates = set()
@@ -116,16 +140,66 @@ def main():
         seen_templates.add(rel)
         if not os.path.isfile(fpath):
             continue
-        date_str = get_git_date(fpath)
+        date_str = get_git_date(fpath) if use_git else None
         if not date_str:
             date_str = get_mtime_date(fpath)
         if date_str:
             manifest[rel] = date_str
+    return dict(sorted(manifest.items()))
 
+
+def manifest_to_json(manifest):
+    """安定した JSON 文字列（キー順）"""
+    return json.dumps(manifest, ensure_ascii=False, indent=2, sort_keys=True)
+
+
+def run_check():
+    """--check: 生成結果と現行ファイルを比較。不一致なら exit 1。git 無い場合は exit 2。"""
+    if not has_git():
+        print(
+            "ERROR: .git not found or git unavailable. --check requires git for accurate comparison.",
+            file=sys.stderr,
+        )
+        print("Run: python scripts/generate_sitemap_lastmod_manifest.py --write", file=sys.stderr)
+        return 2
+    expected = generate_manifest(use_git=True)
+    expected_json = manifest_to_json(expected)
+    try:
+        with open(OUTPUT_PATH, "r", encoding="utf-8") as f:
+            current = json.load(f)
+    except (OSError, json.JSONDecodeError) as e:
+        print(f"ERROR: Cannot read {OUTPUT_PATH}: {e}", file=sys.stderr)
+        print("Run: python scripts/generate_sitemap_lastmod_manifest.py --write", file=sys.stderr)
+        return 1
+    current_sorted = dict(sorted(current.items()))
+    current_json = manifest_to_json(current_sorted)
+    if expected_json != current_json:
+        print("ERROR: data/sitemap_lastmod.json is outdated or differs from expected.", file=sys.stderr)
+        print("Run: python scripts/generate_sitemap_lastmod_manifest.py --write", file=sys.stderr)
+        print("Then commit the updated file.", file=sys.stderr)
+        return 1
+    return 0
+
+
+def run_write():
+    """--write: マニフェストをファイルに書き込む"""
+    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
+    manifest = generate_manifest(use_git=has_git())
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
-        json.dump(manifest, f, ensure_ascii=False, indent=2)
+        f.write(manifest_to_json(manifest))
     print(f"Generated {OUTPUT_PATH} with {len(manifest)} entries", file=sys.stderr)
     return 0
+
+
+def main():
+    parser = argparse.ArgumentParser(description="sitemap lastmod manifest generator")
+    parser.add_argument("--check", action="store_true", help="Check manifest freshness, exit 1 if stale")
+    parser.add_argument("--write", action="store_true", help="Write manifest to data/sitemap_lastmod.json")
+    args = parser.parse_args()
+
+    if args.check:
+        return run_check()
+    return run_write()
 
 
 if __name__ == "__main__":
