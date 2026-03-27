@@ -1,7 +1,7 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
-ヘッダー・フッター共通のナビゲーション構造。
-1ソースで両方に渡し、重複を避ける。
+Shared navigation and footer link definitions.
+Keep labels in UTF-8 so common layout text stays stable across pages.
 """
 try:
     from lib.products_catalog import PRODUCTS
@@ -11,9 +11,8 @@ except Exception:
 
 def get_nav_sections():
     """
-    4大項目: Home, Tools, Guide, Resource の構造を返す。
-    各項目は label, path, children を持つ。children は None（単一リンク）または
-    [ { 'name', 'path', 'icon'? } ] のリスト。
+    Build header navigation sections.
+    Each child entry is either a flat link list or grouped items for dropdowns.
     """
     products = [p for p in PRODUCTS if isinstance(p, dict) and p.get('status') == 'available']
 
@@ -22,14 +21,18 @@ def get_nav_sections():
         tool_links.append({
             'name': p.get('name', ''),
             'path': p.get('path', '#'),
-            'icon': p.get('icon', '')
+            'icon': p.get('icon', ''),
         })
 
     tool_guide_items = []
     for p in products:
-        gp = p.get('guide_path') or ''
-        if gp:
-            tool_guide_items.append({'name': p.get('name', ''), 'path': gp, 'icon': p.get('icon', '')})
+        guide_path = p.get('guide_path') or ''
+        if guide_path:
+            tool_guide_items.append({
+                'name': p.get('name', ''),
+                'path': guide_path,
+                'icon': p.get('icon', ''),
+            })
 
     guide_links = []
     if tool_guide_items:
@@ -43,12 +46,12 @@ def get_nav_sections():
             {'name': 'はじめての使い方', 'path': '/guide/getting-started', 'icon': ''},
             {'name': 'Excelファイルの作成方法', 'path': '/guide/excel-format', 'icon': ''},
             {'name': 'トラブルシューティング', 'path': '/guide/troubleshooting', 'icon': ''},
-            {'name': '導入ガイド', 'path': '/guide/comprehensive-guide', 'icon': ''},
-        ]
+            {'name': '総合ガイド', 'path': '/guide/comprehensive-guide', 'icon': ''},
+        ],
     })
 
     resource_links = [
-        {'name': 'よくある質問（FAQ）', 'path': '/faq', 'icon': ''},
+        {'name': 'よくある質問', 'path': '/faq', 'icon': ''},
         {'name': '用語集', 'path': '/glossary', 'icon': ''},
         {'name': 'ベストプラクティス', 'path': '/best-practices', 'icon': ''},
         {'name': '導入事例', 'path': '/case-studies', 'icon': ''},
@@ -69,7 +72,7 @@ def get_nav_sections():
 
 
 def get_nav_sections_fallback():
-    """PRODUCTS が空でも使える最小ナビ（context_processor 失敗時用）"""
+    """Fallback navigation used when PRODUCTS cannot be read."""
     return [
         {'id': 'home', 'label': 'Home', 'path': '/', 'children': None},
         {'id': 'tools', 'label': 'Tools', 'path': '/tools', 'children': [{'name': 'すべてのツール', 'path': '/tools', 'icon': ''}]},
@@ -83,12 +86,12 @@ def get_nav_sections_fallback():
                     {'name': 'はじめての使い方', 'path': '/guide/getting-started', 'icon': ''},
                     {'name': 'Excelファイルの作成方法', 'path': '/guide/excel-format', 'icon': ''},
                     {'name': 'トラブルシューティング', 'path': '/guide/troubleshooting', 'icon': ''},
-                    {'name': '導入ガイド', 'path': '/guide/comprehensive-guide', 'icon': ''},
+                    {'name': '総合ガイド', 'path': '/guide/comprehensive-guide', 'icon': ''},
                 ],
             }
         ]},
         {'id': 'resource', 'label': 'Resource', 'path': '/faq', 'children': [
-            {'name': 'よくある質問（FAQ）', 'path': '/faq', 'icon': ''},
+            {'name': 'よくある質問', 'path': '/faq', 'icon': ''},
             {'name': '用語集', 'path': '/glossary', 'icon': ''},
             {'name': 'ベストプラクティス', 'path': '/best-practices', 'icon': ''},
             {'name': '導入事例', 'path': '/case-studies', 'icon': ''},
@@ -103,10 +106,7 @@ def get_nav_sections_fallback():
 
 
 def get_footer_columns():
-    """
-    フッター用の4カラム（ツール一覧・ガイド・リソース・法的情報）を返す。
-    ヘッダーの nav_sections と整合させる。各カラムは title と links。
-    """
+    """Footer columns for tools, guides, resources, and legal pages."""
     products = [p for p in PRODUCTS if isinstance(p, dict) and p.get('status') == 'available']
 
     tool_links = [{'name': 'すべてのツール', 'path': '/tools'}]
@@ -120,18 +120,18 @@ def get_footer_columns():
         {'name': 'はじめての使い方', 'path': '/guide/getting-started'},
         {'name': 'Excelファイルの作成方法', 'path': '/guide/excel-format'},
         {'name': 'トラブルシューティング', 'path': '/guide/troubleshooting'},
-        {'name': '導入ガイド', 'path': '/guide/comprehensive-guide'},
+        {'name': '総合ガイド', 'path': '/guide/comprehensive-guide'},
     ]
     for p in products:
-        gp = p.get('guide_path') or ''
-        if gp and p.get('id') != 'autofill':
-            guide_links.append({'name': p.get('name', ''), 'path': gp, 'icon': p.get('icon', '')})
+        guide_path = p.get('guide_path') or ''
+        if guide_path and p.get('id') != 'autofill':
+            guide_links.append({'name': p.get('name', ''), 'path': guide_path, 'icon': p.get('icon', '')})
 
     return [
         {'title': 'ツール一覧', 'links': tool_links},
         {'title': 'ガイド', 'links': guide_links},
         {'title': 'リソース', 'links': [
-            {'name': 'よくある質問（FAQ）', 'path': '/faq'},
+            {'name': 'よくある質問', 'path': '/faq'},
             {'name': '用語集', 'path': '/glossary'},
             {'name': 'ベストプラクティス', 'path': '/best-practices'},
             {'name': '導入事例', 'path': '/case-studies'},
@@ -139,7 +139,7 @@ def get_footer_columns():
             {'name': 'サイトについて', 'path': '/about'},
             {'name': 'サイトマップ', 'path': '/sitemap.html'},
         ]},
-        {'title': '法的情報', 'links': [
+        {'title': '法務情報', 'links': [
             {'name': 'プライバシーポリシー', 'path': '/privacy'},
             {'name': '利用規約', 'path': '/terms'},
             {'name': 'お問い合わせ', 'path': '/contact'},

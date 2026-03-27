@@ -361,6 +361,89 @@ BLOG_ARTICLE_MAP = {
 }
 
 
+ARTICLE_SCHEMA_PAGES = {
+    **BLOG_ARTICLE_MAP,
+    '/case-study/contact-center': {
+        'title': 'コンタクトセンターで月末処理を平準化した導入ケース',
+        'description': 'コンタクトセンターが Jobcan AutoFill の導入を想定したケーススタディです。シフト変更が集中する現場で、入力前チェックと差し戻し削減をどう整理したかをまとめています。',
+        'date_published': '2025-02-24',
+        'section': '導入事例',
+    },
+    '/case-study/consulting-firm': {
+        'title': 'コンサルティングファームで月末締めを平準化した導入ケース',
+        'description': 'コンサルティングファームが Jobcan AutoFill の導入を想定したケーススタディです。月末の集中作業をどう分散し、社内展開と確認フローを整えたかを整理しています。',
+        'date_published': '2025-01-10',
+        'section': '導入事例',
+    },
+    '/case-study/remote-startup': {
+        'title': 'リモート中心チームで入力負荷を分散した導入ケース',
+        'description': 'リモート中心のスタートアップが Jobcan AutoFill の導入を想定したケーススタディです。非同期運用でも締め日前の確認負荷を下げる進め方をまとめています。',
+        'date_published': '2025-01-08',
+        'section': '導入事例',
+    },
+    '/guide/autofill': {
+        'title': 'Jobcan AutoFill の使い方ガイド',
+        'description': 'Jobcan AutoFill の使い方ガイドです。Excel から Jobcan へ勤怠データを自動入力する手順、制約、FAQ をまとめています。',
+        'section': 'ガイド',
+    },
+    '/guide/getting-started': {
+        'title': 'はじめての使い方',
+        'description': 'Jobcan AutoFill のはじめての使い方ガイドです。テンプレート準備から実行前チェックまで順番に確認できます。',
+        'section': 'ガイド',
+    },
+    '/guide/excel-format': {
+        'title': 'Excelファイルの作成方法',
+        'description': 'Jobcan AutoFill 用 Excel ファイルの形式ガイドです。日付、時刻、列構成、よくある形式エラーを確認できます。',
+        'section': 'ガイド',
+    },
+    '/guide/troubleshooting': {
+        'title': 'トラブルシューティング',
+        'description': 'Jobcan AutoFill のトラブルシューティングです。ログインエラー、形式エラー、タイムアウトなどの対処方法をまとめています。',
+        'section': 'ガイド',
+    },
+    '/guide/csv': {
+        'title': 'CSV/Excelツールの使い方ガイド',
+        'description': 'CSV/Excel ツールの使い方ガイドです。変換、整形、列の確認、業務データを扱う際の注意点をまとめています。',
+        'section': 'ガイド',
+    },
+    '/guide/image-batch': {
+        'title': '画像一括変換ツールの使い方ガイド',
+        'description': '画像一括処理ツールの使い方ガイドです。複数画像のまとめ処理、対応形式、注意点、よくある質問を確認できます。',
+        'section': 'ガイド',
+    },
+    '/guide/image-cleanup': {
+        'title': '画像クリーンアップツールの使い方ガイド',
+        'description': '画像クリーンアップツールの使い方ガイドです。トリミングや不要部分の整理、利用時の注意点を確認できます。',
+        'section': 'ガイド',
+    },
+    '/guide/pdf': {
+        'title': 'PDFツールの使い方ガイド',
+        'description': 'PDF ツールの使い方ガイドです。結合、分割、圧縮、ページ整理の手順と注意点をまとめています。',
+        'section': 'ガイド',
+    },
+    '/guide/seo': {
+        'title': 'Web/SEOツールの使い方ガイド',
+        'description': 'Web/SEO ツールの使い方ガイドです。メタ情報、OGP、sitemap、robots.txt を確認するときの進め方を整理しています。',
+        'section': 'ガイド',
+    },
+    '/guide/complete': {
+        'title': 'Jobcan AutoFill 完全ガイド',
+        'description': 'Jobcan AutoFill の完全ガイドです。使い方、注意点、セキュリティ、導入判断の観点を 1 ページで確認できます。',
+        'section': 'ガイド',
+    },
+    '/guide/comprehensive-guide': {
+        'title': 'Jobcan勤怠管理を効率化する総合ガイド',
+        'description': 'Jobcan 勤怠入力の効率化を検討する方向けの総合ガイドです。導入背景、比較観点、運用設計まで整理しています。',
+        'section': 'ガイド',
+    },
+    '/best-practices': {
+        'title': 'ベストプラクティスガイド',
+        'description': 'Jobcan AutoFill を安全かつ効率的に使うためのベストプラクティスです。Excel 設計、運用、セキュリティの勘所をまとめています。',
+        'section': 'ベストプラクティス',
+    },
+}
+
+
 RELATED_CONTENT = {
     '/': {
         'title': '導入前に押さえたいページ',
@@ -400,6 +483,16 @@ RELATED_CONTENT = {
             {'path': '/guide/excel-format', 'label': 'Excel形式ガイド', 'description': 'よくある形式ミスと修正ポイントを確認できます。'},
             {'path': '/blog/reduce-manual-work-checklist', 'label': '手作業削減チェックリスト', 'description': '実務改善の観点から自動化対象を整理できます。'},
             {'path': '/tools/csv', 'label': 'CSV/Excelツール', 'description': 'ExcelやCSVの整形に使える補助ツールです。'},
+        ],
+    },
+    '/best-practices': {
+        'title': '運用設計とあわせて見る',
+        'intro': 'ベストプラクティスを読んだあとに、具体的な手順と導入判断へつなげやすいページです。',
+        'links': [
+            {'path': '/guide/excel-format', 'label': 'Excel形式ガイド', 'description': '入力前に整えておきたいファイル設計の要点を確認できます。'},
+            {'path': '/guide/complete', 'label': '完全ガイド', 'description': '導入判断、使い方、注意点をまとめて確認できます。'},
+            {'path': '/blog/jobcan-auto-input-dos-and-donts', 'label': '自動入力の注意点', 'description': '避けたい運用パターンと安全な進め方を整理できます。'},
+            {'path': '/case-studies', 'label': '導入事例', 'description': '運用ルールを定着させるイメージをケース形式で確認できます。'},
         ],
     },
     '/case-studies': {
@@ -604,7 +697,7 @@ def get_blog_articles(limit=None):
 
 
 def get_article_schema(path, base_url, default_title='', default_description=''):
-    article = BLOG_ARTICLE_MAP.get(path)
+    article = ARTICLE_SCHEMA_PAGES.get(path)
     if not article:
         return None
 
@@ -615,15 +708,12 @@ def get_article_schema(path, base_url, default_title='', default_description='')
     url = f'{base_url}{path}'
     logo_url = f'{base_url}/static/JobcanAutofill.png'
 
-    return {
+    schema = {
         '@context': 'https://schema.org',
         '@type': 'Article',
         'headline': title,
         'description': description,
-        'datePublished': published,
-        'dateModified': modified,
         'inLanguage': 'ja-JP',
-        'articleSection': article.get('section', ''),
         'mainEntityOfPage': {
             '@type': 'WebPage',
             '@id': url,
@@ -643,6 +733,13 @@ def get_article_schema(path, base_url, default_title='', default_description='')
             },
         },
     }
+    if published:
+        schema['datePublished'] = published
+    if modified:
+        schema['dateModified'] = modified
+    if article.get('section'):
+        schema['articleSection'] = article['section']
+    return schema
 
 
 def get_related_content(path):

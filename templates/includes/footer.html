@@ -1,5 +1,4 @@
-{# 共通フッター（footer_columns でヘッダーと共通のナビ構造を再利用） #}
-<footer style="background: var(--color-bg-primary, #121212); padding: var(--spacing-xl, 48px) var(--spacing-md, 16px); margin-top: var(--spacing-xl, 48px); border-top: 1px solid rgba(255, 255, 255, 0.1);">
+﻿<footer style="background: var(--color-bg-primary, #121212); padding: var(--spacing-xl, 48px) var(--spacing-md, 16px); margin-top: var(--spacing-xl, 48px); border-top: 1px solid rgba(255, 255, 255, 0.1);">
     <div style="max-width: 1200px; margin: 0 auto;">
         {% if related_content_section %}
             {% include 'includes/related_content.html' %}
@@ -13,6 +12,7 @@
         {% if affiliate_can_render_textlinks() %}
             {% include 'includes/affiliate_text_links.html' %}
         {% endif %}
+
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-bottom: 30px; text-align: left;">
             {% for col in footer_columns|default([]) %}
             <div>
@@ -24,14 +24,13 @@
                 </div>
             </div>
             {% else %}
-            {# footer_columns が未注入時のフォールバック（従来の products ベース） #}
             <div>
                 <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">ツール一覧</h4>
                 <div style="display: flex; flex-direction: column; gap: 8px;">
                     <a href="/tools" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em; font-weight: 500;">すべてのツール</a>
                     {% for product in products|default([]) %}
                         {% if product.status|default('coming-soon') == 'available' %}
-                            <a href="{{ product.path|default('#') }}" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">{{ product.icon|default('📦') }} {{ product.name|default('製品') }}</a>
+                            <a href="{{ product.path|default('#') }}" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">{{ product.icon|default('') }}{% if product.icon %} {% endif %}{{ product.name|default('ツール') }}</a>
                         {% endif %}
                     {% endfor %}
                 </div>
@@ -48,7 +47,7 @@
             <div>
                 <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">リソース</h4>
                 <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <a href="/faq" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">よくある質問（FAQ）</a>
+                    <a href="/faq" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">よくある質問</a>
                     <a href="/glossary" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">用語集</a>
                     <a href="/best-practices" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">ベストプラクティス</a>
                     <a href="/case-studies" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">導入事例</a>
@@ -58,7 +57,7 @@
                 </div>
             </div>
             <div>
-                <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">法的情報</h4>
+                <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">法務情報</h4>
                 <div style="display: flex; flex-direction: column; gap: 8px;">
                     <a href="/privacy" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">プライバシーポリシー</a>
                     <a href="/terms" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">利用規約</a>
@@ -67,17 +66,17 @@
             </div>
             {% endfor %}
         </div>
-        
+
         <div style="border-top: 1px solid rgba(255, 255, 255, 0.2); padding-top: 20px; margin-top: 30px;">
             <p style="margin: 8px 0; color: rgba(255, 255, 255, 0.7); font-size: 0.95em; text-align: center;">
-                <strong style="color: rgba(255, 255, 255, 0.9);">運営方針：</strong>
-                Jobcan AutoFill は勤怠・バックオフィス業務の効率化に役立つ情報とツールを提供しています。
-                データの取り扱いと広告表記については
+                <strong style="color: rgba(255, 255, 255, 0.9);">ご利用にあたって</strong>
+                Jobcan AutoFill は、業務効率化とバックオフィス運用の見直しに役立つツールとガイドを掲載しています。
+                データの取り扱い方針については
                 <a href="/privacy" style="color: rgba(255, 255, 255, 0.8);">プライバシーポリシー</a>
                 をご確認ください。
             </p>
             <p style="margin: 8px 0; color: rgba(255, 255, 255, 0.7); font-size: 0.95em; text-align: center;">
-                © 2025 Automation Hub. All rights reserved. | Developed by RT | Version: {{ app_version|default('1.0.0') }}
+                &copy; 2025 Jobcan AutoFill. All rights reserved. | Developed by RT | Version: {{ app_version|default('1.0.0') }}
             </p>
         </div>
     </div>

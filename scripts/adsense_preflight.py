@@ -13,6 +13,7 @@ NG があれば exit 1 で終了。
 import os
 import sys
 import argparse
+import json
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -29,6 +30,56 @@ SITEMAP_REQUIRED_URLS = ['/', '/autofill', '/tools', '/blog', '/glossary', '/gui
 # インデックス対象ページ（noindex なし・canonical 自己参照の確認用）
 INDEXABLE_PATHS = ['/', '/blog', '/glossary', '/guide/excel-format']
 NOINDEX_SELF_CANONICAL_PATHS = ['/privacy', '/terms', '/contact']
+INDEXABILITY_TARGET_PATHS = [
+    '/', '/blog', '/faq', '/guide', '/guide/autofill', '/guide/getting-started',
+    '/guide/excel-format', '/guide/troubleshooting', '/guide/complete',
+    '/guide/comprehensive-guide', '/guide/csv', '/guide/image-batch',
+    '/guide/image-cleanup', '/guide/pdf', '/guide/seo', '/glossary',
+    '/best-practices', '/case-studies', '/case-study/contact-center',
+    '/case-study/consulting-firm', '/case-study/remote-startup',
+    '/tools', '/tools/csv', '/tools/image-batch', '/tools/image-cleanup',
+    '/tools/pdf', '/tools/seo',
+]
+ARTICLE_SCHEMA_REQUIRED_PATHS = [
+    '/guide/autofill', '/guide/getting-started', '/guide/excel-format',
+    '/guide/troubleshooting', '/guide/complete', '/guide/comprehensive-guide',
+    '/guide/csv', '/guide/image-batch', '/guide/image-cleanup', '/guide/pdf',
+    '/guide/seo', '/best-practices', '/case-study/contact-center',
+    '/case-study/consulting-firm', '/case-study/remote-startup',
+]
+HUB_LINK_REQUIREMENTS = {
+    '/blog': [
+        '/blog/implementation-checklist',
+        '/blog/automation-roadmap',
+        '/blog/jobcan-auto-input-tools-overview',
+        '/blog/jobcan-auto-input-dos-and-donts',
+        '/blog/month-end-closing-checklist',
+        '/blog/playwright-security',
+    ],
+    '/guide': [
+        '/guide/getting-started',
+        '/guide/autofill',
+        '/guide/excel-format',
+        '/guide/troubleshooting',
+        '/guide/complete',
+        '/guide/comprehensive-guide',
+        '/best-practices',
+    ],
+    '/case-studies': [
+        '/case-study/contact-center',
+        '/case-study/consulting-firm',
+        '/case-study/remote-startup',
+    ],
+    '/tools': [
+        '/tools/csv',
+        '/tools/image-batch',
+        '/tools/image-cleanup',
+        '/tools/pdf',
+        '/tools/seo',
+    ],
+}
+RELATED_CONTENT_REQUIRED_PATHS = ['/glossary', '/best-practices', '/guide/complete', '/guide/comprehensive-guide']
+INTENTIONALLY_EXCLUDED_PATHS = ['/privacy', '/terms', '/contact', '/sitemap.html']
 
 # 不整合文字列（ヒット0が必須）
 DISALLOWED_STRINGS = [
@@ -41,9 +92,22 @@ DISALLOWED_STRINGS = [
 
 # /tools サーバ返却HTMLに含まれてはいけない文言（本文・script 含む）
 NO_RESULTS_FORBIDDEN = '検索条件に一致するツールが見つかりませんでした。'
-VISIBLE_TEXT_INTEGRITY_PATHS = ['/', '/faq', '/guide/excel-format', '/blog', '/glossary', '/privacy', '/terms', '/contact']
+VISIBLE_TEXT_INTEGRITY_PATHS = [
+    '/', '/faq', '/guide', '/guide/getting-started', '/guide/excel-format',
+    '/guide/troubleshooting', '/guide/complete', '/guide/comprehensive-guide',
+    '/guide/csv', '/guide/image-batch', '/guide/image-cleanup', '/guide/pdf',
+    '/guide/seo', '/blog', '/glossary', '/best-practices', '/case-studies',
+    '/case-study/contact-center', '/case-study/consulting-firm',
+    '/case-study/remote-startup', '/privacy', '/terms', '/contact',
+]
 VISIBLE_TEXT_FORBIDDEN = ['</h1>', '</h2>', '</h3>', '</p>', '</li>', '</a>', '/h1>', '/h2>', '/h3>', '/p>', '/li>', '/a>', '/strong>', '�']
 FOOTER_INTEGRITY_PATHS = ['/', '/privacy', '/terms', '/contact', '/blog']
+FOOTER_REQUIRED_TEXT = [
+    'プライバシーポリシー',
+    '利用規約',
+    'お問い合わせ',
+    '当サイトではアフィリエイト広告を利用しています。',
+]
 
 # Googlebot UA
 GOOGLEBOT_UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
@@ -76,6 +140,10 @@ def _run_checks(get_fn, base_url, use_headers=True):
         if use_headers and headers:
             return get_fn(path, headers=headers)
         return get_fn(path)
+
+    def canonical_for_path(path):
+        base = BASE_URL_DEFAULT.rstrip('/')
+        return base + ('/' if path == '/' else path)
 
     # 1) 主要ページ 200
     for path in MAJOR_PATHS:
@@ -243,10 +311,10 @@ def _run_checks(get_fn, base_url, use_headers=True):
             has_noindex = 'noindex, nofollow' in body or ('name="robots"' in body and 'noindex' in body)
             # canonical 自己参照: BASE_URL + path が含まれる（path が / のときは base/ または base/）
             base = BASE_URL_DEFAULT.rstrip('/')
-            expected_canonical = base + (path if path != '/' else '') or '/'
+            expected_canonical_url = base + (path if path != '/' else '') or '/'
             if path == '/':
-                expected_canonical = base + '/'
-            has_canonical_self = expected_canonical in body and 'rel="canonical"' in body
+                expected_canonical_url = base + '/'
+            has_canonical_self = expected_canonical_url in body and 'rel="canonical"' in body
             ok = not has_noindex and has_canonical_self
             rows.append(('9_indexable', path, 'OK no noindex, canonical self' if ok else f'FAIL noindex={has_noindex} canonical={has_canonical_self}', ok))
             if not ok:
@@ -278,8 +346,18 @@ def _run_checks(get_fn, base_url, use_headers=True):
             footer = soup.find('footer')
             footer_text = footer.get_text('\n', strip=True) if footer else ''
             found = [token for token in VISIBLE_TEXT_FORBIDDEN if token in footer_text]
-            ok = bool(footer) and not found
-            rows.append(('9b_footer_text', path, 'OK footer text intact' if ok else f'FAIL found {found[:3]}', ok))
+            missing_required = [token for token in FOOTER_REQUIRED_TEXT if token not in footer_text]
+            ok = bool(footer) and not found and not missing_required
+            rows.append(
+                (
+                    '9b_footer_text',
+                    path,
+                    'OK footer text intact'
+                    if ok else
+                    f'FAIL found={found[:3]} missing={missing_required[:3]}',
+                    ok,
+                )
+            )
             if not ok:
                 all_ok = False
         except Exception as e:
@@ -342,14 +420,146 @@ def _run_checks(get_fn, base_url, use_headers=True):
             body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
             has_noindex = 'noindex, nofollow' in body or ('name="robots"' in body and 'noindex' in body)
             base = BASE_URL_DEFAULT.rstrip('/')
-            expected_canonical = base + path
-            has_canonical_self = expected_canonical in body and 'rel="canonical"' in body
+            expected_canonical_url = base + path
+            has_canonical_self = expected_canonical_url in body and 'rel="canonical"' in body
             ok = has_noindex and has_canonical_self
             rows.append(('9e_noindex', path, 'OK noindex, canonical self' if ok else f'FAIL noindex={has_noindex} canonical={has_canonical_self}', ok))
             if not ok:
                 all_ok = False
         except Exception as e:
             rows.append(('9e_noindex', path, f'ERROR {e}', False))
+            all_ok = False
+
+    sitemap_locs = set()
+    try:
+        import re
+        resp = get('/sitemap.xml')
+        body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+        sitemap_locs = set(re.findall(r'<loc>([^<]+)</loc>', body))
+    except Exception:
+        sitemap_locs = set()
+
+    title_index = {}
+    h1_index = {}
+    for path in INDEXABILITY_TARGET_PATHS:
+        try:
+            resp = get(path)
+            status = resp.status_code if hasattr(resp, 'status_code') else resp[0]
+            body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+            soup = BeautifulSoup(body, 'html.parser')
+            robots = (soup.select_one('meta[name="robots"]') or {}).get('content', '') if soup.select_one('meta[name="robots"]') else ''
+            canonical = (soup.select_one('link[rel="canonical"]') or {}).get('href', '') if soup.select_one('link[rel="canonical"]') else ''
+            title = soup.title.get_text(strip=True) if soup.title else ''
+            h1 = soup.find('h1').get_text(' ', strip=True) if soup.find('h1') else ''
+            desc_count = len(soup.select('meta[name="description"]'))
+            visible_text = soup.get_text('\n', strip=True)
+            broken = [token for token in VISIBLE_TEXT_FORBIDDEN if token in visible_text]
+            in_sitemap = canonical_for_path(path) in sitemap_locs
+            ok = (
+                status == 200
+                and 'noindex' not in robots.lower()
+                and canonical == canonical_for_path(path)
+                and bool(title)
+                and bool(h1)
+                and desc_count == 1
+                and not broken
+                and in_sitemap
+            )
+            rows.append(
+                ('10_indexability', path,
+                 'OK canonical/self/indexable' if ok else
+                 f'FAIL status={status} robots={robots or "missing"} canon={canonical or "missing"} title={bool(title)} h1={bool(h1)} desc={desc_count} sitemap={in_sitemap} broken={broken[:2]}',
+                 ok)
+            )
+            if not ok:
+                all_ok = False
+            title_index.setdefault(title, []).append(path)
+            h1_index.setdefault(h1, []).append(path)
+        except Exception as e:
+            rows.append(('10_indexability', path, f'ERROR {e}', False))
+            all_ok = False
+
+    for path in ARTICLE_SCHEMA_REQUIRED_PATHS:
+        try:
+            resp = get(path)
+            body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+            soup = BeautifulSoup(body, 'html.parser')
+            schema_types = set()
+            for tag in soup.select('script[type="application/ld+json"]'):
+                raw = tag.get_text(strip=True)
+                if not raw:
+                    continue
+                try:
+                    payload = json.loads(raw)
+                except json.JSONDecodeError:
+                    continue
+                payloads = payload if isinstance(payload, list) else [payload]
+                for item in payloads:
+                    if isinstance(item, dict):
+                        item_type = item.get('@type')
+                        if isinstance(item_type, list):
+                            schema_types.update(item_type)
+                        elif isinstance(item_type, str):
+                            schema_types.add(item_type)
+            ok = 'Article' in schema_types
+            rows.append(('10b_article_schema', path, f'OK {sorted(schema_types)}' if ok else f'FAIL {sorted(schema_types)}', ok))
+            if not ok:
+                all_ok = False
+        except Exception as e:
+            rows.append(('10b_article_schema', path, f'ERROR {e}', False))
+            all_ok = False
+
+    duplicate_titles = {title: paths for title, paths in title_index.items() if title and len(paths) > 1}
+    duplicate_h1 = {title: paths for title, paths in h1_index.items() if title and len(paths) > 1}
+    titles_ok = not duplicate_titles
+    h1_ok = not duplicate_h1
+    rows.append(('11_title_dupes', 'indexable pages', 'OK unique titles' if titles_ok else f'FAIL {list(duplicate_titles.items())[:3]}', titles_ok))
+    rows.append(('11_h1_dupes', 'indexable pages', 'OK unique h1' if h1_ok else f'FAIL {list(duplicate_h1.items())[:3]}', h1_ok))
+    if not titles_ok or not h1_ok:
+        all_ok = False
+
+    for hub_path, required_links in HUB_LINK_REQUIREMENTS.items():
+        try:
+            resp = get(hub_path)
+            body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+            soup = BeautifulSoup(body, 'html.parser')
+            hrefs = {a.get('href') for a in soup.find_all('a', href=True)}
+            missing = [href for href in required_links if href not in hrefs]
+            ok = not missing
+            rows.append(('12_hub_links', hub_path, 'OK all required links present' if ok else f'FAIL missing {missing[:4]}', ok))
+            if not ok:
+                all_ok = False
+        except Exception as e:
+            rows.append(('12_hub_links', hub_path, f'ERROR {e}', False))
+            all_ok = False
+
+    for path in RELATED_CONTENT_REQUIRED_PATHS:
+        try:
+            resp = get(path)
+            body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+            soup = BeautifulSoup(body, 'html.parser')
+            ok = bool(soup.select_one('.related-content'))
+            rows.append(('13_related', path, 'OK related content rendered' if ok else 'FAIL related content missing', ok))
+            if not ok:
+                all_ok = False
+        except Exception as e:
+            rows.append(('13_related', path, f'ERROR {e}', False))
+            all_ok = False
+
+    for path in INTENTIONALLY_EXCLUDED_PATHS:
+        try:
+            resp = get(path)
+            body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+            soup = BeautifulSoup(body, 'html.parser')
+            robots = (soup.select_one('meta[name="robots"]') or {}).get('content', '') if soup.select_one('meta[name="robots"]') else ''
+            canonical = (soup.select_one('link[rel="canonical"]') or {}).get('href', '') if soup.select_one('link[rel="canonical"]') else ''
+            in_sitemap = canonical_for_path(path) in sitemap_locs
+            ok = 'noindex' in robots.lower() and canonical == canonical_for_path(path) and not in_sitemap
+            rows.append(('14_excluded', path, 'OK noindex+self canonical+not in sitemap' if ok else f'FAIL robots={robots or "missing"} canon={canonical or "missing"} sitemap={in_sitemap}', ok))
+            if not ok:
+                all_ok = False
+        except Exception as e:
+            rows.append(('14_excluded', path, f'ERROR {e}', False))
             all_ok = False
 
     return rows, all_ok
