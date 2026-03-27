@@ -54,8 +54,8 @@ def url_path_to_template_rel(url_path):
 def get_sitemap_url_paths():
     """sitemap に含まれる URL パスの一覧（固定＋PRODUCTS 相当）"""
     fixed = [
-        "/", "/autofill", "/about", "/contact", "/privacy", "/terms", "/faq",
-        "/glossary", "/best-practices", "/case-studies", "/sitemap.html",
+        "/", "/autofill", "/about", "/faq",
+        "/glossary", "/best-practices", "/case-studies",
         "/guide", "/guide/autofill", "/guide/complete", "/guide/comprehensive-guide",
         "/guide/getting-started", "/guide/excel-format", "/guide/troubleshooting",
         "/tools", "/blog",
@@ -85,8 +85,9 @@ def get_sitemap_url_paths():
 def get_git_date(filepath):
     """git log -1 --format=%cs で YYYY-MM-DD を取得。失敗時は None"""
     try:
+        relpath = os.path.relpath(filepath, REPO_ROOT).replace(os.sep, "/")
         result = subprocess.run(
-            ["git", "log", "-1", "--format=%cs", "--", filepath],
+            ["git", "log", "-1", "--format=%cs", "--", relpath],
             cwd=REPO_ROOT,
             capture_output=True,
             text=True,
@@ -186,7 +187,7 @@ def run_write():
     os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
     manifest = generate_manifest(use_git=has_git())
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
-        f.write(manifest_to_json(manifest))
+        f.write(manifest_to_json(manifest) + "\n")
     print(f"Generated {OUTPUT_PATH} with {len(manifest)} entries", file=sys.stderr)
     return 0
 

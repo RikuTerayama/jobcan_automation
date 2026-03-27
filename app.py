@@ -470,6 +470,12 @@ AFFILIATE_SLOT_RULES = {
         'breakpoint_policy': 'tablet-up',
         'allow_rotation': True,
     },
+    'global_footer_banner': {
+        'page_types': ('trust_sensitive', 'legal', 'contact', 'tool', 'tool_index', 'generic'),
+        'default_size': '300x250',
+        'breakpoint_policy': 'tablet-up',
+        'allow_rotation': True,
+    },
     'tool_post_result': {
         'page_types': ('tool',),
         'default_size': '300x250',
@@ -477,6 +483,29 @@ AFFILIATE_SLOT_RULES = {
         'allow_rotation': True,
     },
 }
+
+PUBLIC_AFFILIATE_PAGE_TYPES = frozenset((
+    'landing',
+    'blog_index',
+    'case_index',
+    'article',
+    'guide',
+    'info',
+    'tool',
+    'tool_index',
+    'trust_sensitive',
+    'legal',
+    'contact',
+    'generic',
+))
+
+NON_UI_AFFILIATE_PATH_PREFIXES = ('/api/', '/status/', '/admin/', '/static/')
+NON_UI_AFFILIATE_PATHS = frozenset((
+    '/sessions',
+    '/cleanup-sessions',
+    '/download-template',
+    '/download-previous-template',
+))
 
 
 def get_affiliate_page_type(path):
@@ -516,11 +545,24 @@ def get_affiliate_settings():
         'network': _normalize_affiliate_network(os.getenv('AFFILIATE_NETWORK', 'rakuten')),
         'exclude_paths': tuple(_env_list(
             'AFFILIATE_EXCLUDE_PATHS',
-            ('/autofill', '/privacy', '/terms', '/contact')
+            ()
         )),
         'allowed_page_types': tuple(_env_list(
             'AFFILIATE_ALLOWED_PAGE_TYPES',
-            ('landing', 'blog_index', 'case_index', 'article', 'guide', 'info', 'tool')
+            (
+                'landing',
+                'blog_index',
+                'case_index',
+                'article',
+                'guide',
+                'info',
+                'tool',
+                'tool_index',
+                'trust_sensitive',
+                'legal',
+                'contact',
+                'generic',
+            )
         )),
         'widget_desktop_enabled': _env_flag('AFFILIATE_WIDGET_DESKTOP_ENABLED', True),
         'widget_tablet_enabled': _env_flag('AFFILIATE_WIDGET_TABLET_ENABLED', True),
@@ -532,6 +574,12 @@ def get_affiliate_settings():
 def affiliate_is_path_excluded(path=None):
     settings = get_affiliate_settings()
     normalized_path = path or (request.path if has_request_context() else '/')
+    if normalized_path.startswith(NON_UI_AFFILIATE_PATH_PREFIXES):
+        return True
+    if normalized_path in NON_UI_AFFILIATE_PATHS:
+        return True
+    if get_affiliate_page_type(normalized_path) in PUBLIC_AFFILIATE_PAGE_TYPES:
+        return False
     return any(_path_matches_rule(normalized_path, rule) for rule in settings['exclude_paths'])
 
 
@@ -555,7 +603,8 @@ def affiliate_get_slot_config(slot_id, path=None):
     if slot_paths and not any(_path_matches_rule(normalized_path, slot_path) for slot_path in slot_paths):
         return None
 
-    if page_type not in settings['allowed_page_types']:
+    allowed_page_types = PUBLIC_AFFILIATE_PAGE_TYPES.union(settings['allowed_page_types'])
+    if page_type not in allowed_page_types:
         return None
 
     kind = 'rakuten_widget'
@@ -601,8 +650,8 @@ def affiliate_footer_slot_id(path=None):
         slot_id = 'article_end_1'
     elif page_type in ('guide', 'info'):
         slot_id = 'guide_end_1'
-    elif page_type == 'tool':
-        slot_id = 'tool_post_result'
+    elif page_type in ('trust_sensitive', 'legal', 'contact', 'tool', 'tool_index', 'generic'):
+        slot_id = 'global_footer_banner'
 
     if slot_id and affiliate_can_render_slot(slot_id, normalized_path):
         return slot_id
