@@ -22,10 +22,11 @@ BASE_URL_DEFAULT = 'https://jobcan-automation.onrender.com'
 MAJOR_PATHS = ['/', '/autofill', '/tools', '/privacy', '/contact', '/about', '/best-practices']
 
 # sitemap.xml に含まれるべき重要URL（完全一致：末尾スラッシュなし）
-SITEMAP_REQUIRED_URLS = ['/', '/autofill', '/tools', '/privacy', '/blog', '/glossary', '/guide/excel-format', '/best-practices']
+SITEMAP_REQUIRED_URLS = ['/', '/autofill', '/tools', '/blog', '/glossary', '/guide/excel-format', '/best-practices']
 
 # インデックス対象ページ（noindex なし・canonical 自己参照の確認用）
-INDEXABLE_PATHS = ['/', '/privacy', '/blog', '/glossary', '/guide/excel-format']
+INDEXABLE_PATHS = ['/', '/blog', '/glossary', '/guide/excel-format']
+NOINDEX_SELF_CANONICAL_PATHS = ['/privacy', '/terms', '/contact']
 
 # 不整合文字列（ヒット0が必須）
 DISALLOWED_STRINGS = [
@@ -246,6 +247,22 @@ def _run_checks(get_fn, base_url, use_headers=True):
                 all_ok = False
         except Exception as e:
             rows.append(('9_indexable', path, f'ERROR {e}', False))
+            all_ok = False
+
+    for path in NOINDEX_SELF_CANONICAL_PATHS:
+        try:
+            resp = get(path)
+            body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+            has_noindex = 'noindex, nofollow' in body or ('name="robots"' in body and 'noindex' in body)
+            base = BASE_URL_DEFAULT.rstrip('/')
+            expected_canonical = base + path
+            has_canonical_self = expected_canonical in body and 'rel="canonical"' in body
+            ok = has_noindex and has_canonical_self
+            rows.append(('9b_noindex', path, 'OK noindex, canonical self' if ok else f'FAIL noindex={has_noindex} canonical={has_canonical_self}', ok))
+            if not ok:
+                all_ok = False
+        except Exception as e:
+            rows.append(('9b_noindex', path, f'ERROR {e}', False))
             all_ok = False
 
     return rows, all_ok
