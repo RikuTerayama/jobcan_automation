@@ -62,8 +62,12 @@
     return slot.dataset.affiliateDisableWidget === 'true';
   }
 
+  function isServerManaged(slot) {
+    return slot.dataset.affiliateServerManaged === 'true';
+  }
+
   function isRenderable(slot) {
-    return !slot.dataset.affiliateRendered && !isWidgetDisabled(slot) && isDeviceEnabled(slot) && isToolSlotReady(slot);
+    return !slot.dataset.affiliateRendered && !isServerManaged(slot) && !isWidgetDisabled(slot) && isDeviceEnabled(slot) && isToolSlotReady(slot);
   }
 
   function renderRakuten(slot, mount) {
@@ -211,6 +215,11 @@
   function init() {
     slots = Array.prototype.slice.call(document.querySelectorAll('[data-affiliate-slot]'));
     slots.forEach(function(slot) {
+      var mount = slot.querySelector('[data-affiliate-mount]');
+      if (isServerManaged(slot) && mount) {
+        scheduleWidgetChecks(slot, mount);
+        return;
+      }
       watchSlot(slot);
     });
   }

@@ -24,6 +24,7 @@ MAJOR_PATHS = ['/', '/autofill', '/tools', '/privacy', '/contact', '/about', '/b
 PUBLIC_AFFILIATE_PATHS = ['/', '/tools', '/autofill', '/privacy', '/terms', '/contact', '/about', '/faq', '/guide', '/blog', '/case-studies', '/sitemap.html']
 NON_UI_AFFILIATE_PATHS = ['/sitemap.xml', '/robots.txt', '/ads.txt', '/api/seo/crawl-urls']
 HEADER_PATHS = ['/', '/autofill', '/tools', '/guide', '/blog', '/case-studies']
+A8_ROTATION_SRC_FRAGMENT = 'rot3.a8.net/jsa/fdf80b714de10cbdd802fd2333444e15/c6f057b86584942e415435ffb1fa93d4.js'
 
 # sitemap.xml に含まれるべき重要URL（完全一致：末尾スラッシュなし）
 SITEMAP_REQUIRED_URLS = ['/', '/autofill', '/tools', '/blog', '/glossary', '/guide/excel-format', '/best-practices', '/guide/complete', '/guide/comprehensive-guide']
@@ -472,6 +473,8 @@ def _run_checks(get_fn, base_url, use_headers=True):
             meta_utf8 = bool(soup.select_one('meta[charset="utf-8"]'))
             disclosure_count = len(soup.select('.affiliate-disclosure'))
             side_rail = bool(soup.select_one('.affiliate-side-rail'))
+            has_rotation_script = A8_ROTATION_SRC_FRAGMENT in body
+            server_managed_rotation = bool(soup.select_one('[data-affiliate-kind="a8_rotation"][data-affiliate-server-managed="true"]'))
             visible_affiliate_copy = bool(
                 soup.select_one('[data-affiliate-fallback="true"] .affiliate-link-card__label')
                 or soup.select_one('.affiliate-footer-block .affiliate-link-card__label')
@@ -492,13 +495,15 @@ def _run_checks(get_fn, base_url, use_headers=True):
                 and disclosure_count <= 1
                 and inline_module
                 and inline_module_count >= 1
+                and has_rotation_script
+                and server_managed_rotation
                 and not side_rail
                 and not removed_text_found
             )
             rows.append(
                 ('9c_affiliate_public', path,
-                 f'OK slots={slot_count} footer={footer_block} rail={side_rail} module={inline_module} module_cards={inline_module_count} disclosures={disclosure_count} copy={visible_affiliate_copy}' if ok else
-                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} slots={slot_count} footer={footer_block} rail={side_rail} module={inline_module} module_cards={inline_module_count} disclosures={disclosure_count} copy={visible_affiliate_copy} removed={removed_text_found}',
+                 f'OK slots={slot_count} footer={footer_block} rail={side_rail} module={inline_module} module_cards={inline_module_count} disclosures={disclosure_count} copy={visible_affiliate_copy} a8={has_rotation_script}' if ok else
+                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} slots={slot_count} footer={footer_block} rail={side_rail} module={inline_module} module_cards={inline_module_count} disclosures={disclosure_count} copy={visible_affiliate_copy} a8={has_rotation_script} server={server_managed_rotation} removed={removed_text_found}',
                  ok)
             )
             if not ok:
@@ -559,13 +564,15 @@ def _run_checks(get_fn, base_url, use_headers=True):
             header_slot = bool(soup.select_one(f'.affiliate-top-shell [data-affiliate-slot="{slot_id}"]'))
             has_feature_layout = bool(slot and slot.select_one('.affiliate-feature-layout__main'))
             widget_enabled = bool(slot and slot.get('data-affiliate-disable-widget') == 'false')
-            ok = bool(slot) and slot_before_footer and has_fallback and disclosure_near and widget_enabled and module_shape and module_cards >= 1 and has_feature_layout and (path not in NO_HEADER_TOP_SLOT_PATHS or not header_slot)
+            server_managed = bool(slot and slot.get('data-affiliate-server-managed') == 'true')
+            has_rotation_script = A8_ROTATION_SRC_FRAGMENT in str(slot)
+            ok = bool(slot) and slot_before_footer and has_fallback and disclosure_near and widget_enabled and module_shape and module_cards >= 1 and has_feature_layout and server_managed and has_rotation_script and (path not in NO_HEADER_TOP_SLOT_PATHS or not header_slot)
             rows.append((
                 '9f_top_affiliate',
                 path,
                 'OK top affiliate before footer'
                 if ok else
-                f'FAIL slot={bool(slot)} before_footer={slot_before_footer} fallback={has_fallback} disclosure={disclosure_near} widget_enabled={widget_enabled} module={module_shape} module_cards={module_cards} layout={has_feature_layout} header_slot={header_slot}',
+                f'FAIL slot={bool(slot)} before_footer={slot_before_footer} fallback={has_fallback} disclosure={disclosure_near} widget_enabled={widget_enabled} module={module_shape} module_cards={module_cards} layout={has_feature_layout} server={server_managed} a8={has_rotation_script} header_slot={header_slot}',
                 ok,
             ))
             if not ok:
@@ -596,8 +603,9 @@ def _run_checks(get_fn, base_url, use_headers=True):
         sticky_rule = 'position: sticky;' in css_text and '.affiliate-side-rail' in css_text
         horizontal_module_rule = '.affiliate-link-card--module .affiliate-link-card__anchor {' in css_text and 'flex-direction: row;' in css_text
         widget_state_rule = 'data-affiliate-widget-loaded' in css_text
-        ok = horizontal_module_rule and widget_state_rule and not fixed_rule and not sticky_rule and not side_rail_markup
-        rows.append(('9g_affiliate_css', 'static/css/common.css', 'OK horizontal module and no side rail styles remain' if ok else f'FAIL horizontal_module_rule={horizontal_module_rule} widget_state_rule={widget_state_rule} fixed_rule={fixed_rule} sticky_rule={sticky_rule} side_rail_markup={side_rail_markup}', ok))
+        server_managed_rule = 'data-affiliate-server-managed="true"' in css_text
+        ok = horizontal_module_rule and widget_state_rule and server_managed_rule and not fixed_rule and not sticky_rule and not side_rail_markup
+        rows.append(('9g_affiliate_css', 'static/css/common.css', 'OK horizontal module and no side rail styles remain' if ok else f'FAIL horizontal_module_rule={horizontal_module_rule} widget_state_rule={widget_state_rule} server_managed_rule={server_managed_rule} fixed_rule={fixed_rule} sticky_rule={sticky_rule} side_rail_markup={side_rail_markup}', ok))
         if not ok:
             all_ok = False
     except Exception as e:
