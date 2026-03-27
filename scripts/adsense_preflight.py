@@ -39,7 +39,7 @@ DISALLOWED_STRINGS = [
 
 # /tools サーバ返却HTMLに含まれてはいけない文言（本文・script 含む）
 NO_RESULTS_FORBIDDEN = '検索条件に一致するツールが見つかりませんでした。'
-VISIBLE_TEXT_INTEGRITY_PATHS = ['/', '/faq', '/guide/excel-format', '/blog', '/glossary']
+VISIBLE_TEXT_INTEGRITY_PATHS = ['/', '/faq', '/guide/excel-format', '/blog', '/glossary', '/privacy', '/terms']
 VISIBLE_TEXT_FORBIDDEN = ['</h1>', '</h2>', '</h3>', '</p>', '</li>', '</a>', '/h1>', '/h2>', '/h3>', '/p>', '/li>', '/a>', '�']
 
 # Googlebot UA
