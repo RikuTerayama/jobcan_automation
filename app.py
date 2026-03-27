@@ -9,6 +9,7 @@ import shutil
 import psutil
 import time
 import logging
+import hashlib
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template, send_file, Response, redirect, g, has_request_context
 from werkzeug.exceptions import NotFound, MethodNotAllowed
@@ -896,12 +897,18 @@ queued_job_params = {}
 # queued の最大待機時間（超過でtimeout扱い・ファイル削除）
 QUEUED_MAX_WAIT_SEC = int(os.getenv("QUEUED_MAX_WAIT_SEC", "1800"))  # 30分
 MAX_QUEUE_SIZE = int(os.getenv("MAX_QUEUE_SIZE", "50"))  # キュー上限（メモリ保護）
+QUEUE_HEARTBEAT_TIMEOUT_SEC = int(os.getenv("QUEUE_HEARTBEAT_TIMEOUT_SEC", "90"))
+QUEUE_DISCONNECT_GRACE_SEC = int(os.getenv("QUEUE_DISCONNECT_GRACE_SEC", "15"))
+ACTIVE_CLIENT_STALE_WARNING_SEC = int(os.getenv("ACTIVE_CLIENT_STALE_WARNING_SEC", "180"))
 
 # P0-3: 完了ジョブの保持期間（秒）
 JOB_RETENTION_SECONDS = 1800  # 30分
 
 # P1: ジョブログの上限設定（メモリ最適化）。utils.MAX_JOB_LOGSと同期（500）
 MAX_JOB_LOGS = 500  # 1ジョブあたりの最大ログ件数
+TERMINAL_JOB_STATUSES = frozenset(('completed', 'error', 'timeout', 'cancelled', 'expired', 'failed'))
+QUEUE_LIVE_STATUSES = frozenset(('queued', 'running'))
+queue_identity_index = {}
 
 # セッション管理とリソース監視
 session_manager = {
@@ -955,10 +962,162 @@ def get_elapsed_sec(job):
         return None
 
 
+def normalize_queue_identity(email, company_id):
+    """同一ユーザー判定用の安定キーを生成する。"""
+    normalized_email = (email or '').strip().lower()
+    normalized_company = (company_id or '').strip().lower()
+    raw_key = f"{normalized_email}|{normalized_company}"
+    return hashlib.sha256(raw_key.encode('utf-8')).hexdigest()
+
+
+def compact_job_queue_locked():
+    """キュー内の欠損・重複・非queuedを取り除く。jobs_lock前提。"""
+    global job_queue
+
+    new_queue = deque()
+    seen_job_ids = set()
+    mutated = False
+
+    for queued_job_id in list(job_queue):
+        if queued_job_id in seen_job_ids:
+            mutated = True
+            continue
+
+        queued_job = jobs.get(queued_job_id)
+        if not queued_job or queued_job.get('status') != 'queued':
+            queued_job_params.pop(queued_job_id, None)
+            mutated = True
+            continue
+
+        seen_job_ids.add(queued_job_id)
+        new_queue.append(queued_job_id)
+
+    if mutated:
+        job_queue = new_queue
+
+    return list(job_queue)
+
+
+def get_queue_position_locked(job_id):
+    qlist = compact_job_queue_locked()
+    if job_id in qlist:
+        return 1 + qlist.index(job_id)
+    return None
+
+
+def find_live_job_for_queue_key_locked(queue_key):
+    """同一待機キーの queued / running ジョブを返す。jobs_lock前提。"""
+    if not queue_key:
+        return None, None
+
+    indexed_job_id = queue_identity_index.get(queue_key)
+    if indexed_job_id:
+        indexed_job = jobs.get(indexed_job_id)
+        if indexed_job and indexed_job.get('status') in QUEUE_LIVE_STATUSES:
+            return indexed_job_id, indexed_job
+        queue_identity_index.pop(queue_key, None)
+
+    matches = []
+    for existing_job_id, job_info in jobs.items():
+        if job_info.get('queue_key') != queue_key:
+            continue
+        if job_info.get('status') not in QUEUE_LIVE_STATUSES:
+            continue
+        status_rank = 0 if job_info.get('status') == 'running' else 1
+        created_at = job_info.get('queued_at') or job_info.get('start_time') or 0
+        matches.append((status_rank, created_at, existing_job_id, job_info))
+
+    if not matches:
+        return None, None
+
+    matches.sort(key=lambda item: (item[0], item[1]))
+    _, _, job_id, job_info = matches[0]
+    queue_identity_index[queue_key] = job_id
+    return job_id, job_info
+
+
+def release_queue_identity_locked(job_id, job_info=None):
+    """ジョブ終了時に待機キーの参照を外す。jobs_lock前提。"""
+    job_info = job_info or jobs.get(job_id) or {}
+    queue_key = job_info.get('queue_key')
+    if not queue_key:
+        return
+
+    if queue_identity_index.get(queue_key) == job_id:
+        queue_identity_index.pop(queue_key, None)
+        replacement_job_id, _ = find_live_job_for_queue_key_locked(queue_key)
+        if replacement_job_id:
+            queue_identity_index[queue_key] = replacement_job_id
+
+
+def touch_job_lease_locked(job_info, current_time=None):
+    """queued / running ジョブの heartbeat を更新する。jobs_lock前提。"""
+    if not job_info or job_info.get('status') not in QUEUE_LIVE_STATUSES:
+        return
+
+    current_time = current_time or time.time()
+    job_info['last_heartbeat_at'] = current_time
+    job_info['lease_expires_at'] = current_time + QUEUE_HEARTBEAT_TIMEOUT_SEC
+    job_info['disconnect_hint_at'] = None
+    job_info['client_attached'] = True
+    job_info['last_updated'] = current_time
+
+
+def build_existing_job_response_locked(job_id, job_info):
+    """同一ユーザーの既存ジョブを再利用するときのレスポンスを組み立てる。"""
+    status = job_info.get('status') or 'queued'
+    payload = {
+        'job_id': job_id,
+        'session_id': job_info.get('session_id', ''),
+        'status': status,
+        'existing_job': True,
+        'status_url': f'/status/{job_id}',
+        'message': '既存の順番待ちを再利用しています。'
+        if status == 'queued'
+        else '既存の処理状態を再利用しています。'
+    }
+    if status == 'queued':
+        payload['queue_position'] = get_queue_position_locked(job_id)
+    return payload
+
+
+def expire_queued_job_locked(job_id, current_time, cleanup_targets, reason):
+    """queued ジョブを expired に遷移させてキューから除外する。jobs_lock前提。"""
+    global job_queue
+
+    job_info = jobs.get(job_id)
+    if not job_info or job_info.get('status') != 'queued':
+        return None
+
+    messages = {
+        'duplicate_wait': '同一ユーザーの重複待機を整理したため、この順番待ちは自動的に終了しました。',
+        'disconnect': 'タブを閉じたか通信が途切れたため、順番待ちは自動的に終了しました。',
+        'heartbeat_timeout': '一定時間操作が確認できなかったため、順番待ちは自動的に終了しました。',
+    }
+
+    job_queue = deque([queued_job_id for queued_job_id in job_queue if queued_job_id != job_id])
+    queued_job_params.pop(job_id, None)
+    job_info['status'] = 'expired'
+    job_info['login_status'] = 'expired'
+    job_info['login_message'] = messages.get(reason, messages['heartbeat_timeout'])
+    job_info['end_time'] = current_time
+    job_info['last_updated'] = current_time
+    job_info['expired_reason'] = reason
+    job_info['client_attached'] = False
+    release_queue_identity_locked(job_id, job_info)
+
+    cleanup_targets.append((job_info.get('file_path'), job_info.get('session_id')))
+    return {
+        'job_id': job_id,
+        'reason': reason,
+        'elapsed_sec': get_elapsed_sec(job_info),
+    }
+
+
 def get_queue_position(job_id):
     """queued 時のキュー内位置（1-based）。見つからなければ None。jobs_lock で保護。"""
     with jobs_lock:
-        qlist = list(job_queue)
+        qlist = compact_job_queue_locked()
         if job_id in qlist:
             return 1 + qlist.index(job_id)
     return None
@@ -1070,31 +1229,75 @@ def unregister_session(session_id):
 def maybe_start_next_job():
     """running が 0 のときキュー先頭を running にしてスレッド起動。jobs_lock は内部で取得。"""
     with jobs_lock:
+        compact_job_queue_locked()
         running_count = sum(1 for j in jobs.values() if j.get('status') == 'running')
         if running_count >= MAX_ACTIVE_SESSIONS:
             return
         if not job_queue:
             return
         queue_position = 1  # 先頭を開始する
-        job_id = job_queue.popleft()
-        params = queued_job_params.pop(job_id, None)
-        if not params or job_id not in jobs:
+        job_id = None
+        params = None
+        session_id = None
+        session_dir = None
+        email = None
+        password = None
+        file_path = None
+        company_id = ''
+        file_size = 0
+        elapsed = None
+
+        while job_queue:
+            next_job_id = job_queue.popleft()
+            next_params = queued_job_params.pop(next_job_id, None)
+            next_job = jobs.get(next_job_id)
+            if not next_params or not next_job or next_job.get('status') != 'queued':
+                release_queue_identity_locked(next_job_id, next_job)
+                continue
+
+            queue_key = next_job.get('queue_key')
+            existing_job_id, _ = find_live_job_for_queue_key_locked(queue_key)
+            if existing_job_id and existing_job_id != next_job_id:
+                # 同一ユーザーの duplicate waiting が残っていても開始しない。
+                cleanup_targets = []
+                expired_meta = expire_queued_job_locked(next_job_id, time.time(), cleanup_targets, reason='duplicate_wait')
+                for fp, sid in cleanup_targets:
+                    try:
+                        if fp and os.path.exists(fp):
+                            os.remove(fp)
+                        if sid:
+                            cleanup_user_session(sid)
+                    except Exception as cleanup_error:
+                        logger.warning(f"duplicate_wait_cleanup_error job_id={next_job_id} error={cleanup_error}")
+                if expired_meta:
+                    log_job_event("job_expired", next_job_id, status="expired", elapsed_sec=expired_meta.get('elapsed_sec'), extra={'reason': 'duplicate_wait'})
+                continue
+
+            job_id = next_job_id
+            params = next_params
+            jobs[job_id]['status'] = 'running'
+            jobs[job_id]['step_name'] = 'initializing'
+            jobs[job_id]['login_status'] = 'initializing'
+            jobs[job_id]['login_message'] = '🔄 処理を初期化中...'
+            jobs[job_id]['start_time'] = time.time()
+            touch_job_lease_locked(jobs[job_id], current_time=time.time())
+            elapsed = get_elapsed_sec(jobs[job_id])
+            email = params['email']
+            password = params['password']
+            file_path = params['file_path']
+            session_dir = params['session_dir']
+            session_id = params['session_id']
+            company_id = params.get('company_id', '')
+            file_size = params.get('file_size', 0)
+            queue_identity_index[queue_key] = job_id
+            break
+
+        if not job_id:
             return
-        # ジョブを running に更新
+
         jobs[job_id]['status'] = 'running'
-        jobs[job_id]['step_name'] = 'initializing'
-        jobs[job_id]['login_status'] = 'initializing'
-        jobs[job_id]['login_message'] = '🔄 処理を初期化中...'
-        jobs[job_id]['start_time'] = time.time()
         jobs[job_id]['last_updated'] = time.time()
-        elapsed = get_elapsed_sec(jobs[job_id])
-        email = params['email']
-        password = params['password']
-        file_path = params['file_path']
-        session_dir = params['session_dir']
-        session_id = params['session_id']
-        company_id = params.get('company_id', '')
-        file_size = params.get('file_size', 0)
+    register_session(session_id, job_id)
     log_job_event("job_started", job_id, status="running", queue_position=queue_position, elapsed_sec=elapsed, extra={"source": "queue"})
     # ロック外でスレッド起動（run_automation_impl 内で process が重い）
     thread = threading.Thread(
@@ -1146,9 +1349,11 @@ def run_automation_impl(job_id, email, password, file_path, session_dir, session
         with jobs_lock:
             j = jobs.get(job_id, {})
             st = j.get('status')
+            if st in TERMINAL_JOB_STATUSES:
+                release_queue_identity_locked(job_id, j)
             el = get_elapsed_sec(j)
             rcount = sum(1 for x in jobs.values() if x.get('status') == 'running')
-            qlen = len(job_queue)
+            qlen = len(compact_job_queue_locked())
         log_job_event("cleanup_started", job_id, status=st, elapsed_sec=el, running_count=rcount, queue_length=qlen)
         try:
             if os.path.exists(file_path):
@@ -1168,51 +1373,105 @@ def run_automation_impl(job_id, email, password, file_path, session_dir, session
 
 
 def prune_jobs(current_time=None, retention_sec=JOB_RETENTION_SECONDS):
-    """P0-3: 完了/エラー/timeout のジョブを一定時間保持後に削除。queued の最大待機超過は timeout 化してクリーンアップ。"""
+    """完了済み・失効済みジョブを掃除し、stale waiting を queue から除外する。"""
+    global job_queue
     if current_time is None:
         current_time = time.time()
-    
-    # フェーズ1: queued の最大待機超過を timeout 扱いし、ファイル・セッションを削除
-    cleanup_queued = []
+
+    cleanup_targets = []
+    expired_events = []
+    stale_active_job_ids = []
+
     with jobs_lock:
+        compact_job_queue_locked()
+
+        # running 中の同一待機キーを優先し、queued の重複は stale 扱いで掃除する。
+        running_queue_keys = {
+            job_info.get('queue_key')
+            for job_info in jobs.values()
+            if job_info.get('status') == 'running' and job_info.get('queue_key')
+        }
+        seen_waiting_keys = set()
+
+        for queued_job_id in list(job_queue):
+            queued_job = jobs.get(queued_job_id)
+            if not queued_job or queued_job.get('status') != 'queued':
+                continue
+
+            queue_key = queued_job.get('queue_key')
+            if not queue_key:
+                continue
+
+            if queue_key in running_queue_keys or queue_key in seen_waiting_keys:
+                expired_meta = expire_queued_job_locked(queued_job_id, current_time, cleanup_targets, reason='duplicate_wait')
+                if expired_meta:
+                    expired_events.append(expired_meta)
+                continue
+
+            seen_waiting_keys.add(queue_key)
+            queue_identity_index[queue_key] = queued_job_id
+
+        compact_job_queue_locked()
+
+        # queued の最大待機時間 / heartbeat 切れ / disconnect hint を整理
         for job_id, job_info in list(jobs.items()):
-            if job_info.get('status') != 'queued':
-                continue
-            queued_at = job_info.get('queued_at') or job_info.get('start_time') or 0
-            if current_time - queued_at <= QUEUED_MAX_WAIT_SEC:
-                continue
-            # キューから除去
-            global job_queue
-            job_queue = deque([x for x in job_queue if x != job_id])
-            queued_job_params.pop(job_id, None)
-            jobs[job_id]['status'] = 'timeout'
-            jobs[job_id]['end_time'] = current_time
-            jobs[job_id]['login_message'] = '待機時間が上限を超えたためキャンセルされました。'
-            fp = job_info.get('file_path')
-            sid = job_info.get('session_id')
-            if fp or sid:
-                cleanup_queued.append((fp, sid))
-    for fp, sid in cleanup_queued:
-        try:
-            if fp and os.path.exists(fp):
-                os.remove(fp)
-            if sid:
-                cleanup_user_session(sid)
-                unregister_session(sid)
-        except Exception as e:
-            logger.error(f"prune_queued_cleanup job_id cleanup_error={e}")
-    
+            status = job_info.get('status')
+            if status == 'queued':
+                queued_at = job_info.get('queued_at') or job_info.get('start_time') or 0
+                last_heartbeat_at = job_info.get('last_heartbeat_at') or queued_at
+                lease_expires_at = job_info.get('lease_expires_at') or (last_heartbeat_at + QUEUE_HEARTBEAT_TIMEOUT_SEC)
+                disconnect_hint_at = job_info.get('disconnect_hint_at')
+
+                if disconnect_hint_at and last_heartbeat_at <= disconnect_hint_at and current_time - disconnect_hint_at > QUEUE_DISCONNECT_GRACE_SEC:
+                    expired_meta = expire_queued_job_locked(job_id, current_time, cleanup_targets, reason='disconnect')
+                    if expired_meta:
+                        expired_events.append(expired_meta)
+                    continue
+
+                if current_time > lease_expires_at:
+                    expired_meta = expire_queued_job_locked(job_id, current_time, cleanup_targets, reason='heartbeat_timeout')
+                    if expired_meta:
+                        expired_events.append(expired_meta)
+                    continue
+
+                if current_time - queued_at > QUEUED_MAX_WAIT_SEC:
+                    job_queue = deque([queued_job_id for queued_job_id in job_queue if queued_job_id != job_id])
+                    queued_job_params.pop(job_id, None)
+                    jobs[job_id]['status'] = 'timeout'
+                    jobs[job_id]['login_status'] = 'timeout'
+                    jobs[job_id]['login_message'] = '待機時間が上限を超えたためキャンセルされました。'
+                    jobs[job_id]['end_time'] = current_time
+                    jobs[job_id]['last_updated'] = current_time
+                    release_queue_identity_locked(job_id, jobs[job_id])
+                    cleanup_targets.append((job_info.get('file_path'), job_info.get('session_id')))
+                    expired_events.append({
+                        'job_id': job_id,
+                        'reason': 'queued_timeout',
+                        'elapsed_sec': get_elapsed_sec(job_info),
+                    })
+                    continue
+
+                if queue_key:
+                    queue_identity_index[queue_key] = job_id
+
+            elif status == 'running':
+                last_heartbeat_at = job_info.get('last_heartbeat_at') or job_info.get('start_time') or current_time
+                if current_time - last_heartbeat_at > ACTIVE_CLIENT_STALE_WARNING_SEC and not job_info.get('client_stale_warned'):
+                    jobs[job_id]['client_stale_warned'] = True
+                    jobs[job_id]['client_attached'] = False
+                    stale_active_job_ids.append(job_id)
+
     removed_count = 0
     removed_job_ids = []
-    
+
     with jobs_lock:
         jobs_to_remove = []
-        
+
         for job_id, job_info in list(jobs.items()):
-            # completed / error / timeout / cancelled を削除対象
-            if job_info.get('status') not in ('completed', 'error', 'timeout', 'cancelled'):
+            # completed / error / timeout / cancelled / expired を削除対象
+            if job_info.get('status') not in TERMINAL_JOB_STATUSES:
                 continue
-            
+
             # タイムスタンプを取得
             end_time = job_info.get('end_time')
             if end_time is None:
@@ -1228,21 +1487,39 @@ def prune_jobs(current_time=None, retention_sec=JOB_RETENTION_SECONDS):
             if current_time - end_time > retention_sec:
                 jobs_to_remove.append(job_id)
         
-        # 削除実行
+            # 削除実行
         for job_id in jobs_to_remove:
             job_info = jobs.get(job_id, {})
             log_count = len(job_info.get('logs', []))
             age_sec = current_time - job_info.get('end_time', current_time)
-            
+            release_queue_identity_locked(job_id, job_info)
             del jobs[job_id]
             removed_count += 1
             removed_job_ids.append(job_id)
-            
+
             logger.info(f"job_prune removed job_id={job_id} status={job_info.get('status')} log_count={log_count} age_sec={age_sec:.1f}")
-    
+
+    for fp, sid in cleanup_targets:
+        try:
+            if fp and os.path.exists(fp):
+                os.remove(fp)
+            if sid:
+                cleanup_user_session(sid)
+                unregister_session(sid)
+        except Exception as cleanup_error:
+            logger.error(f"prune_queued_cleanup_error error={cleanup_error}")
+
+    for expired_meta in expired_events:
+        reason = expired_meta.get('reason')
+        status = 'timeout' if reason == 'queued_timeout' else 'expired'
+        log_job_event("job_expired", expired_meta['job_id'], status=status, elapsed_sec=expired_meta.get('elapsed_sec'), extra={'reason': reason})
+
+    for stale_active_job_id in stale_active_job_ids:
+        logger.warning(f"active_client_stale job_id={stale_active_job_id} threshold_sec={ACTIVE_CLIENT_STALE_WARNING_SEC}")
+
     if removed_count > 0:
         logger.info(f"job_prune summary removed={removed_count} remaining={len(jobs)}")
-        
+
         # P1-1: prune_jobs実行前後のメモリ計測（削除があった場合のみ）
         if metrics_available:
             jobs_count_before = len(jobs) + removed_count
@@ -1256,7 +1533,7 @@ def prune_jobs(current_time=None, retention_sec=JOB_RETENTION_SECONDS):
                 'sessions_count': len(session_manager['active_sessions']),
                 'removed_count': removed_count
             })
-    
+
     return removed_count
 
 def validate_input_data(email, password, file):
@@ -2122,7 +2399,25 @@ def upload_file():
         validation_errors = validate_input_data(email, password, file)
         if validation_errors:
             return jsonify({'error': '入力エラー: ' + '; '.join(validation_errors)})
-        
+        queue_key = normalize_queue_identity(email, company_id)
+        prune_jobs(current_time=time.time())
+
+        with jobs_lock:
+            existing_job_id, existing_job = find_live_job_for_queue_key_locked(queue_key)
+            if existing_job_id and existing_job:
+                touch_job_lease_locked(existing_job, current_time=time.time())
+                existing_payload = build_existing_job_response_locked(existing_job_id, existing_job)
+                log_job_event(
+                    "job_reused",
+                    existing_job_id,
+                    status=existing_job.get('status'),
+                    queue_position=existing_payload.get('queue_position'),
+                    elapsed_sec=get_elapsed_sec(existing_job),
+                    extra={'reason': 'same_user_reuse'}
+                )
+                status_code = 202 if existing_job.get('status') == 'queued' else 200
+                return jsonify(existing_payload), status_code
+
         # 直列実行＋キュー: running が上限でも 503 にせず、後続で queued に積む（キュー満杯時のみ 503 QUEUE_FULL）
 
         # P0-P1: メモリガード（新規ジョブ開始前チェック）。job_idは未生成のためログには含めない
@@ -2154,9 +2449,6 @@ def upload_file():
         file_path = os.path.join(session_dir, filename)
         file.save(file_path)
         
-        # セッションを登録
-        register_session(session_id, job_id)
-        
         # P0-P1: ファイルアップロード直後のメモリ計測（重要イベント）
         if metrics_available:
             log_memory("upload_done", job_id=job_id, session_id=session_id, extra={
@@ -2166,11 +2458,32 @@ def upload_file():
         
         # 直列実行＋キュー: running が上限なら queued に積み、そうでなければ即 running で開始
         with jobs_lock:
+            existing_job_id, existing_job = find_live_job_for_queue_key_locked(queue_key)
+            if existing_job_id and existing_job:
+                touch_job_lease_locked(existing_job, current_time=time.time())
+                existing_payload = build_existing_job_response_locked(existing_job_id, existing_job)
+                log_job_event(
+                    "job_reused",
+                    existing_job_id,
+                    status=existing_job.get('status'),
+                    queue_position=existing_payload.get('queue_position'),
+                    elapsed_sec=get_elapsed_sec(existing_job),
+                    extra={'reason': 'same_user_race_reuse'}
+                )
+                if file_path and os.path.exists(file_path):
+                    try:
+                        os.remove(file_path)
+                    except Exception:
+                        pass
+                cleanup_user_session(session_id)
+                status_code = 202 if existing_job.get('status') == 'queued' else 200
+                return jsonify(existing_payload), status_code
+
+            compact_job_queue_locked()
             running_count = sum(1 for j in jobs.values() if j.get('status') == 'running')
             if running_count >= MAX_ACTIVE_SESSIONS:
                 if len(job_queue) >= MAX_QUEUE_SIZE:
                     cleanup_user_session(session_id)
-                    unregister_session(session_id)
                     if os.path.exists(file_path):
                         try:
                             os.remove(file_path)
@@ -2199,8 +2512,13 @@ def upload_file():
                     'file_path': file_path,
                     'email_hash': hash(email),
                     'company_id': company_id,
+                    'queue_key': queue_key,
                     'resource_warnings': [],
-                    'last_updated': time.time()
+                    'last_updated': time.time(),
+                    'last_heartbeat_at': time.time(),
+                    'lease_expires_at': time.time() + QUEUE_HEARTBEAT_TIMEOUT_SEC,
+                    'disconnect_hint_at': None,
+                    'client_attached': True,
                 }
                 job_queue.append(job_id)
                 queued_job_params[job_id] = {
@@ -2210,9 +2528,11 @@ def upload_file():
                     'session_dir': session_dir,
                     'session_id': session_id,
                     'company_id': company_id,
-                    'file_size': file_size
+                    'file_size': file_size,
+                    'queue_key': queue_key,
                 }
-                queue_position = len(job_queue)
+                queue_identity_index[queue_key] = job_id
+                queue_position = get_queue_position_locked(job_id)
                 log_job_event("job_created", job_id, status="queued", elapsed_sec=0)
                 log_job_event("job_queued", job_id, status="queued", queue_position=queue_position, elapsed_sec=0)
                 return jsonify({
@@ -2241,10 +2561,16 @@ def upload_file():
                 'file_path': file_path,
                 'email_hash': hash(email),
                 'company_id': company_id,
+                'queue_key': queue_key,
                 'resource_warnings': [],
-                'last_updated': time.time()
+                'last_updated': time.time(),
+                'last_heartbeat_at': time.time(),
+                'lease_expires_at': time.time() + QUEUE_HEARTBEAT_TIMEOUT_SEC,
+                'disconnect_hint_at': None,
+                'client_attached': True,
             }
         log_job_event("job_created", job_id, status="running", elapsed_sec=0)
+        register_session(session_id, job_id)
         
         resource_warnings = get_resource_warnings()
         if resource_warnings:
@@ -2252,6 +2578,7 @@ def upload_file():
         with jobs_lock:
             if job_id in jobs:
                 jobs[job_id]['resource_warnings'] = resource_warnings
+                queue_identity_index[queue_key] = job_id
         
         thread = threading.Thread(
             target=run_automation_impl,
@@ -2290,18 +2617,23 @@ def cancel_job(job_id):
         if job_id not in jobs:
             return jsonify({'ok': False, 'error': 'ジョブが見つかりません'}), 404
         job = jobs[job_id]
+        if job.get('status') in ('cancelled', 'expired'):
+            return jsonify({'ok': True, 'status': job.get('status')}), 200
         if job.get('status') != 'queued':
             return jsonify({'ok': False, 'error': '実行中はキャンセルできません。待機中のみキャンセル可能です。', 'status': job.get('status')}), 409
         # キューから除去
         job_queue = deque([x for x in job_queue if x != job_id])
         queued_job_params.pop(job_id, None)
         jobs[job_id]['status'] = 'cancelled'
+        jobs[job_id]['login_status'] = 'cancelled'
         jobs[job_id]['end_time'] = time.time()
         jobs[job_id]['login_message'] = 'キャンセルされました。'
         jobs[job_id]['last_updated'] = time.time()
+        jobs[job_id]['client_attached'] = False
+        release_queue_identity_locked(job_id, jobs[job_id])
         fp = job.get('file_path')
         sid = job.get('session_id')
-        qlen = len(job_queue)
+        qlen = len(compact_job_queue_locked())
         rcount = sum(1 for j in jobs.values() if j.get('status') == 'running')
     elapsed = get_elapsed_sec(job)
     log_job_event("cancelled", job_id, status="cancelled", elapsed_sec=elapsed, queue_length=qlen, running_count=rcount)
@@ -2318,6 +2650,28 @@ def cancel_job(job_id):
         except Exception as e:
             logger.warning(f"cancel_cleanup_session_error job_id={job_id} session_id={sid} error={e}")
     return jsonify({'ok': True, 'status': 'cancelled'})
+
+
+@app.route('/api/queue/detach/<job_id>', methods=['POST'])
+def detach_queue_job(job_id):
+    """タブ close / reload の補助シグナル。最終的な除外判断は heartbeat timeout で行う。"""
+    with jobs_lock:
+        job = jobs.get(job_id)
+        if not job:
+            return jsonify({'ok': True, 'status': 'missing'}), 200
+        if job.get('status') not in QUEUE_LIVE_STATUSES:
+            return jsonify({'ok': True, 'status': job.get('status'), 'ignored': True}), 200
+
+        current_time = time.time()
+        job['disconnect_hint_at'] = current_time
+        job['client_attached'] = False
+        job['last_updated'] = current_time
+        status = job.get('status')
+        queue_position = get_queue_position_locked(job_id) if status == 'queued' else None
+        elapsed_sec = get_elapsed_sec(job)
+
+    log_job_event("job_detached", job_id, status=status, queue_position=queue_position, elapsed_sec=elapsed_sec)
+    return jsonify({'ok': True, 'status': status}), 200
 
 
 @app.route('/status/<job_id>')
@@ -2344,6 +2698,8 @@ def get_status(job_id):
                 }), 404
             
             job = jobs[job_id]
+            if job.get('status') in QUEUE_LIVE_STATUSES:
+                touch_job_lease_locked(job, current_time=now)
             
             # P1: ログページングパラメータを取得
             last_n = request.args.get('last_n', type=int)
@@ -2382,12 +2738,7 @@ def get_status(job_id):
             # queued のときキュー内位置を算出（jobs_lock 内のため get_queue_position は使わず自前で取得）
             queue_position = None
             if job.get('status') == 'queued':
-                try:
-                    qlist = list(job_queue)
-                    if job_id in qlist:
-                        queue_position = 1 + qlist.index(job_id)
-                except Exception:
-                    pass
+                queue_position = get_queue_position_locked(job_id)
             # レスポンスデータを構築
             response_data = {
                 'status': job['status'],
@@ -2432,6 +2783,19 @@ def get_active_sessions():
     try:
         with session_manager['session_lock']:
             active_sessions = session_manager['active_sessions'].copy()
+        with jobs_lock:
+            compact_job_queue_locked()
+            queued_jobs = [job_id for job_id in job_queue if jobs.get(job_id, {}).get('status') == 'queued']
+            stale_waiting = [
+                job_id for job_id, job_info in jobs.items()
+                if job_info.get('status') == 'queued'
+                and (job_info.get('lease_expires_at') or 0) < time.time()
+            ]
+            detached_active = [
+                job_id for job_id, job_info in jobs.items()
+                if job_info.get('status') == 'running'
+                and not job_info.get('client_attached', True)
+            ]
         
         resources = get_system_resources()
         warnings = check_resource_limits()
@@ -2447,6 +2811,11 @@ def get_active_sessions():
                 }
                 for session_id, session_info in active_sessions.items()
             ],
+            'queue': {
+                'queued_jobs': len(queued_jobs),
+                'stale_waiting_candidates': len(stale_waiting),
+                'detached_active_jobs': len(detached_active),
+            },
             'resources': resources,
             'warnings': warnings
         })
@@ -2501,6 +2870,8 @@ def generate_user_message(status, login_status, login_message, progress):
         return f"❌ エラーが発生しました: {login_message}"
     elif status == 'timeout':
         return f"⏱ タイムアウト - {login_message}" if login_message else "⏱ 処理が時間切れになりました"
+    elif status == 'expired':
+        return login_message or "⏳ 順番待ちは自動的に終了しました。"
     elif status == 'queued':
         return login_message or "現在、他ユーザーが作業中。順番に処理します。"
     elif status == 'cancelled':
