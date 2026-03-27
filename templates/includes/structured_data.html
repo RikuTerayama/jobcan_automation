@@ -36,6 +36,12 @@
 </script>
 {% endif %}
 
+{% if seo_article_schema %}
+<script type="application/ld+json">
+{{ seo_article_schema|tojson(indent=2) }}
+</script>
+{% endif %}
+
 {% block extra_structured_data %}
 {# BreadcrumbList JSON-LD（表示用短ラベルは breadcrumb_title を優先） #}
 {% set current_path = request.path|default('/') if request is defined and request else '/' %}

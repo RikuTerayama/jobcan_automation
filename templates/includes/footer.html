@@ -1,6 +1,9 @@
 ﻿{# 蜈ｱ騾壹ヵ繝・ち繝ｼ・・ooter_columns 縺ｧ繝倥ャ繝繝ｼ縺ｨ蜈ｱ騾壹・繝翫ン讒矩繧貞・蛻ｩ逕ｨ・・#}
 <footer style="background: var(--color-bg-primary, #121212); padding: var(--spacing-xl, 48px) var(--spacing-md, 16px); margin-top: var(--spacing-xl, 48px); border-top: 1px solid rgba(255, 255, 255, 0.1);">
     <div style="max-width: 1200px; margin: 0 auto;">
+        {% if related_content_section %}
+            {% include 'includes/related_content.html' %}
+        {% endif %}
         {% set footer_affiliate_slot_id = affiliate_footer_slot_id %}
         {% if footer_affiliate_slot_id %}
             {% with slot_id=footer_affiliate_slot_id, hidden_until_ready=(footer_affiliate_slot_id == 'tool_post_result') %}
