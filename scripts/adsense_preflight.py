@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 BASE_URL_DEFAULT = 'https://jobcan-automation.onrender.com'
 
 # 主要ページ（GSC 404 解消対象含む）
-MAJOR_PATHS = ['/', '/autofill', '/tools', '/privacy', '/contact', '/about', '/best-practices']
+MAJOR_PATHS = ['/', '/autofill', '/tools', '/privacy', '/contact', '/about', '/best-practices', '/faq']
 
 # sitemap.xml に含まれるべき重要URL（完全一致：末尾スラッシュなし）
 SITEMAP_REQUIRED_URLS = ['/', '/autofill', '/tools', '/blog', '/glossary', '/guide/excel-format', '/best-practices']
@@ -39,6 +39,8 @@ DISALLOWED_STRINGS = [
 
 # /tools サーバ返却HTMLに含まれてはいけない文言（本文・script 含む）
 NO_RESULTS_FORBIDDEN = '検索条件に一致するツールが見つかりませんでした。'
+VISIBLE_TEXT_INTEGRITY_PATHS = ['/', '/faq', '/guide/excel-format', '/blog', '/glossary']
+VISIBLE_TEXT_FORBIDDEN = ['</h1>', '</h2>', '</h3>', '</p>', '</li>', '</a>', '/h1>', '/h2>', '/h3>', '/p>', '/li>', '/a>', '�']
 
 # Googlebot UA
 GOOGLEBOT_UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
@@ -63,6 +65,7 @@ def run_local():
 
 def _run_checks(get_fn, base_url, use_headers=True):
     """共通チェックロジック。get_fn(path, headers?) -> (status, body, headers_dict)"""
+    from bs4 import BeautifulSoup
     rows = []
     all_ok = True
 
@@ -247,6 +250,21 @@ def _run_checks(get_fn, base_url, use_headers=True):
                 all_ok = False
         except Exception as e:
             rows.append(('9_indexable', path, f'ERROR {e}', False))
+            all_ok = False
+
+    for path in VISIBLE_TEXT_INTEGRITY_PATHS:
+        try:
+            resp = get(path)
+            body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+            soup = BeautifulSoup(body, 'html.parser')
+            visible_text = soup.get_text('\n', strip=True)
+            found = [token for token in VISIBLE_TEXT_FORBIDDEN if token in visible_text]
+            ok = not found
+            rows.append(('9a_visible_text', path, 'OK no broken tags/text' if ok else f'FAIL found {found[:3]}', ok))
+            if not ok:
+                all_ok = False
+        except Exception as e:
+            rows.append(('9a_visible_text', path, f'ERROR {e}', False))
             all_ok = False
 
     for path in NOINDEX_SELF_CANONICAL_PATHS:
