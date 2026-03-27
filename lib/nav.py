@@ -64,19 +64,19 @@ def get_nav_sections():
     ]
 
     return [
-        {'id': 'home', 'label': 'Home', 'path': '/', 'children': None},
-        {'id': 'tools', 'label': 'Tools', 'path': '/tools', 'children': tool_links},
-        {'id': 'guide', 'label': 'Guide', 'path': '/guide', 'children': guide_links},
-        {'id': 'resource', 'label': 'Resource', 'path': '/faq', 'children': resource_links},
+        {'id': 'home', 'label': 'ホーム', 'path': '/', 'children': None},
+        {'id': 'tools', 'label': 'ツール', 'path': '/tools', 'children': tool_links},
+        {'id': 'guide', 'label': 'ガイド', 'path': '/guide', 'children': guide_links},
+        {'id': 'resource', 'label': 'リソース', 'path': '/faq', 'children': resource_links},
     ]
 
 
 def get_nav_sections_fallback():
     """Fallback navigation used when PRODUCTS cannot be read."""
     return [
-        {'id': 'home', 'label': 'Home', 'path': '/', 'children': None},
-        {'id': 'tools', 'label': 'Tools', 'path': '/tools', 'children': [{'name': 'すべてのツール', 'path': '/tools', 'icon': ''}]},
-        {'id': 'guide', 'label': 'Guide', 'path': '/guide', 'children': [
+        {'id': 'home', 'label': 'ホーム', 'path': '/', 'children': None},
+        {'id': 'tools', 'label': 'ツール', 'path': '/tools', 'children': [{'name': 'すべてのツール', 'path': '/tools', 'icon': ''}]},
+        {'id': 'guide', 'label': 'ガイド', 'path': '/guide', 'children': [
             {
                 'group_label': 'Jobcan AutoFill ガイド',
                 'items': [
@@ -90,7 +90,7 @@ def get_nav_sections_fallback():
                 ],
             }
         ]},
-        {'id': 'resource', 'label': 'Resource', 'path': '/faq', 'children': [
+        {'id': 'resource', 'label': 'リソース', 'path': '/faq', 'children': [
             {'name': 'よくある質問', 'path': '/faq', 'icon': ''},
             {'name': '用語集', 'path': '/glossary', 'icon': ''},
             {'name': 'ベストプラクティス', 'path': '/best-practices', 'icon': ''},

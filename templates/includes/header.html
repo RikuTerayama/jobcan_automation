@@ -1,4 +1,6 @@
 {# 共通ヘッダー（Home / Tools / Guide / Resource の4大項目・ドロップダウン） #}
+{% include 'includes/header_v2.html' %}
+{% if false %}
 {% from 'includes/icons.html' import icon %}
 {% set _current_path = request.path|default('/') if (request is defined and request) else '/' %}
 <header class="site-header">
@@ -159,3 +161,4 @@
     });
 })();
 </script>
+{% endif %}

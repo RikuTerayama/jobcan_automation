@@ -23,6 +23,7 @@ BASE_URL_DEFAULT = 'https://jobcan-automation.onrender.com'
 MAJOR_PATHS = ['/', '/autofill', '/tools', '/privacy', '/contact', '/about', '/best-practices', '/faq']
 PUBLIC_AFFILIATE_PATHS = ['/', '/tools', '/autofill', '/privacy', '/terms', '/contact', '/about', '/faq', '/guide', '/blog', '/case-studies', '/sitemap.html']
 NON_UI_AFFILIATE_PATHS = ['/sitemap.xml', '/robots.txt', '/ads.txt', '/api/seo/crawl-urls']
+HEADER_PATHS = ['/', '/autofill', '/tools', '/guide', '/blog', '/case-studies']
 
 # sitemap.xml に含まれるべき重要URL（完全一致：末尾スラッシュなし）
 SITEMAP_REQUIRED_URLS = ['/', '/autofill', '/tools', '/blog', '/glossary', '/guide/excel-format', '/best-practices', '/guide/complete', '/guide/comprehensive-guide']
@@ -166,6 +167,8 @@ TOP_INLINE_REQUIREMENTS = {
     },
 }
 NO_HEADER_TOP_SLOT_PATHS = ['/autofill', '/tools', '/tools/image-batch', '/tools/pdf', '/tools/seo']
+HOME_GRID_EXPECTED_COUNT = 6
+HOME_USE_CASE_MIN_COUNT = 4
 
 # Googlebot UA
 GOOGLEBOT_UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
@@ -422,6 +425,39 @@ def _run_checks(get_fn, base_url, use_headers=True):
             rows.append(('9b_footer_text', path, f'ERROR {e}', False))
             all_ok = False
 
+    for path in HEADER_PATHS:
+        try:
+            resp = get(path)
+            body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+            soup = BeautifulSoup(body, 'html.parser')
+            header = soup.select_one('.site-header .site-nav__inner')
+            logo = soup.select_one('.site-header .site-logo')
+            link_count = len(soup.select('.site-header .site-nav__links > .site-nav__link, .site-header .site-nav__dropdown-wrap'))
+            ok = bool(header) and bool(logo) and link_count >= 4
+            rows.append(('9ba_header', path, f'OK links={link_count}' if ok else f'FAIL header={bool(header)} logo={bool(logo)} links={link_count}', ok))
+            if not ok:
+                all_ok = False
+        except Exception as e:
+            rows.append(('9ba_header', path, f'ERROR {e}', False))
+            all_ok = False
+
+    try:
+        resp = get('/')
+        body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+        soup = BeautifulSoup(body, 'html.parser')
+        page_cards = len(soup.select('.landing-page-grid .landing-page-card'))
+        use_cards = len(soup.select('.landing-use-grid .landing-use-card'))
+        page_grid_ok = bool(soup.select_one('.landing-page-grid')) and page_cards == HOME_GRID_EXPECTED_COUNT
+        use_grid_ok = bool(soup.select_one('.landing-use-grid')) and use_cards >= HOME_USE_CASE_MIN_COUNT
+        rows.append(('9bb_home_grid', '/', f'OK cards={page_cards}' if page_grid_ok else f'FAIL cards={page_cards}', page_grid_ok))
+        rows.append(('9bc_home_use_cases', '/', f'OK cards={use_cards}' if use_grid_ok else f'FAIL cards={use_cards}', use_grid_ok))
+        if not page_grid_ok or not use_grid_ok:
+            all_ok = False
+    except Exception as e:
+        rows.append(('9bb_home_grid', '/', f'ERROR {e}', False))
+        rows.append(('9bc_home_use_cases', '/', f'ERROR {e}', False))
+        all_ok = False
+
     for path in PUBLIC_AFFILIATE_PATHS:
         try:
             resp = get(path)
@@ -439,6 +475,11 @@ def _run_checks(get_fn, base_url, use_headers=True):
                 or soup.select_one('.affiliate-footer-block .affiliate-link-card__label')
                 or soup.select_one('.affiliate-side-rail .affiliate-link-card__label')
             )
+            inline_module = bool(
+                soup.select_one('[data-affiliate-slot] .affiliate-link-grid--module')
+                or soup.select_one('[data-affiliate-slot] .affiliate-link-card--module')
+            )
+            rail_panel = bool(soup.select_one('.affiliate-side-rail__panel'))
             ok = (
                 'text/html' in content_type
                 and 'charset=utf-8' in content_type
@@ -448,11 +489,13 @@ def _run_checks(get_fn, base_url, use_headers=True):
                 and visible_affiliate_copy
                 and disclosure_count <= 1
                 and side_rail
+                and inline_module
+                and rail_panel
             )
             rows.append(
                 ('9c_affiliate_public', path,
-                 f'OK slots={slot_count} footer={footer_block} rail={side_rail} disclosures={disclosure_count} copy={visible_affiliate_copy}' if ok else
-                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} slots={slot_count} footer={footer_block} rail={side_rail} disclosures={disclosure_count} copy={visible_affiliate_copy}',
+                 f'OK slots={slot_count} footer={footer_block} rail={side_rail} module={inline_module} disclosures={disclosure_count} copy={visible_affiliate_copy}' if ok else
+                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} slots={slot_count} footer={footer_block} rail={side_rail} panel={rail_panel} module={inline_module} disclosures={disclosure_count} copy={visible_affiliate_copy}',
                  ok)
             )
             if not ok:
@@ -508,14 +551,15 @@ def _run_checks(get_fn, base_url, use_headers=True):
             has_fallback = bool(slot and slot.select_one('[data-affiliate-fallback="true"] .affiliate-link-card__label'))
             disclosure_near = bool(slot and slot.select_one('.affiliate-disclosure'))
             widget_disabled = bool(slot and slot.get('data-affiliate-disable-widget') == 'true')
+            module_shape = bool(slot and slot.select_one('.affiliate-link-grid--module'))
             header_slot = bool(soup.select_one(f'.affiliate-top-shell [data-affiliate-slot="{slot_id}"]'))
-            ok = bool(slot) and slot_before_footer and has_fallback and disclosure_near and widget_disabled and (path not in NO_HEADER_TOP_SLOT_PATHS or not header_slot)
+            ok = bool(slot) and slot_before_footer and has_fallback and disclosure_near and widget_disabled and module_shape and (path not in NO_HEADER_TOP_SLOT_PATHS or not header_slot)
             rows.append((
                 '9f_top_affiliate',
                 path,
                 'OK top affiliate before footer'
                 if ok else
-                f'FAIL slot={bool(slot)} before_footer={slot_before_footer} fallback={has_fallback} disclosure={disclosure_near} widget_disabled={widget_disabled} header_slot={header_slot}',
+                f'FAIL slot={bool(slot)} before_footer={slot_before_footer} fallback={has_fallback} disclosure={disclosure_near} widget_disabled={widget_disabled} module={module_shape} header_slot={header_slot}',
                 ok,
             ))
             if not ok:
@@ -523,6 +567,20 @@ def _run_checks(get_fn, base_url, use_headers=True):
         except Exception as e:
             rows.append(('9f_top_affiliate', path, f'ERROR {e}', False))
             all_ok = False
+
+    try:
+        common_css_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'static', 'css', 'common.css')
+        with open(common_css_path, 'r', encoding='utf-8') as fh:
+            css_text = fh.read()
+        desktop_rule = '@media (min-width: 1280px)' in css_text and '.affiliate-side-rail' in css_text
+        hidden_default = '.affiliate-side-rail {' in css_text and 'display: none;' in css_text
+        ok = desktop_rule and hidden_default
+        rows.append(('9g_affiliate_css', 'static/css/common.css', 'OK desktop rail rule present' if ok else f'FAIL desktop_rule={desktop_rule} hidden_default={hidden_default}', ok))
+        if not ok:
+            all_ok = False
+    except Exception as e:
+        rows.append(('9g_affiliate_css', 'static/css/common.css', f'ERROR {e}', False))
+        all_ok = False
 
     sitemap_locs = set()
     try:
