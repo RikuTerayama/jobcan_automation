@@ -2,10 +2,9 @@
 <html lang="ja">
 <head>
     {% set page_title = 'Jobcan AutoFill ガイド | Automation Hub' %}
+    {% set page_description = 'Jobcan AutoFill の使い方をまとめたガイドです。Excel 形式、入力前の確認事項、FAQ、トラブルシューティングまでを一通り確認できます。' %}
+    {% set breadcrumb_title = 'Jobcan AutoFill ガイド' %}
     {% include 'includes/head_meta.html' %}
-    {% block description_meta %}
-        <meta name="description" content="Jobcan AutoFillの使い方ガイド。ExcelからJobcanへ勤怠データを一括入力する手順、Excel形式、制約、データ取扱い、FAQ・トラブルシューティングをまとめています。">
-    {% endblock %}
     <style>
         body { font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #121212 0%, #1A1A1A 50%, #0F0F0F 100%); min-height: 100vh; color: #FFFFFF; line-height: 1.8; }
         .container { max-width: 1000px; margin: 0 auto; background: linear-gradient(145deg, #1E1E1E 0%, #2A2A2A 100%); border-radius: 20px; padding: 50px; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5); }
@@ -164,6 +163,52 @@
         </div>
     </div>
 
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "HowTo",
+      "name": "Jobcan AutoFill の使い方",
+      "description": "Excel から Jobcan へ勤怠データをまとめて入力する手順",
+      "totalTime": "PT10M",
+      "step": [
+        {
+          "@type": "HowToStep",
+          "position": 1,
+          "name": "テンプレートを確認する",
+          "text": "AutoFill ページからテンプレートを確認し、日付と勤務時間の入力列を整えます。",
+          "url": "{{ BASE_URL|default('https://jobcan-automation.onrender.com') }}/guide/autofill#usage"
+        },
+        {
+          "@type": "HowToStep",
+          "position": 2,
+          "name": "Excel ファイルを準備する",
+          "text": "日付、開始時刻、終了時刻を所定の形式で Excel にまとめ、必要に応じて形式ガイドを確認します。",
+          "url": "{{ BASE_URL|default('https://jobcan-automation.onrender.com') }}/guide/autofill#excel"
+        },
+        {
+          "@type": "HowToStep",
+          "position": 3,
+          "name": "ログイン情報とファイルを指定する",
+          "text": "Jobcan のログイン情報と Excel ファイルを指定し、入力前の制約と注意事項を確認します。",
+          "url": "{{ BASE_URL|default('https://jobcan-automation.onrender.com') }}/guide/autofill#constraints"
+        },
+        {
+          "@type": "HowToStep",
+          "position": 4,
+          "name": "自動入力を実行する",
+          "text": "Jobcan AutoFill を実行し、進行状況と結果を確認します。",
+          "url": "{{ BASE_URL|default('https://jobcan-automation.onrender.com') }}/guide/autofill#data-handling"
+        },
+        {
+          "@type": "HowToStep",
+          "position": 5,
+          "name": "結果を確認して必要なら再調整する",
+          "text": "FAQ とトラブルシューティングを参照しながら、形式不一致やエラーがあれば修正して再実行します。",
+          "url": "{{ BASE_URL|default('https://jobcan-automation.onrender.com') }}/guide/autofill#faq"
+        }
+      ]
+    }
+    </script>
     {% include 'guide/_partials/guide_faq_jsonld.html' %}
     {% include 'includes/footer.html' %}
 </body>

@@ -1,0 +1,22 @@
+{% if slot_id %}
+    {% set affiliate_slot = affiliate_get_slot_config(slot_id) %}
+{% else %}
+    {% set affiliate_slot = None %}
+{% endif %}
+{% set slot_hidden = hidden_until_ready|default(false) %}
+{% if affiliate_slot and affiliate_can_render_slot(slot_id) %}
+<section
+    class="affiliate-slot affiliate-slot--{{ affiliate_slot.size|replace('x', '-') }} affiliate-slot--{{ affiliate_slot.breakpoint_policy }}"
+    data-affiliate-slot="{{ affiliate_slot.slot_id }}"
+    data-affiliate-kind="{{ affiliate_slot.kind }}"
+    data-affiliate-size="{{ affiliate_slot.size }}"
+    data-affiliate-breakpoint-policy="{{ affiliate_slot.breakpoint_policy }}"
+    data-affiliate-desktop-enabled="{{ 'true' if affiliate_slot.desktop_enabled else 'false' }}"
+    data-affiliate-tablet-enabled="{{ 'true' if affiliate_slot.tablet_enabled else 'false' }}"
+    data-affiliate-mobile-enabled="{{ 'true' if affiliate_slot.mobile_enabled else 'false' }}"
+    {% if slot_hidden %}data-affiliate-tool-ready="false" hidden aria-hidden="true"{% endif %}
+>
+    {% with disclosure_compact=true %}{% include 'includes/affiliate_disclosure.html' %}{% endwith %}
+    <div class="affiliate-slot__box" data-affiliate-mount></div>
+</section>
+{% endif %}

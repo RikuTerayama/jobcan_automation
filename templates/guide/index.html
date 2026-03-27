@@ -1,11 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
-    {% set page_title = 'ガイド一覧 | Automation Hub' %}
-    {% include 'includes/head_meta.html' %}
-    {% block description_meta %}
-        <meta name="description" content="Jobcan AutoFill・画像一括変換・PDF・Web/SEOなど、各ツールの使い方ガイド一覧。はじめての使い方からトラブルシューティングまで。">
-    {% endblock %}
+    {% set page_title = '繧ｬ繧､繝我ｸ隕ｧ | Automation Hub' %}
+    {% include 'includes/head_meta.html' %}
     <style>
         body { font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #121212 0%, #1A1A1A 50%, #0F0F0F 100%); min-height: 100vh; color: #FFFFFF; line-height: 1.8; }
         .container { max-width: 900px; margin: 0 auto; background: linear-gradient(145deg, #1E1E1E 0%, #2A2A2A 100%); border-radius: 20px; padding: 50px; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5); }
@@ -27,19 +24,20 @@
 </head>
 <body>
     {% include 'includes/header.html' %}
+    {% include 'includes/breadcrumb.html' %}
     <div class="container">
-        <h1>📚 ガイド一覧</h1>
-        <p class="lead">各ツールの使い方・トラブルシューティング・形式説明など、ガイドページへの入口です。</p>
-        <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 32px; font-size: 1em;">Automation Hub のツールを初めて使う方は「はじめての使い方」から、形式やエラーでお困りの方は「トラブルシューティング」「Excelファイルの作成方法」を参照してください。</p>
+        <h1>答 繧ｬ繧､繝我ｸ隕ｧ</h1>
+        <p class="lead">蜷・ヤ繝ｼ繝ｫ縺ｮ菴ｿ縺・婿繝ｻ繝医Λ繝悶Ν繧ｷ繝･繝ｼ繝・ぅ繝ｳ繧ｰ繝ｻ蠖｢蠑剰ｪｬ譏弱↑縺ｩ縲√ぎ繧､繝峨・繝ｼ繧ｸ縺ｸ縺ｮ蜈･蜿｣縺ｧ縺吶・/p>
+        <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 32px; font-size: 1em;">Automation Hub 縺ｮ繝・・繝ｫ繧貞・繧√※菴ｿ縺・婿縺ｯ縲後・縺倥ａ縺ｦ縺ｮ菴ｿ縺・婿縲阪°繧峨∝ｽ｢蠑上ｄ繧ｨ繝ｩ繝ｼ縺ｧ縺雁峅繧翫・譁ｹ縺ｯ縲後ヨ繝ｩ繝悶Ν繧ｷ繝･繝ｼ繝・ぅ繝ｳ繧ｰ縲阪窪xcel繝輔ぃ繧､繝ｫ縺ｮ菴懈・譁ｹ豕輔阪ｒ蜿ら・縺励※縺上□縺輔＞縲・/p>
 
         <section class="guide-section">
-            <h2>はじめての方へ</h2>
-            <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 16px; font-size: 1em;">Jobcan AutoFill を初めて使う方向けに、はじめての使い方・Excel形式・トラブルシューティングなどのガイドを用意しています。下の「ツール別ガイド」から該当ページへどうぞ。</p>
+            <h2>縺ｯ縺倥ａ縺ｦ縺ｮ譁ｹ縺ｸ</h2>
+            <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 16px; font-size: 1em;">Jobcan AutoFill 繧貞・繧√※菴ｿ縺・婿蜷代￠縺ｫ縲√・縺倥ａ縺ｦ縺ｮ菴ｿ縺・婿繝ｻExcel蠖｢蠑上・繝医Λ繝悶Ν繧ｷ繝･繝ｼ繝・ぅ繝ｳ繧ｰ縺ｪ縺ｩ縺ｮ繧ｬ繧､繝峨ｒ逕ｨ諢上＠縺ｦ縺・∪縺吶ゆｸ九・縲後ヤ繝ｼ繝ｫ蛻･繧ｬ繧､繝峨阪°繧芽ｩｲ蠖薙・繝ｼ繧ｸ縺ｸ縺ｩ縺・◇縲・/p>
         </section>
 
         <section class="guide-section">
-            <h2>ツール別ガイド</h2>
-            <p class="lead" style="margin-bottom: 16px;">各ツールごとに1本のガイドでまとめています（1ツール＝1ガイド）。</p>
+            <h2>繝・・繝ｫ蛻･繧ｬ繧､繝・/h2>
+            <p class="lead" style="margin-bottom: 16px;">蜷・ヤ繝ｼ繝ｫ縺斐→縺ｫ1譛ｬ縺ｮ繧ｬ繧､繝峨〒縺ｾ縺ｨ繧√※縺・∪縺呻ｼ・繝・・繝ｫ・・繧ｬ繧､繝会ｼ峨・/p>
             <ul class="guide-list">
                 {% for p in products|default([]) %}
                     {% if p.get('guide_path') %}
@@ -51,24 +49,27 @@
 
         <section class="guide-section">
             <details class="guide-details">
-                <summary>Jobcan AutoFill 詳細ガイド（サブガイド）</summary>
-                <p style="margin-top: 12px; margin-bottom: 12px; color: rgba(255,255,255,0.7); font-size: 0.95em;">統合ガイドは <a href="/guide/autofill">Jobcan AutoFill ガイド</a> です。以下はより細かいトピック別のページです。</p>
+                <summary>Jobcan AutoFill 隧ｳ邏ｰ繧ｬ繧､繝会ｼ医し繝悶ぎ繧､繝会ｼ・/summary>
+                <p style="margin-top: 12px; margin-bottom: 12px; color: rgba(255,255,255,0.7); font-size: 0.95em;">邨ｱ蜷医ぎ繧､繝峨・ <a href="/guide/autofill">Jobcan AutoFill 繧ｬ繧､繝・/a> 縺ｧ縺吶ゆｻ･荳九・繧医ｊ邏ｰ縺九＞繝医ヴ繝・け蛻･縺ｮ繝壹・繧ｸ縺ｧ縺吶・/p>
                 <ul class="guide-list">
-                    <li><a href="/guide/getting-started">はじめての使い方</a></li>
-                    <li><a href="/guide/excel-format">Excelファイルの作成方法</a></li>
-                    <li><a href="/guide/troubleshooting">トラブルシューティング</a></li>
-                    <li><a href="/guide/complete">完全ガイド</a></li>
-                    <li><a href="/guide/comprehensive-guide">総合ガイド（勤怠管理の効率化）</a></li>
+                    <li><a href="/guide/getting-started">縺ｯ縺倥ａ縺ｦ縺ｮ菴ｿ縺・婿</a></li>
+                    <li><a href="/guide/excel-format">Excel繝輔ぃ繧､繝ｫ縺ｮ菴懈・譁ｹ豕・/a></li>
+                    <li><a href="/guide/troubleshooting">繝医Λ繝悶Ν繧ｷ繝･繝ｼ繝・ぅ繝ｳ繧ｰ</a></li>
+                    <li><a href="/guide/complete">螳悟・繧ｬ繧､繝・/a></li>
+                    <li><a href="/guide/comprehensive-guide">邱丞粋繧ｬ繧､繝会ｼ亥共諤邂｡逅・・蜉ｹ邇・喧・・/a></li>
                 </ul>
             </details>
         </section>
 
+        {% include 'includes/seo_link_hub.html' %}
+
         <div class="nav-links">
-            <a href="/" class="nav-link">← ホーム</a>
-            <a href="/tools" class="nav-link">ツール一覧</a>
+            <a href="/" class="nav-link">竊・繝帙・繝</a>
+            <a href="/tools" class="nav-link">繝・・繝ｫ荳隕ｧ</a>
             <a href="/autofill" class="nav-link">Jobcan AutoFill</a>
         </div>
     </div>
     {% include 'includes/footer.html' %}
 </body>
 </html>
+

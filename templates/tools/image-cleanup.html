@@ -5,9 +5,6 @@
     {% set page_description = '透過画像を白背景JPEGに変換、余白トリミング、枠・余白・角丸、縦横比統一、背景除去をブラウザ内で一括処理できる無料ツール。ファイルはアップロードされません。' %}
     {% set breadcrumb_title = product.name|default('画像ユーティリティ') %}
     {% include 'includes/head_meta.html' %}
-    {% block description_meta %}
-        <meta name="description" content="{% if page_description|length > 110 %}{{ page_description[:107] }}...{% else %}{{ page_description }}{% endif %}">
-    {% endblock %}
     {# P1-4: SoftwareApplication構造化データ #}
     {% if product %}
     {% include 'includes/structured_data.html' %}
@@ -35,9 +32,6 @@
     </script>
     {% endblock %}
     {% endif %}
-    {% block og_description %}
-        <meta property="og:description" content="{% if page_description|length > 200 %}{{ page_description[:197] }}...{% else %}{{ page_description }}{% endif %}">
-    {% endblock %}
     <style>
         * {
             box-sizing: border-box;

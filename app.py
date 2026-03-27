@@ -10,12 +10,19 @@ import psutil
 import time
 import logging
 from datetime import datetime
-from flask import Flask, request, jsonify, render_template, send_file, Response, redirect, g
+from flask import Flask, request, jsonify, render_template, send_file, Response, redirect, g, has_request_context
 from werkzeug.exceptions import NotFound, MethodNotAllowed
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from utils import allowed_file, create_template_excel, create_previous_month_template_excel
 from automation import process_jobcan_automation
+from lib.seo import (
+    build_breadcrumb_items,
+    get_page_kind,
+    get_seo_defaults,
+    get_web_application_schema,
+    is_noindex_path,
+)
 
 # P1-1: 計測ログユーティリティ（循環import回避）
 try:
@@ -68,7 +75,10 @@ def validate_startup():
         'includes/header.html',
         'includes/footer.html',
         'includes/head_meta.html',
-        'includes/structured_data.html'
+        'includes/structured_data.html',
+        'includes/affiliate_disclosure.html',
+        'includes/affiliate_slot.html',
+        'includes/affiliate_text_links.html'
     ]
     for template in required_templates:
         try:
@@ -383,7 +393,220 @@ def handle_exception(e):
         error_id
     )
 
-# 環境変数をテンプレートコンテキストに注入（AdSense設定用）
+def _env_flag(name, default=False):
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in ('1', 'true', 'yes', 'on')
+
+
+def _env_list(name, default=None):
+    value = os.getenv(name)
+    if value is None:
+        return list(default or [])
+    return [item.strip() for item in value.split(',') if item.strip()]
+
+
+def _normalize_affiliate_network(value):
+    normalized = (value or 'rakuten').strip().lower()
+    if normalized in ('rakuten', 'rakuten_widget'):
+        return 'rakuten'
+    if normalized in ('a8_rotation', 'rotation', 'a8'):
+        return 'a8_rotation'
+    return 'rakuten'
+
+
+def _path_matches_rule(path, rule):
+    if not rule:
+        return False
+    normalized_path = path or '/'
+    normalized_rule = rule.strip()
+    if not normalized_rule:
+        return False
+    if normalized_rule == normalized_path:
+        return True
+    if normalized_rule.endswith('*'):
+        prefix = normalized_rule[:-1]
+        return normalized_path.startswith(prefix)
+    if normalized_rule == '/':
+        return normalized_path == '/'
+    return normalized_path.startswith(normalized_rule.rstrip('/'))
+
+
+AFFILIATE_SLOT_RULES = {
+    'home_after_hero': {
+        'page_types': ('landing',),
+        'paths': ('/',),
+        'default_size': '728x90',
+        'breakpoint_policy': 'desktop-only',
+        'allow_rotation': False,
+    },
+    'blog_index_after_intro': {
+        'page_types': ('blog_index',),
+        'paths': ('/blog',),
+        'default_size': '300x250',
+        'breakpoint_policy': 'tablet-up',
+        'allow_rotation': True,
+    },
+    'case_index_after_intro': {
+        'page_types': ('case_index',),
+        'paths': ('/case-studies',),
+        'default_size': '300x250',
+        'breakpoint_policy': 'tablet-up',
+        'allow_rotation': True,
+    },
+    'article_end_1': {
+        'page_types': ('article',),
+        'default_size': '300x250',
+        'breakpoint_policy': 'tablet-up',
+        'allow_rotation': True,
+    },
+    'guide_end_1': {
+        'page_types': ('guide', 'info'),
+        'default_size': '300x250',
+        'breakpoint_policy': 'tablet-up',
+        'allow_rotation': True,
+    },
+    'tool_post_result': {
+        'page_types': ('tool',),
+        'default_size': '300x250',
+        'breakpoint_policy': 'tablet-up',
+        'allow_rotation': True,
+    },
+}
+
+
+def get_affiliate_page_type(path):
+    normalized_path = path or '/'
+    if normalized_path == '/':
+        return 'landing'
+    if normalized_path == '/autofill':
+        return 'trust_sensitive'
+    if normalized_path == '/blog':
+        return 'blog_index'
+    if normalized_path.startswith('/blog/'):
+        return 'article'
+    if normalized_path == '/case-studies':
+        return 'case_index'
+    if normalized_path.startswith('/case-study/'):
+        return 'article'
+    if normalized_path == '/guide' or normalized_path.startswith('/guide/'):
+        return 'guide'
+    if normalized_path in ('/about', '/faq', '/glossary', '/best-practices'):
+        return 'info'
+    if normalized_path == '/tools':
+        return 'tool_index'
+    if normalized_path.startswith('/tools/'):
+        return 'tool'
+    if normalized_path in ('/privacy', '/terms'):
+        return 'legal'
+    if normalized_path == '/contact':
+        return 'contact'
+    return 'generic'
+
+
+def get_affiliate_settings():
+    return {
+        'enabled': _env_flag('AFFILIATE_ENABLED', False),
+        'textlinks_enabled': _env_flag('AFFILIATE_TEXTLINKS_ENABLED', True),
+        'banners_enabled': _env_flag('AFFILIATE_BANNERS_ENABLED', False),
+        'network': _normalize_affiliate_network(os.getenv('AFFILIATE_NETWORK', 'rakuten')),
+        'exclude_paths': tuple(_env_list(
+            'AFFILIATE_EXCLUDE_PATHS',
+            ('/autofill', '/privacy', '/terms', '/contact')
+        )),
+        'allowed_page_types': tuple(_env_list(
+            'AFFILIATE_ALLOWED_PAGE_TYPES',
+            ('landing', 'blog_index', 'case_index', 'article', 'guide', 'info', 'tool')
+        )),
+        'widget_desktop_enabled': _env_flag('AFFILIATE_WIDGET_DESKTOP_ENABLED', True),
+        'widget_tablet_enabled': _env_flag('AFFILIATE_WIDGET_TABLET_ENABLED', True),
+        'widget_mobile_enabled': _env_flag('AFFILIATE_WIDGET_MOBILE_ENABLED', False),
+        'rotation_banner_enabled': _env_flag('AFFILIATE_ROTATION_BANNER_ENABLED', False),
+    }
+
+
+def affiliate_is_path_excluded(path=None):
+    settings = get_affiliate_settings()
+    normalized_path = path or (request.path if has_request_context() else '/')
+    return any(_path_matches_rule(normalized_path, rule) for rule in settings['exclude_paths'])
+
+
+def affiliate_can_render_textlinks(path=None):
+    settings = get_affiliate_settings()
+    return settings['enabled'] and settings['textlinks_enabled']
+
+
+def affiliate_get_slot_config(slot_id, path=None):
+    settings = get_affiliate_settings()
+    rule = AFFILIATE_SLOT_RULES.get(slot_id)
+    if not rule:
+        return None
+
+    normalized_path = path or (request.path if has_request_context() else '/')
+    page_type = get_affiliate_page_type(normalized_path)
+    if page_type not in rule.get('page_types', ()):
+        return None
+
+    slot_paths = rule.get('paths')
+    if slot_paths and not any(_path_matches_rule(normalized_path, slot_path) for slot_path in slot_paths):
+        return None
+
+    if page_type not in settings['allowed_page_types']:
+        return None
+
+    kind = 'rakuten_widget'
+    size = rule.get('default_size', '300x250')
+    if (
+        settings['network'] == 'a8_rotation'
+        and settings['rotation_banner_enabled']
+        and rule.get('allow_rotation')
+    ):
+        kind = 'a8_rotation'
+        size = '468x60'
+
+    return {
+        'slot_id': slot_id,
+        'kind': kind,
+        'size': size,
+        'breakpoint_policy': rule.get('breakpoint_policy', 'tablet-up'),
+        'desktop_enabled': settings['widget_desktop_enabled'],
+        'tablet_enabled': settings['widget_tablet_enabled'],
+        'mobile_enabled': settings['widget_mobile_enabled'],
+        'page_type': page_type,
+        'path': normalized_path,
+    }
+
+
+def affiliate_can_render_slot(slot_id, path=None):
+    settings = get_affiliate_settings()
+    if not (settings['enabled'] and settings['banners_enabled']):
+        return False
+
+    normalized_path = path or (request.path if has_request_context() else '/')
+    if affiliate_is_path_excluded(normalized_path):
+        return False
+
+    return affiliate_get_slot_config(slot_id, normalized_path) is not None
+
+
+def affiliate_footer_slot_id(path=None):
+    normalized_path = path or (request.path if has_request_context() else '/')
+    page_type = get_affiliate_page_type(normalized_path)
+    slot_id = None
+    if page_type == 'article':
+        slot_id = 'article_end_1'
+    elif page_type in ('guide', 'info'):
+        slot_id = 'guide_end_1'
+    elif page_type == 'tool':
+        slot_id = 'tool_post_result'
+
+    if slot_id and affiliate_can_render_slot(slot_id, normalized_path):
+        return slot_id
+    return None
+
+
+# 環境変数をテンプレートコンテキストに注入（AdSense / Affiliate 設定用）
 @app.context_processor
 def inject_env_vars():
     """環境変数をテンプレートで使えるようにする。製品一覧は products_catalog から取得（外部依存なし）。"""
@@ -398,6 +621,26 @@ def inject_env_vars():
                 app_version = package_data.get('version', '1.0.0')
         except Exception:
             pass
+
+        affiliate_settings = get_affiliate_settings()
+        current_path = request.path if has_request_context() else '/'
+        affiliate_page_type = get_affiliate_page_type(current_path)
+        seo_defaults = get_seo_defaults(current_path)
+        base_url = os.getenv('BASE_URL', 'https://jobcan-automation.onrender.com').rstrip('/')
+        seo_page_description = seo_defaults.get('description', '')
+        seo_page_robots = seo_defaults.get('robots', 'index,follow')
+        seo_page_kind = get_page_kind(current_path)
+        web_application_schema = get_web_application_schema(
+            current_path,
+            seo_defaults.get('title', ''),
+            seo_page_description,
+            base_url,
+        )
+        seo_breadcrumb_items = build_breadcrumb_items(
+            current_path,
+            page_title='',
+            breadcrumb_title=seo_defaults.get('breadcrumb_title', ''),
+        )
 
         products_list = PRODUCTS
         if not isinstance(products_list, list):
@@ -418,13 +661,36 @@ def inject_env_vars():
             'products_catalog': products_catalog,
             'nav_sections': nav_sections,
             'footer_columns': footer_columns,
-            'BASE_URL': os.getenv('BASE_URL', 'https://jobcan-automation.onrender.com').rstrip('/'),
+            'BASE_URL': base_url,
             'GA_MEASUREMENT_ID': os.getenv('GA_MEASUREMENT_ID', ''),
             'GSC_VERIFICATION_CONTENT': os.getenv('GSC_VERIFICATION_CONTENT', ''),
             'OPERATOR_NAME': os.getenv('OPERATOR_NAME', ''),
             'OPERATOR_EMAIL': os.getenv('OPERATOR_EMAIL', ''),
             'OPERATOR_LOCATION': os.getenv('OPERATOR_LOCATION', ''),
-            'OPERATOR_NOTE': os.getenv('OPERATOR_NOTE', '')
+            'OPERATOR_NOTE': os.getenv('OPERATOR_NOTE', ''),
+            'seo_page_defaults': seo_defaults,
+            'seo_page_description': seo_page_description,
+            'seo_page_robots': seo_page_robots,
+            'seo_page_kind': seo_page_kind,
+            'seo_breadcrumb_items': seo_breadcrumb_items,
+            'seo_web_application_schema': web_application_schema,
+            'build_breadcrumb_items': build_breadcrumb_items,
+            'AFFILIATE_ENABLED': affiliate_settings['enabled'],
+            'AFFILIATE_TEXTLINKS_ENABLED': affiliate_settings['textlinks_enabled'],
+            'AFFILIATE_BANNERS_ENABLED': affiliate_settings['banners_enabled'],
+            'AFFILIATE_NETWORK': affiliate_settings['network'],
+            'AFFILIATE_EXCLUDE_PATHS': affiliate_settings['exclude_paths'],
+            'AFFILIATE_ALLOWED_PAGE_TYPES': affiliate_settings['allowed_page_types'],
+            'AFFILIATE_WIDGET_DESKTOP_ENABLED': affiliate_settings['widget_desktop_enabled'],
+            'AFFILIATE_WIDGET_TABLET_ENABLED': affiliate_settings['widget_tablet_enabled'],
+            'AFFILIATE_WIDGET_MOBILE_ENABLED': affiliate_settings['widget_mobile_enabled'],
+            'AFFILIATE_ROTATION_BANNER_ENABLED': affiliate_settings['rotation_banner_enabled'],
+            'affiliate_page_type': affiliate_page_type,
+            'affiliate_path_excluded': affiliate_is_path_excluded(current_path),
+            'affiliate_footer_slot_id': affiliate_footer_slot_id(current_path),
+            'affiliate_can_render_textlinks': affiliate_can_render_textlinks,
+            'affiliate_can_render_slot': affiliate_can_render_slot,
+            'affiliate_get_slot_config': affiliate_get_slot_config
         }
     except Exception as e:
         request_id = getattr(g, 'request_id', 'unknown') if hasattr(g, 'request_id') else 'unknown'
@@ -446,7 +712,30 @@ def inject_env_vars():
             'OPERATOR_NAME': '',
             'OPERATOR_EMAIL': '',
             'OPERATOR_LOCATION': '',
-            'OPERATOR_NOTE': ''
+            'OPERATOR_NOTE': '',
+            'seo_page_defaults': {},
+            'seo_page_description': '',
+            'seo_page_robots': 'index,follow',
+            'seo_page_kind': 'page',
+            'seo_breadcrumb_items': [{'name': 'ホーム', 'url': '/'}],
+            'seo_web_application_schema': None,
+            'build_breadcrumb_items': build_breadcrumb_items,
+            'AFFILIATE_ENABLED': False,
+            'AFFILIATE_TEXTLINKS_ENABLED': False,
+            'AFFILIATE_BANNERS_ENABLED': False,
+            'AFFILIATE_NETWORK': 'rakuten',
+            'AFFILIATE_EXCLUDE_PATHS': tuple(),
+            'AFFILIATE_ALLOWED_PAGE_TYPES': tuple(),
+            'AFFILIATE_WIDGET_DESKTOP_ENABLED': False,
+            'AFFILIATE_WIDGET_TABLET_ENABLED': False,
+            'AFFILIATE_WIDGET_MOBILE_ENABLED': False,
+            'AFFILIATE_ROTATION_BANNER_ENABLED': False,
+            'affiliate_page_type': 'generic',
+            'affiliate_path_excluded': False,
+            'affiliate_footer_slot_id': None,
+            'affiliate_can_render_textlinks': affiliate_can_render_textlinks,
+            'affiliate_can_render_slot': affiliate_can_render_slot,
+            'affiliate_get_slot_config': affiliate_get_slot_config
         }
 
 
@@ -482,6 +771,8 @@ def add_noindex_for_dynamic(response):
         response.headers['X-Robots-Tag'] = 'noindex, nofollow'
     elif path in _NOINDEX_PATHS:
         response.headers['X-Robots-Tag'] = 'noindex, nofollow'
+    elif is_noindex_path(path):
+        response.headers['X-Robots-Tag'] = 'noindex, follow'
     return response
 
 
@@ -2232,15 +2523,11 @@ def sitemap():
         # 主要ページ
         ('/', 'daily', '1.0', today),
         ('/autofill', 'daily', '1.0', today),
-        ('/about', 'monthly', '0.9', today),
-        ('/contact', 'monthly', '0.8', today),
-        ('/privacy', 'yearly', '0.5', today),
-        ('/terms', 'yearly', '0.5', today),
+        ('/about', 'monthly', '0.8', today),
         ('/faq', 'weekly', '0.8', today),
-        ('/glossary', 'monthly', '0.6', today),
+        ('/glossary', 'monthly', '0.7', today),
         ('/best-practices', 'monthly', '0.8', today),
         ('/case-studies', 'monthly', '0.8', today),
-        ('/sitemap.html', 'monthly', '0.5', today),
         
         # ガイドページ（一覧＋固定）
         ('/guide', 'weekly', '0.9', today),

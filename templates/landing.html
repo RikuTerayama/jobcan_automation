@@ -1,15 +1,11 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ja" class="no-js">
 <head>
-    {% set page_title = '業務効率化ツール集' %}
-    {% set page_description = 'Jobcan自動入力、画像一括変換、PDFユーティリティなど、業務効率化に役立つツールを提供しています。' %}
+    {% set page_title = '讌ｭ蜍吝柑邇・喧繝・・繝ｫ髮・' %}
+    {% set page_description = 'Jobcan閾ｪ蜍募・蜉帙∫判蜒丈ｸ諡ｬ螟画鋤縲￣DF繝ｦ繝ｼ繝・ぅ繝ｪ繝・ぅ縺ｪ縺ｩ縲∵･ｭ蜍吝柑邇・喧縺ｫ蠖ｹ遶九▽繝・・繝ｫ繧呈署萓帙＠縺ｦ縺・∪縺吶・' %}
     {% include 'includes/head_meta.html' %}
-    {% block description_meta %}
-        <meta name="description" content="{% if page_description|length > 110 %}{{ page_description[:107] }}...{% else %}{{ page_description }}{% endif %}">
-    {% endblock %}
-    {% block og_description %}
-        <meta property="og:description" content="{% if page_description|length > 200 %}{{ page_description[:197] }}...{% else %}{{ page_description }}{% endif %}">
-    {% endblock %}
+
+
     <style>
         * {
             box-sizing: border-box;
@@ -253,56 +249,61 @@
     
     <div class="container">
         <div class="hero">
-            <h1 data-reveal>🚀 業務効率化ツール集</h1>
-            <p data-reveal data-reveal-delay="50">日々の業務を効率化する、シンプルで強力なツールを提供しています。Excel、画像、PDFなど、よくある作業を自動化します。<a href="/tools" style="color: #4A9EFF;">ツール一覧</a>・<a href="/guide/excel-format" style="color: #4A9EFF;">Excel形式ガイド</a>もご利用ください。使い方は<a href="/guide" style="color: #4A9EFF;">ガイド一覧</a>、運用のヒントは<a href="/blog" style="color: #4A9EFF;">ブログ</a>、用語確認は<a href="/glossary" style="color: #4A9EFF;">用語集</a>も参照できます。</p>
-            <a href="/autofill" class="cta-button" data-reveal data-reveal-delay="100">Jobcan自動入力を使う →</a>
+            <h1 data-reveal>噫 讌ｭ蜍吝柑邇・喧繝・・繝ｫ髮・/h1>
+            <p data-reveal data-reveal-delay="50">譌･縲・・讌ｭ蜍吶ｒ蜉ｹ邇・喧縺吶ｋ縲√す繝ｳ繝励Ν縺ｧ蠑ｷ蜉帙↑繝・・繝ｫ繧呈署萓帙＠縺ｦ縺・∪縺吶・xcel縲∫判蜒上￣DF縺ｪ縺ｩ縲√ｈ縺上≠繧倶ｽ懈･ｭ繧定・蜍募喧縺励∪縺吶・a href="/tools" style="color: #4A9EFF;">繝・・繝ｫ荳隕ｧ</a>繝ｻ<a href="/guide/excel-format" style="color: #4A9EFF;">Excel蠖｢蠑上ぎ繧､繝・/a>繧ゅ＃蛻ｩ逕ｨ縺上□縺輔＞縲ゆｽｿ縺・婿縺ｯ<a href="/guide" style="color: #4A9EFF;">繧ｬ繧､繝我ｸ隕ｧ</a>縲・°逕ｨ縺ｮ繝偵Φ繝医・<a href="/blog" style="color: #4A9EFF;">繝悶Ο繧ｰ</a>縲∫畑隱樒｢ｺ隱阪・<a href="/glossary" style="color: #4A9EFF;">逕ｨ隱樣寔</a>繧ょ盾辣ｧ縺ｧ縺阪∪縺吶・/p>
+            <a href="/autofill" class="cta-button" data-reveal data-reveal-delay="100">Jobcan閾ｪ蜍募・蜉帙ｒ菴ｿ縺・竊・/a>
         </div>
+        {% with slot_id='home_after_hero' %}
+            {% include 'includes/affiliate_slot.html' %}
+        {% endwith %}
         
         <div class="section">
-            <h2 data-reveal>📦 製品一覧</h2>
+            <h2 data-reveal>逃 陬ｽ蜩∽ｸ隕ｧ</h2>
             <div class="products-grid" data-reveal-stagger>
             {% for product in products|default([]) %}
             <a href="{{ product.path|default('#') }}" class="product-card">
-                <h3>{{ product.icon|default('📦') }} {{ product.name|default('製品') }}</h3>
-                <p>{{ product.description|default('説明がありません') }}</p>
+                <h3>{{ product.icon|default('逃') }} {{ product.name|default('ツール') }}</h3>
+                <p>{{ product.description|default('隱ｬ譏弱′縺ゅｊ縺ｾ縺帙ｓ') }}</p>
                 <span class="status {{ 'available' if product.status|default('coming-soon') == 'available' else 'coming-soon' }}">
-                    {% if product.status|default('coming-soon') == 'available' %}利用可能{% else %}準備中{% endif %}
+                    {% if product.status|default('coming-soon') == 'available' %}蛻ｩ逕ｨ蜿ｯ閭ｽ{% else %}貅門ｙ荳ｭ{% endif %}
                 </span>
             </a>
             {% else %}
-            <p style="color: rgba(255, 255, 255, 0.7); text-align: center; padding: 20px;">製品情報を読み込めませんでした。しばらく待ってから再試行してください。</p>
+            <p style="color: rgba(255, 255, 255, 0.7); text-align: center; padding: 20px;">陬ｽ蜩∵ュ蝣ｱ繧定ｪｭ縺ｿ霎ｼ繧√∪縺帙ｓ縺ｧ縺励◆縲ゅ＠縺ｰ繧峨￥蠕・▲縺ｦ縺九ｉ蜀崎ｩｦ陦後＠縺ｦ縺上□縺輔＞縲・/p>
             {% endfor %}
             </div>
         </div>
-        
+
+        {% include 'includes/seo_link_hub.html' %}
+
         <div class="section">
-            <h2 data-reveal>💼 こんな場面で活用できます</h2>
+            <h2 data-reveal>直 縺薙ｓ縺ｪ蝣ｴ髱｢縺ｧ豢ｻ逕ｨ縺ｧ縺阪∪縺・/h2>
             <div class="use-cases" data-reveal-stagger>
                 <div class="use-case-item">
-                    <h3>📊 勤怠管理</h3>
+                    <h3>投 蜍､諤邂｡逅・/h3>
                     <ul>
-                        <li>月次締め作業の時間短縮</li>
-                        <li>Excelからの一括入力</li>
-                        <li>ヒューマンエラーの削減</li>
-                        <li>属人化解消</li>
+                        <li>譛域ｬ｡邱繧∽ｽ懈･ｭ縺ｮ譎る俣遏ｭ邵ｮ</li>
+                        <li>Excel縺九ｉ縺ｮ荳諡ｬ蜈･蜉・/li>
+                        <li>繝偵Η繝ｼ繝槭Φ繧ｨ繝ｩ繝ｼ縺ｮ蜑頑ｸ・/li>
+                        <li>螻樔ｺｺ蛹冶ｧ｣豸・/li>
                     </ul>
                 </div>
                 <div class="use-case-item">
-                    <h3>🖼️ 画像・メディア処理</h3>
+                    <h3>名・・逕ｻ蜒上・繝｡繝・ぅ繧｢蜃ｦ逅・/h3>
                     <ul>
-                        <li>複数画像の一括変換</li>
-                        <li>サイズ・形式の統一</li>
-                        <li>背景除去・トリミング</li>
-                        <li>Web用最適化</li>
+                        <li>隍・焚逕ｻ蜒上・荳諡ｬ螟画鋤</li>
+                        <li>繧ｵ繧､繧ｺ繝ｻ蠖｢蠑上・邨ｱ荳</li>
+                        <li>閭梧勹髯､蜴ｻ繝ｻ繝医Μ繝溘Φ繧ｰ</li>
+                        <li>Web逕ｨ譛驕ｩ蛹・/li>
                     </ul>
                 </div>
                 <div class="use-case-item">
-                    <h3>📄 ドキュメント処理</h3>
+                    <h3>塘 繝峨く繝･繝｡繝ｳ繝亥・逅・/h3>
                     <ul>
-                        <li>PDFの結合・分割</li>
-                        <li>ページ抽出・圧縮</li>
-                        <li>PDF→画像変換</li>
-                        <li>一括処理</li>
+                        <li>PDF縺ｮ邨仙粋繝ｻ蛻・牡</li>
+                        <li>繝壹・繧ｸ謚ｽ蜃ｺ繝ｻ蝨ｧ邵ｮ</li>
+                        <li>PDF竊堤判蜒丞､画鋤</li>
+                        <li>荳諡ｬ蜃ｦ逅・/li>
                     </ul>
                 </div>
             </div>
@@ -310,28 +311,28 @@
         
         <div class="section">
             <div class="trust-section" data-reveal>
-                <h2>🔒 セキュリティとプライバシー</h2>
+                <h2>白 繧ｻ繧ｭ繝･繝ｪ繝・ぅ縺ｨ繝励Λ繧､繝舌す繝ｼ</h2>
                 <p>
-                    すべてのツールは、お客様のデータを最大限に保護する設計になっています。
+                    縺吶∋縺ｦ縺ｮ繝・・繝ｫ縺ｯ縲√♀螳｢讒倥・繝・・繧ｿ繧呈怙螟ｧ髯舌↓菫晁ｭｷ縺吶ｋ險ｭ險医↓縺ｪ縺｣縺ｦ縺・∪縺吶・
                 </p>
                 <p>
-                    <strong>データ保持方針：</strong>機能により処理方式が異なります。Jobcan AutoFillはサーバー側で一時受領し処理後に削除。その他ツールはブラウザ内処理でサーバーに送信しません。詳細は<a href="/privacy" style="color: #4A9EFF;">プライバシーポリシー</a>をご確認ください。ほか<a href="/blog" style="color: #4A9EFF;">ブログ</a>・<a href="/glossary" style="color: #4A9EFF;">用語集</a>・<a href="/guide/excel-format" style="color: #4A9EFF;">Excel形式ガイド</a>・<a href="/best-practices" style="color: #4A9EFF;">ベストプラクティス</a>・<a href="/case-studies" style="color: #4A9EFF;">導入事例</a>もご活用ください。
+                    <strong>繝・・繧ｿ菫晄戟譁ｹ驥晢ｼ・/strong>讖溯・縺ｫ繧医ｊ蜃ｦ逅・婿蠑上′逡ｰ縺ｪ繧翫∪縺吶・obcan AutoFill縺ｯ繧ｵ繝ｼ繝舌・蛛ｴ縺ｧ荳譎ょ女鬆倥＠蜃ｦ逅・ｾ後↓蜑企勁縲ゅ◎縺ｮ莉悶ヤ繝ｼ繝ｫ縺ｯ繝悶Λ繧ｦ繧ｶ蜀・・逅・〒繧ｵ繝ｼ繝舌・縺ｫ騾∽ｿ｡縺励∪縺帙ｓ縲りｩｳ邏ｰ縺ｯ<a href="/privacy" style="color: #4A9EFF;">繝励Λ繧､繝舌す繝ｼ繝昴Μ繧ｷ繝ｼ</a>繧偵＃遒ｺ隱阪￥縺縺輔＞縲ゅ⊇縺・a href="/blog" style="color: #4A9EFF;">繝悶Ο繧ｰ</a>繝ｻ<a href="/glossary" style="color: #4A9EFF;">逕ｨ隱樣寔</a>繝ｻ<a href="/guide/excel-format" style="color: #4A9EFF;">Excel蠖｢蠑上ぎ繧､繝・/a>繝ｻ<a href="/best-practices" style="color: #4A9EFF;">繝吶せ繝医・繝ｩ繧ｯ繝・ぅ繧ｹ</a>繝ｻ<a href="/case-studies" style="color: #4A9EFF;">蟆主・莠倶ｾ・/a>繧ゅ＃豢ｻ逕ｨ縺上□縺輔＞縲・
                 </p>
                 <div class="trust-badges">
                     <div class="trust-badge">
-                        <div class="icon">🔐</div>
-                        <div class="text">暗号化通信</div>
+                        <div class="icon">柏</div>
+                        <div class="text">證怜捷蛹夜壻ｿ｡</div>
                     </div>
                     <div class="trust-badge">
-                        <div class="icon">🗑️</div>
-                        <div class="text">自動削除</div>
+                        <div class="icon">卵・・/div>
+                        <div class="text">閾ｪ蜍募炎髯､</div>
                     </div>
                     <div class="trust-badge">
-                        <div class="icon">⚡</div>
-                        <div class="text">データ保護</div>
+                        <div class="icon">笞｡</div>
+                        <div class="text">繝・・繧ｿ菫晁ｭｷ</div>
                     </div>
                 </div>
-                <p style="margin-top: 24px; margin-bottom: 0;">ご質問・ご要望は<a href="/contact" style="color: #4A9EFF; text-decoration: none;">お問い合わせ</a>からどうぞ。</p>
+                <p style="margin-top: 24px; margin-bottom: 0;">縺碑ｳｪ蝠上・縺碑ｦ∵悍縺ｯ<a href="/contact" style="color: #4A9EFF; text-decoration: none;">縺雁撫縺・粋繧上○</a>縺九ｉ縺ｩ縺・◇縲・/p>
             </div>
         </div>
     </div>
@@ -339,3 +340,6 @@
     {% include 'includes/footer.html' %}
 </body>
 </html>
+
+
+

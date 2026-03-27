@@ -1,6 +1,15 @@
-{# 共通フッター（footer_columns でヘッダーと共通のナビ構造を再利用） #}
+﻿{# 蜈ｱ騾壹ヵ繝・ち繝ｼ・・ooter_columns 縺ｧ繝倥ャ繝繝ｼ縺ｨ蜈ｱ騾壹・繝翫ン讒矩繧貞・蛻ｩ逕ｨ・・#}
 <footer style="background: var(--color-bg-primary, #121212); padding: var(--spacing-xl, 48px) var(--spacing-md, 16px); margin-top: var(--spacing-xl, 48px); border-top: 1px solid rgba(255, 255, 255, 0.1);">
     <div style="max-width: 1200px; margin: 0 auto;">
+        {% set footer_affiliate_slot_id = affiliate_footer_slot_id %}
+        {% if footer_affiliate_slot_id %}
+            {% with slot_id=footer_affiliate_slot_id, hidden_until_ready=(footer_affiliate_slot_id == 'tool_post_result') %}
+                {% include 'includes/affiliate_slot.html' %}
+            {% endwith %}
+        {% endif %}
+        {% if affiliate_can_render_textlinks() %}
+            {% include 'includes/affiliate_text_links.html' %}
+        {% endif %}
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-bottom: 30px; text-align: left;">
             {% for col in footer_columns|default([]) %}
             <div>
@@ -12,42 +21,42 @@
                 </div>
             </div>
             {% else %}
-            {# footer_columns が未注入時のフォールバック（従来の products ベース） #}
+            {# footer_columns 縺梧悴豕ｨ蜈･譎ゅ・繝輔か繝ｼ繝ｫ繝舌ャ繧ｯ・亥ｾ捺擂縺ｮ products 繝吶・繧ｹ・・#}
             <div>
-                <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">ツール一覧</h4>
+                <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">繝・・繝ｫ荳隕ｧ</h4>
                 <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <a href="/tools" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em; font-weight: 500;">すべてのツール</a>
+                    <a href="/tools" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em; font-weight: 500;">縺吶∋縺ｦ縺ｮ繝・・繝ｫ</a>
                     {% for product in products|default([]) %}
                         {% if product.status|default('coming-soon') == 'available' %}
-                            <a href="{{ product.path|default('#') }}" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">{{ product.icon|default('📦') }} {{ product.name|default('製品') }}</a>
+                            <a href="{{ product.path|default('#') }}" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">{{ product.icon|default('逃') }} {{ product.name|default('ツール') }}</a>
                         {% endif %}
                     {% endfor %}
                 </div>
             </div>
             <div>
-                <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">ガイド</h4>
+                <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">繧ｬ繧､繝・/h4>
                 <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <a href="/guide/complete" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">完全ガイド</a>
-                    <a href="/guide/getting-started" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">はじめての使い方</a>
-                    <a href="/guide/excel-format" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">Excelファイルの作成方法</a>
-                    <a href="/guide/troubleshooting" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">トラブルシューティング</a>
+                    <a href="/guide/complete" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">螳悟・繧ｬ繧､繝・/a>
+                    <a href="/guide/getting-started" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">縺ｯ縺倥ａ縺ｦ縺ｮ菴ｿ縺・婿</a>
+                    <a href="/guide/excel-format" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">Excel繝輔ぃ繧､繝ｫ縺ｮ菴懈・譁ｹ豕・/a>
+                    <a href="/guide/troubleshooting" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">繝医Λ繝悶Ν繧ｷ繝･繝ｼ繝・ぅ繝ｳ繧ｰ</a>
                 </div>
             </div>
             <div>
-                <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">リソース</h4>
+                <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">繝ｪ繧ｽ繝ｼ繧ｹ</h4>
                 <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <a href="/faq" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">よくある質問（FAQ）</a>
-                    <a href="/glossary" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">用語集</a>
-                    <a href="/blog" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">ブログ</a>
-                    <a href="/about" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">サイトについて</a>
+                    <a href="/faq" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">繧医￥縺ゅｋ雉ｪ蝠擾ｼ・AQ・・/a>
+                    <a href="/glossary" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">逕ｨ隱樣寔</a>
+                    <a href="/blog" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">繝悶Ο繧ｰ</a>
+                    <a href="/about" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">繧ｵ繧､繝医↓縺､縺・※</a>
                 </div>
             </div>
             <div>
-                <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">法的情報</h4>
+                <h4 style="color: #FFFFFF; font-size: 1.1em; margin-bottom: 15px;">豕慕噪諠・ｱ</h4>
                 <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <a href="/privacy" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">プライバシーポリシー</a>
-                    <a href="/terms" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">利用規約</a>
-                    <a href="/contact" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">お問い合わせ</a>
+                    <a href="/privacy" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">繝励Λ繧､繝舌す繝ｼ繝昴Μ繧ｷ繝ｼ</a>
+                    <a href="/terms" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">蛻ｩ逕ｨ隕冗ｴ・/a>
+                    <a href="/contact" style="color: rgba(255, 255, 255, 0.7); text-decoration: none; font-size: 0.9em;">縺雁撫縺・粋繧上○</a>
                 </div>
             </div>
             {% endfor %}
@@ -55,12 +64,14 @@
         
         <div style="border-top: 1px solid rgba(255, 255, 255, 0.2); padding-top: 20px; margin-top: 30px;">
             <p style="margin: 8px 0; color: rgba(255, 255, 255, 0.7); font-size: 0.95em; text-align: center;">
-                <strong style="color: rgba(255, 255, 255, 0.9);">データ保持方針：</strong>
-                機能により処理方式が異なります。Jobcan AutoFillはサーバー側で一時受領し処理後に削除。その他ツールはブラウザ内処理でサーバーに送信しません。詳細は<a href="/privacy" style="color: rgba(255, 255, 255, 0.8);">プライバシーポリシー</a>をご確認ください。
+                <strong style="color: rgba(255, 255, 255, 0.9);">繝・・繧ｿ菫晄戟譁ｹ驥晢ｼ・/strong>
+                讖溯・縺ｫ繧医ｊ蜃ｦ逅・婿蠑上′逡ｰ縺ｪ繧翫∪縺吶・obcan AutoFill縺ｯ繧ｵ繝ｼ繝舌・蛛ｴ縺ｧ荳譎ょ女鬆倥＠蜃ｦ逅・ｾ後↓蜑企勁縲ゅ◎縺ｮ莉悶ヤ繝ｼ繝ｫ縺ｯ繝悶Λ繧ｦ繧ｶ蜀・・逅・〒繧ｵ繝ｼ繝舌・縺ｫ騾∽ｿ｡縺励∪縺帙ｓ縲りｩｳ邏ｰ縺ｯ<a href="/privacy" style="color: rgba(255, 255, 255, 0.8);">繝励Λ繧､繝舌す繝ｼ繝昴Μ繧ｷ繝ｼ</a>繧偵＃遒ｺ隱阪￥縺縺輔＞縲・
             </p>
             <p style="margin: 8px 0; color: rgba(255, 255, 255, 0.7); font-size: 0.95em; text-align: center;">
-                © 2025 Automation Hub. All rights reserved. | Developed by RT | Version: {{ app_version|default('1.0.0') }}
+                ﾂｩ 2025 Automation Hub. All rights reserved. | Developed by RT | Version: {{ app_version|default('1.0.0') }}
             </p>
         </div>
     </div>
 </footer>
+
+

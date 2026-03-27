@@ -5,9 +5,6 @@
     {% set page_description = 'CSVの文字コード変換（Shift-JIS/UTF-8）、CSV⇄XLSX変換、重複削除、列の抽出・並べ替え、分割。ブラウザ内で実行され、ファイルはアップロードされません。' %}
     {% set breadcrumb_title = product.name|default('CSV/Excelユーティリティ') %}
     {% include 'includes/head_meta.html' %}
-    {% block description_meta %}
-        <meta name="description" content="{% if page_description|length > 110 %}{{ page_description[:107] }}...{% else %}{{ page_description }}{% endif %}">
-    {% endblock %}
     {% if product %}
     {% include 'includes/structured_data.html' %}
     {% block extra_structured_data %}
@@ -26,9 +23,6 @@
     </script>
     {% endblock %}
     {% endif %}
-    {% block og_description %}
-        <meta property="og:description" content="{% if page_description|length > 200 %}{{ page_description[:197] }}...{% else %}{{ page_description }}{% endif %}">
-    {% endblock %}
     <style>
         * { box-sizing: border-box; font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif; }
         body { margin: 0; padding: 0; background: linear-gradient(135deg, #121212 0%, #1A1A1A 50%, #0F0F0F 100%); min-height: 100vh; color: #FFFFFF; }
