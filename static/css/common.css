@@ -415,6 +415,10 @@ img {
     display: none;
 }
 
+.affiliate-slot[data-affiliate-server-managed="true"] .affiliate-slot__widget {
+    min-height: 60px;
+}
+
 .affiliate-slot[data-affiliate-widget-loaded="true"] .affiliate-slot__fallback {
     display: none;
 }
@@ -447,6 +451,12 @@ img {
 .affiliate-slot--468-60 .affiliate-slot__box {
     width: min(100%, 468px);
     min-height: 60px;
+}
+
+@media (max-width: 767px) {
+    .affiliate-slot[data-affiliate-server-managed="true"][data-affiliate-mobile-enabled="false"] .affiliate-slot__widget {
+        display: none;
+    }
 }
 
 .affiliate-feature-layout {

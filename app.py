@@ -487,7 +487,7 @@ AFFILIATE_SLOT_RULES = {
         'page_types': ('tool',),
         'default_size': '300x250',
         'breakpoint_policy': 'tablet-up',
-        'allow_rotation': True,
+        'allow_rotation': False,
     },
 }
 
