@@ -241,11 +241,26 @@ img {
     background: rgba(255, 255, 255, 0.03);
 }
 
+.affiliate-footer-block--inline {
+    max-width: 336px;
+    margin: 0 auto var(--spacing-xl);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+}
+
+.affiliate-footer-block--quiet {
+    margin-top: var(--spacing-lg);
+}
+
 .affiliate-link-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: var(--spacing-md);
     align-items: stretch;
+}
+
+.affiliate-link-grid--inline,
+.affiliate-link-grid--rail {
+    grid-template-columns: 1fr;
 }
 
 .affiliate-link-card {
@@ -292,6 +307,10 @@ img {
     text-align: center;
 }
 
+.affiliate-slot--primary-inline {
+    max-width: 336px;
+}
+
 .affiliate-slot[hidden] {
     display: none !important;
 }
@@ -307,6 +326,18 @@ img {
     overflow: hidden;
 }
 
+.affiliate-slot__fallback {
+    width: 100%;
+}
+
+.affiliate-slot__fallback .affiliate-link-grid {
+    gap: var(--spacing-sm);
+}
+
+.affiliate-slot__fallback .affiliate-link-card {
+    min-height: 68px;
+}
+
 .affiliate-slot--728-90 .affiliate-slot__box {
     width: min(100%, 728px);
     min-height: 90px;
@@ -320,6 +351,10 @@ img {
 .affiliate-slot--468-60 .affiliate-slot__box {
     width: min(100%, 468px);
     min-height: 60px;
+}
+
+.affiliate-side-rail {
+    display: none;
 }
 
 .seo-link-hub {
@@ -464,9 +499,39 @@ img {
     }
 }
 
+@media (min-width: 1440px) {
+    .affiliate-side-rail {
+        display: block;
+        position: fixed;
+        top: 132px;
+        right: 24px;
+        width: 148px;
+        z-index: 40;
+    }
+
+    .affiliate-side-rail .affiliate-link-grid {
+        gap: var(--spacing-sm);
+    }
+
+    .affiliate-side-rail .affiliate-link-card {
+        min-height: 64px;
+        padding: 10px;
+    }
+
+    .affiliate-side-rail .affiliate-link-card__label {
+        font-size: 0.76rem;
+        line-height: 1.4;
+    }
+}
+
 @media (max-width: 767px) {
     .affiliate-footer-block {
         padding: var(--spacing-sm);
+    }
+
+    .affiliate-footer-block--inline,
+    .affiliate-slot--primary-inline {
+        max-width: none;
     }
 
     .affiliate-link-grid {

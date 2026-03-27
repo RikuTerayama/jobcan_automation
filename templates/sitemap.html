@@ -116,6 +116,9 @@
             <p style="color: rgba(255, 255, 255, 0.7); margin-bottom: 20px; font-size: 0.95em;">
                 📄 検索エンジン向けのXMLサイトマップ: <a href="/sitemap.xml" style="color: #4A9EFF;">/sitemap.xml</a>
             </p>
+            {% with slot_id='public_top_inline', slot_render_fallback=true, slot_extra_class='affiliate-slot--primary-inline' %}
+                {% include 'includes/affiliate_slot.html' %}
+            {% endwith %}
             
             <div style="background: rgba(74, 158, 255, 0.1); border-left: 4px solid #4A9EFF; padding: 25px; margin: 30px 0; border-radius: 8px;">
                 <h2 style="color: #4A9EFF; font-size: 1.5em; margin-top: 0; margin-bottom: 15px;">サイトマップの使い方</h2>

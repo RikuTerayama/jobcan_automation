@@ -57,6 +57,13 @@
         </div>
     </nav>
 </header>
+{% if affiliate_top_slot_id %}
+<div class="affiliate-top-shell">
+    {% with slot_id=affiliate_top_slot_id, slot_render_fallback=true, slot_extra_class='affiliate-slot--primary-inline' %}
+        {% include 'includes/affiliate_slot.html' %}
+    {% endwith %}
+</div>
+{% endif %}
 
 <style>
     .site-header {
@@ -112,6 +119,11 @@
         .site-nav__links { width: 100%; justify-content: center; }
         .site-nav__link { font-size: 0.9em; padding: 6px 10px; }
         .site-nav__dropdown { left: 50%; transform: translateX(-50%); min-width: 200px; }
+    }
+    .affiliate-top-shell {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px 20px 0;
     }
 </style>
 <script>

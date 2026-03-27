@@ -1,16 +1,21 @@
 ﻿<footer style="background: var(--color-bg-primary, #121212); padding: var(--spacing-xl, 48px) var(--spacing-md, 16px); margin-top: var(--spacing-xl, 48px); border-top: 1px solid rgba(255, 255, 255, 0.1);">
+    {% if affiliate_side_rail_enabled %}
+        {% include 'includes/affiliate_side_rail.html' %}
+    {% endif %}
     <div style="max-width: 1200px; margin: 0 auto;">
         {% if related_content_section %}
             {% include 'includes/related_content.html' %}
         {% endif %}
         {% set footer_affiliate_slot_id = affiliate_footer_slot_id %}
-        {% if footer_affiliate_slot_id %}
-            {% with slot_id=footer_affiliate_slot_id, hidden_until_ready=(footer_affiliate_slot_id == 'tool_post_result') %}
+        {% if footer_affiliate_slot_id and not (footer_affiliate_slot_id == 'global_footer_banner' and affiliate_top_slot_id) %}
+            {% with slot_id=footer_affiliate_slot_id, hidden_until_ready=(footer_affiliate_slot_id == 'tool_post_result'), show_disclosure=false %}
                 {% include 'includes/affiliate_slot.html' %}
             {% endwith %}
         {% endif %}
         {% if affiliate_can_render_textlinks() %}
-            {% include 'includes/affiliate_text_links.html' %}
+            <section class="affiliate-footer-block affiliate-footer-block--quiet" aria-label="Affiliate Links">
+                {% include 'includes/affiliate_cards.html' %}
+            </section>
         {% endif %}
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-bottom: 30px; text-align: left;">
