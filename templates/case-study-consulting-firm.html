@@ -1,179 +1,151 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ja">
 <head>
-    {% set page_title = '譛域ｬ｡邱繧√・"谿区･ｭ30譎る俣"縺九ｉ閼ｱ蜊ｴ・壹さ繝ｳ繧ｵ繝ｫ繝・ぅ繝ｳ繧ｰ繝輔ぃ繝ｼ繝縺ｧ縺ｮJobcan AutoFill蟆主・莠倶ｾ・| Jobcan AutoFill' %}
+    {% set page_title = '月次締めの"残業30時間"から脱却：コンサルティングファームでのJobcan AutoFill導入事例 | Jobcan AutoFill' %}
+    {% set page_description = 'コンサルティングファーム（社員数30名規模）でのJobcan AutoFill導入事例。プロジェクト単位で残業が膨らみやすく、月末に勤怠修正が集中しがちな環境で、月次締め作業の時間を大幅に削減した成功事例を詳しく紹介。' %}
     {% include 'includes/head_meta.html' %}
-
 </head>
 <body style="margin: 0; font-family: 'Noto Sans JP', sans-serif; background: linear-gradient(135deg, #121212 0%, #1A1A1A 50%, #0F0F0F 100%); color: #FFFFFF; line-height: 1.8;">
     <main style="max-width: 960px; margin: 0 auto; padding: 40px 20px;">
         <article itemscope itemtype="https://schema.org/Article" style="background: rgba(0, 0, 0, 0.35); border-radius: 18px; padding: 35px; border: 1px solid rgba(74, 158, 255, 0.25);">
             <header style="margin-bottom: 30px;">
-                {% set breadcrumb_title = '繧ｳ繝ｳ繧ｵ繝ｫ繝・ぅ繝ｳ繧ｰ繝輔ぃ繝ｼ繝縺ｮ蟆主・莠倶ｾ・' %}
+                {% set breadcrumb_title = 'コンサルティングファームの導入事例' %}
                 {% include 'includes/breadcrumb.html' %}
-                <h1 itemprop="headline" style="margin: 12px 0 10px 0; font-size: 2.2em; color: #4CAF50;">譛域ｬ｡邱繧√・"谿区･ｭ30譎る俣"縺九ｉ閼ｱ蜊ｴ・壹さ繝ｳ繧ｵ繝ｫ繝・ぅ繝ｳ繧ｰ繝輔ぃ繝ｼ繝縺ｧ縺ｮJobcan AutoFill蟆主・莠倶ｾ・/h1>
+                <h1 itemprop="headline" style="margin: 12px 0 10px 0; font-size: 2.2em; color: #4CAF50;">月次締めの"残業30時間"から脱却：コンサルティングファームでのJobcan AutoFill導入事例</h1>
                 <p style="margin: 0; color: rgba(255, 255, 255, 0.85);">
-                    繧ｳ繝ｳ繧ｵ繝ｫ繝・ぅ繝ｳ繧ｰ繝輔ぃ繝ｼ繝・育､ｾ蜩｡謨ｰ30蜷崎ｦ乗ｨ｡・峨〒縺ｮJobcan AutoFill蟆主・莠倶ｾ九〒縺吶ゅ・繝ｭ繧ｸ繧ｧ繧ｯ繝亥腰菴阪〒谿区･ｭ縺瑚・繧峨∩繧・☆縺上∵怦譛ｫ縺ｫ蜍､諤菫ｮ豁｣縺碁寔荳ｭ縺励′縺｡縺ｪ迺ｰ蠅・〒縲∵怦谺｡邱繧∽ｽ懈･ｭ縺ｮ譎る俣繧貞､ｧ蟷・↓蜑頑ｸ帙＠縲√Γ繝ｳ繝舌・縺ｮ蠢・炊逧・↑雋諡・ｒ霆ｽ貂帙＠縺ｾ縺励◆縲・
+                    コンサルティングファーム（社員数30名規模）でのJobcan AutoFill導入事例です。プロジェクト単位で残業が膨らみやすく、月末に勤怠修正が集中しがちな環境で、月次締め作業の時間を大幅に削減し、メンバーの心理的な負担を軽減しました。
                 </p>
             </header>
 
             <section itemprop="articleBody">
-                <h2 style="font-size: 1.8em; color: #FFFFFF;">莨∵･ｭ繝励Ο繝輔ぅ繝ｼ繝ｫ</h2>
+                <h2 style="font-size: 1.8em; color: #FFFFFF;">企業プロフィール</h2>
                 <ul style="padding-left: 22px;">
-                    <li>讌ｭ遞ｮ・壹さ繝ｳ繧ｵ繝ｫ繝・ぅ繝ｳ繧ｰ・育ｵ悟霧謌ｦ逡･繝ｻ讌ｭ蜍呎隼蝟・ｼ・/li>
-                    <li>蠕捺･ｭ蜩｡謨ｰ・壽ｭ｣遉ｾ蜩｡30蜷・/li>
-                    <li>諡轤ｹ・壽擲莠ｬ繝ｻ螟ｧ髦ｪ縺ｮ2諡轤ｹ</li>
-                    <li>蜒阪″譁ｹ縺ｮ迚ｹ蠕ｴ・壹・繝ｭ繧ｸ繧ｧ繧ｯ繝亥腰菴阪〒谿区･ｭ縺瑚・繧峨∩繧・☆縺上√け繝ｩ繧､繧｢繝ｳ繝亥・縺ｧ縺ｮ讌ｭ蜍吶′螟壹＞</li>
+                    <li>業種：コンサルティング（経営戦略・業務改善）</li>
+                    <li>従業員数：正社員30名</li>
+                    <li>拠点：東京・大阪の2拠点</li>
+                    <li>働き方の特徴：プロジェクト単位で残業が膨らみやすく、クライアント先での業務が多い</li>
                 </ul>
 
-                <h2 style="font-size: 1.8em; color: #FFFFFF;">蟆主・蜑阪・隱ｲ鬘・/h2>
+                <h2 style="font-size: 1.8em; color: #FFFFFF;">導入前の課題</h2>
                 <ol style="padding-left: 22px;">
-                    <li>繝励Ο繧ｸ繧ｧ繧ｯ繝亥腰菴阪〒谿区･ｭ縺瑚・繧峨∩繧・☆縺上∵怦譛ｫ縺ｫ蜍､諤菫ｮ豁｣縺碁寔荳ｭ縺励′縺｡縺縺｣縺溘・莠ｺ縺ゅ◆繧翫・譛域忰邱繧∽ｽ懈･ｭ譎る俣縺悟ｹｳ蝮・0蛻・ｒ雜・∴縲・0蜷榊・菴薙〒譛・5譎る俣莉･荳翫・蟾･謨ｰ縺檎匱逕溘＠縺ｦ縺・◆縲・/li>
-                    <li>繧ｯ繝ｩ繧､繧｢繝ｳ繝亥・縺ｧ縺ｮ讌ｭ蜍吶′螟壹＞縺溘ａ縲∵遠蛻ｻ貍上ｌ繧・遠蛻ｻ菫ｮ豁｣萓晞ｼ縺碁ｻ逋ｺ縺励※縺・◆縲よ怦縺ｫ蟷ｳ蝮・0莉ｶ莉･荳翫・菫ｮ豁｣萓晞ｼ縺檎匱逕溘＠縲√◎縺ｮ蟇ｾ蠢懊↓蟷ｳ蝮・0蛻・ｼ丈ｻｶ縺九°縺｣縺ｦ縺・◆縲・/li>
-                    <li>繝｡繝ｳ繝舌・縺後梧怦譛ｫ縺ｮ蜍､諤蜈･蜉帙阪ｒ縲梧ｮ区･ｭ縲阪→縺励※陦後≧縺薙→縺悟､壹￥縲∵悽譚･縺ｮ讌ｭ蜍呎凾髢灘､悶↓菴懈･ｭ縺吶ｋ譎る俣縺梧怦30譎る俣莉･荳翫↓蜿翫ｓ縺ｧ縺・◆縲・/li>
-                    <li>蜈･蜉帙Α繧ｹ縺ｫ繧医ｋ蟾ｮ縺玲綾縺励′譛医↓蟷ｳ蝮・0莉ｶ逋ｺ逕溘＠縲∽ｿｮ豁｣菴懈･ｭ縺ｫ蟷ｳ蝮・5蛻・ｼ丈ｻｶ縺九°縺｣縺ｦ縺・◆縲・/li>
+                    <li>プロジェクト単位で残業が膨らみやすく、月末に勤怠修正が集中しがちだった。1人あたりの月末締め作業時間が平均30分を超え、30名全体で月15時間以上の工数が発生していた。</li>
+                    <li>クライアント先での業務が多いため、打刻漏れや打刻修正依頼が頻発していた。月に平均50件以上の修正依頼が発生し、その対応に平均20分／件かかっていた。</li>
+                    <li>メンバーが「月末の勤怠入力」を「残業」として行うことが多く、本来の業務時間外に作業する時間が月30時間以上に及んでいた。</li>
+                    <li>入力ミスによる差し戻しが月に平均10件発生し、修正作業に平均15分／件かかっていた。</li>
                 </ol>
 
-                <h2 style="font-size: 1.8em; color: #FFFFFF;">蟆主・繝励Ο繧ｻ繧ｹ</h2>
+                <h2 style="font-size: 1.8em; color: #FFFFFF;">導入プロセス</h2>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px;">
                     <article style="background: rgba(0, 0, 0, 0.25); border-radius: 12px; padding: 20px;">
-                        <h3 style="margin-top: 0; color: #4CAF50; font-size: 1.2em;">繧ｹ繝・ャ繝・・夂樟迥ｶ縺ｮ蜿ｯ隕門喧縺ｨPoC險ｭ險・/h3>
-                        <p style="margin: 0;">譛域忰邱繧∽ｽ懈･ｭ縺ｮ蟾･謨ｰ繧貞庄隕門喧縺励・蜷阪・繝｡繝ｳ繝舌・縺ｧ2騾ｱ髢薙・PoC繧貞ｮ滓命縲ゆｽ懈･ｭ譎る俣縺ｮ蜑頑ｸ帛柑譫懊→縲√Γ繝ｳ繝舌・縺ｮ貅雜ｳ蠎ｦ繧呈ｸｬ螳壹＠縺ｾ縺励◆縲・/p>
+                        <h3 style="margin-top: 0; color: #4CAF50; font-size: 1.2em;">ステップ1：現状の可視化とPoC設計</h3>
+                        <p style="margin: 0;">月末締め作業の工数を可視化し、5名のメンバーで2週間のPoCを実施。作業時間の削減効果と、メンバーの満足度を測定しました。</p>
                     </article>
                     <article style="background: rgba(0, 0, 0, 0.25); border-radius: 12px; padding: 20px;">
-                        <h3 style="margin-top: 0; color: #4CAF50; font-size: 1.2em;">繧ｹ繝・ャ繝・・壽ュ繧ｷ繧ｹ繝ｻ莠ｺ莠九∈縺ｮ隱ｬ譏弱→謇ｿ隱・/h3>
-                        <p style="margin: 0;">PoC縺ｮ邨先棡繧定ｸ上∪縺医∵ュ繧ｷ繧ｹ繝ｻ莠ｺ莠九↓隱ｬ譏手ｳ・侭繧呈署蜃ｺ縲ゅそ繧ｭ繝･繝ｪ繝・ぅ蟇ｾ遲悶→蜃ｦ逅・Ο繧ｰ縺ｮ邂｡逅・婿豕輔ｒ隱ｬ譏弱＠縲∵価隱阪ｒ蠕励∪縺励◆縲・/p>
+                        <h3 style="margin-top: 0; color: #4CAF50; font-size: 1.2em;">ステップ2：情シス・人事への説明と承認</h3>
+                        <p style="margin: 0;">PoCの結果を踏まえ、情シス・人事に説明資料を提出。セキュリティ対策と処理ログの管理方法を説明し、承認を得ました。</p>
                     </article>
                     <article style="background: rgba(0, 0, 0, 0.25); border-radius: 12px; padding: 20px;">
-                        <h3 style="margin-top: 0; color: #4CAF50; font-size: 1.2em;">繧ｹ繝・ャ繝・・壼・遉ｾ螻暮幕縺ｨ螳夂捩蛹・/h3>
-                        <p style="margin: 0;">蜈ｨ30蜷阪↓螻暮幕縺励・xcel繝・Φ繝励Ξ繝ｼ繝医・驟榊ｸ・→隱ｬ譏惹ｼ壹ｒ螳滓命縲よ怦谺｡繝ｬ繝薙Η繝ｼ縺ｧ繝輔ぅ繝ｼ繝峨ヰ繝・け繧貞庶髮・＠縲・縺区怦縺ｧ螳夂捩縺輔○縺ｾ縺励◆縲・/p>
+                        <h3 style="margin-top: 0; color: #4CAF50; font-size: 1.2em;">ステップ3：全社展開と定着化</h3>
+                        <p style="margin: 0;">全30名に展開し、Excelテンプレートの配布と説明会を実施。月次レビューでフィードバックを収集し、1か月で定着させました。</p>
                     </article>
                 </div>
 
-                <h2 style="font-size: 1.8em; color: #FFFFFF;">蟆主・蠕後・蜉ｹ譫・/h2>
+                <h2 style="font-size: 1.8em; color: #FFFFFF;">導入後の効果</h2>
                 <table style="width: 100%; border-collapse: collapse; background: rgba(0, 0, 0, 0.35);">
                     <thead>
                         <tr style="background: rgba(255, 255, 255, 0.05);">
-                            <th style="padding: 12px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">謖・ｨ・/th>
-                            <th style="padding: 12px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">蟆主・蜑・/th>
-                            <th style="padding: 12px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">蟆主・蠕・/th>
-                            <th style="padding: 12px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">謾ｹ蝟・ｹ・/th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">指標</th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">導入前</th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">導入後</th>
+                            <th style="padding: 12px; text-align: left; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">改善幅</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">1莠ｺ縺ゅ◆繧翫・譛域忰邱繧∽ｽ懈･ｭ譎る俣</td>
-                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">蟷ｳ蝮・0蛻・/td>
-                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">蟷ｳ蝮・0蛻・/td>
-                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">笆ｲ67%</td>
+                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">1人あたりの月末締め作業時間</td>
+                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">平均30分</td>
+                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">平均10分</td>
+                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">▲67%</td>
                         </tr>
                         <tr style="background: rgba(255, 255, 255, 0.02);">
-                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">30蜷榊・菴薙〒縺ｮ蟾･謨ｰ</td>
-                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">譛・5譎る俣</td>
-                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">譛・譎る俣</td>
-                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">笆ｲ10譎る俣</td>
+                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">30名全体での工数</td>
+                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">月15時間</td>
+                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">月5時間</td>
+                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">▲10時間</td>
                         </tr>
                         <tr>
-                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">謇灘綾菫ｮ豁｣萓晞ｼ縺ｮ蟇ｾ蠢懈凾髢・/td>
-                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">譛・6.7譎る俣・・0莉ｶﾃ・0蛻・ｼ・/td>
-                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">譛・.8譎る俣・・0莉ｶﾃ・蛻・ｼ・/td>
-                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">笆ｲ10.9譎る俣</td>
+                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">打刻修正依頼の対応時間</td>
+                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">月16.7時間（50件×20分）</td>
+                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">月5.8時間（50件×7分）</td>
+                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">▲10.9時間</td>
                         </tr>
                         <tr style="background: rgba(255, 255, 255, 0.02);">
-                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">蜈･蜉帙Α繧ｹ縺ｫ繧医ｋ蟾ｮ縺玲綾縺嶺ｻｶ謨ｰ</td>
-                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">譛・0莉ｶ</td>
-                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">譛・莉ｶ</td>
-                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">笆ｲ80%</td>
+                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">入力ミスによる差し戻し件数</td>
+                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">月10件</td>
+                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">月2件</td>
+                            <td style="padding: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05);">▲80%</td>
                         </tr>
                         <tr>
-                            <td style="padding: 12px;">縲梧悽譚･縺ｮ讌ｭ蜍呎凾髢灘､悶阪〒縺ｮ菴懈･ｭ譎る俣</td>
-                            <td style="padding: 12px;">譛・0譎る俣莉･荳・/td>
-                            <td style="padding: 12px;">譛・0譎る俣莉･荳・/td>
-                            <td style="padding: 12px;">笆ｲ20譎る俣莉･荳・/td>
+                            <td style="padding: 12px;">「本来の業務時間外」での作業時間</td>
+                            <td style="padding: 12px;">月30時間以上</td>
+                            <td style="padding: 12px;">月10時間以下</td>
+                            <td style="padding: 12px;">▲20時間以上</td>
                         </tr>
                     </tbody>
                 </table>
 
-                <h2 style="font-size: 1.8em; color: #FFFFFF;">蟾ｮ縺玲綾縺嶺ｻｶ謨ｰ縺ｮ貂帛ｰ・/h2>
-                <p>蟆主・蜑阪・縲∵怦縺ｫ蟷ｳ蝮・0莉ｶ縺ｮ蜈･蜉帙Α繧ｹ縺ｫ繧医ｋ蟾ｮ縺玲綾縺励′逋ｺ逕溘＠縺ｦ縺・∪縺励◆縺後∝ｰ主・蠕後・譛医↓蟷ｳ蝮・莉ｶ縺ｾ縺ｧ貂帛ｰ代＠縺ｾ縺励◆縲ゅ％繧後・縲・xcel繝輔ぃ繧､繝ｫ縺ｮ繝・・繧ｿ繧偵◎縺ｮ縺ｾ縺ｾJobcan縺ｫ蜈･蜉帙☆繧九◆繧√∵律莉倥ｄ譎ょ綾縺ｮ蠖｢蠑上・繝溘せ縺悟､ｧ蟷・↓貂帙▲縺溘◆繧√〒縺吶・/p>
-                <p>蟾ｮ縺玲綾縺・莉ｶ縺ゅ◆繧翫・蟇ｾ蠢懈凾髢薙・縲∝ｰ主・蜑阪・蟷ｳ蝮・5蛻・°繧峨∝ｰ主・蠕後・蟷ｳ蝮・0蛻・↓遏ｭ邵ｮ縺輔ｌ縺ｾ縺励◆縲ゅ％繧後・縲√お繝ｩ繝ｼ繝ｭ繧ｰ縺梧・遒ｺ縺ｫ險倬鹸縺輔ｌ繧九◆繧√∝撫鬘後・邂・園繧堤音螳壹＠繧・☆縺上↑縺｣縺溘◆繧√〒縺吶・/p>
+                <h2 style="font-size: 1.8em; color: #FFFFFF;">差し戻し件数の減少</h2>
+                <p>導入前は、月に平均10件の入力ミスによる差し戻しが発生していましたが、導入後は月に平均2件まで減少しました。これは、ExcelファイルのデータをそのままJobcanに入力するため、日付や時刻の形式のミスが大幅に減ったためです。</p>
+                <p>差し戻し1件あたりの対応時間は、導入前の平均15分から、導入後の平均10分に短縮されました。これは、エラーログが明確に記録されるため、問題の箇所を特定しやすくなったためです。</p>
 
-                <h2 style="font-size: 1.8em; color: #FFFFFF;">繝｡繝ｳ繝舌・縺ｮ蠢・炊逧・↑雋諡・ｸ・/h2>
-                <p>蟆主・蜑阪・縲√Γ繝ｳ繝舌・縺後梧怦譛ｫ縺ｮ蜍､諤蜈･蜉帙阪ｒ縲梧ｮ区･ｭ縲阪→縺励※陦後≧縺薙→縺悟､壹￥縲∵悽譚･縺ｮ讌ｭ蜍呎凾髢灘､悶↓菴懈･ｭ縺吶ｋ譎る俣縺梧怦30譎る俣莉･荳翫↓蜿翫ｓ縺ｧ縺・∪縺励◆縲ょｰ主・蠕後・縲√％縺ｮ譎る俣縺梧怦10譎る俣莉･荳九↓蜑頑ｸ帙＆繧後√Γ繝ｳ繝舌・縺ｮ蠢・炊逧・↑雋諡・′螟ｧ蟷・↓霆ｽ貂帙＆繧後∪縺励◆縲・/p>
-                <p>繧｢繝ｳ繧ｱ繝ｼ繝郁ｪｿ譟ｻ縺ｧ縺ｯ縲∽ｻ･荳九・繧医≧縺ｪ螢ｰ縺悟ｯ・○繧峨ｌ縺ｾ縺励◆・・/p>
+                <h2 style="font-size: 1.8em; color: #FFFFFF;">メンバーの心理的な負担減</h2>
+                <p>導入前は、メンバーが「月末の勤怠入力」を「残業」として行うことが多く、本来の業務時間外に作業する時間が月30時間以上に及んでいました。導入後は、この時間が月10時間以下に削減され、メンバーの心理的な負担が大幅に軽減されました。</p>
+                <p>アンケート調査では、以下のような声が寄せられました：</p>
                 <ul style="padding-left: 22px;">
-                    <li>縲梧怦譛ｫ縺ｮ繧ｹ繝医Ξ繧ｹ縺梧ｿ貂帙＠縺溘搾ｼ亥屓遲碑・・90%・・/li>
-                    <li>縲梧悽譚･縺ｮ讌ｭ蜍吶↓髮・ｸｭ縺ｧ縺阪ｋ繧医≧縺ｫ縺ｪ縺｣縺溘搾ｼ亥屓遲碑・・85%・・/li>
-                    <li>縲悟共諤蜈･蜉帙′縲取ｮ区･ｭ縲上〒縺ｯ縺ｪ縺上↑縺｣縺溘搾ｼ亥屓遲碑・・80%・・/li>
+                    <li>「月末のストレスが激減した」（回答者の90%）</li>
+                    <li>「本来の業務に集中できるようになった」（回答者の85%）</li>
+                    <li>「勤怠入力が『残業』ではなくなった」（回答者の80%）</li>
                 </ul>
 
-                <h2 style="font-size: 1.8em; color: #FFFFFF;">驕狗畑荳翫・繝昴う繝ｳ繝・/h2>
+                <h2 style="font-size: 1.8em; color: #FFFFFF;">運用上のポイント</h2>
                 <ul style="padding-left: 22px;">
-                    <li>Excel繝・Φ繝励Ξ繝ｼ繝医ｒ驟榊ｸ・＠縲∝・蜉帙Ν繝ｼ繝ｫ繧堤ｵｱ荳縺励∪縺励◆縲ゅ％繧後↓繧医ｊ縲∝ｽ｢蠑上お繝ｩ繝ｼ縺ｮ逋ｺ逕溽紫縺悟､ｧ蟷・↓貂帛ｰ代＠縺ｾ縺励◆縲・/li>
-                    <li>譛域ｬ｡繝ｬ繝薙Η繝ｼ縺ｧ繝輔ぅ繝ｼ繝峨ヰ繝・け繧貞庶髮・＠縲∝撫鬘後′縺ゅｌ縺ｰ霑・溘↓蟇ｾ蠢懊＠縺ｾ縺励◆縲ゅ％繧後↓繧医ｊ縲√Γ繝ｳ繝舌・縺ｮ貅雜ｳ蠎ｦ縺悟髄荳翫＠縺ｾ縺励◆縲・/li>
-                    <li>蜃ｦ逅・Ο繧ｰ繧定ｨ倬鹸縺励∝ｿ・ｦ√↓蠢懊§縺ｦ遒ｺ隱阪〒縺阪ｋ繧医≧縺ｫ縺励∪縺励◆縲ゅ％繧後↓繧医ｊ縲∫屮譟ｻ蟇ｾ蠢懊′螳ｹ譏薙↓縺ｪ繧翫∪縺励◆縲・/li>
+                    <li>Excelテンプレートを配布し、入力ルールを統一しました。これにより、形式エラーの発生率が大幅に減少しました。</li>
+                    <li>月次レビューでフィードバックを収集し、問題があれば迅速に対応しました。これにより、メンバーの満足度が向上しました。</li>
+                    <li>処理ログを記録し、必要に応じて確認できるようにしました。これにより、監査対応が容易になりました。</li>
                 </ul>
 
                 <div style="margin-top: 30px; padding: 24px; background: rgba(255, 255, 255, 0.05); border-radius: 12px;">
-                    <h2 style="margin-top: 0; font-size: 1.5em; color: #FFFFFF;">迴ｾ蝣ｴ縺九ｉ縺ｮ螢ｰ</h2>
+                    <h2 style="margin-top: 0; font-size: 1.5em; color: #FFFFFF;">現場からの声</h2>
                     <blockquote style="margin: 0 0 20px 0; color: rgba(255, 255, 255, 0.8);">
-                        縲後・繝ｭ繧ｸ繧ｧ繧ｯ繝医〒蠢吶＠縺・怦譛ｫ縺ｫ縲∝共諤蜈･蜉帙↓30蛻・ｂ縺九°縺｣縺ｦ縺・◆縺ｮ縺後∽ｻ翫〒縺ｯ10蛻・〒邨ゅｏ繧翫∪縺吶よｮ区･ｭ譎る俣繧ょ炎貂帙〒縺阪※縲∵悽蠖薙↓蜉ｩ縺九▲縺ｦ縺・∪縺吶ゅ・
+                        「プロジェクトで忙しい月末に、勤怠入力に30分もかかっていたのが、今では10分で終わります。残業時間も削減できて、本当に助かっています。」
                     </blockquote>
                     <blockquote style="margin: 0 0 20px 0; color: rgba(255, 255, 255, 0.8);">
-                        縲梧遠蛻ｻ菫ｮ豁｣萓晞ｼ縺御ｸ豌励↓譚･縺ｦ繧ゅ・xcel繝輔ぃ繧､繝ｫ縺ｫ縺ｾ縺ｨ繧√※蜈･蜉帙☆繧九□縺代〒縲∬・蜍輔〒蜃ｦ逅・＆繧後ｋ縺ｮ縺ｧ縲√せ繝医Ξ繧ｹ縺後↑縺上↑繧翫∪縺励◆縲ゅ・
+                        「打刻修正依頼が一気に来ても、Excelファイルにまとめて入力するだけで、自動で処理されるので、ストレスがなくなりました。」
                     </blockquote>
                     <blockquote style="margin: 0; color: rgba(255, 255, 255, 0.8);">
-                        縲悟・蜉帙Α繧ｹ縺梧ｸ帙▲縺溘％縺ｨ縺ｧ縲∝ｷｮ縺玲綾縺怜ｯｾ蠢懊・譎る俣縺悟､ｧ蟷・↓蜑頑ｸ帙＆繧後∪縺励◆縲よ怦譛ｫ縺ｮ菴懈･ｭ縺梧悽蠖薙↓讌ｽ縺ｫ縺ｪ繧翫∪縺励◆縲ゅ・
+                        「入力ミスが減ったことで、差し戻し対応の時間が大幅に削減されました。月末の作業が本当に楽になりました。」
                     </blockquote>
                 </div>
 
-                <h2 style="font-size: 1.8em; color: #FFFFFF;">莉雁ｾ後・豢ｻ逕ｨ莠亥ｮ・/h2>
-                <p>莉雁ｾ後・縲∽ｻ･荳九・繧医≧縺ｪ豢ｻ逕ｨ繧剃ｺ亥ｮ壹＠縺ｦ縺・∪縺呻ｼ・/p>
+                <h2 style="font-size: 1.8em; color: #FFFFFF;">今後の活用予定</h2>
+                <p>今後は、以下のような活用を予定しています：</p>
                 <ul style="padding-left: 22px;">
-                    <li>譁ｰ蜈･遉ｾ蜩｡縺ｸ縺ｮ謨呵ご繧ｫ繝ｪ繧ｭ繝･繝ｩ繝縺ｫ縲゛obcan AutoFill縺ｮ菴ｿ逕ｨ譁ｹ豕輔ｒ邨・∩霎ｼ繧</li>
-                    <li>繧ｯ繝ｩ繧､繧｢繝ｳ繝亥・縺ｧ縺ｮ謇灘綾貍上ｌ繧帝亟縺舌◆繧√√Μ繝槭う繝ｳ繝画ｩ溯・繧呈ｴｻ逕ｨ縺吶ｋ</li>
-                    <li>蜃ｦ逅・Ο繧ｰ繧貞・譫舌＠縲∝・蜉帙Α繧ｹ縺ｮ蛯ｾ蜷代ｒ謚頑升縺励∽ｺ磯亟遲悶ｒ隰帙§繧・/li>
+                    <li>新入社員への教育カリキュラムに、Jobcan AutoFillの使用方法を組み込む</li>
+                    <li>クライアント先での打刻漏れを防ぐため、リマインド機能を活用する</li>
+                    <li>処理ログを分析し、入力ミスの傾向を把握し、予防策を講じる</li>
                 </ul>
 
                 <section style="margin-top: 40px; padding: 24px; background: rgba(74, 158, 255, 0.15); border-radius: 12px; border: 1px solid rgba(74, 158, 255, 0.35);">
-                    <h2 style="margin-top: 0; font-size: 1.5em; color: #FFFFFF;">蟆主・繧偵＃讀懆ｨ弱・譁ｹ縺ｸ</h2>
-                    <p style="margin-bottom: 12px;">隧ｳ縺励＞讖溯・繝ｻ菴ｿ縺・婿縺ｯ縲・a href="/guide/getting-started" style="color: #4A9EFF;">縺ｯ縺倥ａ縺ｦ縺ｮ菴ｿ縺・婿繧ｬ繧､繝・/a>繧・a href="/faq" style="color: #4A9EFF;">繧医￥縺ゅｋ雉ｪ蝠擾ｼ・AQ・・/a>繧偵＃遒ｺ隱阪￥縺縺輔＞縲ょｰ主・繧呈､懆ｨ弱＠縺ｦ縺・ｋ譁ｹ縺ｯ縲・a href="/contact" style="color: #4A9EFF;">縺雁撫縺・粋繧上○繝輔か繝ｼ繝</a>繧医ｊ縺秘｣邨｡縺上□縺輔＞縲・/p>
-                    <a href="/contact" style="display: inline-block; padding: 12px 24px; border-radius: 10px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.3); color: #FFFFFF; text-decoration: none; margin-right: 10px;">縺雁撫縺・粋繧上○縺吶ｋ</a>
-                    <a href="/guide/getting-started" style="display: inline-block; padding: 12px 24px; border-radius: 10px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.3); color: #FFFFFF; text-decoration: none;">菴ｿ縺・婿繧ｬ繧､繝峨ｒ隕九ｋ</a>
+                    <h2 style="margin-top: 0; font-size: 1.5em; color: #FFFFFF;">導入をご検討の方へ</h2>
+                    <p style="margin-bottom: 12px;">詳しい機能・使い方は、<a href="/guide/getting-started" style="color: #4A9EFF;">はじめての使い方ガイド</a>や<a href="/faq" style="color: #4A9EFF;">よくある質問（FAQ）</a>をご確認ください。導入を検討している方は、<a href="/contact" style="color: #4A9EFF;">お問い合わせフォーム</a>よりご連絡ください。</p>
+                    <a href="/contact" style="display: inline-block; padding: 12px 24px; border-radius: 10px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.3); color: #FFFFFF; text-decoration: none; margin-right: 10px;">お問い合わせする</a>
+                    <a href="/guide/getting-started" style="display: inline-block; padding: 12px 24px; border-radius: 10px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.3); color: #FFFFFF; text-decoration: none;">使い方ガイドを見る</a>
                 </section>
             </section>
 
         </article>
     </main>
-
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "Article",
-        "headline": "譛域ｬ｡邱繧√・\"谿区･ｭ30譎る俣\"縺九ｉ閼ｱ蜊ｴ・壹さ繝ｳ繧ｵ繝ｫ繝・ぅ繝ｳ繧ｰ繝輔ぃ繝ｼ繝縺ｧ縺ｮJobcan AutoFill蟆主・莠倶ｾ・,
-        "datePublished": "2025-01-10",
-        "dateModified": "2025-01-10",
-        "author": {
-            "@type": "Person",
-            "name": "RT",
-            "jobTitle": "Jobcan AutoFill 繝励Ο繝繧ｯ繝医が繝ｼ繝翫・"
-        },
-        "publisher": {
-            "@type": "Organization",
-            "name": "Jobcan AutoFill",
-            "logo": {
-                "@type": "ImageObject",
-                "url": "https://jobcan-automation.onrender.com{{ url_for('static', filename='JobcanAutofill.png') }}"
-            }
-        },
-        "keywords": ["蜍､諤DX", "繧ｳ繝ｳ繧ｵ繝ｫ繝・ぅ繝ｳ繧ｰ", "讌ｭ蜍吝柑邇・喧"],
-        "url": "https://jobcan-automation.onrender.com/case-study/consulting-firm"
-    }
-    </script>
-    
-    {# P1-1: 繝翫ン繧ｲ繝ｼ繧ｷ繝ｧ繝ｳ縺ｮ荳雋ｫ諤ｧ #}
+    {# P1-1: ナビゲーションの一貫性 #}
     {% include 'includes/footer.html' %}
 </body>
 </html>
-
-
