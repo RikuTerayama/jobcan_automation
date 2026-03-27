@@ -69,16 +69,14 @@
             {% endfor %}
         </div>
 
-        <div style="border-top: 1px solid rgba(255, 255, 255, 0.2); padding-top: 20px; margin-top: 30px;">
-            <p style="margin: 8px 0; color: rgba(255, 255, 255, 0.7); font-size: 0.95em; text-align: center;">
-                <strong style="color: rgba(255, 255, 255, 0.9);">ご利用にあたって</strong>
-                Jobcan AutoFill は、業務効率化とバックオフィス運用の見直しに役立つツールとガイドを掲載しています。
-                データの取り扱い方針については
-                <a href="/privacy" style="color: rgba(255, 255, 255, 0.8);">プライバシーポリシー</a>
-                をご確認ください。
+        <div class="site-footer__summary">
+            <p class="site-footer__copy">
+                <strong class="site-footer__copy-title">ご利用にあたって</strong>
+                <span class="site-footer__copy-line">Jobcan AutoFill では、勤怠入力の自動化と周辺業務に役立つツール・ガイドを掲載しています。</span>
+                <span class="site-footer__copy-line">データの取り扱い方針は <a href="/privacy" class="site-footer__copy-link">プライバシーポリシー</a> をご確認ください。</span>
             </p>
-            <p style="margin: 8px 0; color: rgba(255, 255, 255, 0.7); font-size: 0.95em; text-align: center;">
-                &copy; 2025 Jobcan AutoFill. All rights reserved. | Developed by RT | Version: {{ app_version|default('1.0.0') }}
+            <p class="site-footer__meta">
+                &copy; 2025 Jobcan AutoFill. All rights reserved.
             </p>
         </div>
     </div>

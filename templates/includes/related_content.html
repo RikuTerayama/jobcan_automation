@@ -4,7 +4,11 @@
         <p class="related-content__eyebrow">Related Content</p>
         <h2 id="related-content-heading">{{ related_content_section.title }}</h2>
         {% if related_content_section.intro %}
-        <p class="related-content__intro">{{ related_content_section.intro }}</p>
+        <p class="related-content__intro copy-lines">
+            {% for line in split_visible_sentences(related_content_section.intro) %}
+            <span class="copy-lines__line">{{ line }}</span>
+            {% endfor %}
+        </p>
         {% endif %}
     </div>
     <div class="related-content__grid">
