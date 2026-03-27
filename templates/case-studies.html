@@ -1,74 +1,90 @@
-﻿<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-    {% set page_title = '蟆主・莠倶ｾ倶ｸ隕ｧ | Jobcan AutoFill' %}
-    {% set breadcrumb_title = '蟆主・莠倶ｾ・' %}
+    {% set page_title = '導入事例 | Jobcan AutoFill' %}
+    {% set page_description = 'Jobcan AutoFill の導入事例一覧です。月末の勤怠締め、社内展開、リモート運用など、業務効率化の活用イメージを事例形式で確認できます。' %}
+    {% set breadcrumb_title = '導入事例' %}
     {% include 'includes/head_meta.html' %}
-
     <style>
         body { margin: 0; font-family: 'Noto Sans JP', sans-serif; background: linear-gradient(135deg, #121212 0%, #1A1A1A 50%, #0F0F0F 100%); color: #FFFFFF; line-height: 1.8; }
-        .container { max-width: 960px; margin: 0 auto; padding: 40px 20px; }
-        h1 { font-size: 2.2em; margin-bottom: 16px; color: #4CAF50; }
-        .lead { color: rgba(255, 255, 255, 0.9); margin-bottom: 32px; font-size: 1.05em; }
-        .case-card { background: rgba(0, 0, 0, 0.35); border-radius: 14px; padding: 24px; margin-bottom: 24px; border: 1px solid rgba(74, 158, 255, 0.25); }
-        .case-card h2 { font-size: 1.4em; margin: 0 0 12px 0; color: #4A9EFF; }
-        .case-card p { margin: 0 0 16px 0; color: rgba(255, 255, 255, 0.88); }
-        .case-card a { display: inline-block; padding: 10px 20px; background: rgba(74, 158, 255, 0.2); border: 1px solid rgba(74, 158, 255, 0.5); border-radius: 8px; color: #4A9EFF; text-decoration: none; font-weight: 500; }
-        .case-card a:hover { background: rgba(74, 158, 255, 0.3); }
-        .section { margin-top: 40px; }
-        .section h2 { font-size: 1.6em; margin-bottom: 16px; color: #FFFFFF; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 8px; }
-        .section p, .section ul { color: rgba(255, 255, 255, 0.88); margin-bottom: 12px; }
-        .section ul { padding-left: 24px; }
-        .nav-links { margin-top: 40px; padding-top: 24px; border-top: 1px solid rgba(255,255,255,0.15); }
-        .nav-links a { color: #4A9EFF; text-decoration: none; margin-right: 20px; }
-        .nav-links a:hover { text-decoration: underline; }
+        .case-shell { max-width: 1080px; margin: 0 auto; padding: 32px 20px 64px; }
+        .case-hero { margin-bottom: 30px; }
+        .case-hero h1 { margin: 0 0 16px; font-size: clamp(2rem, 4vw, 3rem); color: #4CAF50; }
+        .case-hero p { margin: 0 0 14px; max-width: 760px; color: rgba(255, 255, 255, 0.84); }
+        .case-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 22px; }
+        .case-card { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 18px; padding: 22px; }
+        .case-card:hover { border-color: rgba(74, 158, 255, 0.28); box-shadow: 0 16px 32px rgba(0, 0, 0, 0.18); }
+        .case-card h2 { margin: 0 0 12px; font-size: 1.25rem; }
+        .case-card p { margin: 0 0 16px; color: rgba(255, 255, 255, 0.84); }
+        .case-card ul { margin: 0 0 16px; padding-left: 20px; color: rgba(255, 255, 255, 0.78); }
+        .case-card a { color: #4A9EFF; font-weight: 600; text-decoration: none; }
+        .case-card a:hover { text-decoration: underline; }
+        .case-support { margin-top: 42px; padding: 24px; border-radius: 18px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .case-support h2 { margin: 0 0 14px; font-size: 1.5rem; }
+        .case-support ul { margin: 0; padding-left: 20px; color: rgba(255, 255, 255, 0.8); }
     </style>
 </head>
 <body>
     {% include 'includes/header.html' %}
     {% include 'includes/breadcrumb.html' %}
-    <div class="container">
-        <h1>蟆主・莠倶ｾ・/h1>
-        <p class="lead">Jobcan AutoFill繧貞ｰ主・縺励◆莨∵･ｭ繝ｻ驛ｨ髢縺ｮ莠倶ｾ九ｒ讌ｭ遞ｮ繝ｻ隕乗ｨ｡蛻･縺ｫ縺ｾ縺ｨ繧√※縺・∪縺吶ょ共諤辣ｧ蜷医・閾ｪ蜍募喧縲∵怦谺｡邱繧√・譎る俣蜑頑ｸ帙∝ｱ樔ｺｺ蛹冶ｧ｣豸医↑縺ｩ縲∬ｪｲ鬘後→蜉ｹ譫懊ｒ蜈ｷ菴鍋噪縺ｫ邏ｹ莉九＠縺ｦ縺・ｋ縺溘ａ縲∬・遉ｾ縺ｮ蟆主・讀懆ｨ弱ｄ遉ｾ蜀・ｪｬ譏弱・蜿り・↓蠖ｹ遶九■縺ｾ縺吶・/p>
+    <main class="case-shell">
+        <section class="case-hero">
+            <h1>導入事例</h1>
+            <p>Jobcan AutoFill をどのような現場で使い、どこに改善余地があったのかを事例形式で整理しています。月末の勤怠締め、社内展開、リモート運用など、業務効率化の活用イメージを把握したい方向けです。</p>
+            <p>事例を読んだあとに <a href="/guide/getting-started">導入手順</a>、<a href="/blog/jobcan-auto-input-tools-overview">ツール比較</a>、<a href="/autofill">実際の入力フロー</a> へ進みやすい構成にしています。</p>
+        </section>
+
         {% with slot_id='case_index_after_intro' %}
             {% include 'includes/affiliate_slot.html' %}
         {% endwith %}
 
-        <div class="case-card">
-            <h2>繧ｳ繝ｳ繧ｿ繧ｯ繝医そ繝ｳ繧ｿ繝ｼ驛ｨ髢縺ｮ蜍､諤DX謌仙粥莠倶ｾ・/h2>
-            <p>300蟶ｭ隕乗ｨ｡縺ｮ繧ｳ繝ｳ繧ｿ繧ｯ繝医そ繝ｳ繧ｿ繝ｼ縺ｧ縲∵ｴｾ驕｣蜈・→縺ｮ蜍､諤辣ｧ蜷医→蟾ｮ縺玲綾縺怜ｯｾ蠢懊↓霑ｽ繧上ｌ縺ｦ縺・◆蜉ｴ蜍吶メ繝ｼ繝縺後゛obcan AutoFill縺ｮ蟆主・縺ｫ繧医ｊ辣ｧ蜷井ｽ懈･ｭ繧帝ｱ12譎る俣縺九ｉ3譎る俣縺ｫ蜑頑ｸ帙よ怦髢・2譎る俣縺ｮ遞ｼ蜒榊炎貂帙→逶｣譟ｻ蟇ｾ蠢懊・蜉ｹ邇・喧繧貞ｮ溽樟縺励◆莠倶ｾ九〒縺吶・/p>
-            <a href="/case-study/contact-center">隧ｳ邏ｰ繧定ｦ九ｋ</a>
-        </div>
-        <div class="case-card">
-            <h2>繧ｳ繝ｳ繧ｵ繝ｫ繝・ぅ繝ｳ繧ｰ繝輔ぃ繝ｼ繝・壽怦谺｡邱繧√・谿区･ｭ30譎る俣縺九ｉ閼ｱ蜊ｴ</h2>
-            <p>遉ｾ蜩｡30蜷崎ｦ乗ｨ｡縺ｮ繧ｳ繝ｳ繧ｵ繝ｫ繝・ぅ繝ｳ繧ｰ繝輔ぃ繝ｼ繝縺ｧ縺ｯ縲√・繝ｭ繧ｸ繧ｧ繧ｯ繝亥腰菴阪〒谿区･ｭ縺瑚・繧峨∩譛域忰縺ｫ蜍､諤菫ｮ豁｣縺碁寔荳ｭ縺励※縺・∪縺励◆縲り・蜍募・蜉帙ヤ繝ｼ繝ｫ縺ｮ蟆主・縺ｫ繧医ｊ譛域ｬ｡邱繧∽ｽ懈･ｭ縺ｮ譎る俣繧貞､ｧ蟷・↓蜑頑ｸ帙＠縲√Γ繝ｳ繝舌・縺ｮ蠢・炊逧・ｲ諡・ｒ霆ｽ貂帙＠縺滉ｺ倶ｾ九〒縺吶・/p>
-            <a href="/case-study/consulting-firm">隧ｳ邏ｰ繧定ｦ九ｋ</a>
-        </div>
-        <div class="case-card">
-            <h2>繝輔Ν繝ｪ繝｢繝ｼ繝医・蟆剰ｦ乗ｨ｡繧ｹ繧ｿ繝ｼ繝医い繝・・縺ｧ縺ｮ蜍､諤蜈･蜉帙ｒ繧ｷ繝ｳ繝励Ν縺ｫ</h2>
-            <p>遉ｾ蜩｡10蜷榊燕蠕後・繝輔Ν繝ｪ繝｢繝ｼ繝医・繝輔Ξ繝・け繧ｹ蜍､蜍吶・繧ｹ繧ｿ繝ｼ繝医い繝・・縺ｧ縺ｯ縲ヾlack繧・せ繝励Ξ繝・ラ繧ｷ繝ｼ繝医〒縺ｮ邂｡逅・′辣ｩ髮代↓縺ｪ縺｣縺ｦ縺・∪縺励◆縲・xcel繝吶・繧ｹ縺ｮ閾ｪ蜍募喧縺ｫ繧医ｊ邱繧∽ｽ懈･ｭ繧偵せ繝繝ｼ繧ｺ縺ｫ縺励√Μ繝｢繝ｼ繝医〒繧ょ柑邇・噪縺ｪ蜍､諤邂｡逅・ｒ螳溽樟縺励◆莠倶ｾ九〒縺吶・/p>
-            <a href="/case-study/remote-startup">隧ｳ邏ｰ繧定ｦ九ｋ</a>
-        </div>
+        <section aria-labelledby="case-list-heading">
+            <h2 id="case-list-heading">ケース一覧</h2>
+            <div class="case-grid">
+                <article class="case-card">
+                    <h2>コンタクトセンターの月末処理を平準化したケース</h2>
+                    <p>シフト変更と修正依頼が集中しやすいチームで、入力前の確認フローと AutoFill の使い分けを整理した事例です。</p>
+                    <ul>
+                        <li>月末に修正が集中しやすいチーム</li>
+                        <li>Excel テンプレートの共有ルールを整備</li>
+                        <li>入力前チェックの運用を明確化</li>
+                    </ul>
+                    <a href="/case-study/contact-center">事例を読む</a>
+                </article>
+                <article class="case-card">
+                    <h2>コンサルティングファームで社内展開を進めたケース</h2>
+                    <p>稟議、セキュリティ確認、利用者教育の3点を先に整理し、段階的に運用を広げたケースです。</p>
+                    <ul>
+                        <li>社内説明資料の整理が必要なチーム</li>
+                        <li>運用ルールと責任分界を明文化</li>
+                        <li>導入前の確認事項をテンプレ化</li>
+                    </ul>
+                    <a href="/case-study/consulting-firm">事例を読む</a>
+                </article>
+                <article class="case-card">
+                    <h2>リモート中心チームで入力負荷を分散したケース</h2>
+                    <p>分散勤務のチームで、Excel 共有と自動入力のルールを見直し、締め日前の負荷を抑えたケースです。</p>
+                    <ul>
+                        <li>リモート環境で入力タイミングが散らばる</li>
+                        <li>共有ファイルの更新ルールを統一</li>
+                        <li>締め日前に確認を前倒し</li>
+                    </ul>
+                    <a href="/case-study/remote-startup">事例を読む</a>
+                </article>
+            </div>
+        </section>
+
+        <section class="case-support" aria-labelledby="case-support-heading">
+            <h2 id="case-support-heading">事例を読む前に見ておくと役立つページ</h2>
+            <ul>
+                <li><a href="/guide/getting-started">はじめての使い方</a>: 導入時の流れを先に把握できます。</li>
+                <li><a href="/blog/implementation-checklist">導入チェックリスト</a>: 社内調整や運用設計の観点を整理できます。</li>
+                <li><a href="/tools">ツール一覧</a>: 周辺業務まで含めた効率化の選択肢を比較できます。</li>
+            </ul>
+        </section>
 
         {% include 'includes/seo_link_hub.html' %}
-
-        <section class="section">
-            <h2>縺ｩ繧薙↑莠ｺ縺ｫ蠖ｹ遶九▽縺・/h2>
-            <p>蜍､諤辣ｧ蜷医ｄ譛域ｬ｡邱繧√↓譎る俣縺後°縺九▲縺ｦ縺・ｋ蜉ｴ蜍吶・莠ｺ莠区球蠖楢・∬､・焚諡轤ｹ繝ｻ豢ｾ驕｣豺ｷ蝨ｨ縺ｧ遯∝粋菴懈･ｭ縺瑚ｲ闕ｷ縺ｫ縺ｪ縺｣縺ｦ縺・ｋ驛ｨ髢縲√Μ繝｢繝ｼ繝医Ρ繝ｼ繧ｯ縺ｧ謇灘綾繝ｻ蜈･蜉帙・驕狗畑繧堤ｵｱ荳縺励◆縺・メ繝ｼ繝縺ｫ迚ｹ縺ｫ蜿り・↓縺ｪ繧翫∪縺吶よ･ｭ遞ｮ繧・ｦ乗ｨ｡縺ｯ蝠上ｏ縺壹・xcel縺ｧ蜍､諤繧帝寔險医＠縺ｦ縺・ｋ迺ｰ蠅・〒縺ゅｌ縺ｰ蟆主・縺ｮ豬√ｌ繧剃ｺ倶ｾ九°繧画滑謠｡縺ｧ縺阪∪縺吶・/p>
-        </section>
-        <section class="section">
-            <h2>蟆主・縺ｮ豬√ｌ縺ｮ萓・/h2>
-            <p>螟壹￥縺ｮ莠倶ｾ九〒縺ｯ縲√∪縺哘xcel繝・Φ繝励Ξ繝ｼ繝医→蜈･蜉帙Ν繝ｼ繝ｫ縺ｮ邨ｱ荳縲∫ｶ壹＞縺ｦ蟆剰ｦ乗ｨ｡縺ｧ縺ｮ隧ｦ鬨灘ｰ主・・・oC・峨√Ο繧ｰ繧・夂衍縺ｮ驕狗畑繧呈ｱｺ繧√◆縺・∴縺ｧ譛ｬ逡ｪ螻暮幕縺ｨ縺・≧豬√ｌ繧貞叙縺｣縺ｦ縺・∪縺吶りｩｳ縺励＞謇矩・・蜷・ｺ倶ｾ九・繝ｼ繧ｸ縺翫ｈ縺ｳ<a href="/guide/complete" style="color: #4A9EFF;">螳悟・繧ｬ繧､繝・/a>繝ｻ<a href="/best-practices" style="color: #4A9EFF;">繝吶せ繝医・繝ｩ繧ｯ繝・ぅ繧ｹ</a>繧偵＃蜿ら・縺上□縺輔＞縲・/p>
-        </section>
-
-        <div class="nav-links">
-            <a href="/">繝帙・繝</a>
-            <a href="/tools">繝・・繝ｫ荳隕ｧ</a>
-            <a href="/guide">繧ｬ繧､繝我ｸ隕ｧ</a>
-            <a href="/blog">繝悶Ο繧ｰ</a>
-        </div>
-    </div>
+    </main>
     {% include 'includes/footer.html' %}
 </body>
 </html>
-

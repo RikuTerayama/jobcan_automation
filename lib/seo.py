@@ -253,6 +253,251 @@ TOOL_APPLICATIONS = {
 }
 
 
+BLOG_ARTICLES = [
+    {
+        'path': '/blog/playwright-security',
+        'title': 'Playwrightによるブラウザ自動化のセキュリティ 企業の安全性を守るための技術解説',
+        'description': 'Playwrightによるブラウザ自動化のセキュリティ対策を詳しく解説。企業が安心して利用できる自動化ツールの技術的基盤、認証の安全性、データ保護の仕組みについて、開発者の視点から説明します。',
+        'date_published': '2025-12-27',
+        'section': 'セキュリティ・技術スタック',
+    },
+    {
+        'path': '/blog/workstyle-reform-automation',
+        'title': '勤怠管理の自動化が「働き方改革」を加速させる理由と、その本質的な価値',
+        'description': '働き方改革の真の鍵は、勤怠入力のような見えない付帯業務の削減にあります。勤怠管理の自動化がなぜ企業のDXを加速させ、コンプライアンス強化につながるのかを解説します。',
+        'date_published': '2025-12-25',
+        'section': '業務効率化・DX',
+    },
+    {
+        'path': '/blog/excel-attendance-limits',
+        'title': 'Excelで勤怠を管理する限界と、API・自動化ツールを併用すべき理由',
+        'description': 'Excelでの勤怠管理に残る手入力ミス、データ整合性、セキュリティ面の課題を整理し、自動化ツールと組み合わせて改善する考え方をまとめています。',
+        'date_published': '2025-12-23',
+        'section': '業務改善・効率化',
+    },
+    {
+        'path': '/blog/implementation-checklist',
+        'title': 'Jobcan AutoFill導入チェックリスト（10項目）',
+        'description': '社内合意から運用定着までに確認したい10項目をまとめたセルフレビュー用リストです。稟議資料やセキュリティ審査の整理にも活用できます。',
+        'date_published': '2025-02-17',
+        'section': '導入・運用ガイド',
+    },
+    {
+        'path': '/blog/automation-roadmap',
+        'title': 'Jobcan自動化を社内展開するための90日ロードマップ',
+        'description': 'トライアルから本番展開までの90日間で押さえるべきマイルストーンを、担当者・決裁者・現場メンバーの視点から整理した記事です。',
+        'date_published': '2025-02-12',
+        'section': '導入・運用ガイド',
+    },
+    {
+        'path': '/blog/month-end-closing-checklist',
+        'title': '月末の勤怠締め地獄を減らすための現実的なチェックリスト',
+        'description': '月末の勤怠締めで起きがちな地獄パターンと、月の前半・中盤でやっておくと楽になる工夫を、開発者RTの実体験を交えて解説します。',
+        'date_published': '2025-01-29',
+        'section': '業務効率化・実務ノウハウ',
+    },
+    {
+        'path': '/blog/jobcan-auto-input-dos-and-donts',
+        'title': 'Jobcan 自動入力のやり方と、やってはいけないNG自動化',
+        'description': 'Jobcanの自動入力方法と、やってはいけないNGパターンを整理した記事です。コンプライアンスとセキュリティを守りながら効率化する考え方をまとめています。',
+        'date_published': '2025-01-28',
+        'section': '実務ノウハウ・セキュリティ',
+    },
+    {
+        'path': '/blog/jobcan-auto-input-tools-overview',
+        'title': 'Jobcanの勤怠入力を楽にする方法まとめ 自動入力ツールの考え方と Jobcan AutoFill が目指しているもの',
+        'description': 'Excelマクロ、汎用RPA、ブラウザ自動化ツールの違いを比較しながら、Jobcanの勤怠入力を自動化する方法を整理した比較ガイドです。',
+        'date_published': '2025-01-25',
+        'section': '自動化ツール・選定ガイド',
+    },
+    {
+        'path': '/blog/reduce-manual-work-checklist',
+        'title': 'まだ手入力していませんか 勤怠管理のムダを減らすための実務チェックリスト',
+        'description': 'データ集め、整形、システム入力、確認の各フェーズで自動化できる部分とできない部分を整理した、勤怠管理の業務効率化チェックリストです。',
+        'date_published': '2025-01-23',
+        'section': '業務効率化・実務ノウハウ',
+    },
+    {
+        'path': '/blog/jobcan-month-end-tips',
+        'title': 'Jobcanの月末締めを少しでもラクにするための 7 つの実践テクニック',
+        'description': '申請漏れや修正依頼を減らすリマインド運用、Excelテンプレ共有、固定パターンの整理など、月末締めを少しでも軽くする実践テクニックを紹介します。',
+        'date_published': '2025-01-21',
+        'section': '業務効率化・実務ノウハウ',
+    },
+    {
+        'path': '/blog/month-end-closing-hell-and-automation',
+        'title': 'Jobcanの月末締めが地獄になる3つの理由と、自動化で中和する方法',
+        'description': '月末締めで起きやすい負荷の高いシナリオと、Jobcan AutoFillによる自動化で改善できるポイントを、具体例とともに解説します。',
+        'date_published': '2025-01-20',
+        'section': '業務効率化・実務ノウハウ',
+    },
+    {
+        'path': '/blog/excel-format-mistakes-and-design',
+        'title': '勤怠Excelで人がよくやるミス10選と、AutoFill側で潰している工夫',
+        'description': '日付形式、時刻形式、空白行、全角・半角など、勤怠Excelで起こりやすいミスと、その対策としてAutoFill側で行っている工夫をまとめています。',
+        'date_published': '2025-01-18',
+        'section': '実務ノウハウ・技術解説',
+    },
+    {
+        'path': '/blog/convince-it-and-hr-for-automation',
+        'title': '情シス・人事・上長を味方につけて勤怠自動化を導入するための5ステップ',
+        'description': '情シス・人事・上長を説得するための論点整理、稟議づくり、社内調整の進め方を実務目線でまとめた導入ガイドです。',
+        'date_published': '2025-01-15',
+        'section': '導入ガイド・実務ノウハウ',
+    },
+    {
+        'path': '/blog/playwright-jobcan-challenges-and-solutions',
+        'title': 'PlaywrightでJobcanを自動操作する時にハマったポイントと、その解決パターン',
+        'description': 'PlaywrightでJobcanを自動操作する際に遭遇した技術的な課題と、その解決パターンをエンジニア向けにまとめています。',
+        'date_published': '2025-01-12',
+        'section': '技術スタック・Playwright',
+    },
+]
+
+
+BLOG_ARTICLE_MAP = {
+    article['path']: article
+    for article in BLOG_ARTICLES
+}
+
+
+RELATED_CONTENT = {
+    '/': {
+        'title': '導入前に押さえたいページ',
+        'intro': 'トップページからそのまま比較しやすい、導入判断と運用設計に役立つページです。',
+        'links': [
+            {'path': '/guide', 'label': 'ガイド一覧', 'description': '最初の確認ポイントと運用手順をまとめています。'},
+            {'path': '/tools', 'label': 'ツール一覧', 'description': 'AutoFill以外の実務支援ツールも比較できます。'},
+            {'path': '/case-studies', 'label': '導入事例', 'description': '業種別の活用パターンと改善イメージを確認できます。'},
+            {'path': '/blog', 'label': 'ブログ', 'description': '勤怠自動化・社内展開・Excel運用の実務記事を一覧できます。'},
+        ],
+    },
+    '/blog': {
+        'title': 'ブログから次に広げる',
+        'intro': '記事を読んだあとに、そのまま比較・導入判断・実務確認へ進める導線です。',
+        'links': [
+            {'path': '/guide', 'label': 'ガイド一覧', 'description': '導入前チェック、Excel形式、使い方をまとめて確認できます。'},
+            {'path': '/case-studies', 'label': '導入事例', 'description': '現場での活用イメージや社内展開の参考になります。'},
+            {'path': '/glossary', 'label': '用語集', 'description': '勤怠自動化やJobcan運用まわりの基本用語を整理できます。'},
+            {'path': '/tools', 'label': 'ツール一覧', 'description': 'AutoFill以外の業務効率化ツールも比較できます。'},
+        ],
+    },
+    '/guide': {
+        'title': 'ガイドとあわせて見る',
+        'intro': '実務に落とし込むときに見比べたいページをまとめています。',
+        'links': [
+            {'path': '/faq', 'label': 'FAQ', 'description': '利用前に確認したい質問と回答をまとめています。'},
+            {'path': '/glossary', 'label': '用語集', 'description': '用語の意味や文脈を短時間で確認できます。'},
+            {'path': '/blog', 'label': 'ブログ', 'description': '導入判断や運用改善の背景を記事で補足できます。'},
+            {'path': '/tools', 'label': 'ツール一覧', 'description': '関連する周辺ツールを用途別に確認できます。'},
+        ],
+    },
+    '/glossary': {
+        'title': '用語集の次に見る',
+        'intro': '言葉の意味を押さえたあとに、手順や実務への落とし込みを確認できるページです。',
+        'links': [
+            {'path': '/guide/autofill', 'label': 'AutoFillガイド', 'description': '実際の使い方と入力前の確認事項をまとめています。'},
+            {'path': '/guide/excel-format', 'label': 'Excel形式ガイド', 'description': 'よくある形式ミスと修正ポイントを確認できます。'},
+            {'path': '/blog/reduce-manual-work-checklist', 'label': '手作業削減チェックリスト', 'description': '実務改善の観点から自動化対象を整理できます。'},
+            {'path': '/tools/csv', 'label': 'CSV/Excelツール', 'description': 'ExcelやCSVの整形に使える補助ツールです。'},
+        ],
+    },
+    '/case-studies': {
+        'title': '事例とあわせて確認する',
+        'intro': '事例を読んだあとに、導入判断や実装イメージを具体化しやすいページです。',
+        'links': [
+            {'path': '/autofill', 'label': 'Jobcan AutoFill', 'description': '実際の入力フローとアップロード要件を確認できます。'},
+            {'path': '/guide/getting-started', 'label': 'はじめての使い方', 'description': '初回導入時の流れを順番に確認できます。'},
+            {'path': '/tools', 'label': 'ツール一覧', 'description': '周辺業務の効率化に使える関連ツールも確認できます。'},
+            {'path': '/blog/jobcan-auto-input-tools-overview', 'label': '自動入力ツール比較', 'description': '方式ごとの違いと選び方の整理に役立ちます。'},
+        ],
+    },
+    '/tools': {
+        'title': 'ツール利用前後に役立つページ',
+        'intro': '実務運用や導入判断を補足する関連ページです。',
+        'links': [
+            {'path': '/guide', 'label': 'ガイド一覧', 'description': '使い方や注意点をまとめて確認できます。'},
+            {'path': '/blog/jobcan-auto-input-tools-overview', 'label': '自動入力ツール比較', 'description': 'AutoFillと他方式の違いを把握できます。'},
+            {'path': '/faq', 'label': 'FAQ', 'description': '利用前によくある疑問を整理できます。'},
+            {'path': '/case-studies', 'label': '導入事例', 'description': '現場での使いどころと改善余地を確認できます。'},
+        ],
+    },
+    '/blog/month-end-closing-checklist': {
+        'title': '月末締めの改善に役立つ関連ページ',
+        'intro': 'チェックリストを実務に落とし込むときに一緒に確認したいページです。',
+        'links': [
+            {'path': '/guide/excel-format', 'label': 'Excel形式ガイド', 'description': '入力前に整えておきたいExcelの設計ポイントを確認できます。'},
+            {'path': '/autofill', 'label': 'Jobcan AutoFill', 'description': '月末の一括入力をどう短縮するかを具体的に確認できます。'},
+            {'path': '/case-studies', 'label': '導入事例', 'description': '月末負荷の改善イメージを他社事例から確認できます。'},
+            {'path': '/blog/jobcan-month-end-tips', 'label': '月末締めテクニック', 'description': '月次運用の細かな改善アイデアを補足できます。'},
+        ],
+    },
+    '/blog/jobcan-auto-input-dos-and-donts': {
+        'title': '安全な運用に役立つ関連ページ',
+        'intro': 'やってよいこと・避けたいことを整理したあとに見ておきたいページです。',
+        'links': [
+            {'path': '/guide/autofill', 'label': 'AutoFillガイド', 'description': '使い方、制約、FAQをまとめて確認できます。'},
+            {'path': '/best-practices', 'label': 'ベストプラクティス', 'description': '現場運用に落とし込むときの基本方針を確認できます。'},
+            {'path': '/faq', 'label': 'FAQ', 'description': '運用前に確認したい疑問点を整理できます。'},
+            {'path': '/glossary', 'label': '用語集', 'description': '関連用語や前提知識を短時間で確認できます。'},
+        ],
+    },
+    '/blog/jobcan-auto-input-tools-overview': {
+        'title': '比較検討の次に見るページ',
+        'intro': 'ツールの違いを把握したあとに、そのまま導入判断へ進めるための導線です。',
+        'links': [
+            {'path': '/tools', 'label': 'ツール一覧', 'description': 'AutoFill以外の周辺ツールも含めて比較できます。'},
+            {'path': '/guide/getting-started', 'label': 'はじめての使い方', 'description': '導入前に押さえるべき手順を確認できます。'},
+            {'path': '/case-studies', 'label': '導入事例', 'description': '業種別の活用パターンを比較できます。'},
+            {'path': '/autofill', 'label': 'Jobcan AutoFill', 'description': '実際の入力フローと注意点を確認できます。'},
+        ],
+    },
+}
+
+
+RELATED_CONTENT_PREFIXES = (
+    (
+        '/blog/',
+        {
+            'title': '関連記事と導入導線',
+            'intro': '記事を読んだあとに、手順・用語・導入判断へつながるページです。',
+            'links': [
+                {'path': '/guide', 'label': 'ガイド一覧', 'description': '実務フローや入力前の確認事項をまとめています。'},
+                {'path': '/glossary', 'label': '用語集', 'description': '関連する基本用語を短時間で整理できます。'},
+                {'path': '/tools', 'label': 'ツール一覧', 'description': 'AutoFill以外の補助ツールも比較できます。'},
+                {'path': '/case-studies', 'label': '導入事例', 'description': '実際の活用パターンと改善イメージを確認できます。'},
+            ],
+        },
+    ),
+    (
+        '/guide/',
+        {
+            'title': 'ガイドとあわせて確認する',
+            'intro': '手順確認のあとに、用語・実務記事・ツール比較へ進める導線です。',
+            'links': [
+                {'path': '/blog', 'label': 'ブログ', 'description': '導入判断や運用改善の背景を記事で補足できます。'},
+                {'path': '/glossary', 'label': '用語集', 'description': '前提知識を短時間で確認できます。'},
+                {'path': '/faq', 'label': 'FAQ', 'description': 'よくある疑問をまとめて確認できます。'},
+                {'path': '/tools', 'label': 'ツール一覧', 'description': '周辺業務に使える関連ツールも確認できます。'},
+            ],
+        },
+    ),
+    (
+        '/case-study/',
+        {
+            'title': '事例の次に確認したいページ',
+            'intro': '事例を読んだあとに、そのまま導入判断と運用設計へ進めるための導線です。',
+            'links': [
+                {'path': '/autofill', 'label': 'Jobcan AutoFill', 'description': '実際の入力フローと前提条件を確認できます。'},
+                {'path': '/guide/getting-started', 'label': 'はじめての使い方', 'description': '導入時の流れを順番に確認できます。'},
+                {'path': '/blog/jobcan-auto-input-tools-overview', 'label': '自動入力ツール比較', 'description': '他方式との違いと選び方を整理できます。'},
+                {'path': '/tools', 'label': 'ツール一覧', 'description': '周辺業務まで含めた効率化の幅を確認できます。'},
+            ],
+        },
+    ),
+)
+
+
 def get_seo_defaults(path):
     config = deepcopy(SEO_DEFAULTS.get(path, {}))
     if 'og_type' not in config:
@@ -345,3 +590,68 @@ def get_web_application_schema(path, title, description, base_url):
         },
         'featureList': config['feature_list'],
     }
+
+
+def get_blog_articles(limit=None):
+    articles = sorted(
+        BLOG_ARTICLES,
+        key=lambda article: article['date_published'],
+        reverse=True,
+    )
+    if limit is not None:
+        return deepcopy(articles[:limit])
+    return deepcopy(articles)
+
+
+def get_article_schema(path, base_url, default_title='', default_description=''):
+    article = BLOG_ARTICLE_MAP.get(path)
+    if not article:
+        return None
+
+    title = article.get('title') or default_title
+    description = article.get('description') or default_description
+    published = article.get('date_published')
+    modified = article.get('date_modified', published)
+    url = f'{base_url}{path}'
+    logo_url = f'{base_url}/static/JobcanAutofill.png'
+
+    return {
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        'headline': title,
+        'description': description,
+        'datePublished': published,
+        'dateModified': modified,
+        'inLanguage': 'ja-JP',
+        'articleSection': article.get('section', ''),
+        'mainEntityOfPage': {
+            '@type': 'WebPage',
+            '@id': url,
+        },
+        'url': url,
+        'image': [logo_url],
+        'author': {
+            '@type': 'Organization',
+            'name': 'Jobcan AutoFill',
+        },
+        'publisher': {
+            '@type': 'Organization',
+            'name': 'Jobcan AutoFill',
+            'logo': {
+                '@type': 'ImageObject',
+                'url': logo_url,
+            },
+        },
+    }
+
+
+def get_related_content(path):
+    section = RELATED_CONTENT.get(path)
+    if section:
+        return deepcopy(section)
+
+    for prefix, config in RELATED_CONTENT_PREFIXES:
+        if path.startswith(prefix):
+            return deepcopy(config)
+
+    return None

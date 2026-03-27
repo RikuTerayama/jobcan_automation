@@ -18,7 +18,10 @@ from utils import allowed_file, create_template_excel, create_previous_month_tem
 from automation import process_jobcan_automation
 from lib.seo import (
     build_breadcrumb_items,
+    get_article_schema,
+    get_blog_articles,
     get_page_kind,
+    get_related_content,
     get_seo_defaults,
     get_web_application_schema,
     is_noindex_path,
@@ -636,11 +639,19 @@ def inject_env_vars():
             seo_page_description,
             base_url,
         )
+        article_schema = get_article_schema(
+            current_path,
+            base_url,
+            seo_defaults.get('title', ''),
+            seo_page_description,
+        )
         seo_breadcrumb_items = build_breadcrumb_items(
             current_path,
             page_title='',
             breadcrumb_title=seo_defaults.get('breadcrumb_title', ''),
         )
+        related_content_section = get_related_content(current_path)
+        blog_articles = get_blog_articles()
 
         products_list = PRODUCTS
         if not isinstance(products_list, list):
@@ -674,7 +685,10 @@ def inject_env_vars():
             'seo_page_kind': seo_page_kind,
             'seo_breadcrumb_items': seo_breadcrumb_items,
             'seo_web_application_schema': web_application_schema,
+            'seo_article_schema': article_schema,
             'build_breadcrumb_items': build_breadcrumb_items,
+            'related_content_section': related_content_section,
+            'blog_articles': blog_articles,
             'AFFILIATE_ENABLED': affiliate_settings['enabled'],
             'AFFILIATE_TEXTLINKS_ENABLED': affiliate_settings['textlinks_enabled'],
             'AFFILIATE_BANNERS_ENABLED': affiliate_settings['banners_enabled'],
@@ -719,7 +733,10 @@ def inject_env_vars():
             'seo_page_kind': 'page',
             'seo_breadcrumb_items': [{'name': 'ホーム', 'url': '/'}],
             'seo_web_application_schema': None,
+            'seo_article_schema': None,
             'build_breadcrumb_items': build_breadcrumb_items,
+            'related_content_section': None,
+            'blog_articles': [],
             'AFFILIATE_ENABLED': False,
             'AFFILIATE_TEXTLINKS_ENABLED': False,
             'AFFILIATE_BANNERS_ENABLED': False,

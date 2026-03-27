@@ -1,75 +1,117 @@
-﻿<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-    {% set page_title = '繧ｬ繧､繝我ｸ隕ｧ | Automation Hub' %}
-    {% include 'includes/head_meta.html' %}
+    {% set page_title = 'ガイド一覧 | Jobcan AutoFill' %}
+    {% set page_description = 'Jobcan AutoFill と周辺ツールの使い方、Excel 形式、トラブルシューティング、導入前チェックをまとめたガイド一覧です。初回導入前に確認したいページから読めます。' %}
+    {% set breadcrumb_title = 'ガイド一覧' %}
+    {% include 'includes/head_meta.html' %}
     <style>
-        body { font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #121212 0%, #1A1A1A 50%, #0F0F0F 100%); min-height: 100vh; color: #FFFFFF; line-height: 1.8; }
-        .container { max-width: 900px; margin: 0 auto; background: linear-gradient(145deg, #1E1E1E 0%, #2A2A2A 100%); border-radius: 20px; padding: 50px; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5); }
-        h1 { font-size: 2.2em; margin-bottom: 10px; color: #FFFFFF; }
-        .lead { color: rgba(255, 255, 255, 0.8); margin-bottom: 40px; font-size: 1.05em; }
-        .guide-section { margin-bottom: 40px; }
-        .guide-section h2 { font-size: 1.5em; margin-bottom: 16px; color: #4A9EFF; border-bottom: 1px solid rgba(74, 158, 255, 0.3); padding-bottom: 8px; }
-        .guide-list { list-style: none; padding: 0; margin: 0; }
-        .guide-list li { margin-bottom: 12px; }
-        .guide-list a { display: block; padding: 14px 20px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; color: #FFFFFF; text-decoration: none; transition: all 0.2s; }
-        .guide-list a:hover { background: rgba(74, 158, 255, 0.15); border-color: rgba(74, 158, 255, 0.4); color: #4A9EFF; }
-        .guide-details { margin-top: 8px; }
-        .guide-details summary { cursor: pointer; padding: 10px 0; color: #4A9EFF; font-weight: 500; list-style: none; }
-        .guide-details summary::-webkit-details-marker { display: none; }
-        .nav-links { display: flex; gap: 16px; margin-top: 40px; padding-top: 30px; border-top: 1px solid rgba(255, 255, 255, 0.2); flex-wrap: wrap; }
-        .nav-link { display: inline-block; padding: 12px 24px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 10px; color: #FFFFFF; text-decoration: none; transition: all 0.2s; }
-        .nav-link:hover { background: rgba(255, 255, 255, 0.2); }
+        body { margin: 0; font-family: 'Noto Sans JP', sans-serif; background: linear-gradient(135deg, #121212 0%, #1A1A1A 50%, #0F0F0F 100%); color: #FFFFFF; line-height: 1.8; }
+        .guide-shell { max-width: 1080px; margin: 0 auto; padding: 32px 20px 64px; }
+        .guide-hero { margin-bottom: 36px; }
+        .guide-hero h1 { margin: 0 0 16px; font-size: clamp(2rem, 4vw, 3rem); color: #4A9EFF; }
+        .guide-hero p { margin: 0 0 14px; max-width: 760px; color: rgba(255, 255, 255, 0.84); }
+        .guide-links { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+        .guide-links a { display: inline-flex; align-items: center; padding: 10px 14px; border-radius: 999px; border: 1px solid rgba(74, 158, 255, 0.24); background: rgba(74, 158, 255, 0.12); color: #FFFFFF; text-decoration: none; }
+        .guide-links a:hover { background: rgba(74, 158, 255, 0.18); text-decoration: none; }
+        .guide-section { margin-top: 40px; }
+        .guide-section h2 { margin: 0 0 18px; font-size: 1.7rem; }
+        .guide-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+        .guide-card { background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 18px; padding: 22px; }
+        .guide-card:hover { border-color: rgba(74, 158, 255, 0.28); box-shadow: 0 16px 32px rgba(0, 0, 0, 0.18); }
+        .guide-card h3 { margin: 0 0 12px; font-size: 1.2rem; }
+        .guide-card h3 a { color: #FFFFFF; text-decoration: none; }
+        .guide-card h3 a:hover { color: #4A9EFF; }
+        .guide-card p { margin: 0 0 14px; color: rgba(255, 255, 255, 0.82); }
+        .guide-card a:last-child { color: #4A9EFF; font-weight: 600; text-decoration: none; }
+        .guide-card a:last-child:hover { text-decoration: underline; }
+        .guide-support-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+        .guide-support-list a { display: block; padding: 16px 18px; border-radius: 14px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); color: #FFFFFF; text-decoration: none; }
+        .guide-support-list a strong { display: block; margin-bottom: 8px; color: #4A9EFF; }
+        .guide-support-list a span { color: rgba(255, 255, 255, 0.76); }
     </style>
 </head>
 <body>
     {% include 'includes/header.html' %}
     {% include 'includes/breadcrumb.html' %}
-    <div class="container">
-        <h1>答 繧ｬ繧､繝我ｸ隕ｧ</h1>
-        <p class="lead">蜷・ヤ繝ｼ繝ｫ縺ｮ菴ｿ縺・婿繝ｻ繝医Λ繝悶Ν繧ｷ繝･繝ｼ繝・ぅ繝ｳ繧ｰ繝ｻ蠖｢蠑剰ｪｬ譏弱↑縺ｩ縲√ぎ繧､繝峨・繝ｼ繧ｸ縺ｸ縺ｮ蜈･蜿｣縺ｧ縺吶・/p>
-        <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 32px; font-size: 1em;">Automation Hub 縺ｮ繝・・繝ｫ繧貞・繧√※菴ｿ縺・婿縺ｯ縲後・縺倥ａ縺ｦ縺ｮ菴ｿ縺・婿縲阪°繧峨∝ｽ｢蠑上ｄ繧ｨ繝ｩ繝ｼ縺ｧ縺雁峅繧翫・譁ｹ縺ｯ縲後ヨ繝ｩ繝悶Ν繧ｷ繝･繝ｼ繝・ぅ繝ｳ繧ｰ縲阪窪xcel繝輔ぃ繧､繝ｫ縺ｮ菴懈・譁ｹ豕輔阪ｒ蜿ら・縺励※縺上□縺輔＞縲・/p>
-
-        <section class="guide-section">
-            <h2>縺ｯ縺倥ａ縺ｦ縺ｮ譁ｹ縺ｸ</h2>
-            <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 16px; font-size: 1em;">Jobcan AutoFill 繧貞・繧√※菴ｿ縺・婿蜷代￠縺ｫ縲√・縺倥ａ縺ｦ縺ｮ菴ｿ縺・婿繝ｻExcel蠖｢蠑上・繝医Λ繝悶Ν繧ｷ繝･繝ｼ繝・ぅ繝ｳ繧ｰ縺ｪ縺ｩ縺ｮ繧ｬ繧､繝峨ｒ逕ｨ諢上＠縺ｦ縺・∪縺吶ゆｸ九・縲後ヤ繝ｼ繝ｫ蛻･繧ｬ繧､繝峨阪°繧芽ｩｲ蠖薙・繝ｼ繧ｸ縺ｸ縺ｩ縺・◇縲・/p>
+    <main class="guide-shell">
+        <section class="guide-hero">
+            <h1>使い方と運用のガイド一覧</h1>
+            <p>Jobcan AutoFill の導入前チェック、Excel 形式、トラブル時の確認ポイント、周辺ツールの使い方をまとめています。</p>
+            <p>初回導入前は <a href="/guide/getting-started">はじめての使い方</a> と <a href="/guide/excel-format">Excel 形式ガイド</a> から確認すると進めやすくなります。</p>
+            <div class="guide-links">
+                <a href="/guide/getting-started">はじめての使い方</a>
+                <a href="/guide/autofill">AutoFill ガイド</a>
+                <a href="/faq">FAQ</a>
+                <a href="/glossary">用語集</a>
+            </div>
         </section>
 
-        <section class="guide-section">
-            <h2>繝・・繝ｫ蛻･繧ｬ繧､繝・/h2>
-            <p class="lead" style="margin-bottom: 16px;">蜷・ヤ繝ｼ繝ｫ縺斐→縺ｫ1譛ｬ縺ｮ繧ｬ繧､繝峨〒縺ｾ縺ｨ繧√※縺・∪縺呻ｼ・繝・・繝ｫ・・繧ｬ繧､繝会ｼ峨・/p>
-            <ul class="guide-list">
-                {% for p in products|default([]) %}
-                    {% if p.get('guide_path') %}
-                <li><a href="{{ p.guide_path }}">{{ p.get('icon', '') }}{% if p.get('icon') %} {% endif %}{{ p.get('name', '') }}</a></li>
+        <section class="guide-section" aria-labelledby="guide-core-heading">
+            <h2 id="guide-core-heading">まず読むガイド</h2>
+            <div class="guide-grid">
+                <article class="guide-card">
+                    <h3><a href="/guide/getting-started">はじめての使い方</a></h3>
+                    <p>テンプレート準備から実行前チェックまで、初回利用の流れを順番に確認できます。</p>
+                    <a href="/guide/getting-started">読む</a>
+                </article>
+                <article class="guide-card">
+                    <h3><a href="/guide/autofill">AutoFill ガイド</a></h3>
+                    <p>Jobcan AutoFill の全体像、入力前の注意点、FAQ への導線をまとめています。</p>
+                    <a href="/guide/autofill">読む</a>
+                </article>
+                <article class="guide-card">
+                    <h3><a href="/guide/excel-format">Excel 形式ガイド</a></h3>
+                    <p>日付、時刻、列構成、よくある形式エラーを確認できる実務向けガイドです。</p>
+                    <a href="/guide/excel-format">読む</a>
+                </article>
+                <article class="guide-card">
+                    <h3><a href="/guide/troubleshooting">トラブルシューティング</a></h3>
+                    <p>ログインエラー、形式エラー、タイムアウト時の確認ポイントを整理しています。</p>
+                    <a href="/guide/troubleshooting">読む</a>
+                </article>
+            </div>
+        </section>
+
+        <section class="guide-section" aria-labelledby="guide-tool-heading">
+            <h2 id="guide-tool-heading">ツール別ガイド</h2>
+            <div class="guide-grid">
+                {% for product in products|default([]) %}
+                    {% if product.guide_path and product.status == 'available' %}
+                    <article class="guide-card">
+                        <h3><a href="{{ product.guide_path }}">{{ product.name }}</a></h3>
+                        <p>{{ product.description }}</p>
+                        <a href="{{ product.guide_path }}">ガイドを見る</a>
+                    </article>
                     {% endif %}
                 {% endfor %}
-            </ul>
+            </div>
         </section>
 
-        <section class="guide-section">
-            <details class="guide-details">
-                <summary>Jobcan AutoFill 隧ｳ邏ｰ繧ｬ繧､繝会ｼ医し繝悶ぎ繧､繝会ｼ・/summary>
-                <p style="margin-top: 12px; margin-bottom: 12px; color: rgba(255,255,255,0.7); font-size: 0.95em;">邨ｱ蜷医ぎ繧､繝峨・ <a href="/guide/autofill">Jobcan AutoFill 繧ｬ繧､繝・/a> 縺ｧ縺吶ゆｻ･荳九・繧医ｊ邏ｰ縺九＞繝医ヴ繝・け蛻･縺ｮ繝壹・繧ｸ縺ｧ縺吶・/p>
-                <ul class="guide-list">
-                    <li><a href="/guide/getting-started">縺ｯ縺倥ａ縺ｦ縺ｮ菴ｿ縺・婿</a></li>
-                    <li><a href="/guide/excel-format">Excel繝輔ぃ繧､繝ｫ縺ｮ菴懈・譁ｹ豕・/a></li>
-                    <li><a href="/guide/troubleshooting">繝医Λ繝悶Ν繧ｷ繝･繝ｼ繝・ぅ繝ｳ繧ｰ</a></li>
-                    <li><a href="/guide/complete">螳悟・繧ｬ繧､繝・/a></li>
-                    <li><a href="/guide/comprehensive-guide">邱丞粋繧ｬ繧､繝会ｼ亥共諤邂｡逅・・蜉ｹ邇・喧・・/a></li>
-                </ul>
-            </details>
+        <section class="guide-section" aria-labelledby="guide-support-heading">
+            <h2 id="guide-support-heading">あわせて確認したいページ</h2>
+            <div class="guide-support-list">
+                <a href="/faq">
+                    <strong>FAQ</strong>
+                    <span>利用前に確認したい質問と回答をまとめています。</span>
+                </a>
+                <a href="/blog/implementation-checklist">
+                    <strong>導入チェックリスト</strong>
+                    <span>社内合意や運用設計の論点を整理できます。</span>
+                </a>
+                <a href="/case-studies">
+                    <strong>導入事例</strong>
+                    <span>業種別の活用パターンと改善イメージを確認できます。</span>
+                </a>
+                <a href="/tools">
+                    <strong>ツール一覧</strong>
+                    <span>周辺業務まで含めた効率化の選択肢を確認できます。</span>
+                </a>
+            </div>
         </section>
 
         {% include 'includes/seo_link_hub.html' %}
-
-        <div class="nav-links">
-            <a href="/" class="nav-link">竊・繝帙・繝</a>
-            <a href="/tools" class="nav-link">繝・・繝ｫ荳隕ｧ</a>
-            <a href="/autofill" class="nav-link">Jobcan AutoFill</a>
-        </div>
-    </div>
+    </main>
     {% include 'includes/footer.html' %}
 </body>
 </html>
-

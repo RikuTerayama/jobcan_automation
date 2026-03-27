@@ -3,9 +3,6 @@
 <head>
     {% set page_title = 'Jobcan AutoFill導入チェックリスト（10項目） | Jobcan AutoFill' %}
     {% include 'includes/head_meta.html' %}
-    {% block description_meta %}
-        <meta name="description" content="Jobcan AutoFill導入チェックリスト（10項目）。稟議に役立つ項目を整理。セキュリティ、コンプライアンス、運用体制などの確認ポイントを解説。">
-    {% endblock %}
 </head>
 <body style="margin: 0; font-family: 'Noto Sans JP', sans-serif; background: linear-gradient(135deg, #101010 0%, #181818 50%, #0E0E0E 100%); color: #FFFFFF; line-height: 1.8;">
     <main style="max-width: 900px; margin: 0 auto; padding: 40px 20px;">
@@ -111,35 +108,7 @@
             </section>
         </article>
     </main>
-
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "BlogPosting",
-        "headline": "Jobcan AutoFill導入チェックリスト（10項目）",
-        "datePublished": "2025-02-17",
-        "dateModified": "2025-02-17",
-        "author": {
-            "@type": "Person",
-            "name": "RT",
-            "jobTitle": "Jobcan AutoFill プロダクトオーナー",
-            "knowsAbout": ["勤怠管理", "業務自動化", "社内稟議"],
-            "description": "勤怠管理の業務改善とBPRを担当。ツール導入時の稟議サポート経験が豊富。"
-        },
-        "publisher": {
-            "@type": "Organization",
-            "name": "Jobcan AutoFill",
-            "logo": {
-                "@type": "ImageObject",
-                "url": "https://jobcan-automation.onrender.com{{ url_for('static', filename='JobcanAutofill.png') }}"
-            }
-        },
-        "keywords": ["Jobcan", "勤怠管理", "導入チェックリスト"],
-        "url": "https://jobcan-automation.onrender.com/blog/implementation-checklist"
-    }
-    </script>
-    
-    {# P1-1: ナビゲーションの一貫性 #}
+{# P1-1: ナビゲーションの一貫性 #}
     {% include 'includes/footer.html' %}
 </body>
 </html>
