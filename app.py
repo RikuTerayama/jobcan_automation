@@ -10,6 +10,7 @@ import psutil
 import time
 import logging
 import hashlib
+import re
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template, send_file, Response, redirect, g, has_request_context
 from werkzeug.exceptions import NotFound, MethodNotAllowed
@@ -225,6 +226,9 @@ def after_request(response):
     if hasattr(g, 'start_time') and hasattr(g, 'request_id'):
         duration_ms = (time.time() - g.start_time) * 1000
         response.headers['X-Request-ID'] = g.request_id
+        deploy_commit = (os.getenv('RENDER_GIT_COMMIT') or os.getenv('GIT_COMMIT') or '').strip()
+        if deploy_commit:
+            response.headers['X-Deploy-Commit'] = deploy_commit[:12]
         
         # ヘルスチェック以外のリクエストをログ
         if not request.path.startswith(('/healthz', '/livez', '/readyz')):
@@ -689,6 +693,30 @@ def affiliate_top_slot_mode(path=None):
     return 'header'
 
 
+def split_visible_sentences(text):
+    """Visible copy only: split long Japanese text into sentence-level lines."""
+    if not text:
+        return []
+    normalized = re.sub(r'\s+', ' ', str(text)).strip()
+    if not normalized:
+        return []
+    if '。' not in normalized:
+        return [normalized]
+
+    lines = []
+    current = ''
+    for chunk in re.split(r'(。)', normalized):
+        if not chunk:
+            continue
+        current += chunk
+        if chunk == '。':
+            lines.append(current.strip())
+            current = ''
+    if current.strip():
+        lines.append(current.strip())
+    return lines
+
+
 def affiliate_side_rail_enabled(path=None):
     return False
 
@@ -771,6 +799,7 @@ def inject_env_vars():
             'seo_web_application_schema': web_application_schema,
             'seo_article_schema': article_schema,
             'build_breadcrumb_items': build_breadcrumb_items,
+            'split_visible_sentences': split_visible_sentences,
             'related_content_section': related_content_section,
             'blog_articles': blog_articles,
             'AFFILIATE_ENABLED': affiliate_settings['enabled'],
@@ -824,6 +853,7 @@ def inject_env_vars():
             'seo_web_application_schema': None,
             'seo_article_schema': None,
             'build_breadcrumb_items': build_breadcrumb_items,
+            'split_visible_sentences': split_visible_sentences,
             'related_content_section': None,
             'blog_articles': [],
             'AFFILIATE_ENABLED': affiliate_settings['enabled'],

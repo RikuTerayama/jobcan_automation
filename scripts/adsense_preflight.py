@@ -170,7 +170,19 @@ TOP_INLINE_REQUIREMENTS = {
 NO_HEADER_TOP_SLOT_PATHS = ['/autofill', '/tools', '/tools/image-batch', '/tools/pdf', '/tools/seo']
 HOME_GRID_EXPECTED_COUNT = 6
 HOME_USE_CASE_MIN_COUNT = 4
-HOME_HEADLINE_LINES = ['勤怠入力の自動化と、', '周辺業務の効率化を一つの導線で。']
+HOME_HEADLINE_LINES = ['勤怠入力の自動化と、', '周辺業務の効率化を', '一つの導線で。']
+HOME_LEAD_LINES = [
+    'Jobcan の勤怠入力を楽にしたい人向けに、',
+    'AutoFill、本番前の確認ガイド、画像・PDF・SEO の周辺ツール、',
+    'FAQ、導入事例をまとめています。'
+]
+PUBLIC_UI_FORBIDDEN_COPY = [
+    'トップページからそのまま比較、導入判断、運用設計に進めるための導線です。',
+    '3 枚で中途半端に見えやすかった用途説明を、4 つの文脈に整理して視線誘導しやすくしました。',
+    '本サイトのツールは、業務フローの見直しやブラウザ内処理を前提に、作業の手戻りを減らすための情報と機能をまとめています。',
+    'Developed by RT',
+    'Version:',
+]
 REMOVED_AFFILIATE_TEXT = ['Sponsored Picks', 'おすすめ情報', '本文の流れを崩さずに見られる、落ち着いたおすすめ導線です。']
 
 # Googlebot UA
@@ -411,14 +423,15 @@ def _run_checks(get_fn, base_url, use_headers=True):
             footer_text = footer.get_text('\n', strip=True) if footer else ''
             found = [token for token in VISIBLE_TEXT_FORBIDDEN if token in footer_text]
             missing_required = [token for token in FOOTER_REQUIRED_TEXT if token not in footer_text]
-            ok = bool(footer) and not found and not missing_required
+            forbidden_footer_copy = [token for token in PUBLIC_UI_FORBIDDEN_COPY if token in footer_text]
+            ok = bool(footer) and not found and not missing_required and not forbidden_footer_copy
             rows.append(
                 (
                     '9b_footer_text',
                     path,
                     'OK footer text intact'
                     if ok else
-                    f'FAIL found={found[:3]} missing={missing_required[:3]}',
+                    f'FAIL found={found[:3]} missing={missing_required[:3]} forbidden={forbidden_footer_copy[:2]}',
                     ok,
                 )
             )
@@ -448,16 +461,20 @@ def _run_checks(get_fn, base_url, use_headers=True):
         resp = get('/')
         body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
         soup = BeautifulSoup(body, 'html.parser')
-        page_cards = len(soup.select('.landing-page-grid .landing-page-card'))
+        page_cards = len(soup.select('.landing-tool-grid .landing-tool-card'))
+        hub_cards = len(soup.select('.seo-link-hub__grid .seo-link-hub__card'))
         use_cards = len(soup.select('.landing-use-grid .landing-use-card'))
-        page_grid_ok = bool(soup.select_one('.landing-page-grid')) and page_cards == HOME_GRID_EXPECTED_COUNT
+        page_grid_ok = bool(soup.select_one('.landing-tool-grid')) and page_cards == HOME_GRID_EXPECTED_COUNT
+        hub_grid_ok = bool(soup.select_one('.seo-link-hub__grid')) and hub_cards == HOME_GRID_EXPECTED_COUNT
         use_grid_ok = bool(soup.select_one('.landing-use-grid')) and use_cards >= HOME_USE_CASE_MIN_COUNT
         rows.append(('9bb_home_grid', '/', f'OK cards={page_cards}' if page_grid_ok else f'FAIL cards={page_cards}', page_grid_ok))
+        rows.append(('9bbb_home_hub_grid', '/', f'OK cards={hub_cards}' if hub_grid_ok else f'FAIL cards={hub_cards}', hub_grid_ok))
         rows.append(('9bc_home_use_cases', '/', f'OK cards={use_cards}' if use_grid_ok else f'FAIL cards={use_cards}', use_grid_ok))
-        if not page_grid_ok or not use_grid_ok:
+        if not page_grid_ok or not hub_grid_ok or not use_grid_ok:
             all_ok = False
     except Exception as e:
         rows.append(('9bb_home_grid', '/', f'ERROR {e}', False))
+        rows.append(('9bbb_home_hub_grid', '/', f'ERROR {e}', False))
         rows.append(('9bc_home_use_cases', '/', f'ERROR {e}', False))
         all_ok = False
 
@@ -592,6 +609,32 @@ def _run_checks(get_fn, base_url, use_headers=True):
             all_ok = False
     except Exception as e:
         rows.append(('9fa_home_headline', '/', f'ERROR {e}', False))
+        all_ok = False
+
+    try:
+        resp = get('/')
+        body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+        soup = BeautifulSoup(body, 'html.parser')
+        lead_lines = [node.get_text(strip=True) for node in soup.select('.landing-hero__lead .copy-lines__line')]
+        ok = lead_lines == HOME_LEAD_LINES
+        rows.append(('9fb_home_lead', '/', f'OK lines={lead_lines}' if ok else f'FAIL lines={lead_lines}', ok))
+        if not ok:
+            all_ok = False
+    except Exception as e:
+        rows.append(('9fb_home_lead', '/', f'ERROR {e}', False))
+        all_ok = False
+
+    try:
+        for path in ['/', '/tools', '/guide', '/blog', '/case-studies', '/faq', '/about']:
+            resp = get(path)
+            body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+            found = [token for token in PUBLIC_UI_FORBIDDEN_COPY if token in body]
+            ok = not found
+            rows.append(('9fc_public_copy', path, 'OK no internal copy leakage' if ok else f'FAIL found={found[:2]}', ok))
+            if not ok:
+                all_ok = False
+    except Exception as e:
+        rows.append(('9fc_public_copy', '/', f'ERROR {e}', False))
         all_ok = False
 
     try:

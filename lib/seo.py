@@ -455,7 +455,7 @@ ARTICLE_SCHEMA_PAGES = {
 RELATED_CONTENT = {
     '/': {
         'title': '導入前に押さえたいページ',
-        'intro': 'トップページからそのまま比較しやすい、導入判断と運用設計に役立つページです。',
+        'intro': '導入前に確認しておきたい関連ページをまとめています。',
         'links': [
             {'path': '/guide', 'label': 'ガイド一覧', 'description': '最初の確認ポイントと運用手順をまとめています。'},
             {'path': '/tools', 'label': 'ツール一覧', 'description': 'AutoFill以外の実務支援ツールも比較できます。'},
@@ -465,7 +465,7 @@ RELATED_CONTENT = {
     },
     '/blog': {
         'title': 'ブログから次に広げる',
-        'intro': '記事を読んだあとに、そのまま比較・導入判断・実務確認へ進める導線です。',
+        'intro': '記事を読んだあとに、手順や事例もあわせて確認しやすいページです。',
         'links': [
             {'path': '/guide', 'label': 'ガイド一覧', 'description': '導入前チェック、Excel形式、使い方をまとめて確認できます。'},
             {'path': '/case-studies', 'label': '導入事例', 'description': '現場での活用イメージや社内展開の参考になります。'},
@@ -495,7 +495,7 @@ RELATED_CONTENT = {
     },
     '/best-practices': {
         'title': '運用設計とあわせて見る',
-        'intro': 'ベストプラクティスを読んだあとに、具体的な手順と導入判断へつなげやすいページです。',
+        'intro': 'ベストプラクティスを読んだあとに、具体的な手順や事例を確認しやすいページです。',
         'links': [
             {'path': '/guide/excel-format', 'label': 'Excel形式ガイド', 'description': '入力前に整えておきたいファイル設計の要点を確認できます。'},
             {'path': '/guide/complete', 'label': '完全ガイド', 'description': '導入判断、使い方、注意点をまとめて確認できます。'},
@@ -505,7 +505,7 @@ RELATED_CONTENT = {
     },
     '/case-studies': {
         'title': '事例とあわせて確認する',
-        'intro': '事例を読んだあとに、導入判断や実装イメージを具体化しやすいページです。',
+        'intro': '事例を読んだあとに、手順や関連ツールを確認しやすいページです。',
         'links': [
             {'path': '/autofill', 'label': 'Jobcan AutoFill', 'description': '実際の入力フローとアップロード要件を確認できます。'},
             {'path': '/guide/getting-started', 'label': 'はじめての使い方', 'description': '初回導入時の流れを順番に確認できます。'},
@@ -515,7 +515,7 @@ RELATED_CONTENT = {
     },
     '/tools': {
         'title': 'ツール利用前後に役立つページ',
-        'intro': '実務運用や導入判断を補足する関連ページです。',
+        'intro': '使い方や関連情報を補足するページをまとめています。',
         'links': [
             {'path': '/guide', 'label': 'ガイド一覧', 'description': '使い方や注意点をまとめて確認できます。'},
             {'path': '/blog/jobcan-auto-input-tools-overview', 'label': '自動入力ツール比較', 'description': 'AutoFillと他方式の違いを把握できます。'},
@@ -545,7 +545,7 @@ RELATED_CONTENT = {
     },
     '/blog/jobcan-auto-input-tools-overview': {
         'title': '比較検討の次に見るページ',
-        'intro': 'ツールの違いを把握したあとに、そのまま導入判断へ進めるための導線です。',
+        'intro': 'ツールの違いを把握したあとに、関連ガイドや事例も確認しやすいページです。',
         'links': [
             {'path': '/tools', 'label': 'ツール一覧', 'description': 'AutoFill以外の周辺ツールも含めて比較できます。'},
             {'path': '/guide/getting-started', 'label': 'はじめての使い方', 'description': '導入前に押さえるべき手順を確認できます。'},
@@ -561,7 +561,7 @@ RELATED_CONTENT_PREFIXES = (
         '/blog/',
         {
             'title': '関連記事と導入導線',
-            'intro': '記事を読んだあとに、手順・用語・導入判断へつながるページです。',
+            'intro': '記事を読んだあとに、手順や用語もあわせて確認しやすいページです。',
             'links': [
                 {'path': '/guide', 'label': 'ガイド一覧', 'description': '実務フローや入力前の確認事項をまとめています。'},
                 {'path': '/glossary', 'label': '用語集', 'description': '関連する基本用語を短時間で整理できます。'},
@@ -574,7 +574,7 @@ RELATED_CONTENT_PREFIXES = (
         '/guide/',
         {
             'title': 'ガイドとあわせて確認する',
-            'intro': '手順確認のあとに、用語・実務記事・ツール比較へ進める導線です。',
+            'intro': '手順確認のあとに、用語や関連ツールまで広げて確認しやすいページです。',
             'links': [
                 {'path': '/blog', 'label': 'ブログ', 'description': '導入判断や運用改善の背景を記事で補足できます。'},
                 {'path': '/glossary', 'label': '用語集', 'description': '前提知識を短時間で確認できます。'},
@@ -587,7 +587,7 @@ RELATED_CONTENT_PREFIXES = (
         '/case-study/',
         {
             'title': '事例の次に確認したいページ',
-            'intro': '事例を読んだあとに、そのまま導入判断と運用設計へ進めるための導線です。',
+            'intro': '事例を読んだあとに、手順や比較記事も確認しやすいページです。',
             'links': [
                 {'path': '/autofill', 'label': 'Jobcan AutoFill', 'description': '実際の入力フローと前提条件を確認できます。'},
                 {'path': '/guide/getting-started', 'label': 'はじめての使い方', 'description': '導入時の流れを順番に確認できます。'},
