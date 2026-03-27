@@ -222,6 +222,11 @@
             <p data-reveal data-reveal-delay="50">業務効率化に役立つ各種ツールをご利用いただけます。処理方式は各ツールページの説明をご確認ください。</p>
             <p data-reveal data-reveal-delay="80" style="margin-top: 12px; font-size: 1em; color: rgba(255, 255, 255, 0.75);">Jobcan自動入力・画像一括変換・PDF・CSV/Excel・Web/SEO など、Jobcan AutoFill で提供しているツールの入口です。画像・PDF・CSV/Excel・Web/SEO ツールはブラウザ内で処理されます。<a href="/guide/complete" style="color: #4A9EFF;">完全ガイド</a>・<a href="/case-studies" style="color: #4A9EFF;">導入事例</a>・<a href="/privacy" style="color: #4A9EFF;">プライバシーポリシー</a>・<a href="/blog" style="color: #4A9EFF;">ブログ</a>・<a href="/glossary" style="color: #4A9EFF;">用語集</a>・<a href="/guide/excel-format" style="color: #4A9EFF;">Excel形式ガイド</a>・<a href="/best-practices" style="color: #4A9EFF;">ベストプラクティス</a>もご利用ください。</p>
         </div>
+        {% if affiliate_top_slot_mode == 'tool' and affiliate_top_slot_id %}
+        {% with slot_id=affiliate_top_slot_id, slot_render_fallback=true, slot_disable_widget=true, slot_extra_class='affiliate-slot--primary-inline affiliate-slot--content-inline' %}
+            {% include 'includes/affiliate_slot.html' %}
+        {% endwith %}
+        {% endif %}
         
         <div style="max-width: 800px; margin: 0 auto 30px;" data-reveal data-reveal-delay="100">
             <input type="text" id="search-input" placeholder="🔍 ツール名や説明で検索..." 

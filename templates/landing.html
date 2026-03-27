@@ -251,7 +251,7 @@
             <p data-reveal data-reveal-delay="50">日々の業務を効率化する、シンプルで強力なツールを提供しています。Excel、画像、PDFなど、よくある作業を自動化します。<a href="/tools" style="color: #4A9EFF;">ツール一覧</a>・<a href="/guide/excel-format" style="color: #4A9EFF;">Excel形式ガイド</a>もご利用ください。使い方は<a href="/guide" style="color: #4A9EFF;">ガイド一覧</a>、運用のヒントは<a href="/blog" style="color: #4A9EFF;">ブログ</a>、用語確認は<a href="/glossary" style="color: #4A9EFF;">用語集</a>も参照できます。</p>
             <a href="/autofill" class="cta-button" data-reveal data-reveal-delay="100">Jobcan自動入力を使う →</a>
         </div>
-        {% with slot_id='home_after_hero', slot_render_fallback=true, slot_extra_class='affiliate-slot--primary-inline' %}
+        {% with slot_id='home_after_hero', slot_render_fallback=true, slot_disable_widget=true, slot_extra_class='affiliate-slot--primary-inline' %}
             {% include 'includes/affiliate_slot.html' %}
         {% endwith %}
         

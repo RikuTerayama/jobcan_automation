@@ -65,7 +65,7 @@
             </div>
         </section>
 
-        {% with slot_id='blog_index_after_intro', slot_render_fallback=true, slot_extra_class='affiliate-slot--primary-inline' %}
+        {% with slot_id='blog_index_after_intro', slot_render_fallback=true, slot_disable_widget=true, slot_extra_class='affiliate-slot--primary-inline' %}
             {% include 'includes/affiliate_slot.html' %}
         {% endwith %}
 

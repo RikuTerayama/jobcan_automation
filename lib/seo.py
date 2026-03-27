@@ -6,18 +6,22 @@ from copy import deepcopy
 
 SEO_DEFAULTS = {
     '/': {
+        'title': 'Jobcan AutoFill | Jobcan勤怠入力の自動化と業務効率化ツール',
         'description': 'Jobcan の勤怠入力を Excel から一括化できる無料の自動化ツールです。月次締めや手入力の負担を減らし、導入前に確認したいガイド、FAQ、導入事例もまとめています。',
         'og_type': 'website',
     },
     '/autofill': {
+        'title': 'Jobcan勤怠自動入力ツール | Jobcan AutoFill',
         'description': 'Jobcan への勤怠入力を Excel からまとめて処理できる自動入力ツールです。手入力の時短と月次対応の効率化を支援します。',
         'og_type': 'website',
     },
     '/tools': {
+        'title': 'ツール一覧 | Jobcan AutoFill',
         'description': 'Jobcan AutoFill、CSV/Excel、PDF、画像処理、Web/SEO などの業務効率化ツール一覧です。実務に近い用途別に比較できます。',
         'og_type': 'website',
     },
     '/guide': {
+        'title': 'ガイド一覧 | Jobcan AutoFill',
         'description': 'Jobcan AutoFill と関連ツールのガイド一覧です。はじめての使い方、Excel 形式、トラブルシューティング、導入前の確認事項をまとめています。',
         'og_type': 'website',
         'breadcrumb_title': 'ガイド一覧',
@@ -71,6 +75,7 @@ SEO_DEFAULTS = {
         'og_type': 'article',
     },
     '/faq': {
+        'title': 'FAQ | Jobcan AutoFill',
         'description': 'Jobcan AutoFill に関する FAQ です。使い方、セキュリティ、Excel 形式、ブラウザ要件、エラー対処をまとめています。',
         'og_type': 'website',
         'breadcrumb_title': 'FAQ',
@@ -80,6 +85,7 @@ SEO_DEFAULTS = {
         'og_type': 'website',
     },
     '/best-practices': {
+        'title': 'ベストプラクティスガイド | Jobcan AutoFill',
         'description': 'Jobcan AutoFill を安全かつ効率的に使うためのベストプラクティスです。Excel 設計、運用、セキュリティの勘所をまとめています。',
         'og_type': 'article',
     },
@@ -88,6 +94,7 @@ SEO_DEFAULTS = {
         'og_type': 'website',
     },
     '/case-studies': {
+        'title': '導入事例一覧 | Jobcan AutoFill',
         'description': 'Jobcan AutoFill の導入事例一覧です。勤怠入力の時短、月次締めの効率化、バックオフィス DX に関する実例を確認できます。',
         'og_type': 'website',
         'breadcrumb_title': '導入事例',
@@ -108,6 +115,7 @@ SEO_DEFAULTS = {
         'breadcrumb_title': 'リモートスタートアップの導入事例',
     },
     '/blog': {
+        'title': 'ブログ | Jobcan AutoFill',
         'description': 'Jobcan 自動入力、勤怠効率化、バックオフィス DX に関するブログ一覧です。導入判断や運用改善に役立つ記事を掲載しています。',
         'og_type': 'website',
         'breadcrumb_title': 'ブログ',

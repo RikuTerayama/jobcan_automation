@@ -58,8 +58,12 @@
     return slot.dataset.affiliateToolReady !== 'false';
   }
 
+  function isWidgetDisabled(slot) {
+    return slot.dataset.affiliateDisableWidget === 'true';
+  }
+
   function isRenderable(slot) {
-    return !slot.dataset.affiliateRendered && isDeviceEnabled(slot) && isToolSlotReady(slot);
+    return !slot.dataset.affiliateRendered && !isWidgetDisabled(slot) && isDeviceEnabled(slot) && isToolSlotReady(slot);
   }
 
   function renderRakuten(slot, mount) {

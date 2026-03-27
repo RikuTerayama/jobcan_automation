@@ -34,7 +34,7 @@
             <p>事例を読んだあとに <a href="/guide/getting-started">導入手順</a>、<a href="/blog/jobcan-auto-input-tools-overview">ツール比較</a>、<a href="/autofill">実際の入力フロー</a> へ進みやすい構成にしています。</p>
         </section>
 
-        {% with slot_id='case_index_after_intro', slot_render_fallback=true, slot_extra_class='affiliate-slot--primary-inline' %}
+        {% with slot_id='case_index_after_intro', slot_render_fallback=true, slot_disable_widget=true, slot_extra_class='affiliate-slot--primary-inline' %}
             {% include 'includes/affiliate_slot.html' %}
         {% endwith %}
 

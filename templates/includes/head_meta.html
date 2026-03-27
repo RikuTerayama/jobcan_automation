@@ -28,7 +28,7 @@
 {% endif %}
 
 {# HEAD縺ｮ霆ｽ驥丞喧 - 蠢・医Γ繧ｿ縺ｮ縺ｿ #}
-{% set effective_page_title = page_title|default('Jobcan AutoFill - 勤怠データ自動入力ツール') %}
+{% set effective_page_title = seo_page_defaults.title|default(page_title|default('Jobcan AutoFill - 勤怠データ自動入力ツール')) %}
 {% set fallback_page_description = effective_page_title ~ (' に関する解説ページです。' if seo_page_kind|default('page') == 'article' else ' の情報ページです。') ~ 'Jobcan AutoFill のガイド、FAQ、導入事例、業務効率化ツールを掲載しています。' %}
 {% set effective_page_description = page_description|default(seo_page_description|default(fallback_page_description)) %}
 {% set effective_page_robots = page_robots|default(seo_page_robots|default('index,follow')) %}

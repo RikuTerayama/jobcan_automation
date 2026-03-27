@@ -6,6 +6,7 @@
 {% set slot_hidden = hidden_until_ready|default(false) %}
 {% set slot_show_disclosure = show_disclosure|default(true) %}
 {% set slot_render_fallback = slot_render_fallback|default(false) %}
+{% set slot_disable_widget = slot_disable_widget|default(false) %}
 {% set slot_extra_class = slot_extra_class|default('') %}
 {% if affiliate_slot and affiliate_can_render_slot(slot_id) %}
 <section
@@ -17,6 +18,7 @@
     data-affiliate-desktop-enabled="{{ 'true' if affiliate_slot.desktop_enabled else 'false' }}"
     data-affiliate-tablet-enabled="{{ 'true' if affiliate_slot.tablet_enabled else 'false' }}"
     data-affiliate-mobile-enabled="{{ 'true' if affiliate_slot.mobile_enabled else 'false' }}"
+    data-affiliate-disable-widget="{{ 'true' if slot_disable_widget else 'false' }}"
     {% if slot_hidden %}data-affiliate-tool-ready="false" hidden aria-hidden="true"{% endif %}
 >
     {% if slot_show_disclosure %}
