@@ -539,9 +539,9 @@ def get_affiliate_page_type(path):
 
 def get_affiliate_settings():
     return {
-        'enabled': _env_flag('AFFILIATE_ENABLED', False),
+        'enabled': _env_flag('AFFILIATE_ENABLED', True),
         'textlinks_enabled': _env_flag('AFFILIATE_TEXTLINKS_ENABLED', True),
-        'banners_enabled': _env_flag('AFFILIATE_BANNERS_ENABLED', False),
+        'banners_enabled': _env_flag('AFFILIATE_BANNERS_ENABLED', True),
         'network': _normalize_affiliate_network(os.getenv('AFFILIATE_NETWORK', 'rakuten')),
         'exclude_paths': tuple(_env_list(
             'AFFILIATE_EXCLUDE_PATHS',
@@ -758,6 +758,8 @@ def inject_env_vars():
     except Exception as e:
         request_id = getattr(g, 'request_id', 'unknown') if hasattr(g, 'request_id') else 'unknown'
         import traceback
+        current_path = request.path if has_request_context() else '/'
+        affiliate_settings = get_affiliate_settings()
         logger.exception(
             f"context_processor_error rid={request_id} products_empty_reason={type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
         )
@@ -786,19 +788,19 @@ def inject_env_vars():
             'build_breadcrumb_items': build_breadcrumb_items,
             'related_content_section': None,
             'blog_articles': [],
-            'AFFILIATE_ENABLED': False,
-            'AFFILIATE_TEXTLINKS_ENABLED': False,
-            'AFFILIATE_BANNERS_ENABLED': False,
-            'AFFILIATE_NETWORK': 'rakuten',
-            'AFFILIATE_EXCLUDE_PATHS': tuple(),
-            'AFFILIATE_ALLOWED_PAGE_TYPES': tuple(),
-            'AFFILIATE_WIDGET_DESKTOP_ENABLED': False,
-            'AFFILIATE_WIDGET_TABLET_ENABLED': False,
-            'AFFILIATE_WIDGET_MOBILE_ENABLED': False,
-            'AFFILIATE_ROTATION_BANNER_ENABLED': False,
-            'affiliate_page_type': 'generic',
-            'affiliate_path_excluded': False,
-            'affiliate_footer_slot_id': None,
+            'AFFILIATE_ENABLED': affiliate_settings['enabled'],
+            'AFFILIATE_TEXTLINKS_ENABLED': affiliate_settings['textlinks_enabled'],
+            'AFFILIATE_BANNERS_ENABLED': affiliate_settings['banners_enabled'],
+            'AFFILIATE_NETWORK': affiliate_settings['network'],
+            'AFFILIATE_EXCLUDE_PATHS': affiliate_settings['exclude_paths'],
+            'AFFILIATE_ALLOWED_PAGE_TYPES': affiliate_settings['allowed_page_types'],
+            'AFFILIATE_WIDGET_DESKTOP_ENABLED': affiliate_settings['widget_desktop_enabled'],
+            'AFFILIATE_WIDGET_TABLET_ENABLED': affiliate_settings['widget_tablet_enabled'],
+            'AFFILIATE_WIDGET_MOBILE_ENABLED': affiliate_settings['widget_mobile_enabled'],
+            'AFFILIATE_ROTATION_BANNER_ENABLED': affiliate_settings['rotation_banner_enabled'],
+            'affiliate_page_type': get_affiliate_page_type(current_path),
+            'affiliate_path_excluded': affiliate_is_path_excluded(current_path),
+            'affiliate_footer_slot_id': affiliate_footer_slot_id(current_path),
             'affiliate_can_render_textlinks': affiliate_can_render_textlinks,
             'affiliate_can_render_slot': affiliate_can_render_slot,
             'affiliate_get_slot_config': affiliate_get_slot_config

@@ -20,6 +20,8 @@ BASE_URL_DEFAULT = 'https://jobcan-automation.onrender.com'
 
 # 主要ページ（GSC 404 解消対象含む）
 MAJOR_PATHS = ['/', '/autofill', '/tools', '/privacy', '/contact', '/about', '/best-practices', '/faq']
+PUBLIC_AFFILIATE_PATHS = ['/', '/tools', '/autofill', '/privacy', '/terms', '/contact', '/about', '/faq', '/guide', '/blog', '/case-studies', '/sitemap.html']
+NON_UI_AFFILIATE_PATHS = ['/sitemap.xml', '/robots.txt', '/ads.txt', '/api/seo/crawl-urls']
 
 # sitemap.xml に含まれるべき重要URL（完全一致：末尾スラッシュなし）
 SITEMAP_REQUIRED_URLS = ['/', '/autofill', '/tools', '/blog', '/glossary', '/guide/excel-format', '/best-practices']
@@ -39,8 +41,9 @@ DISALLOWED_STRINGS = [
 
 # /tools サーバ返却HTMLに含まれてはいけない文言（本文・script 含む）
 NO_RESULTS_FORBIDDEN = '検索条件に一致するツールが見つかりませんでした。'
-VISIBLE_TEXT_INTEGRITY_PATHS = ['/', '/faq', '/guide/excel-format', '/blog', '/glossary', '/privacy', '/terms']
-VISIBLE_TEXT_FORBIDDEN = ['</h1>', '</h2>', '</h3>', '</p>', '</li>', '</a>', '/h1>', '/h2>', '/h3>', '/p>', '/li>', '/a>', '�']
+VISIBLE_TEXT_INTEGRITY_PATHS = ['/', '/faq', '/guide/excel-format', '/blog', '/glossary', '/privacy', '/terms', '/contact']
+VISIBLE_TEXT_FORBIDDEN = ['</h1>', '</h2>', '</h3>', '</p>', '</li>', '</a>', '/h1>', '/h2>', '/h3>', '/p>', '/li>', '/a>', '/strong>', '�']
+FOOTER_INTEGRITY_PATHS = ['/', '/privacy', '/terms', '/contact', '/blog']
 
 # Googlebot UA
 GOOGLEBOT_UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
@@ -267,6 +270,72 @@ def _run_checks(get_fn, base_url, use_headers=True):
             rows.append(('9a_visible_text', path, f'ERROR {e}', False))
             all_ok = False
 
+    for path in FOOTER_INTEGRITY_PATHS:
+        try:
+            resp = get(path)
+            body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+            soup = BeautifulSoup(body, 'html.parser')
+            footer = soup.find('footer')
+            footer_text = footer.get_text('\n', strip=True) if footer else ''
+            found = [token for token in VISIBLE_TEXT_FORBIDDEN if token in footer_text]
+            ok = bool(footer) and not found
+            rows.append(('9b_footer_text', path, 'OK footer text intact' if ok else f'FAIL found {found[:3]}', ok))
+            if not ok:
+                all_ok = False
+        except Exception as e:
+            rows.append(('9b_footer_text', path, f'ERROR {e}', False))
+            all_ok = False
+
+    for path in PUBLIC_AFFILIATE_PATHS:
+        try:
+            resp = get(path)
+            body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+            headers = resp.headers if hasattr(resp, 'headers') else {}
+            content_type = (headers.get('Content-Type') or headers.get('content-type') or '').lower()
+            soup = BeautifulSoup(body, 'html.parser')
+            slot_count = len(soup.select('[data-affiliate-slot]'))
+            footer_block = bool(soup.select_one('.affiliate-footer-block'))
+            widget_script = any('affiliate-widgets.js' in (tag.get('src') or '') for tag in soup.find_all('script'))
+            meta_utf8 = bool(soup.select_one('meta[charset="utf-8"]'))
+            ok = (
+                'text/html' in content_type
+                and 'charset=utf-8' in content_type
+                and meta_utf8
+                and slot_count >= 1
+                and footer_block
+                and widget_script
+            )
+            rows.append(
+                ('9c_affiliate_public', path,
+                 f'OK slots={slot_count} footer={footer_block} script={widget_script}' if ok else
+                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} slots={slot_count} footer={footer_block} script={widget_script}',
+                 ok)
+            )
+            if not ok:
+                all_ok = False
+        except Exception as e:
+            rows.append(('9c_affiliate_public', path, f'ERROR {e}', False))
+            all_ok = False
+
+    for path in NON_UI_AFFILIATE_PATHS:
+        try:
+            resp = get(path)
+            body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+            slot_count = body.count('data-affiliate-slot=')
+            footer_block = 'affiliate-footer-block' in body
+            ok = slot_count == 0 and not footer_block
+            rows.append(
+                ('9d_affiliate_nonui', path,
+                 f'OK slots={slot_count} footer={footer_block}' if ok else
+                 f'FAIL slots={slot_count} footer={footer_block}',
+                 ok)
+            )
+            if not ok:
+                all_ok = False
+        except Exception as e:
+            rows.append(('9d_affiliate_nonui', path, f'ERROR {e}', False))
+            all_ok = False
+
     for path in NOINDEX_SELF_CANONICAL_PATHS:
         try:
             resp = get(path)
@@ -276,11 +345,11 @@ def _run_checks(get_fn, base_url, use_headers=True):
             expected_canonical = base + path
             has_canonical_self = expected_canonical in body and 'rel="canonical"' in body
             ok = has_noindex and has_canonical_self
-            rows.append(('9b_noindex', path, 'OK noindex, canonical self' if ok else f'FAIL noindex={has_noindex} canonical={has_canonical_self}', ok))
+            rows.append(('9e_noindex', path, 'OK noindex, canonical self' if ok else f'FAIL noindex={has_noindex} canonical={has_canonical_self}', ok))
             if not ok:
                 all_ok = False
         except Exception as e:
-            rows.append(('9b_noindex', path, f'ERROR {e}', False))
+            rows.append(('9e_noindex', path, f'ERROR {e}', False))
             all_ok = False
 
     return rows, all_ok
