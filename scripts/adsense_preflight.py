@@ -106,8 +106,20 @@ FOOTER_REQUIRED_TEXT = [
     'プライバシーポリシー',
     '利用規約',
     'お問い合わせ',
-    '当サイトではアフィリエイト広告を利用しています。',
+    'ご利用にあたって',
 ]
+TOP_INLINE_REQUIREMENTS = {
+    '/': 'home_after_hero',
+    '/autofill': 'public_top_inline',
+    '/tools': 'public_top_inline',
+    '/tools/image-batch': 'public_top_inline',
+    '/tools/pdf': 'public_top_inline',
+    '/tools/seo': 'public_top_inline',
+    '/guide': 'public_top_inline',
+    '/faq': 'public_top_inline',
+    '/blog': 'blog_index_after_intro',
+    '/case-studies': 'case_index_after_intro',
+}
 
 # Googlebot UA
 GOOGLEBOT_UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
@@ -375,6 +387,8 @@ def _run_checks(get_fn, base_url, use_headers=True):
             footer_block = bool(soup.select_one('.affiliate-footer-block'))
             widget_script = any('affiliate-widgets.js' in (tag.get('src') or '') for tag in soup.find_all('script'))
             meta_utf8 = bool(soup.select_one('meta[charset="utf-8"]'))
+            disclosure_count = len(soup.select('.affiliate-disclosure'))
+            side_rail = bool(soup.select_one('.affiliate-side-rail [data-affiliate-rail="true"]'))
             ok = (
                 'text/html' in content_type
                 and 'charset=utf-8' in content_type
@@ -382,11 +396,13 @@ def _run_checks(get_fn, base_url, use_headers=True):
                 and slot_count >= 1
                 and footer_block
                 and widget_script
+                and disclosure_count == 1
+                and side_rail
             )
             rows.append(
                 ('9c_affiliate_public', path,
-                 f'OK slots={slot_count} footer={footer_block} script={widget_script}' if ok else
-                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} slots={slot_count} footer={footer_block} script={widget_script}',
+                 f'OK slots={slot_count} footer={footer_block} rail={side_rail} disclosures={disclosure_count} script={widget_script}' if ok else
+                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} slots={slot_count} footer={footer_block} rail={side_rail} disclosures={disclosure_count} script={widget_script}',
                  ok)
             )
             if not ok:
@@ -401,11 +417,12 @@ def _run_checks(get_fn, base_url, use_headers=True):
             body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
             slot_count = body.count('data-affiliate-slot=')
             footer_block = 'affiliate-footer-block' in body
-            ok = slot_count == 0 and not footer_block
+            side_rail = 'affiliate-side-rail' in body
+            ok = slot_count == 0 and not footer_block and not side_rail
             rows.append(
                 ('9d_affiliate_nonui', path,
-                 f'OK slots={slot_count} footer={footer_block}' if ok else
-                 f'FAIL slots={slot_count} footer={footer_block}',
+                 f'OK slots={slot_count} footer={footer_block} rail={side_rail}' if ok else
+                 f'FAIL slots={slot_count} footer={footer_block} rail={side_rail}',
                  ok)
             )
             if not ok:
@@ -428,6 +445,29 @@ def _run_checks(get_fn, base_url, use_headers=True):
                 all_ok = False
         except Exception as e:
             rows.append(('9e_noindex', path, f'ERROR {e}', False))
+            all_ok = False
+
+    for path, slot_id in TOP_INLINE_REQUIREMENTS.items():
+        try:
+            resp = get(path)
+            body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+            soup = BeautifulSoup(body, 'html.parser')
+            slot = soup.select_one(f'[data-affiliate-slot="{slot_id}"]')
+            slot_before_footer = bool(slot) and slot.find_parent('footer') is None
+            has_fallback = bool(slot and slot.select_one('[data-affiliate-fallback="true"]'))
+            ok = bool(slot) and slot_before_footer and has_fallback
+            rows.append((
+                '9f_top_affiliate',
+                path,
+                'OK top affiliate before footer'
+                if ok else
+                f'FAIL slot={bool(slot)} before_footer={slot_before_footer} fallback={has_fallback}',
+                ok,
+            ))
+            if not ok:
+                all_ok = False
+        except Exception as e:
+            rows.append(('9f_top_affiliate', path, f'ERROR {e}', False))
             all_ok = False
 
     sitemap_locs = set()

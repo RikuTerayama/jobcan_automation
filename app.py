@@ -440,22 +440,28 @@ AFFILIATE_SLOT_RULES = {
     'home_after_hero': {
         'page_types': ('landing',),
         'paths': ('/',),
-        'default_size': '728x90',
-        'breakpoint_policy': 'desktop-only',
+        'default_size': '300x250',
+        'breakpoint_policy': 'all',
         'allow_rotation': False,
     },
     'blog_index_after_intro': {
         'page_types': ('blog_index',),
         'paths': ('/blog',),
         'default_size': '300x250',
-        'breakpoint_policy': 'tablet-up',
+        'breakpoint_policy': 'all',
         'allow_rotation': True,
     },
     'case_index_after_intro': {
         'page_types': ('case_index',),
         'paths': ('/case-studies',),
         'default_size': '300x250',
-        'breakpoint_policy': 'tablet-up',
+        'breakpoint_policy': 'all',
+        'allow_rotation': True,
+    },
+    'public_top_inline': {
+        'page_types': ('article', 'guide', 'info', 'tool', 'tool_index', 'trust_sensitive', 'legal', 'contact', 'generic'),
+        'default_size': '300x250',
+        'breakpoint_policy': 'all',
         'allow_rotation': True,
     },
     'article_end_1': {
@@ -658,6 +664,26 @@ def affiliate_footer_slot_id(path=None):
     return None
 
 
+def affiliate_top_slot_id(path=None):
+    normalized_path = path or (request.path if has_request_context() else '/')
+    page_type = get_affiliate_page_type(normalized_path)
+    slot_id = None
+    if page_type in ('article', 'guide', 'info', 'tool', 'tool_index', 'trust_sensitive', 'legal', 'contact', 'generic'):
+        slot_id = 'public_top_inline'
+
+    if slot_id and affiliate_can_render_slot(slot_id, normalized_path):
+        return slot_id
+    return None
+
+
+def affiliate_side_rail_enabled(path=None):
+    normalized_path = path or (request.path if has_request_context() else '/')
+    page_type = get_affiliate_page_type(normalized_path)
+    if affiliate_is_path_excluded(normalized_path):
+        return False
+    return affiliate_can_render_textlinks(normalized_path) and page_type in PUBLIC_AFFILIATE_PAGE_TYPES
+
+
 # 環境変数をテンプレートコンテキストに注入（AdSense / Affiliate 設定用）
 @app.context_processor
 def inject_env_vars():
@@ -750,7 +776,9 @@ def inject_env_vars():
             'AFFILIATE_ROTATION_BANNER_ENABLED': affiliate_settings['rotation_banner_enabled'],
             'affiliate_page_type': affiliate_page_type,
             'affiliate_path_excluded': affiliate_is_path_excluded(current_path),
+            'affiliate_top_slot_id': affiliate_top_slot_id(current_path),
             'affiliate_footer_slot_id': affiliate_footer_slot_id(current_path),
+            'affiliate_side_rail_enabled': affiliate_side_rail_enabled(current_path),
             'affiliate_can_render_textlinks': affiliate_can_render_textlinks,
             'affiliate_can_render_slot': affiliate_can_render_slot,
             'affiliate_get_slot_config': affiliate_get_slot_config
@@ -800,7 +828,9 @@ def inject_env_vars():
             'AFFILIATE_ROTATION_BANNER_ENABLED': affiliate_settings['rotation_banner_enabled'],
             'affiliate_page_type': get_affiliate_page_type(current_path),
             'affiliate_path_excluded': affiliate_is_path_excluded(current_path),
+            'affiliate_top_slot_id': affiliate_top_slot_id(current_path),
             'affiliate_footer_slot_id': affiliate_footer_slot_id(current_path),
+            'affiliate_side_rail_enabled': affiliate_side_rail_enabled(current_path),
             'affiliate_can_render_textlinks': affiliate_can_render_textlinks,
             'affiliate_can_render_slot': affiliate_can_render_slot,
             'affiliate_get_slot_config': affiliate_get_slot_config
