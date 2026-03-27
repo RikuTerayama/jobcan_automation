@@ -185,6 +185,16 @@ PUBLIC_UI_FORBIDDEN_COPY = [
 ]
 REMOVED_AFFILIATE_TEXT = ['Sponsored Picks', 'おすすめ情報', '本文の流れを崩さずに見られる、落ち着いたおすすめ導線です。']
 
+PUBLIC_TEMPLATE_SOURCE_PATHS = [
+    'templates/index.html',
+    'templates/landing.html',
+    'templates/landing_v2.html',
+    'templates/includes/footer.html',
+    'templates/includes/seo_link_hub.html',
+    'templates/includes/related_content.html',
+    'templates/tools/index.html',
+]
+
 # Googlebot UA
 GOOGLEBOT_UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
 
@@ -635,6 +645,31 @@ def _run_checks(get_fn, base_url, use_headers=True):
                 all_ok = False
     except Exception as e:
         rows.append(('9fc_public_copy', '/', f'ERROR {e}', False))
+        all_ok = False
+
+    try:
+        repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        source_hits = []
+        for rel_path in PUBLIC_TEMPLATE_SOURCE_PATHS:
+            abs_path = os.path.join(repo_root, *rel_path.split('/'))
+            with open(abs_path, 'r', encoding='utf-8') as fh:
+                source_text = fh.read()
+            found = [token for token in PUBLIC_UI_FORBIDDEN_COPY if token in source_text]
+            if found:
+                source_hits.append((rel_path, found[:2]))
+        ok = not source_hits
+        rows.append(
+            (
+                '9fd_public_copy_source',
+                'templates',
+                'OK no forbidden public copy in source templates' if ok else f'FAIL found={source_hits[:3]}',
+                ok,
+            )
+        )
+        if not ok:
+            all_ok = False
+    except Exception as e:
+        rows.append(('9fd_public_copy_source', 'templates', f'ERROR {e}', False))
         all_ok = False
 
     try:
