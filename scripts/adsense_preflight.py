@@ -553,9 +553,17 @@ def _run_checks(get_fn, base_url, use_headers=True):
             soup = BeautifulSoup(body, 'html.parser')
             robots = (soup.select_one('meta[name="robots"]') or {}).get('content', '') if soup.select_one('meta[name="robots"]') else ''
             canonical = (soup.select_one('link[rel="canonical"]') or {}).get('href', '') if soup.select_one('link[rel="canonical"]') else ''
+            desc_count = len(soup.select('meta[name="description"]'))
             in_sitemap = canonical_for_path(path) in sitemap_locs
-            ok = 'noindex' in robots.lower() and canonical == canonical_for_path(path) and not in_sitemap
-            rows.append(('14_excluded', path, 'OK noindex+self canonical+not in sitemap' if ok else f'FAIL robots={robots or "missing"} canon={canonical or "missing"} sitemap={in_sitemap}', ok))
+            ok = 'noindex' in robots.lower() and canonical == canonical_for_path(path) and not in_sitemap and desc_count == 1
+            rows.append((
+                '14_excluded',
+                path,
+                'OK noindex+self canonical+not in sitemap'
+                if ok else
+                f'FAIL robots={robots or "missing"} canon={canonical or "missing"} sitemap={in_sitemap} desc={desc_count}',
+                ok,
+            ))
             if not ok:
                 all_ok = False
         except Exception as e:
