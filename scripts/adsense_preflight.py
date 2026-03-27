@@ -470,6 +470,7 @@ def _run_checks(get_fn, base_url, use_headers=True):
             meta_utf8 = bool(soup.select_one('meta[charset="utf-8"]'))
             disclosure_count = len(soup.select('.affiliate-disclosure'))
             side_rail = bool(soup.select_one('.affiliate-side-rail [data-affiliate-rail="true"]'))
+            footer_rail = bool(soup.select_one('footer .affiliate-side-rail'))
             visible_affiliate_copy = bool(
                 soup.select_one('[data-affiliate-fallback="true"] .affiliate-link-card__label')
                 or soup.select_one('.affiliate-footer-block .affiliate-link-card__label')
@@ -479,6 +480,7 @@ def _run_checks(get_fn, base_url, use_headers=True):
                 soup.select_one('[data-affiliate-slot] .affiliate-link-grid--module')
                 or soup.select_one('[data-affiliate-slot] .affiliate-link-card--module')
             )
+            inline_module_count = len(soup.select('[data-affiliate-slot] .affiliate-link-card--module'))
             rail_panel = bool(soup.select_one('.affiliate-side-rail__panel'))
             ok = (
                 'text/html' in content_type
@@ -490,12 +492,14 @@ def _run_checks(get_fn, base_url, use_headers=True):
                 and disclosure_count <= 1
                 and side_rail
                 and inline_module
+                and inline_module_count >= 1
                 and rail_panel
+                and not footer_rail
             )
             rows.append(
                 ('9c_affiliate_public', path,
-                 f'OK slots={slot_count} footer={footer_block} rail={side_rail} module={inline_module} disclosures={disclosure_count} copy={visible_affiliate_copy}' if ok else
-                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} slots={slot_count} footer={footer_block} rail={side_rail} panel={rail_panel} module={inline_module} disclosures={disclosure_count} copy={visible_affiliate_copy}',
+                 f'OK slots={slot_count} footer={footer_block} rail={side_rail} footer_rail={footer_rail} module={inline_module} module_cards={inline_module_count} disclosures={disclosure_count} copy={visible_affiliate_copy}' if ok else
+                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} slots={slot_count} footer={footer_block} rail={side_rail} footer_rail={footer_rail} panel={rail_panel} module={inline_module} module_cards={inline_module_count} disclosures={disclosure_count} copy={visible_affiliate_copy}',
                  ok)
             )
             if not ok:
@@ -552,14 +556,17 @@ def _run_checks(get_fn, base_url, use_headers=True):
             disclosure_near = bool(slot and slot.select_one('.affiliate-disclosure'))
             widget_disabled = bool(slot and slot.get('data-affiliate-disable-widget') == 'true')
             module_shape = bool(slot and slot.select_one('.affiliate-link-grid--module'))
+            module_cards = len(slot.select('.affiliate-link-card--module')) if slot else 0
             header_slot = bool(soup.select_one(f'.affiliate-top-shell [data-affiliate-slot="{slot_id}"]'))
-            ok = bool(slot) and slot_before_footer and has_fallback and disclosure_near and widget_disabled and module_shape and (path not in NO_HEADER_TOP_SLOT_PATHS or not header_slot)
+            has_feature_layout = bool(slot and slot.select_one('.affiliate-feature-layout__main'))
+            rail_near = bool(slot and slot.select_one('.affiliate-feature-layout .affiliate-side-rail__panel'))
+            ok = bool(slot) and slot_before_footer and has_fallback and disclosure_near and widget_disabled and module_shape and module_cards >= 1 and has_feature_layout and rail_near and (path not in NO_HEADER_TOP_SLOT_PATHS or not header_slot)
             rows.append((
                 '9f_top_affiliate',
                 path,
                 'OK top affiliate before footer'
                 if ok else
-                f'FAIL slot={bool(slot)} before_footer={slot_before_footer} fallback={has_fallback} disclosure={disclosure_near} widget_disabled={widget_disabled} module={module_shape} header_slot={header_slot}',
+                f'FAIL slot={bool(slot)} before_footer={slot_before_footer} fallback={has_fallback} disclosure={disclosure_near} widget_disabled={widget_disabled} module={module_shape} module_cards={module_cards} layout={has_feature_layout} rail={rail_near} header_slot={header_slot}',
                 ok,
             ))
             if not ok:
@@ -572,10 +579,13 @@ def _run_checks(get_fn, base_url, use_headers=True):
         common_css_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'static', 'css', 'common.css')
         with open(common_css_path, 'r', encoding='utf-8') as fh:
             css_text = fh.read()
-        desktop_rule = '@media (min-width: 1280px)' in css_text and '.affiliate-side-rail' in css_text
+        desktop_rule = '@media (min-width: 1280px)' in css_text and '.affiliate-feature-layout' in css_text
         hidden_default = '.affiliate-side-rail {' in css_text and 'display: none;' in css_text
-        ok = desktop_rule and hidden_default
-        rows.append(('9g_affiliate_css', 'static/css/common.css', 'OK desktop rail rule present' if ok else f'FAIL desktop_rule={desktop_rule} hidden_default={hidden_default}', ok))
+        sticky_rule = '.affiliate-feature-layout .affiliate-side-rail {' in css_text and 'position: sticky;' in css_text
+        fixed_rule = '.affiliate-side-rail {\n        display: block;\n        position: fixed;' in css_text or 'position: fixed;' in css_text and '.affiliate-side-rail' in css_text
+        horizontal_module_rule = '.affiliate-link-card--module .affiliate-link-card__anchor {' in css_text and 'flex-direction: row;' in css_text
+        ok = desktop_rule and hidden_default and sticky_rule and horizontal_module_rule and not fixed_rule
+        rows.append(('9g_affiliate_css', 'static/css/common.css', 'OK responsive rail and horizontal module rules present' if ok else f'FAIL desktop_rule={desktop_rule} hidden_default={hidden_default} sticky_rule={sticky_rule} horizontal_module_rule={horizontal_module_rule} fixed_rule={fixed_rule}', ok))
         if not ok:
             all_ok = False
     except Exception as e:

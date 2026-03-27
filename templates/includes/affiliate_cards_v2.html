@@ -31,7 +31,13 @@
         'cta': 'まとめて探す'
     }
 ] %}
-{% set display_cards = affiliate_cards[:2] if affiliate_cards_variant == 'rail' else affiliate_cards %}
+{% if affiliate_cards_variant == 'module' %}
+    {% set display_cards = affiliate_cards[:1] %}
+{% elif affiliate_cards_variant == 'rail' %}
+    {% set display_cards = affiliate_cards[:2] %}
+{% else %}
+    {% set display_cards = affiliate_cards %}
+{% endif %}
 <div class="affiliate-link-grid affiliate-link-grid--{{ affiliate_cards_variant }}">
     {% for card in display_cards %}
     <article class="affiliate-link-card affiliate-link-card--{{ affiliate_cards_variant }}{% if affiliate_cards_variant == 'rail' and loop.first %} affiliate-link-card--featured{% endif %}">
