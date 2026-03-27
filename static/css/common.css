@@ -263,7 +263,7 @@ img {
 }
 
 .affiliate-link-grid--module {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: 1fr;
 }
 
 .affiliate-link-grid--rail {
@@ -348,7 +348,30 @@ img {
 }
 
 .affiliate-link-card--module .affiliate-link-card__anchor {
+    flex-direction: row;
+    align-items: stretch;
     height: 100%;
+}
+
+.affiliate-link-card--module .affiliate-link-card__media {
+    flex: 0 0 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+}
+
+.affiliate-link-card--module .affiliate-link-card__content {
+    justify-content: center;
+    padding: 20px 22px 20px 0;
+}
+
+.affiliate-link-card--module .affiliate-link-card__label {
+    font-size: 1.05rem;
+}
+
+.affiliate-link-card--module .affiliate-link-card__desc {
+    font-size: 0.92rem;
 }
 
 .affiliate-link-card--rail {
@@ -370,7 +393,7 @@ img {
 
 .affiliate-slot {
     margin: 0 auto var(--spacing-xl);
-    text-align: center;
+    text-align: left;
 }
 
 .affiliate-slot--primary-inline {
@@ -390,7 +413,7 @@ img {
     width: min(100%, 300px);
     min-height: 250px;
     margin: 0 auto;
-    padding: 14px;
+    padding: 16px;
     border-radius: 24px;
     border: 1px solid rgba(74, 158, 255, 0.18);
     background: linear-gradient(180deg, rgba(15, 22, 36, 0.98), rgba(20, 20, 24, 0.96));
@@ -410,6 +433,7 @@ img {
 .affiliate-slot--content-inline .affiliate-slot__box {
     width: min(100%, 960px);
     min-height: auto;
+    margin: 0;
 }
 
 .affiliate-slot--728-90 .affiliate-slot__box {
@@ -429,6 +453,14 @@ img {
 
 .affiliate-side-rail {
     display: none;
+}
+
+.affiliate-feature-layout {
+    display: block;
+}
+
+.affiliate-feature-layout__main {
+    min-width: 0;
 }
 
 .affiliate-side-rail__panel {
@@ -603,13 +635,23 @@ img {
 }
 
 @media (min-width: 1280px) {
-    .affiliate-side-rail {
+    .affiliate-feature-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 286px;
+        gap: 24px;
+        align-items: start;
+    }
+
+    .affiliate-feature-layout--single {
         display: block;
-        position: fixed;
-        top: 116px;
-        right: 20px;
-        width: 286px;
-        z-index: 40;
+    }
+
+    .affiliate-feature-layout .affiliate-side-rail {
+        display: block;
+        position: sticky;
+        top: 112px;
+        align-self: start;
+        width: 100%;
     }
 }
 
@@ -629,6 +671,19 @@ img {
 
     .affiliate-link-grid--module {
         grid-template-columns: 1fr;
+    }
+
+    .affiliate-link-card--module .affiliate-link-card__anchor {
+        flex-direction: column;
+    }
+
+    .affiliate-link-card--module .affiliate-link-card__media {
+        flex-basis: auto;
+        padding: 18px 18px 0;
+    }
+
+    .affiliate-link-card--module .affiliate-link-card__content {
+        padding: 16px 18px 18px;
     }
 
     .affiliate-link-card__media {
