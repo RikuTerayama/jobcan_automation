@@ -1,5 +1,5 @@
 {
-  "about.html": "2026-02-24",
+  "about.html": "2026-03-28",
   "autofill.html": "2026-03-27",
   "best-practices.html": "2026-03-27",
   "blog/automation-roadmap.html": "2026-03-27",
@@ -7,7 +7,7 @@
   "blog/excel-attendance-limits.html": "2026-03-27",
   "blog/excel-format-mistakes-and-design.html": "2026-03-27",
   "blog/implementation-checklist.html": "2026-03-27",
-  "blog/index.html": "2026-03-27",
+  "blog/index.html": "2026-03-28",
   "blog/jobcan-auto-input-dos-and-donts.html": "2026-03-27",
   "blog/jobcan-auto-input-tools-overview.html": "2026-03-27",
   "blog/jobcan-month-end-tips.html": "2026-03-27",
@@ -17,7 +17,7 @@
   "blog/playwright-security.html": "2026-03-27",
   "blog/reduce-manual-work-checklist.html": "2026-03-27",
   "blog/workstyle-reform-automation.html": "2026-03-27",
-  "case-studies.html": "2026-03-27",
+  "case-studies.html": "2026-03-28",
   "case-study-consulting-firm.html": "2026-03-27",
   "case-study-contact-center.html": "2026-03-27",
   "case-study-remote-startup.html": "2026-03-27",
@@ -39,7 +39,7 @@
   "tools/csv.html": "2026-03-27",
   "tools/image-batch.html": "2026-03-27",
   "tools/image-cleanup.html": "2026-03-27",
-  "tools/index.html": "2026-03-27",
+  "tools/index.html": "2026-03-28",
   "tools/pdf.html": "2026-03-27",
   "tools/seo.html": "2026-03-27"
 }
