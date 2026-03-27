@@ -33,14 +33,12 @@
 ] %}
 {% if affiliate_cards_variant == 'module' %}
     {% set display_cards = affiliate_cards[:1] %}
-{% elif affiliate_cards_variant == 'rail' %}
-    {% set display_cards = affiliate_cards[:2] %}
 {% else %}
     {% set display_cards = affiliate_cards %}
 {% endif %}
 <div class="affiliate-link-grid affiliate-link-grid--{{ affiliate_cards_variant }}">
     {% for card in display_cards %}
-    <article class="affiliate-link-card affiliate-link-card--{{ affiliate_cards_variant }}{% if affiliate_cards_variant == 'rail' and loop.first %} affiliate-link-card--featured{% endif %}">
+    <article class="affiliate-link-card affiliate-link-card--{{ affiliate_cards_variant }}">
         <a class="affiliate-link-card__anchor" href="{{ card.href }}" rel="nofollow">
             <span class="affiliate-link-card__media">
                 <img src="{{ card.image }}" border="0" alt="{{ card.alt }}">

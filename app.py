@@ -442,7 +442,7 @@ AFFILIATE_SLOT_RULES = {
         'paths': ('/',),
         'default_size': '300x250',
         'breakpoint_policy': 'all',
-        'allow_rotation': False,
+        'allow_rotation': True,
     },
     'blog_index_after_intro': {
         'page_types': ('blog_index',),
@@ -548,7 +548,7 @@ def get_affiliate_settings():
         'enabled': _env_flag('AFFILIATE_ENABLED', True),
         'textlinks_enabled': _env_flag('AFFILIATE_TEXTLINKS_ENABLED', True),
         'banners_enabled': _env_flag('AFFILIATE_BANNERS_ENABLED', True),
-        'network': _normalize_affiliate_network(os.getenv('AFFILIATE_NETWORK', 'rakuten')),
+        'network': _normalize_affiliate_network(os.getenv('AFFILIATE_NETWORK', 'a8_rotation')),
         'exclude_paths': tuple(_env_list(
             'AFFILIATE_EXCLUDE_PATHS',
             ()
@@ -573,7 +573,7 @@ def get_affiliate_settings():
         'widget_desktop_enabled': _env_flag('AFFILIATE_WIDGET_DESKTOP_ENABLED', True),
         'widget_tablet_enabled': _env_flag('AFFILIATE_WIDGET_TABLET_ENABLED', True),
         'widget_mobile_enabled': _env_flag('AFFILIATE_WIDGET_MOBILE_ENABLED', False),
-        'rotation_banner_enabled': _env_flag('AFFILIATE_ROTATION_BANNER_ENABLED', False),
+        'rotation_banner_enabled': _env_flag('AFFILIATE_ROTATION_BANNER_ENABLED', True),
     }
 
 
@@ -689,11 +689,7 @@ def affiliate_top_slot_mode(path=None):
 
 
 def affiliate_side_rail_enabled(path=None):
-    normalized_path = path or (request.path if has_request_context() else '/')
-    page_type = get_affiliate_page_type(normalized_path)
-    if affiliate_is_path_excluded(normalized_path):
-        return False
-    return affiliate_can_render_textlinks(normalized_path) and page_type in PUBLIC_AFFILIATE_PAGE_TYPES
+    return False
 
 
 # 環境変数をテンプレートコンテキストに注入（AdSense / Affiliate 設定用）

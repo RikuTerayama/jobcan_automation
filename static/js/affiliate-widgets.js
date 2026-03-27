@@ -113,6 +113,59 @@
     mount.appendChild(script);
   }
 
+  function widgetLooksLoaded(mount) {
+    if (!mount) {
+      return false;
+    }
+    if (mount.querySelector('iframe, ins, object, embed')) {
+      return true;
+    }
+    return Array.prototype.some.call(mount.childNodes, function(node) {
+      if (node.nodeType === 3) {
+        return (node.textContent || '').trim().length > 0;
+      }
+      if (node.nodeType !== 1) {
+        return false;
+      }
+      if (node.tagName === 'SCRIPT') {
+        return false;
+      }
+      if (node.tagName === 'IMG' && node.width === 1 && node.height === 1) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  function updateFallbackVisibility(slot, mount) {
+    if (!slot || !mount) {
+      return;
+    }
+    if (widgetLooksLoaded(mount)) {
+      slot.dataset.affiliateWidgetLoaded = 'true';
+      return;
+    }
+    delete slot.dataset.affiliateWidgetLoaded;
+  }
+
+  function scheduleWidgetChecks(slot, mount) {
+    [500, 1400, 2800].forEach(function(delay) {
+      window.setTimeout(function() {
+        updateFallbackVisibility(slot, mount);
+      }, delay);
+    });
+    if (!window.MutationObserver) {
+      return;
+    }
+    var observer = new MutationObserver(function() {
+      updateFallbackVisibility(slot, mount);
+    });
+    observer.observe(mount, { childList: true, subtree: true });
+    window.setTimeout(function() {
+      observer.disconnect();
+    }, 4000);
+  }
+
   function renderSlot(slot) {
     if (!isRenderable(slot)) {
       return;
@@ -125,12 +178,15 @@
 
     slot.dataset.affiliateRendered = 'true';
     mount.innerHTML = '';
+    delete slot.dataset.affiliateWidgetLoaded;
 
     if (slot.dataset.affiliateKind === 'a8_rotation') {
       renderRotation(mount);
     } else {
       renderRakuten(slot, mount);
     }
+
+    scheduleWidgetChecks(slot, mount);
   }
 
   function watchSlot(slot) {

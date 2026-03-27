@@ -127,7 +127,7 @@ FOOTER_REQUIRED_TEXT = [
 TOP_INLINE_REQUIREMENTS = {
     '/': {
         'slot': 'home_after_hero',
-        'selector': '.hero + [data-affiliate-slot="home_after_hero"]',
+        'selector': '.landing-inline-affiliate [data-affiliate-slot="home_after_hero"]',
     },
     '/autofill': {
         'slot': 'public_top_inline',
@@ -169,6 +169,8 @@ TOP_INLINE_REQUIREMENTS = {
 NO_HEADER_TOP_SLOT_PATHS = ['/autofill', '/tools', '/tools/image-batch', '/tools/pdf', '/tools/seo']
 HOME_GRID_EXPECTED_COUNT = 6
 HOME_USE_CASE_MIN_COUNT = 4
+HOME_HEADLINE_LINES = ['勤怠入力の自動化と、', '周辺業務の効率化を一つの導線で。']
+REMOVED_AFFILIATE_TEXT = ['Sponsored Picks', 'おすすめ情報', '本文の流れを崩さずに見られる、落ち着いたおすすめ導線です。']
 
 # Googlebot UA
 GOOGLEBOT_UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
@@ -469,19 +471,17 @@ def _run_checks(get_fn, base_url, use_headers=True):
             footer_block = bool(soup.select_one('.affiliate-footer-block'))
             meta_utf8 = bool(soup.select_one('meta[charset="utf-8"]'))
             disclosure_count = len(soup.select('.affiliate-disclosure'))
-            side_rail = bool(soup.select_one('.affiliate-side-rail [data-affiliate-rail="true"]'))
-            footer_rail = bool(soup.select_one('footer .affiliate-side-rail'))
+            side_rail = bool(soup.select_one('.affiliate-side-rail'))
             visible_affiliate_copy = bool(
                 soup.select_one('[data-affiliate-fallback="true"] .affiliate-link-card__label')
                 or soup.select_one('.affiliate-footer-block .affiliate-link-card__label')
-                or soup.select_one('.affiliate-side-rail .affiliate-link-card__label')
             )
             inline_module = bool(
                 soup.select_one('[data-affiliate-slot] .affiliate-link-grid--module')
                 or soup.select_one('[data-affiliate-slot] .affiliate-link-card--module')
             )
             inline_module_count = len(soup.select('[data-affiliate-slot] .affiliate-link-card--module'))
-            rail_panel = bool(soup.select_one('.affiliate-side-rail__panel'))
+            removed_text_found = [text for text in REMOVED_AFFILIATE_TEXT if text in body]
             ok = (
                 'text/html' in content_type
                 and 'charset=utf-8' in content_type
@@ -490,16 +490,15 @@ def _run_checks(get_fn, base_url, use_headers=True):
                 and footer_block
                 and visible_affiliate_copy
                 and disclosure_count <= 1
-                and side_rail
                 and inline_module
                 and inline_module_count >= 1
-                and rail_panel
-                and not footer_rail
+                and not side_rail
+                and not removed_text_found
             )
             rows.append(
                 ('9c_affiliate_public', path,
-                 f'OK slots={slot_count} footer={footer_block} rail={side_rail} footer_rail={footer_rail} module={inline_module} module_cards={inline_module_count} disclosures={disclosure_count} copy={visible_affiliate_copy}' if ok else
-                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} slots={slot_count} footer={footer_block} rail={side_rail} footer_rail={footer_rail} panel={rail_panel} module={inline_module} module_cards={inline_module_count} disclosures={disclosure_count} copy={visible_affiliate_copy}',
+                 f'OK slots={slot_count} footer={footer_block} rail={side_rail} module={inline_module} module_cards={inline_module_count} disclosures={disclosure_count} copy={visible_affiliate_copy}' if ok else
+                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} slots={slot_count} footer={footer_block} rail={side_rail} module={inline_module} module_cards={inline_module_count} disclosures={disclosure_count} copy={visible_affiliate_copy} removed={removed_text_found}',
                  ok)
             )
             if not ok:
@@ -559,14 +558,14 @@ def _run_checks(get_fn, base_url, use_headers=True):
             module_cards = len(slot.select('.affiliate-link-card--module')) if slot else 0
             header_slot = bool(soup.select_one(f'.affiliate-top-shell [data-affiliate-slot="{slot_id}"]'))
             has_feature_layout = bool(slot and slot.select_one('.affiliate-feature-layout__main'))
-            rail_near = bool(slot and slot.select_one('.affiliate-feature-layout .affiliate-side-rail__panel'))
-            ok = bool(slot) and slot_before_footer and has_fallback and disclosure_near and widget_disabled and module_shape and module_cards >= 1 and has_feature_layout and rail_near and (path not in NO_HEADER_TOP_SLOT_PATHS or not header_slot)
+            widget_enabled = bool(slot and slot.get('data-affiliate-disable-widget') == 'false')
+            ok = bool(slot) and slot_before_footer and has_fallback and disclosure_near and widget_enabled and module_shape and module_cards >= 1 and has_feature_layout and (path not in NO_HEADER_TOP_SLOT_PATHS or not header_slot)
             rows.append((
                 '9f_top_affiliate',
                 path,
                 'OK top affiliate before footer'
                 if ok else
-                f'FAIL slot={bool(slot)} before_footer={slot_before_footer} fallback={has_fallback} disclosure={disclosure_near} widget_disabled={widget_disabled} module={module_shape} module_cards={module_cards} layout={has_feature_layout} rail={rail_near} header_slot={header_slot}',
+                f'FAIL slot={bool(slot)} before_footer={slot_before_footer} fallback={has_fallback} disclosure={disclosure_near} widget_enabled={widget_enabled} module={module_shape} module_cards={module_cards} layout={has_feature_layout} header_slot={header_slot}',
                 ok,
             ))
             if not ok:
@@ -576,16 +575,29 @@ def _run_checks(get_fn, base_url, use_headers=True):
             all_ok = False
 
     try:
+        resp = get('/')
+        body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+        soup = BeautifulSoup(body, 'html.parser')
+        headline_lines = [node.get_text(strip=True) for node in soup.select('.landing-hero__headline-line')]
+        ok = headline_lines == HOME_HEADLINE_LINES
+        rows.append(('9fa_home_headline', '/', f'OK lines={headline_lines}' if ok else f'FAIL lines={headline_lines}', ok))
+        if not ok:
+            all_ok = False
+    except Exception as e:
+        rows.append(('9fa_home_headline', '/', f'ERROR {e}', False))
+        all_ok = False
+
+    try:
         common_css_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'static', 'css', 'common.css')
         with open(common_css_path, 'r', encoding='utf-8') as fh:
             css_text = fh.read()
-        desktop_rule = '@media (min-width: 1280px)' in css_text and '.affiliate-feature-layout' in css_text
-        hidden_default = '.affiliate-side-rail {' in css_text and 'display: none;' in css_text
-        sticky_rule = '.affiliate-feature-layout .affiliate-side-rail {' in css_text and 'position: sticky;' in css_text
-        fixed_rule = '.affiliate-side-rail {\n        display: block;\n        position: fixed;' in css_text or 'position: fixed;' in css_text and '.affiliate-side-rail' in css_text
+        side_rail_markup = 'Sponsored Picks' in css_text or '.affiliate-side-rail__panel' in css_text or '.affiliate-side-rail__intro' in css_text
+        fixed_rule = 'position: fixed;' in css_text and '.affiliate-side-rail' in css_text
+        sticky_rule = 'position: sticky;' in css_text and '.affiliate-side-rail' in css_text
         horizontal_module_rule = '.affiliate-link-card--module .affiliate-link-card__anchor {' in css_text and 'flex-direction: row;' in css_text
-        ok = desktop_rule and hidden_default and sticky_rule and horizontal_module_rule and not fixed_rule
-        rows.append(('9g_affiliate_css', 'static/css/common.css', 'OK responsive rail and horizontal module rules present' if ok else f'FAIL desktop_rule={desktop_rule} hidden_default={hidden_default} sticky_rule={sticky_rule} horizontal_module_rule={horizontal_module_rule} fixed_rule={fixed_rule}', ok))
+        widget_state_rule = 'data-affiliate-widget-loaded' in css_text
+        ok = horizontal_module_rule and widget_state_rule and not fixed_rule and not sticky_rule and not side_rail_markup
+        rows.append(('9g_affiliate_css', 'static/css/common.css', 'OK horizontal module and no side rail styles remain' if ok else f'FAIL horizontal_module_rule={horizontal_module_rule} widget_state_rule={widget_state_rule} fixed_rule={fixed_rule} sticky_rule={sticky_rule} side_rail_markup={side_rail_markup}', ok))
         if not ok:
             all_ok = False
     except Exception as e:
