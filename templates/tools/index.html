@@ -5,12 +5,6 @@
     {% set page_description = 'Jobcan自動入力、画像一括変換、PDFユーティリティ、Web/SEOユーティリティなど、業務効率化に役立つ無料ツールを提供。処理方式は各ツールの説明をご確認ください。' %}
     {% set breadcrumb_title = 'ツール一覧' %}
     {% include 'includes/head_meta.html' %}
-    {% block description_meta %}
-        <meta name="description" content="{% if page_description|length > 110 %}{{ page_description[:107] }}...{% else %}{{ page_description }}{% endif %}">
-    {% endblock %}
-    {% block og_description %}
-        <meta property="og:description" content="{% if page_description|length > 200 %}{{ page_description[:197] }}...{% else %}{{ page_description }}{% endif %}">
-    {% endblock %}
     <style>
         * {
             box-sizing: border-box;
@@ -330,7 +324,7 @@
             });
         </script>
     </div>
-    
+    {% include 'includes/seo_link_hub.html' %}
     {% include 'includes/footer.html' %}
 </body>
 </html>

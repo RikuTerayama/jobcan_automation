@@ -5,12 +5,6 @@
     {% set page_description = 'OGP画像ジェネレーター、PageSpeed改善チェックリスト、メタタグ検査、sitemap.xml/robots.txt生成をブラウザ内で実行できる無料ツール。ファイルはアップロードされません。' %}
     {% set breadcrumb_title = 'Web/SEOユーティリティ' %}
     {% include 'includes/head_meta.html' %}
-    {% block description_meta %}
-        <meta name="description" content="{% if page_description|length > 110 %}{{ page_description[:107] }}...{% else %}{{ page_description }}{% endif %}">
-    {% endblock %}
-    {% block og_description %}
-        <meta property="og:description" content="{% if page_description|length > 200 %}{{ page_description[:197] }}...{% else %}{{ page_description }}{% endif %}">
-    {% endblock %}
     <style>
         * {
             box-sizing: border-box;

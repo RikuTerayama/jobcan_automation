@@ -5,13 +5,7 @@
     {% set page_description = 'Jobcanへの勤怠データをExcelから一括入力する自動化ツール。手作業の繰り返しを削減し、月次締め作業を大幅に効率化します。' %}
     {% include 'includes/head_meta.html' %}
     {# description_metaブロックでdescriptionの内容を設定（長さ制限付き） #}
-    {% block description_meta %}
-        <meta name="description" content="{% if page_description|length > 110 %}{{ page_description[:107] }}...{% else %}{{ page_description }}{% endif %}">
-    {% endblock %}
     {# og:descriptionも設定（長さ制限付き） #}
-    {% block og_description %}
-        <meta property="og:description" content="{% if page_description|length > 200 %}{{ page_description[:197] }}...{% else %}{{ page_description }}{% endif %}">
-    {% endblock %}
     <style>
         /* CSS変数定義 - 濃い青色系 */
         :root {

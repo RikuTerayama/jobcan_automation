@@ -233,6 +233,20 @@ jobcan_automation-main/
 
 ## 🚀 デプロイ
 
+### デプロイ前チェック（必須）
+
+sitemap の lastmod マニフェストは、**テンプレート変更時に手元で再生成してコミットする**必要があります。生成忘れがあると CI が失敗します。
+
+1. **マニフェストを生成**（テンプレート変更後）
+   ```bash
+   python scripts/generate_sitemap_lastmod_manifest.py --write
+   ```
+2. **デプロイ前ワンコマンド**（manifest 鮮度 + preflight）
+   ```bash
+   python scripts/predeploy.py
+   ```
+3. **例外**: Docker ビルド環境に `.git` は無いため、本番ビルド中の自動生成は行いません。必ず手元で `--write` を実行し、`data/sitemap_lastmod.json` をコミットしてからデプロイしてください。
+
 ### Render でのデプロイ
 
 1. **render.yaml** ファイルが設定済み

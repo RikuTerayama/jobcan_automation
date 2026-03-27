@@ -1,4 +1,4 @@
-{# Google Analytics 4 (GA4) - 全ページ共通 #}
+﻿{# Google Analytics 4 (GA4) - 蜈ｨ繝壹・繧ｸ蜈ｱ騾・#}
 {% if GA_MEASUREMENT_ID %}
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id={{ GA_MEASUREMENT_ID }}"></script>
@@ -27,44 +27,46 @@
 </script>
 {% endif %}
 
-{# HEADの軽量化 - 必須メタのみ #}
+{# HEAD縺ｮ霆ｽ驥丞喧 - 蠢・医Γ繧ｿ縺ｮ縺ｿ #}
+{% set effective_page_title = page_title|default('Jobcan AutoFill - 勤怠データ自動入力ツール') %}
+{% set fallback_page_description = effective_page_title ~ (' に関する解説ページです。' if seo_page_kind|default('page') == 'article' else ' の情報ページです。') ~ 'Jobcan AutoFill のガイド、FAQ、導入事例、業務効率化ツールを掲載しています。' %}
+{% set effective_page_description = page_description|default(seo_page_description|default(fallback_page_description)) %}
+{% set effective_page_robots = page_robots|default(seo_page_robots|default('index,follow')) %}
+{% set effective_page_og_type = page_og_type|default(seo_page_defaults.og_type|default('website')) %}
+{% set effective_page_url = BASE_URL|default('https://jobcan-automation.onrender.com') ~ ((request.path if request and request.path else '/')) %}
+{% set effective_page_image = page_image|default(url_for('static', filename='JobcanAutofill.png', _external=True)) %}
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-{# Scroll Reveal: no-js → js 切り替え（最優先、JSが動く時だけ非表示にするため） #}
+{# Scroll Reveal: no-js 竊・js 蛻・ｊ譖ｿ縺茨ｼ域怙蜆ｪ蜈医゛S縺悟虚縺乗凾縺縺鷹撼陦ｨ遉ｺ縺ｫ縺吶ｋ縺溘ａ・・#}
 <script>
     (function() {
         document.documentElement.classList.remove('no-js');
         document.documentElement.classList.add('js');
     })();
 </script>
-<title>{{ page_title|default('Jobcan AutoFill - 勤怠データ自動入力ツール') }}</title>
-{% block description_meta %}
-<meta name="description" content="Jobcanへの勤怠データをExcelから一括入力。画像変換・PDF・SEOなど業務効率化ツールも提供。ブラウザ内処理でアップロード不要。">
-{% endblock %}
-<link rel="canonical" href="{{ BASE_URL|default('https://jobcan-automation.onrender.com') }}{% if request and request.path %}{{ request.path }}{% else %}/{% endif %}">
+<title>{{ effective_page_title }}</title>
+<meta name="description" content="{{ effective_page_description }}">
+<meta name="robots" content="{{ effective_page_robots }}">
+<link rel="canonical" href="{{ canonical_url|default(effective_page_url) }}">
 {% if GSC_VERIFICATION_CONTENT %}
 <meta name="google-site-verification" content="{{ GSC_VERIFICATION_CONTENT }}" />
 {% endif %}
-<meta property="og:type" content="website">
-<meta property="og:title" content="{{ page_title|default('Jobcan AutoFill') }}">
-{% block og_description %}{% endblock %}
-<meta property="og:url" content="{{ BASE_URL|default('https://jobcan-automation.onrender.com') }}{% if request and request.path %}{{ request.path }}{% else %}/{% endif %}">
-{% block og_image %}
-<meta property="og:image" content="{{ url_for('static', filename='JobcanAutofill.png', _external=True) }}">
-{% endblock %}
-{# Twitter Card - P0-2: 同一テンプレ内で block 二重定義を避ける（include 時 TemplateAssertionError 対策） #}
-{% block twitter_card %}
+<meta property="og:type" content="{{ effective_page_og_type }}">
+<meta property="og:site_name" content="Jobcan AutoFill">
+<meta property="og:title" content="{{ effective_page_title }}">
+<meta property="og:description" content="{{ page_og_description|default(effective_page_description) }}">
+<meta property="og:url" content="{{ canonical_url|default(effective_page_url) }}">
+<meta property="og:image" content="{{ effective_page_image }}">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="{{ page_title|default('Jobcan AutoFill') }}">
-<meta name="twitter:description" content="{% block twitter_description %}Jobcanへの勤怠データをExcelから一括入力する自動化ツール{% endblock %}">
-<meta name="twitter:image" content="{% block twitter_image %}{{ url_for('static', filename='JobcanAutofill.png', _external=True) }}{% endblock %}">
-{% endblock %}
-{# AdSenseコードスニペット - ADSENSE_ENABLED が true のときのみ（緊急停止用） #}
+<meta name="twitter:title" content="{{ effective_page_title }}">
+<meta name="twitter:description" content="{{ page_twitter_description|default(effective_page_description) }}">
+<meta name="twitter:image" content="{{ effective_page_image }}">
+{# AdSense繧ｳ繝ｼ繝峨せ繝九・繝・ヨ - ADSENSE_ENABLED 縺・true 縺ｮ縺ｨ縺阪・縺ｿ・育ｷ頑･蛛懈ｭ｢逕ｨ・・#}
 {% if ADSENSE_ENABLED %}
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4232725615106709"
      crossorigin="anonymous"></script>
 {% endif %}
-{# P1-3: フォント読み込み最適化（preconnect + display=swap） #}
+{# P1-3: 繝輔か繝ｳ繝郁ｪｭ縺ｿ霎ｼ縺ｿ譛驕ｩ蛹厄ｼ・reconnect + display=swap・・#}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
@@ -73,7 +75,13 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='css/scroll-reveal.css') }}">
 {# Scroll Reveal JS #}
 <script src="{{ url_for('static', filename='js/scroll-reveal.js') }}" defer></script>
-{# 構造化データ（Organization/WebSite/BreadcrumbList） #}
+{% set affiliate_should_load_widgets = AFFILIATE_ENABLED and AFFILIATE_BANNERS_ENABLED and (affiliate_footer_slot_id or affiliate_page_type in ('landing', 'blog_index', 'case_index')) %}
+{% if affiliate_should_load_widgets %}
+<script src="{{ url_for('static', filename='js/affiliate-widgets.js') }}" defer></script>
+{% endif %}
+{# 讒矩蛹悶ョ繝ｼ繧ｿ・・rganization/WebSite/BreadcrumbList・・#}
 {% include 'includes/structured_data.html' %}
 {% block extra_head %}{% endblock %}
+
+
 
