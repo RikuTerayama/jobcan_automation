@@ -745,6 +745,11 @@
             </header>
             
             <div class="content" data-reveal data-reveal-delay="50">
+                {% if affiliate_top_slot_mode == 'autofill' and affiliate_top_slot_id %}
+                {% with slot_id=affiliate_top_slot_id, slot_render_fallback=true, slot_disable_widget=true, slot_extra_class='affiliate-slot--primary-inline affiliate-slot--content-inline' %}
+                    {% include 'includes/affiliate_slot.html' %}
+                {% endwith %}
+                {% endif %}
                 <h1 class="sr-only">Jobcan勤怠データ自動入力ツール</h1>
             <form id="uploadForm" enctype="multipart/form-data">
                 <div class="form-group">

@@ -676,6 +676,18 @@ def affiliate_top_slot_id(path=None):
     return None
 
 
+def affiliate_top_slot_mode(path=None):
+    normalized_path = path or (request.path if has_request_context() else '/')
+    slot_id = affiliate_top_slot_id(normalized_path)
+    if not slot_id:
+        return 'none'
+    if normalized_path == '/autofill':
+        return 'autofill'
+    if normalized_path == '/tools' or normalized_path.startswith('/tools/'):
+        return 'tool'
+    return 'header'
+
+
 def affiliate_side_rail_enabled(path=None):
     normalized_path = path or (request.path if has_request_context() else '/')
     page_type = get_affiliate_page_type(normalized_path)
@@ -777,6 +789,7 @@ def inject_env_vars():
             'affiliate_page_type': affiliate_page_type,
             'affiliate_path_excluded': affiliate_is_path_excluded(current_path),
             'affiliate_top_slot_id': affiliate_top_slot_id(current_path),
+            'affiliate_top_slot_mode': affiliate_top_slot_mode(current_path),
             'affiliate_footer_slot_id': affiliate_footer_slot_id(current_path),
             'affiliate_side_rail_enabled': affiliate_side_rail_enabled(current_path),
             'affiliate_can_render_textlinks': affiliate_can_render_textlinks,
@@ -829,6 +842,7 @@ def inject_env_vars():
             'affiliate_page_type': get_affiliate_page_type(current_path),
             'affiliate_path_excluded': affiliate_is_path_excluded(current_path),
             'affiliate_top_slot_id': affiliate_top_slot_id(current_path),
+            'affiliate_top_slot_mode': affiliate_top_slot_mode(current_path),
             'affiliate_footer_slot_id': affiliate_footer_slot_id(current_path),
             'affiliate_side_rail_enabled': affiliate_side_rail_enabled(current_path),
             'affiliate_can_render_textlinks': affiliate_can_render_textlinks,

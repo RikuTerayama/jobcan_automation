@@ -293,12 +293,14 @@ img {
 
 .affiliate-link-card img {
     max-width: 100%;
+    border-radius: 10px;
 }
 
 .affiliate-link-card__label {
-    color: var(--color-text-secondary);
-    font-size: 0.82rem;
-    line-height: 1.5;
+    color: var(--color-text-primary, #FFFFFF);
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.55;
     text-align: center;
 }
 
@@ -308,7 +310,12 @@ img {
 }
 
 .affiliate-slot--primary-inline {
-    max-width: 336px;
+    max-width: 360px;
+}
+
+.affiliate-slot--content-inline {
+    margin-top: 0;
+    margin-bottom: var(--spacing-lg);
 }
 
 .affiliate-slot[hidden] {
@@ -319,11 +326,16 @@ img {
     width: min(100%, 300px);
     min-height: 250px;
     margin: 0 auto;
-    padding: var(--spacing-xs);
+    padding: var(--spacing-sm);
     border-radius: var(--radius-card);
-    border: 1px dashed rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(74, 158, 255, 0.18);
     background: rgba(255, 255, 255, 0.03);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
     overflow: hidden;
+}
+
+.affiliate-slot[data-affiliate-disable-widget="true"] .affiliate-slot__box {
+    background: linear-gradient(180deg, rgba(74, 158, 255, 0.08), rgba(255, 255, 255, 0.03));
 }
 
 .affiliate-slot__fallback {
@@ -335,7 +347,7 @@ img {
 }
 
 .affiliate-slot__fallback .affiliate-link-card {
-    min-height: 68px;
+    min-height: 84px;
 }
 
 .affiliate-slot--728-90 .affiliate-slot__box {
@@ -499,13 +511,13 @@ img {
     }
 }
 
-@media (min-width: 1440px) {
+@media (min-width: 1280px) {
     .affiliate-side-rail {
         display: block;
         position: fixed;
         top: 132px;
-        right: 24px;
-        width: 148px;
+        right: 20px;
+        width: 164px;
         z-index: 40;
     }
 

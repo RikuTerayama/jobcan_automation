@@ -25,10 +25,10 @@ PUBLIC_AFFILIATE_PATHS = ['/', '/tools', '/autofill', '/privacy', '/terms', '/co
 NON_UI_AFFILIATE_PATHS = ['/sitemap.xml', '/robots.txt', '/ads.txt', '/api/seo/crawl-urls']
 
 # sitemap.xml に含まれるべき重要URL（完全一致：末尾スラッシュなし）
-SITEMAP_REQUIRED_URLS = ['/', '/autofill', '/tools', '/blog', '/glossary', '/guide/excel-format', '/best-practices']
+SITEMAP_REQUIRED_URLS = ['/', '/autofill', '/tools', '/blog', '/glossary', '/guide/excel-format', '/best-practices', '/guide/complete', '/guide/comprehensive-guide']
 
 # インデックス対象ページ（noindex なし・canonical 自己参照の確認用）
-INDEXABLE_PATHS = ['/', '/blog', '/glossary', '/guide/excel-format']
+INDEXABLE_PATHS = ['/', '/blog', '/glossary', '/guide/excel-format', '/guide/complete', '/guide/comprehensive-guide', '/best-practices', '/tools/image-batch', '/tools/pdf', '/tools/seo']
 NOINDEX_SELF_CANONICAL_PATHS = ['/privacy', '/terms', '/contact']
 INDEXABILITY_TARGET_PATHS = [
     '/', '/blog', '/faq', '/guide', '/guide/autofill', '/guide/getting-started',
@@ -38,7 +38,10 @@ INDEXABILITY_TARGET_PATHS = [
     '/best-practices', '/case-studies', '/case-study/contact-center',
     '/case-study/consulting-firm', '/case-study/remote-startup',
     '/tools', '/tools/csv', '/tools/image-batch', '/tools/image-cleanup',
-    '/tools/pdf', '/tools/seo',
+    '/tools/pdf', '/tools/seo', '/blog/automation-roadmap',
+    '/blog/implementation-checklist', '/blog/jobcan-auto-input-dos-and-donts',
+    '/blog/jobcan-auto-input-tools-overview',
+    '/blog/month-end-closing-checklist', '/blog/playwright-security',
 ]
 ARTICLE_SCHEMA_REQUIRED_PATHS = [
     '/guide/autofill', '/guide/getting-started', '/guide/excel-format',
@@ -46,8 +49,20 @@ ARTICLE_SCHEMA_REQUIRED_PATHS = [
     '/guide/csv', '/guide/image-batch', '/guide/image-cleanup', '/guide/pdf',
     '/guide/seo', '/best-practices', '/case-study/contact-center',
     '/case-study/consulting-firm', '/case-study/remote-startup',
+    '/blog/automation-roadmap', '/blog/implementation-checklist',
+    '/blog/jobcan-auto-input-dos-and-donts',
+    '/blog/jobcan-auto-input-tools-overview',
+    '/blog/month-end-closing-checklist', '/blog/playwright-security',
 ]
 HUB_LINK_REQUIREMENTS = {
+    '/': [
+        '/guide',
+        '/tools',
+        '/blog',
+        '/case-studies',
+        '/faq',
+        '/best-practices',
+    ],
     '/blog': [
         '/blog/implementation-checklist',
         '/blog/automation-roadmap',
@@ -109,17 +124,48 @@ FOOTER_REQUIRED_TEXT = [
     'ご利用にあたって',
 ]
 TOP_INLINE_REQUIREMENTS = {
-    '/': 'home_after_hero',
-    '/autofill': 'public_top_inline',
-    '/tools': 'public_top_inline',
-    '/tools/image-batch': 'public_top_inline',
-    '/tools/pdf': 'public_top_inline',
-    '/tools/seo': 'public_top_inline',
-    '/guide': 'public_top_inline',
-    '/faq': 'public_top_inline',
-    '/blog': 'blog_index_after_intro',
-    '/case-studies': 'case_index_after_intro',
+    '/': {
+        'slot': 'home_after_hero',
+        'selector': '.hero + [data-affiliate-slot="home_after_hero"]',
+    },
+    '/autofill': {
+        'slot': 'public_top_inline',
+        'selector': '.content > [data-affiliate-slot="public_top_inline"]',
+    },
+    '/tools': {
+        'slot': 'public_top_inline',
+        'selector': '.page-header + [data-affiliate-slot="public_top_inline"]',
+    },
+    '/tools/image-batch': {
+        'slot': 'public_top_inline',
+        'selector': '.tool-intro + [data-affiliate-slot="public_top_inline"]',
+    },
+    '/tools/pdf': {
+        'slot': 'public_top_inline',
+        'selector': '.tool-intro + [data-affiliate-slot="public_top_inline"]',
+    },
+    '/tools/seo': {
+        'slot': 'public_top_inline',
+        'selector': '.tool-intro + [data-affiliate-slot="public_top_inline"]',
+    },
+    '/guide': {
+        'slot': 'public_top_inline',
+        'selector': '.affiliate-top-shell [data-affiliate-slot="public_top_inline"]',
+    },
+    '/faq': {
+        'slot': 'public_top_inline',
+        'selector': '.affiliate-top-shell [data-affiliate-slot="public_top_inline"]',
+    },
+    '/blog': {
+        'slot': 'blog_index_after_intro',
+        'selector': '.blog-index-hero + [data-affiliate-slot="blog_index_after_intro"]',
+    },
+    '/case-studies': {
+        'slot': 'case_index_after_intro',
+        'selector': '.case-hero + [data-affiliate-slot="case_index_after_intro"]',
+    },
 }
+NO_HEADER_TOP_SLOT_PATHS = ['/autofill', '/tools', '/tools/image-batch', '/tools/pdf', '/tools/seo']
 
 # Googlebot UA
 GOOGLEBOT_UA = 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)'
@@ -385,24 +431,28 @@ def _run_checks(get_fn, base_url, use_headers=True):
             soup = BeautifulSoup(body, 'html.parser')
             slot_count = len(soup.select('[data-affiliate-slot]'))
             footer_block = bool(soup.select_one('.affiliate-footer-block'))
-            widget_script = any('affiliate-widgets.js' in (tag.get('src') or '') for tag in soup.find_all('script'))
             meta_utf8 = bool(soup.select_one('meta[charset="utf-8"]'))
             disclosure_count = len(soup.select('.affiliate-disclosure'))
             side_rail = bool(soup.select_one('.affiliate-side-rail [data-affiliate-rail="true"]'))
+            visible_affiliate_copy = bool(
+                soup.select_one('[data-affiliate-fallback="true"] .affiliate-link-card__label')
+                or soup.select_one('.affiliate-footer-block .affiliate-link-card__label')
+                or soup.select_one('.affiliate-side-rail .affiliate-link-card__label')
+            )
             ok = (
                 'text/html' in content_type
                 and 'charset=utf-8' in content_type
                 and meta_utf8
                 and slot_count >= 1
                 and footer_block
-                and widget_script
-                and disclosure_count == 1
+                and visible_affiliate_copy
+                and disclosure_count <= 1
                 and side_rail
             )
             rows.append(
                 ('9c_affiliate_public', path,
-                 f'OK slots={slot_count} footer={footer_block} rail={side_rail} disclosures={disclosure_count} script={widget_script}' if ok else
-                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} slots={slot_count} footer={footer_block} rail={side_rail} disclosures={disclosure_count} script={widget_script}',
+                 f'OK slots={slot_count} footer={footer_block} rail={side_rail} disclosures={disclosure_count} copy={visible_affiliate_copy}' if ok else
+                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} slots={slot_count} footer={footer_block} rail={side_rail} disclosures={disclosure_count} copy={visible_affiliate_copy}',
                  ok)
             )
             if not ok:
@@ -447,21 +497,25 @@ def _run_checks(get_fn, base_url, use_headers=True):
             rows.append(('9e_noindex', path, f'ERROR {e}', False))
             all_ok = False
 
-    for path, slot_id in TOP_INLINE_REQUIREMENTS.items():
+    for path, requirement in TOP_INLINE_REQUIREMENTS.items():
         try:
             resp = get(path)
             body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
             soup = BeautifulSoup(body, 'html.parser')
-            slot = soup.select_one(f'[data-affiliate-slot="{slot_id}"]')
+            slot_id = requirement['slot']
+            slot = soup.select_one(requirement['selector'])
             slot_before_footer = bool(slot) and slot.find_parent('footer') is None
-            has_fallback = bool(slot and slot.select_one('[data-affiliate-fallback="true"]'))
-            ok = bool(slot) and slot_before_footer and has_fallback
+            has_fallback = bool(slot and slot.select_one('[data-affiliate-fallback="true"] .affiliate-link-card__label'))
+            disclosure_near = bool(slot and slot.select_one('.affiliate-disclosure'))
+            widget_disabled = bool(slot and slot.get('data-affiliate-disable-widget') == 'true')
+            header_slot = bool(soup.select_one(f'.affiliate-top-shell [data-affiliate-slot="{slot_id}"]'))
+            ok = bool(slot) and slot_before_footer and has_fallback and disclosure_near and widget_disabled and (path not in NO_HEADER_TOP_SLOT_PATHS or not header_slot)
             rows.append((
                 '9f_top_affiliate',
                 path,
                 'OK top affiliate before footer'
                 if ok else
-                f'FAIL slot={bool(slot)} before_footer={slot_before_footer} fallback={has_fallback}',
+                f'FAIL slot={bool(slot)} before_footer={slot_before_footer} fallback={has_fallback} disclosure={disclosure_near} widget_disabled={widget_disabled} header_slot={header_slot}',
                 ok,
             ))
             if not ok:
