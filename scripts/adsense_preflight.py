@@ -126,10 +126,6 @@ FOOTER_REQUIRED_TEXT = [
     'ご利用にあたって',
 ]
 TOP_INLINE_REQUIREMENTS = {
-    '/': {
-        'slot': 'home_after_hero',
-        'selector': '.landing-inline-affiliate [data-affiliate-slot="home_after_hero"]',
-    },
     '/autofill': {
         'slot': 'public_top_inline',
         'selector': '.content > [data-affiliate-slot="public_top_inline"]',
@@ -170,6 +166,8 @@ TOP_INLINE_REQUIREMENTS = {
 NO_HEADER_TOP_SLOT_PATHS = ['/autofill', '/tools', '/tools/image-batch', '/tools/pdf', '/tools/seo']
 HOME_GRID_EXPECTED_COUNT = 6
 HOME_USE_CASE_MIN_COUNT = 4
+GUIDE_CORE_CARD_COUNT = 4
+GUIDE_HUB_CARD_COUNT = 6
 HOME_HEADLINE_LINES = ['勤怠入力の自動化と、', '周辺業務の効率化を', '一つの導線で。']
 HOME_LEAD_LINES = [
     'Jobcan の勤怠入力を楽にしたい人向けに、',
@@ -475,7 +473,7 @@ def _run_checks(get_fn, base_url, use_headers=True):
         hub_cards = len(soup.select('.seo-link-hub__grid .seo-link-hub__card'))
         use_cards = len(soup.select('.landing-use-grid .landing-use-card'))
         page_grid_ok = bool(soup.select_one('.landing-tool-grid')) and page_cards == HOME_GRID_EXPECTED_COUNT
-        hub_grid_ok = bool(soup.select_one('.seo-link-hub__grid')) and hub_cards == HOME_GRID_EXPECTED_COUNT
+        hub_grid_ok = bool(soup.select_one('.seo-link-hub__grid.seo-link-hub__grid--three')) and hub_cards == HOME_GRID_EXPECTED_COUNT
         use_grid_ok = bool(soup.select_one('.landing-use-grid')) and use_cards >= HOME_USE_CASE_MIN_COUNT
         rows.append(('9bb_home_grid', '/', f'OK cards={page_cards}' if page_grid_ok else f'FAIL cards={page_cards}', page_grid_ok))
         rows.append(('9bbb_home_hub_grid', '/', f'OK cards={hub_cards}' if hub_grid_ok else f'FAIL cards={hub_cards}', hub_grid_ok))
@@ -488,6 +486,23 @@ def _run_checks(get_fn, base_url, use_headers=True):
         rows.append(('9bc_home_use_cases', '/', f'ERROR {e}', False))
         all_ok = False
 
+    try:
+        resp = get('/guide')
+        body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+        soup = BeautifulSoup(body, 'html.parser')
+        primary_cards = len(soup.select('.guide-grid.guide-grid--2x2 .guide-card'))
+        hub_cards = len(soup.select('.seo-link-hub__grid.seo-link-hub__grid--three .seo-link-hub__card'))
+        primary_ok = primary_cards == GUIDE_CORE_CARD_COUNT
+        hub_ok = hub_cards == GUIDE_HUB_CARD_COUNT
+        rows.append(('9bd_guide_primary_grid', '/guide', f'OK cards={primary_cards}' if primary_ok else f'FAIL cards={primary_cards}', primary_ok))
+        rows.append(('9be_guide_hub_grid', '/guide', f'OK cards={hub_cards}' if hub_ok else f'FAIL cards={hub_cards}', hub_ok))
+        if not primary_ok or not hub_ok:
+            all_ok = False
+    except Exception as e:
+        rows.append(('9bd_guide_primary_grid', '/guide', f'ERROR {e}', False))
+        rows.append(('9be_guide_hub_grid', '/guide', f'ERROR {e}', False))
+        all_ok = False
+
     for path in PUBLIC_AFFILIATE_PATHS:
         try:
             resp = get(path)
@@ -497,11 +512,13 @@ def _run_checks(get_fn, base_url, use_headers=True):
             soup = BeautifulSoup(body, 'html.parser')
             slot_count = len(soup.select('[data-affiliate-slot]'))
             footer_block = bool(soup.select_one('.affiliate-footer-block'))
+            footer_block_count = len(soup.select('.affiliate-footer-block'))
             meta_utf8 = bool(soup.select_one('meta[charset="utf-8"]'))
             disclosure_count = len(soup.select('.affiliate-disclosure'))
             side_rail = bool(soup.select_one('.affiliate-side-rail'))
             has_rotation_script = A8_ROTATION_SRC_FRAGMENT in body
             server_managed_rotation = bool(soup.select_one('[data-affiliate-kind="a8_rotation"][data-affiliate-server-managed="true"]'))
+            has_mid_affiliate_section = bool(soup.select_one('.landing-inline-affiliate .affiliate-footer-block'))
             visible_affiliate_copy = bool(
                 soup.select_one('[data-affiliate-fallback="true"] .affiliate-link-card__label')
                 or soup.select_one('.affiliate-footer-block .affiliate-link-card__label')
@@ -512,25 +529,39 @@ def _run_checks(get_fn, base_url, use_headers=True):
             )
             inline_module_count = len(soup.select('[data-affiliate-slot] .affiliate-link-card--module'))
             removed_text_found = [text for text in REMOVED_AFFILIATE_TEXT if text in body]
-            ok = (
-                'text/html' in content_type
-                and 'charset=utf-8' in content_type
-                and meta_utf8
-                and slot_count >= 1
-                and footer_block
-                and visible_affiliate_copy
-                and disclosure_count <= 1
-                and inline_module
-                and inline_module_count >= 1
-                and has_rotation_script
-                and server_managed_rotation
-                and not side_rail
-                and not removed_text_found
-            )
+            if path == '/':
+                ok = (
+                    'text/html' in content_type
+                    and 'charset=utf-8' in content_type
+                    and meta_utf8
+                    and footer_block
+                    and footer_block_count >= 2
+                    and has_mid_affiliate_section
+                    and visible_affiliate_copy
+                    and disclosure_count == 0
+                    and not side_rail
+                    and not removed_text_found
+                )
+            else:
+                ok = (
+                    'text/html' in content_type
+                    and 'charset=utf-8' in content_type
+                    and meta_utf8
+                    and slot_count >= 1
+                    and footer_block
+                    and visible_affiliate_copy
+                    and disclosure_count <= 1
+                    and inline_module
+                    and inline_module_count >= 1
+                    and has_rotation_script
+                    and server_managed_rotation
+                    and not side_rail
+                    and not removed_text_found
+                )
             rows.append(
                 ('9c_affiliate_public', path,
-                 f'OK slots={slot_count} footer={footer_block} rail={side_rail} module={inline_module} module_cards={inline_module_count} disclosures={disclosure_count} copy={visible_affiliate_copy} a8={has_rotation_script}' if ok else
-                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} slots={slot_count} footer={footer_block} rail={side_rail} module={inline_module} module_cards={inline_module_count} disclosures={disclosure_count} copy={visible_affiliate_copy} a8={has_rotation_script} server={server_managed_rotation} removed={removed_text_found}',
+                 f'OK slots={slot_count} footer={footer_block_count} rail={side_rail} module={inline_module} module_cards={inline_module_count} disclosures={disclosure_count} copy={visible_affiliate_copy} a8={has_rotation_script} mid={has_mid_affiliate_section}' if ok else
+                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} slots={slot_count} footer={footer_block_count} rail={side_rail} module={inline_module} module_cards={inline_module_count} disclosures={disclosure_count} copy={visible_affiliate_copy} a8={has_rotation_script} server={server_managed_rotation} mid={has_mid_affiliate_section} removed={removed_text_found}',
                  ok)
             )
             if not ok:
@@ -607,6 +638,21 @@ def _run_checks(get_fn, base_url, use_headers=True):
         except Exception as e:
             rows.append(('9f_top_affiliate', path, f'ERROR {e}', False))
             all_ok = False
+
+    try:
+        resp = get('/')
+        body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
+        soup = BeautifulSoup(body, 'html.parser')
+        mid_section = soup.select_one('.landing-inline-affiliate .affiliate-footer-block')
+        mid_before_footer = bool(mid_section) and mid_section.find_parent('footer') is None
+        mid_cards = len(soup.select('.landing-inline-affiliate .affiliate-link-grid--grid .affiliate-link-card'))
+        ok = bool(mid_section) and mid_before_footer and mid_cards >= 3
+        rows.append(('9f_home_mid_affiliate', '/', f'OK cards={mid_cards}' if ok else f'FAIL section={bool(mid_section)} before_footer={mid_before_footer} cards={mid_cards}', ok))
+        if not ok:
+            all_ok = False
+    except Exception as e:
+        rows.append(('9f_home_mid_affiliate', '/', f'ERROR {e}', False))
+        all_ok = False
 
     try:
         resp = get('/')

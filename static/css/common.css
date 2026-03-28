@@ -225,7 +225,7 @@ img {
     color: var(--color-text-tertiary);
     font-size: 0.82rem;
     letter-spacing: 0.04em;
-    text-align: left;
+    text-align: center;
 }
 
 .affiliate-disclosure--compact {
@@ -234,11 +234,13 @@ img {
 }
 
 .affiliate-footer-block {
-    margin: 0 0 var(--spacing-xl) 0;
+    width: min(100%, 960px);
+    margin: 0 auto var(--spacing-xl);
     padding: var(--spacing-md);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-card);
     background: rgba(255, 255, 255, 0.03);
+    text-align: center;
 }
 
 .affiliate-footer-block--inline {
@@ -249,6 +251,10 @@ img {
 
 .affiliate-footer-block--quiet {
     margin-top: var(--spacing-lg);
+}
+
+.affiliate-cards-section__inner {
+    width: 100%;
 }
 
 .copy-lines {
@@ -270,6 +276,13 @@ img {
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: var(--spacing-md);
     align-items: stretch;
+}
+
+.affiliate-footer-block .affiliate-link-grid {
+    width: 100%;
+    max-width: 920px;
+    margin: 0 auto;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .affiliate-link-grid--inline {
@@ -386,7 +399,10 @@ img {
 
 .affiliate-slot {
     margin: 0 auto var(--spacing-xl);
-    text-align: left;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
 }
 
 .affiliate-slot--primary-inline {
@@ -449,7 +465,7 @@ img {
 .affiliate-slot--content-inline .affiliate-slot__box {
     width: min(100%, 960px);
     min-height: auto;
-    margin: 0;
+    margin: 0 auto;
 }
 
 .affiliate-slot--728-90 .affiliate-slot__box {
@@ -474,11 +490,14 @@ img {
 }
 
 .affiliate-feature-layout {
-    display: block;
+    display: flex;
+    justify-content: center;
 }
 
 .affiliate-feature-layout__main {
     min-width: 0;
+    width: 100%;
+    max-width: 960px;
 }
 
 .seo-link-hub {
@@ -504,6 +523,14 @@ img {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: var(--spacing-md);
+}
+
+.seo-link-hub__grid--three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.guide-grid.guide-grid--2x2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .seo-link-hub__card {
@@ -617,6 +644,13 @@ img {
     }
 }
 
+@media (min-width: 768px) and (max-width: 1199px) {
+    .seo-link-hub__grid--three,
+    .affiliate-footer-block .affiliate-link-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 @media (min-width: 1200px) {
     .affiliate-slot--desktop-only {
         display: block;
@@ -634,6 +668,12 @@ img {
     }
 
     .affiliate-link-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .affiliate-footer-block .affiliate-link-grid,
+    .seo-link-hub__grid--three,
+    .guide-grid.guide-grid--2x2 {
         grid-template-columns: 1fr;
     }
 

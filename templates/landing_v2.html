@@ -64,12 +64,12 @@
         </section>
 
         <section class="landing-section landing-inline-affiliate" aria-label="アフィリエイト案内">
-            {% with slot_id='home_after_hero', slot_render_fallback=true, slot_disable_widget=false, slot_extra_class='affiliate-slot--content-inline affiliate-slot--home-inline' %}
-                {% include 'includes/affiliate_slot.html' %}
-            {% endwith %}
+            {% include 'includes/affiliate_cards_section.html' %}
         </section>
 
-        {% include 'includes/seo_link_hub.html' %}
+        {% with seo_link_hub_grid_class='seo-link-hub__grid--three' %}
+            {% include 'includes/seo_link_hub.html' %}
+        {% endwith %}
 
         <section class="landing-section" aria-labelledby="use-cases-heading">
             <div class="landing-section__header">

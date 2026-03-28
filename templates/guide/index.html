@@ -49,7 +49,7 @@
 
         <section class="guide-section" aria-labelledby="guide-core-heading">
             <h2 id="guide-core-heading">まず読むガイド</h2>
-            <div class="guide-grid">
+            <div class="guide-grid guide-grid--2x2">
                 <article class="guide-card">
                     <h3><a href="/guide/getting-started">はじめての使い方</a></h3>
                     <p>テンプレート準備から実行前チェックまで、初回利用の流れを順番に確認できます。</p>
@@ -131,7 +131,9 @@
             </div>
         </section>
 
-        {% include 'includes/seo_link_hub.html' %}
+        {% with seo_link_hub_grid_class='seo-link-hub__grid--three' %}
+            {% include 'includes/seo_link_hub.html' %}
+        {% endwith %}
     </main>
     {% include 'includes/footer.html' %}
 </body>
