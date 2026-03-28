@@ -1,0 +1,11 @@
+{% set affiliate_section_class = affiliate_section_class|default('') %}
+{% set affiliate_cards_variant = affiliate_cards_variant|default('grid') %}
+{% set affiliate_section_show_disclosure = affiliate_section_show_disclosure|default(false) %}
+<section class="affiliate-footer-block affiliate-footer-block--quiet affiliate-cards-section{% if affiliate_section_class %} {{ affiliate_section_class }}{% endif %}" aria-label="Affiliate Links">
+    {% if affiliate_section_show_disclosure %}
+        {% include 'includes/affiliate_disclosure.html' %}
+    {% endif %}
+    <div class="affiliate-cards-section__inner">
+        {% include 'includes/affiliate_cards.html' %}
+    </div>
+</section>

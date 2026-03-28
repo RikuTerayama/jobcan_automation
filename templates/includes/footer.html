@@ -10,9 +10,7 @@
             {% endwith %}
         {% endif %}
         {% if affiliate_can_render_textlinks() %}
-            <section class="affiliate-footer-block affiliate-footer-block--quiet" aria-label="Affiliate Links">
-                {% include 'includes/affiliate_cards.html' %}
-            </section>
+            {% include 'includes/affiliate_cards_section.html' %}
         {% endif %}
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-bottom: 30px; text-align: left;">

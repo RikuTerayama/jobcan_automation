@@ -1,10 +1,10 @@
 {% set seo_link_hub_path = request.path|default('/') if request is defined and request else '/' %}
 {% if seo_link_hub_path in ['/', '/blog', '/tools', '/guide', '/case-studies'] %}
-<section class="seo-link-hub" aria-labelledby="seo-link-hub-heading">
+<section class="seo-link-hub{% if seo_link_hub_class %} {{ seo_link_hub_class }}{% endif %}" aria-labelledby="seo-link-hub-heading">
     {% if seo_link_hub_path == '/' %}
     <h2 id="seo-link-hub-heading">まず確認したいページ</h2>
     <p class="seo-link-hub__intro">導入前の確認や比較に役立つページをまとめています。</p>
-    <div class="seo-link-hub__grid">
+    <div class="seo-link-hub__grid{% if seo_link_hub_grid_class %} {{ seo_link_hub_grid_class }}{% endif %}">
         <a class="seo-link-hub__card" href="/autofill">
             <strong>Jobcan AutoFill</strong>
             <span>Excel から勤怠データを一括入力する主力ツールの流れを確認できます。</span>
@@ -33,7 +33,7 @@
     {% elif seo_link_hub_path == '/blog' %}
     <h2 id="seo-link-hub-heading">記事から次に進むページ</h2>
     <p class="seo-link-hub__intro">記事とあわせて確認しやすいページをまとめています。</p>
-    <div class="seo-link-hub__grid">
+    <div class="seo-link-hub__grid{% if seo_link_hub_grid_class %} {{ seo_link_hub_grid_class }}{% endif %}">
         <a class="seo-link-hub__card" href="/guide">
             <strong>ガイド一覧</strong>
             <span>記事で気になったポイントを手順や制約まで掘り下げて確認できます。</span>
@@ -62,7 +62,7 @@
     {% elif seo_link_hub_path == '/tools' %}
     <h2 id="seo-link-hub-heading">ツール活用を深めるページ</h2>
     <p class="seo-link-hub__intro">ツールの使い方や関連情報をまとめて確認できます。</p>
-    <div class="seo-link-hub__grid">
+    <div class="seo-link-hub__grid{% if seo_link_hub_grid_class %} {{ seo_link_hub_grid_class }}{% endif %}">
         <a class="seo-link-hub__card" href="/autofill">
             <strong>Jobcan AutoFill</strong>
             <span>勤怠入力の主力フローと必要な準備を確認できます。</span>
@@ -91,7 +91,7 @@
     {% elif seo_link_hub_path == '/guide' %}
     <h2 id="seo-link-hub-heading">ガイドとあわせて見るページ</h2>
     <p class="seo-link-hub__intro">手順確認のあとに、FAQ や事例まで広げて確認できます。</p>
-    <div class="seo-link-hub__grid">
+    <div class="seo-link-hub__grid{% if seo_link_hub_grid_class %} {{ seo_link_hub_grid_class }}{% endif %}">
         <a class="seo-link-hub__card" href="/autofill">
             <strong>Jobcan AutoFill</strong>
             <span>実際の入力画面とアップロード前の確認事項を見られます。</span>
@@ -120,7 +120,7 @@
     {% elif seo_link_hub_path == '/case-studies' %}
     <h2 id="seo-link-hub-heading">事例の次に確認したいページ</h2>
     <p class="seo-link-hub__intro">事例とあわせて確認したい手順や比較記事をまとめています。</p>
-    <div class="seo-link-hub__grid">
+    <div class="seo-link-hub__grid{% if seo_link_hub_grid_class %} {{ seo_link_hub_grid_class }}{% endif %}">
         <a class="seo-link-hub__card" href="/autofill">
             <strong>Jobcan AutoFill</strong>
             <span>入力フローと前提条件を実画面ベースで確認できます。</span>
