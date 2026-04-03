@@ -263,6 +263,20 @@ img {
     gap: var(--spacing-lg);
 }
 
+.affiliate-cards-section--top {
+    margin: 0;
+}
+
+.affiliate-cards-section--mid {
+    margin-top: 18px;
+    margin-bottom: 18px;
+}
+
+.affiliate-cards-section--bottom {
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
 .affiliate-stack__row {
     width: 100%;
     margin: 0 auto;
@@ -361,16 +375,6 @@ img {
 
 .affiliate-a8-banner script {
     max-width: 100%;
-}
-
-.affiliate-a8-fallback {
-    margin: 10px 0 0;
-    text-align: center;
-}
-
-.affiliate-a8-fallback a {
-    color: var(--color-text-secondary);
-    font-size: 0.82rem;
 }
 
 .copy-lines {
@@ -1014,6 +1018,12 @@ img {
     max-width: 1200px;
     margin: 0 auto;
     padding: 18px 20px 0;
+}
+
+.affiliate-top-stack {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 16px 20px 0;
 }
 
 .landing-shell {

@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 _CACHE_LOCK = threading.Lock()
 _TOKEN_CACHE: Dict[str, object] = {"token": None, "expires_at": 0.0}
 _SEARCH_CACHE: Dict[str, Dict[str, object]] = {}
+DEFAULT_FALLBACK_KEYWORDS: List[str] = ["デスク収納", "ノートPCスタンド", "ケーブル整理", "タイマー"]
 
 
 def _env_flag(name: str, default: bool = False) -> bool:
@@ -225,6 +226,53 @@ def _append_associate_tag(url: str, associate_tag: str) -> str:
     return urlunparse(parsed._replace(query=urlencode(query)))
 
 
+def _build_search_url(settings: Dict[str, object], keyword: str) -> str:
+    host = str(settings.get("marketplace_host") or "www.amazon.co.jp").strip()
+    params = {"k": keyword}
+    tag = str(settings.get("associate_tag") or "").strip()
+    if tag:
+        params["tag"] = tag
+    return f"https://{host}/s?{urlencode(params)}"
+
+
+def _build_fallback_items(settings: Dict[str, object], keywords: List[str]) -> List[dict]:
+    max_items = max(1, int(settings.get("max_items") or 6))
+    items: List[dict] = []
+    seen_urls = set()
+    for keyword in _dedupe_keep_order(keywords):
+        cleaned = (keyword or "").strip()
+        if not cleaned:
+            continue
+        url = _build_search_url(settings, cleaned)
+        if url in seen_urls:
+            continue
+        seen_urls.add(url)
+        items.append(
+            {
+                "title": f"{cleaned} の関連アイテム",
+                "image_url": "",
+                "url": url,
+                "cta": "Amazonで見る",
+                "keyword": cleaned,
+                "fallback": True,
+            }
+        )
+        if len(items) >= max_items:
+            break
+    return items
+
+
+def _apply_fallback(result: Dict[str, object], reason: str, settings: Dict[str, object], keywords: List[str]) -> Dict[str, object]:
+    fallback_items = _build_fallback_items(settings, keywords or DEFAULT_FALLBACK_KEYWORDS)
+    if fallback_items:
+        result["items"] = fallback_items[: int(settings["max_items"])]
+        result["source"] = "fallback"
+        result["error"] = reason
+    else:
+        result["error"] = reason
+    return result
+
+
 def _extract_items(payload: dict, associate_tag: str, max_items: int) -> List[dict]:
     if not isinstance(payload, dict):
         return []
@@ -392,10 +440,6 @@ def get_recommendations(
     if not enabled:
         return result
 
-    if not settings["associate_tag"]:
-        result["error"] = "missing_associate_tag"
-        return result
-
     keywords = build_keywords(
         path=path,
         page_type=page_type,
@@ -404,10 +448,15 @@ def get_recommendations(
         recent_history=recent_history,
     )
     if not keywords:
-        result["error"] = "no_keywords"
-        return result
+        keywords = list(PAGE_TYPE_KEYWORDS.get(page_type or "", [])) or list(DEFAULT_FALLBACK_KEYWORDS)
 
     result["keywords"] = keywords
+    fallback_keywords = list(keywords) or list(DEFAULT_FALLBACK_KEYWORDS)
+
+    if not settings["associate_tag"]:
+        logger.warning("amazon_creators_missing_associate_tag path=%s page_type=%s", path, page_type)
+        return _apply_fallback(result, "missing_associate_tag", settings, fallback_keywords)
+
     cache_key = _make_cache_key(settings, keywords)
     cached = _cached_get(cache_key)
     if cached is not None:
@@ -416,13 +465,13 @@ def get_recommendations(
         return result
 
     if not settings["client_id"] or not settings["client_secret"]:
-        result["error"] = "missing_credentials"
-        return result
+        logger.warning("amazon_creators_missing_credentials path=%s page_type=%s", path, page_type)
+        return _apply_fallback(result, "missing_credentials", settings, fallback_keywords)
 
     token = _get_access_token(settings)
     if not token:
-        result["error"] = "token_unavailable"
-        return result
+        logger.warning("amazon_creators_token_unavailable path=%s page_type=%s", path, page_type)
+        return _apply_fallback(result, "token_unavailable", settings, fallback_keywords)
 
     combined: List[dict] = []
     seen = set()
@@ -442,11 +491,10 @@ def get_recommendations(
             break
 
     if not combined:
-        result["error"] = "empty_response"
-        return result
+        logger.warning("amazon_creators_empty_response path=%s page_type=%s keywords=%s", path, page_type, keywords[:3])
+        return _apply_fallback(result, "empty_response", settings, fallback_keywords)
 
     _cached_set(cache_key, int(settings["cache_ttl_seconds"]), combined)
     result["items"] = combined
     result["source"] = "api"
     return result
-
