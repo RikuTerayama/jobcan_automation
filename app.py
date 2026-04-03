@@ -11,6 +11,7 @@ import time
 import logging
 import hashlib
 import re
+import json
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template, send_file, Response, redirect, g, has_request_context
 from werkzeug.exceptions import NotFound, MethodNotAllowed
@@ -28,6 +29,7 @@ from lib.seo import (
     get_web_application_schema,
     is_noindex_path,
 )
+from lib.amazon_creators import get_recommendations as get_amazon_recommendations
 
 # P1-1: 計測ログユーティリティ（循環import回避）
 try:
@@ -553,6 +555,7 @@ def get_affiliate_settings():
         'enabled': _env_flag('AFFILIATE_ENABLED', True),
         'textlinks_enabled': _env_flag('AFFILIATE_TEXTLINKS_ENABLED', True),
         'banners_enabled': _env_flag('AFFILIATE_BANNERS_ENABLED', True),
+        'stack_only': _env_flag('AFFILIATE_STACK_ONLY', True),
         'network': _normalize_affiliate_network(os.getenv('AFFILIATE_NETWORK', 'a8_rotation')),
         'exclude_paths': tuple(_env_list(
             'AFFILIATE_EXCLUDE_PATHS',
@@ -645,6 +648,8 @@ def affiliate_can_render_slot(slot_id, path=None):
     settings = get_affiliate_settings()
     if not (settings['enabled'] and settings['banners_enabled']):
         return False
+    if settings.get('stack_only'):
+        return False
 
     normalized_path = path or (request.path if has_request_context() else '/')
     if affiliate_is_path_excluded(normalized_path):
@@ -693,6 +698,168 @@ def affiliate_top_slot_mode(path=None):
     return 'header'
 
 
+AMAZON_RECENT_HISTORY_COOKIE = 'jobcan_recent_affiliate_context'
+AMAZON_RECENT_HISTORY_LIMIT = 8
+
+
+def _is_public_affiliate_html_path(path):
+    normalized_path = path or '/'
+    if normalized_path.startswith(NON_UI_AFFILIATE_PATH_PREFIXES):
+        return False
+    if normalized_path in NON_UI_AFFILIATE_PATHS:
+        return False
+    if normalized_path in ('/robots.txt', '/sitemap.xml', '/ads.txt'):
+        return False
+    if normalized_path.startswith(('/health', '/ready', '/live', '/ping')):
+        return False
+    return True
+
+
+def _dedupe_keep_order(values):
+    seen = set()
+    output = []
+    for value in values or []:
+        cleaned = (value or '').strip()
+        if not cleaned:
+            continue
+        key = cleaned.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        output.append(cleaned)
+    return output
+
+
+def _load_recent_affiliate_history():
+    if not has_request_context():
+        return []
+    raw = (request.cookies.get(AMAZON_RECENT_HISTORY_COOKIE) or '').strip()
+    if not raw:
+        return []
+    try:
+        parsed = json.loads(raw)
+    except (TypeError, ValueError):
+        return []
+    if not isinstance(parsed, list):
+        return []
+
+    cleaned = []
+    for entry in parsed[:AMAZON_RECENT_HISTORY_LIMIT]:
+        if not isinstance(entry, dict):
+            continue
+        path = str(entry.get('path') or entry.get('p') or '').strip()
+        if not path or not _is_public_affiliate_html_path(path):
+            continue
+        page_type = str(entry.get('page_type') or entry.get('t') or '').strip()
+        keywords = entry.get('keywords') or entry.get('k') or []
+        if not isinstance(keywords, list):
+            keywords = []
+        keywords = _dedupe_keep_order([str(v) for v in keywords])[:4]
+        cleaned.append({
+            'path': path,
+            'page_type': page_type,
+            'keywords': keywords,
+        })
+    return cleaned
+
+
+def _build_affiliate_page_tags(path, seo_defaults, products):
+    tags = []
+    normalized_path = path or '/'
+    seo_defaults = seo_defaults or {}
+    products = products if isinstance(products, list) else []
+
+    category = seo_defaults.get('category')
+    if category:
+        tags.append(str(category))
+
+    if normalized_path == '/autofill':
+        tags.extend(['勤怠', '自動入力', '業務効率化'])
+    elif normalized_path.startswith('/guide'):
+        tags.extend(['ガイド', '運用', '手順'])
+    elif normalized_path.startswith('/blog'):
+        tags.extend(['ブログ', '解説', 'ノウハウ'])
+    elif normalized_path.startswith('/case'):
+        tags.extend(['導入事例', '業務改善'])
+    elif normalized_path.startswith('/tools'):
+        tags.extend(['ツール', '効率化'])
+
+    for product in products:
+        if not isinstance(product, dict):
+            continue
+        product_paths = [product.get('path'), product.get('guide_path')]
+        if normalized_path not in product_paths:
+            continue
+        if product.get('name'):
+            tags.append(str(product.get('name')))
+        if product.get('category'):
+            tags.append(str(product.get('category')))
+        product_tags = product.get('tags') or []
+        if isinstance(product_tags, list):
+            tags.extend([str(v) for v in product_tags])
+
+    return _dedupe_keep_order(tags)[:8]
+
+
+def _prepare_recent_affiliate_history_cookie(path, page_type, keywords, history):
+    if not has_request_context():
+        return
+    if not _is_public_affiliate_html_path(path):
+        return
+
+    entry = {
+        'path': path,
+        'page_type': page_type,
+        'keywords': _dedupe_keep_order([str(v) for v in (keywords or [])])[:4],
+    }
+    updated = [entry]
+    for item in history or []:
+        if not isinstance(item, dict):
+            continue
+        if item.get('path') == path:
+            continue
+        updated.append({
+            'path': str(item.get('path') or ''),
+            'page_type': str(item.get('page_type') or ''),
+            'keywords': _dedupe_keep_order([str(v) for v in (item.get('keywords') or [])])[:4],
+        })
+        if len(updated) >= AMAZON_RECENT_HISTORY_LIMIT:
+            break
+
+    try:
+        g.amazon_recent_history_cookie = json.dumps(updated, separators=(',', ':'))
+    except Exception:
+        g.amazon_recent_history_cookie = None
+
+
+def _safe_get_amazon_affiliate(path, page_type, title, tags, recent_history):
+    try:
+        result = get_amazon_recommendations(
+            path=path,
+            page_type=page_type,
+            title=title,
+            tags=tags,
+            recent_history=recent_history,
+        )
+    except Exception as exc:
+        logger.warning("amazon_affiliate_unexpected_error type=%s detail=%s", type(exc).__name__, str(exc))
+        result = None
+
+    if not isinstance(result, dict):
+        return {
+            'enabled': False,
+            'items': [],
+            'keywords': [],
+            'error': 'invalid_response',
+            'source': 'none',
+        }
+    if not isinstance(result.get('items'), list):
+        result['items'] = []
+    if not isinstance(result.get('keywords'), list):
+        result['keywords'] = []
+    return result
+
+
 def split_visible_sentences(text):
     """Visible copy only: split long Japanese text into sentence-level lines."""
     if not text:
@@ -721,6 +888,26 @@ def affiliate_side_rail_enabled(path=None):
     return False
 
 
+@app.after_request
+def persist_affiliate_history_cookie(response):
+    cookie_value = getattr(g, 'amazon_recent_history_cookie', None) if has_request_context() else None
+    if not cookie_value:
+        return response
+    try:
+        response.set_cookie(
+            AMAZON_RECENT_HISTORY_COOKIE,
+            cookie_value,
+            max_age=60 * 60 * 24 * 14,
+            secure=request.is_secure,
+            httponly=False,
+            samesite='Lax',
+            path='/',
+        )
+    except Exception as exc:
+        logger.warning("amazon_history_cookie_write_error type=%s detail=%s", type(exc).__name__, str(exc))
+    return response
+
+
 # 環境変数をテンプレートコンテキストに注入（AdSense / Affiliate 設定用）
 @app.context_processor
 def inject_env_vars():
@@ -740,6 +927,7 @@ def inject_env_vars():
         affiliate_settings = get_affiliate_settings()
         current_path = request.path if has_request_context() else '/'
         affiliate_page_type = get_affiliate_page_type(current_path)
+        recent_affiliate_history = _load_recent_affiliate_history()
         seo_defaults = get_seo_defaults(current_path)
         base_url = os.getenv('BASE_URL', 'https://jobcan-automation.onrender.com').rstrip('/')
         seo_page_description = seo_defaults.get('description', '')
@@ -772,6 +960,20 @@ def inject_env_vars():
             )
             products_list = []
         products_catalog = [p for p in products_list if isinstance(p, dict) and p.get('status') == 'available']
+        amazon_tags = _build_affiliate_page_tags(current_path, seo_defaults, products_list)
+        amazon_affiliate = _safe_get_amazon_affiliate(
+            path=current_path,
+            page_type=affiliate_page_type,
+            title=seo_defaults.get('title', ''),
+            tags=amazon_tags,
+            recent_history=recent_affiliate_history,
+        )
+        _prepare_recent_affiliate_history_cookie(
+            path=current_path,
+            page_type=affiliate_page_type,
+            keywords=amazon_affiliate.get('keywords'),
+            history=recent_affiliate_history,
+        )
 
         from lib.nav import get_nav_sections, get_footer_columns
         nav_sections = get_nav_sections()
@@ -805,6 +1007,7 @@ def inject_env_vars():
             'AFFILIATE_ENABLED': affiliate_settings['enabled'],
             'AFFILIATE_TEXTLINKS_ENABLED': affiliate_settings['textlinks_enabled'],
             'AFFILIATE_BANNERS_ENABLED': affiliate_settings['banners_enabled'],
+            'AFFILIATE_STACK_ONLY': affiliate_settings['stack_only'],
             'AFFILIATE_NETWORK': affiliate_settings['network'],
             'AFFILIATE_EXCLUDE_PATHS': affiliate_settings['exclude_paths'],
             'AFFILIATE_ALLOWED_PAGE_TYPES': affiliate_settings['allowed_page_types'],
@@ -812,6 +1015,9 @@ def inject_env_vars():
             'AFFILIATE_WIDGET_TABLET_ENABLED': affiliate_settings['widget_tablet_enabled'],
             'AFFILIATE_WIDGET_MOBILE_ENABLED': affiliate_settings['widget_mobile_enabled'],
             'AFFILIATE_ROTATION_BANNER_ENABLED': affiliate_settings['rotation_banner_enabled'],
+            'AMAZON_AFFILIATE_ENABLED': bool(amazon_affiliate.get('enabled')),
+            'amazon_affiliate': amazon_affiliate,
+            'amazon_affiliate_items': amazon_affiliate.get('items', []),
             'affiliate_page_type': affiliate_page_type,
             'affiliate_path_excluded': affiliate_is_path_excluded(current_path),
             'affiliate_top_slot_id': affiliate_top_slot_id(current_path),
@@ -859,6 +1065,7 @@ def inject_env_vars():
             'AFFILIATE_ENABLED': affiliate_settings['enabled'],
             'AFFILIATE_TEXTLINKS_ENABLED': affiliate_settings['textlinks_enabled'],
             'AFFILIATE_BANNERS_ENABLED': affiliate_settings['banners_enabled'],
+            'AFFILIATE_STACK_ONLY': affiliate_settings['stack_only'],
             'AFFILIATE_NETWORK': affiliate_settings['network'],
             'AFFILIATE_EXCLUDE_PATHS': affiliate_settings['exclude_paths'],
             'AFFILIATE_ALLOWED_PAGE_TYPES': affiliate_settings['allowed_page_types'],
@@ -866,6 +1073,9 @@ def inject_env_vars():
             'AFFILIATE_WIDGET_TABLET_ENABLED': affiliate_settings['widget_tablet_enabled'],
             'AFFILIATE_WIDGET_MOBILE_ENABLED': affiliate_settings['widget_mobile_enabled'],
             'AFFILIATE_ROTATION_BANNER_ENABLED': affiliate_settings['rotation_banner_enabled'],
+            'AMAZON_AFFILIATE_ENABLED': False,
+            'amazon_affiliate': {'enabled': False, 'items': [], 'keywords': [], 'error': 'context_fallback', 'source': 'none'},
+            'amazon_affiliate_items': [],
             'affiliate_page_type': get_affiliate_page_type(current_path),
             'affiliate_path_excluded': affiliate_is_path_excluded(current_path),
             'affiliate_top_slot_id': affiliate_top_slot_id(current_path),

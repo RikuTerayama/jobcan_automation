@@ -1,11 +1,51 @@
 {% set affiliate_section_class = affiliate_section_class|default('') %}
-{% set affiliate_cards_variant = affiliate_cards_variant|default('grid') %}
-{% set affiliate_section_show_disclosure = affiliate_section_show_disclosure|default(false) %}
-<section class="affiliate-footer-block affiliate-footer-block--quiet affiliate-cards-section{% if affiliate_section_class %} {{ affiliate_section_class }}{% endif %}" aria-label="Affiliate Links">
+{% set affiliate_section_show_disclosure = affiliate_section_show_disclosure|default(true) %}
+{% set amazon_items = amazon_affiliate_items|default([]) %}
+{% set amazon_enabled = AMAZON_AFFILIATE_ENABLED|default(false) %}
+{% set has_amazon_items = amazon_enabled and (amazon_items|length > 0) %}
+<section class="affiliate-footer-block affiliate-footer-block--quiet affiliate-cards-section affiliate-stack{% if affiliate_section_class %} {{ affiliate_section_class }}{% endif %}" aria-label="Affiliate Links">
     {% if affiliate_section_show_disclosure %}
         {% include 'includes/affiliate_disclosure.html' %}
     {% endif %}
-    <div class="affiliate-cards-section__inner">
-        {% include 'includes/affiliate_cards.html' %}
+    <div class="affiliate-stack__rows">
+        {% if has_amazon_items %}
+        <div class="affiliate-stack__row affiliate-stack__row--amazon" data-affiliate-network="amazon">
+            <p class="affiliate-stack__label">Amazon</p>
+            <div class="amazon-recommendation-bar" role="list" aria-label="Amazon Recommendations">
+                {% for item in amazon_items %}
+                <article class="amazon-recommendation-card" role="listitem">
+                    <a href="{{ item.url|default('#') }}" target="_blank" rel="nofollow sponsored noopener" class="amazon-recommendation-card__anchor">
+                        {% if item.image_url %}
+                        <span class="amazon-recommendation-card__media">
+                            <img src="{{ item.image_url }}" alt="{{ item.title|default('Amazon おすすめ商品') }}" loading="lazy">
+                        </span>
+                        {% endif %}
+                        <span class="amazon-recommendation-card__title">{{ item.title|default('Amazon おすすめ商品') }}</span>
+                        <span class="amazon-recommendation-card__cta">{{ item.cta|default('Amazonで見る') }}</span>
+                    </a>
+                </article>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="affiliate-stack__row affiliate-stack__row--rakuten" data-affiliate-network="rakuten">
+            <p class="affiliate-stack__label">楽天</p>
+            <div class="affiliate-cards-section__inner">
+                {% with affiliate_cards_variant='grid' %}
+                    {% include 'includes/affiliate_cards.html' %}
+                {% endwith %}
+            </div>
+        </div>
+
+        <div class="affiliate-stack__row affiliate-stack__row--a8" data-affiliate-network="a8">
+            <p class="affiliate-stack__label">A8.net</p>
+            <div class="affiliate-a8-banner" aria-label="A8.net Banner">
+                <script type="text/javascript" src="//rot3.a8.net/jsa/fdf80b714de10cbdd802fd2333444e15/c6f057b86584942e415435ffb1fa93d4.js"></script>
+            </div>
+            <p class="affiliate-a8-fallback">
+                <a href="https://rpx.a8.net/svt/ejp?a8mat=4AX5KD+97MGQA+2HOM+656YP&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26020776127_4AX5KD_97MGQA_2HOM_656YP%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F" rel="nofollow sponsored noopener" target="_blank">A8.net のおすすめを見る</a>
+            </p>
+        </div>
     </div>
 </section>

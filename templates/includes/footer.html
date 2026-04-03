@@ -4,13 +4,15 @@
             {% include 'includes/related_content.html' %}
         {% endif %}
         {% set footer_affiliate_slot_id = affiliate_footer_slot_id %}
-        {% if footer_affiliate_slot_id and not (footer_affiliate_slot_id == 'global_footer_banner' and affiliate_top_slot_id) %}
+        {% if (not AFFILIATE_STACK_ONLY) and footer_affiliate_slot_id and not (footer_affiliate_slot_id == 'global_footer_banner' and affiliate_top_slot_id) %}
             {% with slot_id=footer_affiliate_slot_id, hidden_until_ready=(footer_affiliate_slot_id == 'tool_post_result'), show_disclosure=false %}
                 {% include 'includes/affiliate_slot.html' %}
             {% endwith %}
         {% endif %}
         {% if affiliate_can_render_textlinks() %}
-            {% include 'includes/affiliate_cards_section.html' %}
+            {% with affiliate_section_show_disclosure=true %}
+                {% include 'includes/affiliate_cards_section.html' %}
+            {% endwith %}
         {% endif %}
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-bottom: 30px; text-align: left;">
