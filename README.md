@@ -1,5 +1,29 @@
 # RT Tools - 業務効率化ツール集
 
+## Amazon Creators API Affiliate Stack
+
+Affiliate display priority is unified across public pages as:
+1. Amazon
+2. Rakuten
+3. A8.net
+
+### Render environment variables
+
+- `AMAZON_CREATORS_CLIENT_ID`
+- `AMAZON_CREATORS_CLIENT_SECRET`
+- `AMAZON_ASSOCIATE_TAG` (example: `ieltsconsult-22`)
+- `AMAZON_AFFILIATE_ENABLED` (`true` / `false`)
+- `AMAZON_CACHE_TTL_SECONDS` (default: `3300`)
+- `AMAZON_MAX_ITEMS` (default: `6`)
+- `AFFILIATE_STACK_ONLY` (default: `true`)
+
+### Operational notes
+
+- Amazon credentials are used server-side only. Secrets are never exposed to client-side JavaScript.
+- Recommendation inputs use page path, page type, page title metadata, product tags/categories, and recent on-site browsing history from a first-party cookie.
+- If Amazon API auth is incomplete, API returns an error, or no items are returned, only the Amazon row is hidden. Rakuten and A8.net rows remain rendered.
+- After deploy, verify `/`, `/guide`, `/faq`, `/privacy`, `/terms`, and `/contact` to confirm the same order (`Amazon -> Rakuten -> A8.net`) appears in the affiliate section.
+
 Jobcan自動入力と各種業務効率化ツールを提供するWebアプリケーションです。
 
 ## 🚀 機能概要

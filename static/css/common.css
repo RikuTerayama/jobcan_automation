@@ -257,6 +257,122 @@ img {
     width: 100%;
 }
 
+.affiliate-stack__rows {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.affiliate-stack__row {
+    width: 100%;
+    margin: 0 auto;
+    padding: 14px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.affiliate-stack__label {
+    margin: 0 0 10px;
+    color: var(--color-text-tertiary);
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.amazon-recommendation-bar {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(180px, 1fr);
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: thin;
+}
+
+.amazon-recommendation-card {
+    min-height: 210px;
+    border-radius: 14px;
+    border: 1px solid rgba(74, 158, 255, 0.22);
+    background: linear-gradient(180deg, rgba(20, 33, 56, 0.92), rgba(16, 20, 28, 0.95));
+    overflow: hidden;
+}
+
+.amazon-recommendation-card__anchor {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    height: 100%;
+    padding: 10px;
+    color: var(--color-text-primary);
+    text-decoration: none;
+}
+
+.amazon-recommendation-card__anchor:hover {
+    text-decoration: none;
+}
+
+.amazon-recommendation-card__media {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 92px;
+    background: rgba(0, 0, 0, 0.22);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.amazon-recommendation-card__media img {
+    width: 100%;
+    height: 92px;
+    object-fit: contain;
+}
+
+.amazon-recommendation-card__title {
+    color: var(--color-text-primary);
+    font-size: 0.86rem;
+    line-height: 1.45;
+    text-align: left;
+}
+
+.amazon-recommendation-card__cta {
+    margin-top: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    border-radius: 999px;
+    background: rgba(74, 158, 255, 0.14);
+    border: 1px solid rgba(74, 158, 255, 0.34);
+    color: #9bc3ff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+}
+
+.affiliate-a8-banner {
+    width: min(100%, 728px);
+    min-height: 72px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.affiliate-a8-banner script {
+    max-width: 100%;
+}
+
+.affiliate-a8-fallback {
+    margin: 10px 0 0;
+    text-align: center;
+}
+
+.affiliate-a8-fallback a {
+    color: var(--color-text-secondary);
+    font-size: 0.82rem;
+}
+
 .copy-lines {
     display: flex;
     flex-direction: column;
@@ -669,6 +785,10 @@ img {
 
     .affiliate-link-grid {
         grid-template-columns: 1fr;
+    }
+
+    .amazon-recommendation-bar {
+        grid-auto-columns: minmax(240px, 82vw);
     }
 
     .affiliate-footer-block .affiliate-link-grid,

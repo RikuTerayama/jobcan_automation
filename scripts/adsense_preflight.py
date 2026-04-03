@@ -510,58 +510,43 @@ def _run_checks(get_fn, base_url, use_headers=True):
             headers = resp.headers if hasattr(resp, 'headers') else {}
             content_type = (headers.get('Content-Type') or headers.get('content-type') or '').lower()
             soup = BeautifulSoup(body, 'html.parser')
-            slot_count = len(soup.select('[data-affiliate-slot]'))
-            footer_block = bool(soup.select_one('.affiliate-footer-block'))
-            footer_block_count = len(soup.select('.affiliate-footer-block'))
             meta_utf8 = bool(soup.select_one('meta[charset="utf-8"]'))
+            stack_count = len(soup.select('.affiliate-stack'))
             disclosure_count = len(soup.select('.affiliate-disclosure'))
-            side_rail = bool(soup.select_one('.affiliate-side-rail'))
-            has_rotation_script = A8_ROTATION_SRC_FRAGMENT in body
-            server_managed_rotation = bool(soup.select_one('[data-affiliate-kind="a8_rotation"][data-affiliate-server-managed="true"]'))
-            has_mid_affiliate_section = bool(soup.select_one('.landing-inline-affiliate .affiliate-footer-block'))
-            visible_affiliate_copy = bool(
-                soup.select_one('[data-affiliate-fallback="true"] .affiliate-link-card__label')
-                or soup.select_one('.affiliate-footer-block .affiliate-link-card__label')
-            )
-            inline_module = bool(
-                soup.select_one('[data-affiliate-slot] .affiliate-link-grid--module')
-                or soup.select_one('[data-affiliate-slot] .affiliate-link-card--module')
-            )
-            inline_module_count = len(soup.select('[data-affiliate-slot] .affiliate-link-card--module'))
             removed_text_found = [text for text in REMOVED_AFFILIATE_TEXT if text in body]
-            if path == '/':
-                ok = (
-                    'text/html' in content_type
-                    and 'charset=utf-8' in content_type
-                    and meta_utf8
-                    and footer_block
-                    and footer_block_count >= 2
-                    and has_mid_affiliate_section
-                    and visible_affiliate_copy
-                    and disclosure_count == 0
-                    and not side_rail
-                    and not removed_text_found
-                )
-            else:
-                ok = (
-                    'text/html' in content_type
-                    and 'charset=utf-8' in content_type
-                    and meta_utf8
-                    and slot_count >= 1
-                    and footer_block
-                    and visible_affiliate_copy
-                    and disclosure_count <= 1
-                    and inline_module
-                    and inline_module_count >= 1
-                    and has_rotation_script
-                    and server_managed_rotation
-                    and not side_rail
-                    and not removed_text_found
-                )
+            slot_count = len(soup.select('[data-affiliate-slot]'))
+            network_rows = [node.get('data-affiliate-network') for node in soup.select('.affiliate-stack .affiliate-stack__row[data-affiliate-network]')]
+            normalized_rows = [v for v in network_rows if v]
+            has_rakuten = 'rakuten' in normalized_rows
+            has_a8 = 'a8' in normalized_rows
+            has_amazon = 'amazon' in normalized_rows
+            has_rotation_script = A8_ROTATION_SRC_FRAGMENT in body
+            has_amazon_cards = bool(soup.select_one('.amazon-recommendation-bar .amazon-recommendation-card'))
+            has_rakuten_cards = bool(soup.select_one('.affiliate-stack [data-affiliate-network="rakuten"] .affiliate-link-card'))
+            order_ok = (
+                normalized_rows[:3] == ['amazon', 'rakuten', 'a8']
+                if has_amazon
+                else normalized_rows[:2] == ['rakuten', 'a8']
+            )
+            ok = (
+                'text/html' in content_type
+                and 'charset=utf-8' in content_type
+                and meta_utf8
+                and stack_count == 1
+                and disclosure_count == 1
+                and slot_count == 0
+                and has_rakuten
+                and has_a8
+                and order_ok
+                and has_rakuten_cards
+                and has_rotation_script
+                and (not has_amazon or has_amazon_cards)
+                and not removed_text_found
+            )
             rows.append(
                 ('9c_affiliate_public', path,
-                 f'OK slots={slot_count} footer={footer_block_count} rail={side_rail} module={inline_module} module_cards={inline_module_count} disclosures={disclosure_count} copy={visible_affiliate_copy} a8={has_rotation_script} mid={has_mid_affiliate_section}' if ok else
-                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} slots={slot_count} footer={footer_block_count} rail={side_rail} module={inline_module} module_cards={inline_module_count} disclosures={disclosure_count} copy={visible_affiliate_copy} a8={has_rotation_script} server={server_managed_rotation} mid={has_mid_affiliate_section} removed={removed_text_found}',
+                 f'OK stack={stack_count} rows={normalized_rows} disclosures={disclosure_count} amazon_cards={has_amazon_cards} rakuten_cards={has_rakuten_cards} a8={has_rotation_script}' if ok else
+                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} stack={stack_count} rows={normalized_rows} disclosures={disclosure_count} slots={slot_count} amazon_cards={has_amazon_cards} rakuten_cards={has_rakuten_cards} a8={has_rotation_script} removed={removed_text_found}',
                  ok)
             )
             if not ok:
@@ -575,13 +560,14 @@ def _run_checks(get_fn, base_url, use_headers=True):
             resp = get(path)
             body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
             slot_count = body.count('data-affiliate-slot=')
+            has_stack = 'affiliate-stack' in body
             footer_block = 'affiliate-footer-block' in body
             side_rail = 'affiliate-side-rail' in body
-            ok = slot_count == 0 and not footer_block and not side_rail
+            ok = slot_count == 0 and not footer_block and not side_rail and not has_stack
             rows.append(
                 ('9d_affiliate_nonui', path,
-                 f'OK slots={slot_count} footer={footer_block} rail={side_rail}' if ok else
-                 f'FAIL slots={slot_count} footer={footer_block} rail={side_rail}',
+                 f'OK slots={slot_count} footer={footer_block} rail={side_rail} stack={has_stack}' if ok else
+                 f'FAIL slots={slot_count} footer={footer_block} rail={side_rail} stack={has_stack}',
                  ok)
             )
             if not ok:
@@ -605,54 +591,6 @@ def _run_checks(get_fn, base_url, use_headers=True):
         except Exception as e:
             rows.append(('9e_noindex', path, f'ERROR {e}', False))
             all_ok = False
-
-    for path, requirement in TOP_INLINE_REQUIREMENTS.items():
-        try:
-            resp = get(path)
-            body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
-            soup = BeautifulSoup(body, 'html.parser')
-            slot_id = requirement['slot']
-            slot = soup.select_one(requirement['selector'])
-            slot_before_footer = bool(slot) and slot.find_parent('footer') is None
-            has_fallback = bool(slot and slot.select_one('[data-affiliate-fallback="true"] .affiliate-link-card__label'))
-            disclosure_near = bool(slot and slot.select_one('.affiliate-disclosure'))
-            widget_disabled = bool(slot and slot.get('data-affiliate-disable-widget') == 'true')
-            module_shape = bool(slot and slot.select_one('.affiliate-link-grid--module'))
-            module_cards = len(slot.select('.affiliate-link-card--module')) if slot else 0
-            header_slot = bool(soup.select_one(f'.affiliate-top-shell [data-affiliate-slot="{slot_id}"]'))
-            has_feature_layout = bool(slot and slot.select_one('.affiliate-feature-layout__main'))
-            widget_enabled = bool(slot and slot.get('data-affiliate-disable-widget') == 'false')
-            server_managed = bool(slot and slot.get('data-affiliate-server-managed') == 'true')
-            has_rotation_script = A8_ROTATION_SRC_FRAGMENT in str(slot)
-            ok = bool(slot) and slot_before_footer and has_fallback and disclosure_near and widget_enabled and module_shape and module_cards >= 1 and has_feature_layout and server_managed and has_rotation_script and (path not in NO_HEADER_TOP_SLOT_PATHS or not header_slot)
-            rows.append((
-                '9f_top_affiliate',
-                path,
-                'OK top affiliate before footer'
-                if ok else
-                f'FAIL slot={bool(slot)} before_footer={slot_before_footer} fallback={has_fallback} disclosure={disclosure_near} widget_enabled={widget_enabled} module={module_shape} module_cards={module_cards} layout={has_feature_layout} server={server_managed} a8={has_rotation_script} header_slot={header_slot}',
-                ok,
-            ))
-            if not ok:
-                all_ok = False
-        except Exception as e:
-            rows.append(('9f_top_affiliate', path, f'ERROR {e}', False))
-            all_ok = False
-
-    try:
-        resp = get('/')
-        body = (resp.data if hasattr(resp, 'data') else resp[1]).decode('utf-8', errors='replace')
-        soup = BeautifulSoup(body, 'html.parser')
-        mid_section = soup.select_one('.landing-inline-affiliate .affiliate-footer-block')
-        mid_before_footer = bool(mid_section) and mid_section.find_parent('footer') is None
-        mid_cards = len(soup.select('.landing-inline-affiliate .affiliate-link-grid--grid .affiliate-link-card'))
-        ok = bool(mid_section) and mid_before_footer and mid_cards >= 3
-        rows.append(('9f_home_mid_affiliate', '/', f'OK cards={mid_cards}' if ok else f'FAIL section={bool(mid_section)} before_footer={mid_before_footer} cards={mid_cards}', ok))
-        if not ok:
-            all_ok = False
-    except Exception as e:
-        rows.append(('9f_home_mid_affiliate', '/', f'ERROR {e}', False))
-        all_ok = False
 
     try:
         resp = get('/')
@@ -725,11 +663,11 @@ def _run_checks(get_fn, base_url, use_headers=True):
         side_rail_markup = 'Sponsored Picks' in css_text or '.affiliate-side-rail__panel' in css_text or '.affiliate-side-rail__intro' in css_text
         fixed_rule = 'position: fixed;' in css_text and '.affiliate-side-rail' in css_text
         sticky_rule = 'position: sticky;' in css_text and '.affiliate-side-rail' in css_text
-        horizontal_module_rule = '.affiliate-link-card--module .affiliate-link-card__anchor {' in css_text and 'flex-direction: row;' in css_text
-        widget_state_rule = 'data-affiliate-widget-loaded' in css_text
-        server_managed_rule = 'data-affiliate-server-managed="true"' in css_text
-        ok = horizontal_module_rule and widget_state_rule and server_managed_rule and not fixed_rule and not sticky_rule and not side_rail_markup
-        rows.append(('9g_affiliate_css', 'static/css/common.css', 'OK horizontal module and no side rail styles remain' if ok else f'FAIL horizontal_module_rule={horizontal_module_rule} widget_state_rule={widget_state_rule} server_managed_rule={server_managed_rule} fixed_rule={fixed_rule} sticky_rule={sticky_rule} side_rail_markup={side_rail_markup}', ok))
+        amazon_bar_rule = '.amazon-recommendation-bar' in css_text and '.amazon-recommendation-card' in css_text
+        stack_rule = '.affiliate-stack__row' in css_text and '.affiliate-stack__label' in css_text
+        rakuten_module_rule = '.affiliate-link-card--module .affiliate-link-card__anchor {' in css_text and 'flex-direction: row;' in css_text
+        ok = amazon_bar_rule and stack_rule and rakuten_module_rule and not fixed_rule and not sticky_rule and not side_rail_markup
+        rows.append(('9g_affiliate_css', 'static/css/common.css', 'OK affiliate stack styles and no fixed side rail' if ok else f'FAIL amazon_bar_rule={amazon_bar_rule} stack_rule={stack_rule} rakuten_module_rule={rakuten_module_rule} fixed_rule={fixed_rule} sticky_rule={sticky_rule} side_rail_markup={side_rail_markup}', ok))
         if not ok:
             all_ok = False
     except Exception as e:
