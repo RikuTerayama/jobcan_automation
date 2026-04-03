@@ -21,8 +21,19 @@ Affiliate display priority is unified across public pages as:
 
 - Amazon credentials are used server-side only. Secrets are never exposed to client-side JavaScript.
 - Recommendation inputs use page path, page type, page title metadata, product tags/categories, and recent on-site browsing history from a first-party cookie.
-- If Amazon API auth is incomplete, API returns an error, or no items are returned, only the Amazon row is hidden. Rakuten and A8.net rows remain rendered.
-- After deploy, verify `/`, `/guide`, `/faq`, `/privacy`, `/terms`, and `/contact` to confirm the same order (`Amazon -> Rakuten -> A8.net`) appears in the affiliate section.
+- If Amazon API auth is incomplete, API returns an error, or no items are returned, the server renders keyword-based Amazon fallback links (search URLs with contextual keywords). Page rendering does not break.
+- Affiliate placement is intentionally distributed: Amazon (top area), Rakuten (mid area), A8.net (bottom area). Do not collapse all three into one footer-only block.
+- The A8.net bottom text link (`A8.net のおすすめを見る`) is intentionally removed; only the A8 rotation banner remains.
+- After deploy, verify `/`, `/guide`, `/faq`, `/privacy`, `/terms`, and `/contact` to confirm ordering and placement.
+
+### Render deploy-branch checklist (important)
+
+- Confirm the Render Web Service deploy branch matches the branch that contains affiliate changes.
+- If production is still old while this repository branch is updated, check Render Dashboard:
+  1. `Settings -> Build & Deploy -> Branch`
+  2. `Auto-Deploy` status
+  3. Manual deploy of latest commit if needed
+- If Render is tracking `main` while changes are only on `feature/add-csv-excel-utility`, production will not reflect those changes until merge/cherry-pick to `main` (or changing Render deploy branch).
 
 Jobcan自動入力と各種業務効率化ツールを提供するWebアプリケーションです。
 

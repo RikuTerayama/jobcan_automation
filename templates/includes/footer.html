@@ -1,5 +1,6 @@
 ﻿<footer style="background: var(--color-bg-primary, #121212); padding: var(--spacing-xl, 48px) var(--spacing-md, 16px); margin-top: var(--spacing-xl, 48px); border-top: 1px solid rgba(255, 255, 255, 0.1);">
     <div style="max-width: 1200px; margin: 0 auto;">
+        {% set top_amazon_visible = AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_items|default([])|length > 0) %}
         {% if related_content_section %}
             {% include 'includes/related_content.html' %}
         {% endif %}
@@ -10,7 +11,7 @@
             {% endwith %}
         {% endif %}
         {% if affiliate_can_render_textlinks() %}
-            {% with affiliate_section_show_disclosure=true %}
+            {% with affiliate_networks=['rakuten'], affiliate_section_show_disclosure=(not top_amazon_visible), affiliate_section_class='affiliate-cards-section--mid' %}
                 {% include 'includes/affiliate_cards_section.html' %}
             {% endwith %}
         {% endif %}
@@ -68,6 +69,12 @@
             </div>
             {% endfor %}
         </div>
+
+        {% if affiliate_can_render_textlinks() %}
+            {% with affiliate_networks=['a8'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--bottom' %}
+                {% include 'includes/affiliate_cards_section.html' %}
+            {% endwith %}
+        {% endif %}
 
         <div class="site-footer__summary">
             <p class="site-footer__copy">

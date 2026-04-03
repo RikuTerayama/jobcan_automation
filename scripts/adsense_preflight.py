@@ -523,30 +523,39 @@ def _run_checks(get_fn, base_url, use_headers=True):
             has_rotation_script = A8_ROTATION_SRC_FRAGMENT in body
             has_amazon_cards = bool(soup.select_one('.amazon-recommendation-bar .amazon-recommendation-card'))
             has_rakuten_cards = bool(soup.select_one('.affiliate-stack [data-affiliate-network="rakuten"] .affiliate-link-card'))
-            order_ok = (
-                normalized_rows[:3] == ['amazon', 'rakuten', 'a8']
-                if has_amazon
-                else normalized_rows[:2] == ['rakuten', 'a8']
-            )
+            rakuten_pos = body.find('data-affiliate-network="rakuten"')
+            a8_pos = body.find('data-affiliate-network="a8"')
+            amazon_pos = body.find('data-affiliate-network="amazon"')
+            amazon_before_rakuten = (amazon_pos < rakuten_pos) if has_amazon and amazon_pos >= 0 and rakuten_pos >= 0 else (not has_amazon)
+            rakuten_before_a8 = rakuten_pos >= 0 and a8_pos >= 0 and rakuten_pos < a8_pos
+            top_amazon_visible = bool(soup.select_one('.affiliate-top-stack .affiliate-stack__row--amazon'))
+            rakuten_in_footer = bool(soup.select_one('footer .affiliate-stack__row--rakuten'))
+            a8_in_footer = bool(soup.select_one('footer .affiliate-stack__row--a8'))
+            has_removed_a8_text = 'A8.net のおすすめを見る' in body
             ok = (
                 'text/html' in content_type
                 and 'charset=utf-8' in content_type
                 and meta_utf8
-                and stack_count == 1
-                and disclosure_count == 1
+                and stack_count >= 2
+                and disclosure_count <= 1
                 and slot_count == 0
                 and has_rakuten
                 and has_a8
-                and order_ok
+                and amazon_before_rakuten
+                and rakuten_before_a8
+                and (not has_amazon or top_amazon_visible)
+                and rakuten_in_footer
+                and a8_in_footer
                 and has_rakuten_cards
                 and has_rotation_script
                 and (not has_amazon or has_amazon_cards)
+                and not has_removed_a8_text
                 and not removed_text_found
             )
             rows.append(
                 ('9c_affiliate_public', path,
-                 f'OK stack={stack_count} rows={normalized_rows} disclosures={disclosure_count} amazon_cards={has_amazon_cards} rakuten_cards={has_rakuten_cards} a8={has_rotation_script}' if ok else
-                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} stack={stack_count} rows={normalized_rows} disclosures={disclosure_count} slots={slot_count} amazon_cards={has_amazon_cards} rakuten_cards={has_rakuten_cards} a8={has_rotation_script} removed={removed_text_found}',
+                 f'OK stack={stack_count} rows={normalized_rows} disclosures={disclosure_count} amazon_top={top_amazon_visible} rakuten_footer={rakuten_in_footer} a8_footer={a8_in_footer}' if ok else
+                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} stack={stack_count} rows={normalized_rows} disclosures={disclosure_count} slots={slot_count} amazon_top={top_amazon_visible} rakuten_footer={rakuten_in_footer} a8_footer={a8_in_footer} amazon_cards={has_amazon_cards} rakuten_cards={has_rakuten_cards} a8={has_rotation_script} removed_a8_text={has_removed_a8_text} removed={removed_text_found}',
                  ok)
             )
             if not ok:

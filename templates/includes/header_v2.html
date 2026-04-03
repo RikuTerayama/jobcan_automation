@@ -63,6 +63,13 @@
         </div>
     </nav>
 </header>
+{% if affiliate_can_render_textlinks() and AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_items|default([])|length > 0) %}
+<div class="affiliate-top-stack">
+    {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=true, affiliate_section_class='affiliate-cards-section--top' %}
+        {% include 'includes/affiliate_cards_section.html' %}
+    {% endwith %}
+</div>
+{% endif %}
 {% if affiliate_top_slot_mode == 'header' and affiliate_top_slot_id %}
 <div class="affiliate-top-shell">
     {% with slot_id=affiliate_top_slot_id, slot_render_fallback=true, slot_disable_widget=false, slot_extra_class='affiliate-slot--primary-inline' %}
