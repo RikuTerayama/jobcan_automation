@@ -4,6 +4,7 @@
 {% set show_amazon_network = 'amazon' in affiliate_networks %}
 {% set show_rakuten_network = 'rakuten' in affiliate_networks %}
 {% set show_a8_network = 'a8' in affiliate_networks %}
+{% set rakuten_variant = affiliate_rakuten_variant|default('grid') %}
 {% set amazon_items = amazon_affiliate_items|default([]) %}
 {% set amazon_enabled = AMAZON_AFFILIATE_ENABLED|default(false) %}
 {% set has_amazon_items = show_amazon_network and amazon_enabled and (amazon_items|length > 0) %}
@@ -16,8 +17,10 @@
     <div class="affiliate-stack__rows">
         {% if has_amazon_items %}
         <div class="affiliate-stack__row affiliate-stack__row--amazon" data-affiliate-network="amazon">
-            <p class="affiliate-stack__label">Amazon</p>
-            <div class="amazon-recommendation-bar" role="list" aria-label="Amazon Recommendations">
+            <div class="affiliate-stack__head">
+                <p class="affiliate-stack__label affiliate-stack__label--amazon">Amazon Picks</p>
+            </div>
+            <div class="amazon-recommendation-grid" role="list" aria-label="Amazon Recommendations">
                 {% for item in amazon_items %}
                 <article class="amazon-recommendation-card" role="listitem">
                     <a href="{{ item.url|default('#') }}" target="_blank" rel="nofollow sponsored noopener" class="amazon-recommendation-card__anchor">
@@ -25,6 +28,8 @@
                         <span class="amazon-recommendation-card__media">
                             <img src="{{ item.image_url }}" alt="{{ item.title|default('Amazon おすすめ商品') }}" loading="lazy">
                         </span>
+                        {% else %}
+                        <span class="amazon-recommendation-card__media amazon-recommendation-card__media--empty" aria-hidden="true">Amazon</span>
                         {% endif %}
                         <span class="amazon-recommendation-card__title">{{ item.title|default('Amazon おすすめ商品') }}</span>
                         <span class="amazon-recommendation-card__cta">{{ item.cta|default('Amazonで見る') }}</span>
@@ -39,7 +44,7 @@
         <div class="affiliate-stack__row affiliate-stack__row--rakuten" data-affiliate-network="rakuten">
             <p class="affiliate-stack__label">楽天</p>
             <div class="affiliate-cards-section__inner">
-                {% with affiliate_cards_variant='grid' %}
+                {% with affiliate_cards_variant=rakuten_variant %}
                     {% include 'includes/affiliate_cards.html' %}
                 {% endwith %}
             </div>
