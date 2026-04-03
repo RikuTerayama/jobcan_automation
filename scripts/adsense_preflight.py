@@ -21,7 +21,7 @@ BASE_URL_DEFAULT = 'https://jobcan-automation.onrender.com'
 
 # 主要ページ（GSC 404 解消対象含む）
 MAJOR_PATHS = ['/', '/autofill', '/tools', '/privacy', '/contact', '/about', '/best-practices', '/faq']
-PUBLIC_AFFILIATE_PATHS = ['/', '/tools', '/autofill', '/privacy', '/terms', '/contact', '/about', '/faq', '/guide', '/blog', '/case-studies', '/sitemap.html']
+PUBLIC_AFFILIATE_PATHS = ['/', '/tools', '/autofill', '/privacy', '/terms', '/contact', '/about', '/faq', '/guide', '/blog', '/case-studies']
 NON_UI_AFFILIATE_PATHS = ['/sitemap.xml', '/robots.txt', '/ads.txt', '/api/seo/crawl-urls']
 HEADER_PATHS = ['/', '/autofill', '/tools', '/guide', '/blog', '/case-studies']
 A8_ROTATION_SRC_FRAGMENT = 'rot3.a8.net/jsa/fdf80b714de10cbdd802fd2333444e15/c6f057b86584942e415435ffb1fa93d4.js'
@@ -521,15 +521,16 @@ def _run_checks(get_fn, base_url, use_headers=True):
             has_a8 = 'a8' in normalized_rows
             has_amazon = 'amazon' in normalized_rows
             has_rotation_script = A8_ROTATION_SRC_FRAGMENT in body
-            has_amazon_cards = bool(soup.select_one('.amazon-recommendation-bar .amazon-recommendation-card'))
+            has_amazon_cards = bool(soup.select_one('.amazon-recommendation-grid .amazon-recommendation-card'))
             has_rakuten_cards = bool(soup.select_one('.affiliate-stack [data-affiliate-network="rakuten"] .affiliate-link-card'))
             rakuten_pos = body.find('data-affiliate-network="rakuten"')
             a8_pos = body.find('data-affiliate-network="a8"')
             amazon_pos = body.find('data-affiliate-network="amazon"')
-            amazon_before_rakuten = (amazon_pos < rakuten_pos) if has_amazon and amazon_pos >= 0 and rakuten_pos >= 0 else (not has_amazon)
+            rakuten_before_amazon = (rakuten_pos < amazon_pos) if has_amazon and amazon_pos >= 0 and rakuten_pos >= 0 else True
+            amazon_before_a8 = (amazon_pos < a8_pos) if has_amazon and amazon_pos >= 0 and a8_pos >= 0 else True
             rakuten_before_a8 = rakuten_pos >= 0 and a8_pos >= 0 and rakuten_pos < a8_pos
-            top_amazon_visible = bool(soup.select_one('.affiliate-top-stack .affiliate-stack__row--amazon'))
-            rakuten_in_footer = bool(soup.select_one('footer .affiliate-stack__row--rakuten'))
+            top_rakuten_visible = bool(soup.select_one('.affiliate-top-stack .affiliate-stack__row--rakuten'))
+            amazon_in_footer = bool(soup.select_one('footer .affiliate-stack__row--amazon'))
             a8_in_footer = bool(soup.select_one('footer .affiliate-stack__row--a8'))
             has_removed_a8_text = 'A8.net のおすすめを見る' in body
             ok = (
@@ -541,10 +542,11 @@ def _run_checks(get_fn, base_url, use_headers=True):
                 and slot_count == 0
                 and has_rakuten
                 and has_a8
-                and amazon_before_rakuten
+                and rakuten_before_amazon
+                and amazon_before_a8
                 and rakuten_before_a8
-                and (not has_amazon or top_amazon_visible)
-                and rakuten_in_footer
+                and top_rakuten_visible
+                and (not has_amazon or amazon_in_footer)
                 and a8_in_footer
                 and has_rakuten_cards
                 and has_rotation_script
@@ -554,8 +556,8 @@ def _run_checks(get_fn, base_url, use_headers=True):
             )
             rows.append(
                 ('9c_affiliate_public', path,
-                 f'OK stack={stack_count} rows={normalized_rows} disclosures={disclosure_count} amazon_top={top_amazon_visible} rakuten_footer={rakuten_in_footer} a8_footer={a8_in_footer}' if ok else
-                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} stack={stack_count} rows={normalized_rows} disclosures={disclosure_count} slots={slot_count} amazon_top={top_amazon_visible} rakuten_footer={rakuten_in_footer} a8_footer={a8_in_footer} amazon_cards={has_amazon_cards} rakuten_cards={has_rakuten_cards} a8={has_rotation_script} removed_a8_text={has_removed_a8_text} removed={removed_text_found}',
+                 f'OK stack={stack_count} rows={normalized_rows} disclosures={disclosure_count} rakuten_top={top_rakuten_visible} amazon_footer={amazon_in_footer} a8_footer={a8_in_footer}' if ok else
+                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} stack={stack_count} rows={normalized_rows} disclosures={disclosure_count} slots={slot_count} rakuten_top={top_rakuten_visible} amazon_footer={amazon_in_footer} a8_footer={a8_in_footer} amazon_cards={has_amazon_cards} rakuten_cards={has_rakuten_cards} a8={has_rotation_script} removed_a8_text={has_removed_a8_text} removed={removed_text_found}',
                  ok)
             )
             if not ok:
@@ -672,7 +674,7 @@ def _run_checks(get_fn, base_url, use_headers=True):
         side_rail_markup = 'Sponsored Picks' in css_text or '.affiliate-side-rail__panel' in css_text or '.affiliate-side-rail__intro' in css_text
         fixed_rule = 'position: fixed;' in css_text and '.affiliate-side-rail' in css_text
         sticky_rule = 'position: sticky;' in css_text and '.affiliate-side-rail' in css_text
-        amazon_bar_rule = '.amazon-recommendation-bar' in css_text and '.amazon-recommendation-card' in css_text
+        amazon_bar_rule = '.amazon-recommendation-grid' in css_text and '.amazon-recommendation-card' in css_text
         stack_rule = '.affiliate-stack__row' in css_text and '.affiliate-stack__label' in css_text
         rakuten_module_rule = '.affiliate-link-card--module .affiliate-link-card__anchor {' in css_text and 'flex-direction: row;' in css_text
         ok = amazon_bar_rule and stack_rule and rakuten_module_rule and not fixed_rule and not sticky_rule and not side_rail_markup

@@ -249,7 +249,7 @@ def _build_fallback_items(settings: Dict[str, object], keywords: List[str]) -> L
         seen_urls.add(url)
         items.append(
             {
-                "title": f"{cleaned} の関連アイテム",
+                "title": f"{cleaned} に役立つおすすめ",
                 "image_url": "",
                 "url": url,
                 "cta": "Amazonで見る",

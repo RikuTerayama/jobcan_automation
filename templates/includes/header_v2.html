@@ -63,9 +63,9 @@
         </div>
     </nav>
 </header>
-{% if affiliate_can_render_textlinks() and AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_items|default([])|length > 0) %}
+{% if affiliate_can_render_textlinks() %}
 <div class="affiliate-top-stack">
-    {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=true, affiliate_section_class='affiliate-cards-section--top' %}
+    {% with affiliate_networks=['rakuten'], affiliate_rakuten_variant='module', affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--top affiliate-cards-section--top-rakuten' %}
         {% include 'includes/affiliate_cards_section.html' %}
     {% endwith %}
 </div>
