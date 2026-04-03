@@ -3,8 +3,8 @@
 ## Amazon Creators API Affiliate Stack
 
 Affiliate layout order across public pages is:
-1. Rakuten (upper)
-2. Amazon (mid)
+1. Amazon (upper)
+2. Rakuten (mid)
 3. A8.net (lower)
 
 ### Render environment variables
@@ -22,7 +22,7 @@ Affiliate layout order across public pages is:
 - Amazon credentials are used server-side only. Secrets are never exposed to client-side JavaScript.
 - Recommendation inputs use page path, page type, page title metadata, product tags/categories, and recent on-site browsing history from a first-party cookie.
 - If Amazon API auth is incomplete, API returns an error, or no items are returned, the server renders keyword-based Amazon fallback links (search URLs with contextual keywords). Page rendering does not break.
-- Affiliate placement is intentionally distributed: Rakuten (upper area), Amazon (mid section), A8.net (bottom area). Do not collapse all three into one footer-only block.
+- Affiliate placement is intentionally distributed: Amazon (upper area), Rakuten (mid section), A8.net (bottom area). Do not collapse all three into one footer-only block.
 - The A8.net bottom text link (`A8.net のおすすめを見る`) is intentionally removed; only the A8 rotation banner remains.
 - After deploy, verify `/`, `/guide`, `/faq`, `/privacy`, `/terms`, and `/contact` to confirm ordering and placement.
 
