@@ -29,7 +29,10 @@ from lib.seo import (
     get_web_application_schema,
     is_noindex_path,
 )
-from lib.amazon_creators import get_recommendations as get_amazon_recommendations
+from lib.amazon_creators import (
+    build_purpose_genre_cards as build_amazon_purpose_genre_cards,
+    get_recommendations as get_amazon_recommendations,
+)
 
 # P1-1: 計測ログユーティリティ（循環import回避）
 try:
@@ -968,6 +971,13 @@ def inject_env_vars():
             tags=amazon_tags,
             recent_history=recent_affiliate_history,
         )
+        amazon_affiliate_purpose_items = build_amazon_purpose_genre_cards(
+            path=current_path,
+            page_type=affiliate_page_type,
+            title=seo_defaults.get('title', ''),
+            tags=amazon_tags,
+            recent_history=recent_affiliate_history,
+        )
         _prepare_recent_affiliate_history_cookie(
             path=current_path,
             page_type=affiliate_page_type,
@@ -1018,6 +1028,7 @@ def inject_env_vars():
             'AMAZON_AFFILIATE_ENABLED': bool(amazon_affiliate.get('enabled')),
             'amazon_affiliate': amazon_affiliate,
             'amazon_affiliate_items': amazon_affiliate.get('items', []),
+            'amazon_affiliate_purpose_items': amazon_affiliate_purpose_items,
             'affiliate_page_type': affiliate_page_type,
             'affiliate_path_excluded': affiliate_is_path_excluded(current_path),
             'affiliate_top_slot_id': affiliate_top_slot_id(current_path),
@@ -1076,6 +1087,7 @@ def inject_env_vars():
             'AMAZON_AFFILIATE_ENABLED': False,
             'amazon_affiliate': {'enabled': False, 'items': [], 'keywords': [], 'error': 'context_fallback', 'source': 'none'},
             'amazon_affiliate_items': [],
+            'amazon_affiliate_purpose_items': [],
             'affiliate_page_type': get_affiliate_page_type(current_path),
             'affiliate_path_excluded': affiliate_is_path_excluded(current_path),
             'affiliate_top_slot_id': affiliate_top_slot_id(current_path),
