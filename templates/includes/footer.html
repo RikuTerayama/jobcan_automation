@@ -3,7 +3,10 @@
         {% set can_render_affiliate = affiliate_can_render_textlinks() %}
         {% set has_amazon_items = AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_items|default([])|length > 0) %}
         {% set footer_amazon_items = amazon_affiliate_items|default([]) %}
-        {% set footer_mid_amazon_items = footer_amazon_items[3:6] if (footer_amazon_items|length > 3) else footer_amazon_items[:3] %}
+        {% set footer_mid_amazon_items = footer_amazon_items[3:6] %}
+        {% if footer_mid_amazon_items|length < 3 %}
+            {% set footer_mid_amazon_items = footer_amazon_items[:3] %}
+        {% endif %}
         {% set affiliate_disclosure_rendered = affiliate_disclosure_rendered|default(false) %}
         {% set footer_needs_upper_amazon = can_render_affiliate and has_amazon_items and not affiliate_upper_amazon_rendered|default(false) %}
         {% set footer_needs_mid_amazon = can_render_affiliate and has_amazon_items and not affiliate_mid_amazon_rendered|default(false) %}

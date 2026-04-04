@@ -242,7 +242,10 @@
                    style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: #FFFFFF; font-size: 1em;">
         </div>
         {% if affiliate_can_render_textlinks() and AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_items|default([])|length > 0) %}
-        {% set amazon_mid_items = amazon_affiliate_items[3:6] if (amazon_affiliate_items|length > 3) else amazon_affiliate_items[:3] %}
+        {% set amazon_mid_items = amazon_affiliate_items[3:6] %}
+        {% if amazon_mid_items|length < 3 %}
+            {% set amazon_mid_items = amazon_affiliate_items[:3] %}
+        {% endif %}
         {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--upper-mid', affiliate_section_tier='mid-amazon', amazon_items_override=amazon_mid_items, amazon_section_title='Amazon Recommendations' %}
             {% include 'includes/affiliate_cards_section.html' %}
         {% endwith %}
