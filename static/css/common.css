@@ -478,6 +478,66 @@ img {
     max-width: 100%;
 }
 
+.affiliate-stack__row--rakuten .affiliate-stack__head {
+    justify-content: center;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.affiliate-stack__row--rakuten .affiliate-stack__label {
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.affiliate-stack__row--rakuten .affiliate-link-grid {
+    max-width: 760px;
+    margin: 0 auto;
+}
+
+.affiliate-stack__row--rakuten .affiliate-link-card {
+    min-height: 292px;
+}
+
+.affiliate-stack__row--rakuten .affiliate-link-card__anchor {
+    height: 100%;
+    align-items: center;
+    text-align: center;
+}
+
+.affiliate-stack__row--rakuten .affiliate-link-card__media {
+    min-height: 136px;
+    padding: 18px 18px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.affiliate-stack__row--rakuten .affiliate-link-card__media img {
+    width: 100%;
+    max-width: 280px;
+    height: 120px;
+    object-fit: contain;
+}
+
+.affiliate-stack__row--rakuten .affiliate-link-card__content {
+    padding: 16px 18px 20px;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+}
+
+.affiliate-stack__row--rakuten .affiliate-link-card__eyebrow,
+.affiliate-stack__row--rakuten .affiliate-link-card__label,
+.affiliate-stack__row--rakuten .affiliate-link-card__desc,
+.affiliate-stack__row--rakuten .affiliate-link-card__cta {
+    text-align: center;
+}
+
+.affiliate-stack__row--rakuten .affiliate-link-card__desc {
+    max-width: 36ch;
+    margin: 0 auto;
+}
+
 .copy-lines {
     display: flex;
     flex-direction: column;
