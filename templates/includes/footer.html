@@ -1,6 +1,14 @@
 ﻿<footer style="background: var(--color-bg-primary, #121212); padding: var(--spacing-xl, 48px) var(--spacing-md, 16px); margin-top: var(--spacing-xl, 48px); border-top: 1px solid rgba(255, 255, 255, 0.1);">
     <div style="max-width: 1200px; margin: 0 auto;">
-        {% set top_amazon_visible = AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_items|default([])|length > 0) %}
+        {% set can_render_affiliate = affiliate_can_render_textlinks() %}
+        {% set has_amazon_items = AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_items|default([])|length > 0) %}
+        {% set footer_amazon_items = amazon_affiliate_items|default([]) %}
+        {% set footer_mid_amazon_items = footer_amazon_items[3:6] if (footer_amazon_items|length > 3) else footer_amazon_items[:3] %}
+        {% set affiliate_disclosure_rendered = affiliate_disclosure_rendered|default(false) %}
+        {% set footer_needs_upper_amazon = can_render_affiliate and has_amazon_items and not affiliate_upper_amazon_rendered|default(false) %}
+        {% set footer_needs_mid_amazon = can_render_affiliate and has_amazon_items and not affiliate_mid_amazon_rendered|default(false) %}
+        {% set footer_needs_rakuten = can_render_affiliate and not affiliate_rakuten_rendered|default(false) %}
+        {% set footer_needs_a8 = can_render_affiliate and not affiliate_a8_rendered|default(false) %}
         {% if related_content_section %}
             {% include 'includes/related_content.html' %}
         {% endif %}
@@ -10,10 +18,27 @@
                 {% include 'includes/affiliate_slot.html' %}
             {% endwith %}
         {% endif %}
-        {% if affiliate_can_render_textlinks() %}
-            {% with affiliate_networks=['rakuten'], affiliate_section_show_disclosure=(not top_amazon_visible), affiliate_section_class='affiliate-cards-section--mid' %}
+        {% if footer_needs_upper_amazon %}
+            {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=(not affiliate_disclosure_rendered), affiliate_section_class='affiliate-cards-section--upper affiliate-cards-section--footer-fallback', affiliate_section_tier='upper-amazon', amazon_items_override=footer_amazon_items[:3], amazon_section_title='Amazon Recommendations' %}
                 {% include 'includes/affiliate_cards_section.html' %}
             {% endwith %}
+            {% set affiliate_upper_amazon_rendered = true %}
+            {% set affiliate_disclosure_rendered = true %}
+        {% endif %}
+
+        {% if footer_needs_mid_amazon %}
+            {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--upper-mid affiliate-cards-section--footer-fallback', affiliate_section_tier='mid-amazon', amazon_items_override=footer_mid_amazon_items, amazon_section_title='Amazon Recommendations' %}
+                {% include 'includes/affiliate_cards_section.html' %}
+            {% endwith %}
+            {% set affiliate_mid_amazon_rendered = true %}
+        {% endif %}
+
+        {% if footer_needs_rakuten %}
+            {% with affiliate_networks=['rakuten'], affiliate_section_show_disclosure=(not affiliate_disclosure_rendered), affiliate_section_class='affiliate-cards-section--mid-rakuten affiliate-cards-section--footer-fallback', affiliate_section_tier='mid-rakuten', affiliate_rakuten_variant='two-col' %}
+                {% include 'includes/affiliate_cards_section.html' %}
+            {% endwith %}
+            {% set affiliate_rakuten_rendered = true %}
+            {% set affiliate_disclosure_rendered = true %}
         {% endif %}
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 30px; margin-bottom: 30px; text-align: left;">
@@ -70,10 +95,11 @@
             {% endfor %}
         </div>
 
-        {% if affiliate_can_render_textlinks() %}
-            {% with affiliate_networks=['a8'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--bottom' %}
+        {% if footer_needs_a8 %}
+            {% with affiliate_networks=['a8'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--bottom-a8 affiliate-cards-section--footer-fallback', affiliate_section_tier='lower-a8' %}
                 {% include 'includes/affiliate_cards_section.html' %}
             {% endwith %}
+            {% set affiliate_a8_rendered = true %}
         {% endif %}
 
         <div class="site-footer__summary">

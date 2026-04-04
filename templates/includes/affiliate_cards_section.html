@@ -1,16 +1,27 @@
 {% set affiliate_section_class = affiliate_section_class|default('') %}
 {% set affiliate_section_show_disclosure = affiliate_section_show_disclosure|default(true) %}
 {% set affiliate_networks = affiliate_networks|default(['amazon', 'rakuten', 'a8']) %}
+{% set affiliate_section_tier = affiliate_section_tier|default('') %}
 {% set show_amazon_network = 'amazon' in affiliate_networks %}
 {% set show_rakuten_network = 'rakuten' in affiliate_networks %}
 {% set show_a8_network = 'a8' in affiliate_networks %}
-{% set rakuten_variant = affiliate_rakuten_variant|default('grid') %}
-{% set amazon_items = amazon_affiliate_items|default([]) %}
+{% set rakuten_variant = affiliate_rakuten_variant|default('two-col') %}
+{% if amazon_items_override is defined and amazon_items_override is not none %}
+    {% set amazon_items_source = amazon_items_override %}
+{% else %}
+    {% set amazon_items_source = amazon_affiliate_items|default([]) %}
+{% endif %}
+{% set amazon_items = amazon_items_source[:3] %}
 {% set amazon_enabled = AMAZON_AFFILIATE_ENABLED|default(false) %}
+{% set amazon_section_title = amazon_section_title|default('Amazon Picks') %}
 {% set has_amazon_items = show_amazon_network and amazon_enabled and (amazon_items|length > 0) %}
 {% set should_render_section = has_amazon_items or show_rakuten_network or show_a8_network %}
 {% if should_render_section %}
-<section class="affiliate-footer-block affiliate-footer-block--quiet affiliate-cards-section affiliate-stack{% if affiliate_section_class %} {{ affiliate_section_class }}{% endif %}" aria-label="Affiliate Links">
+<section
+    class="affiliate-footer-block affiliate-footer-block--quiet affiliate-cards-section affiliate-stack{% if affiliate_section_class %} {{ affiliate_section_class }}{% endif %}"
+    aria-label="Affiliate Links"
+    {% if affiliate_section_tier %}data-affiliate-tier="{{ affiliate_section_tier }}"{% endif %}
+>
     {% if affiliate_section_show_disclosure %}
         {% include 'includes/affiliate_disclosure.html' %}
     {% endif %}
@@ -18,7 +29,7 @@
         {% if has_amazon_items %}
         <div class="affiliate-stack__row affiliate-stack__row--amazon" data-affiliate-network="amazon">
             <div class="affiliate-stack__head">
-                <p class="affiliate-stack__label affiliate-stack__label--amazon">Amazon Picks</p>
+                <p class="affiliate-stack__label affiliate-stack__label--amazon">{{ amazon_section_title }}</p>
             </div>
             <div class="amazon-recommendation-grid" role="list" aria-label="Amazon Recommendations">
                 {% for item in amazon_items %}

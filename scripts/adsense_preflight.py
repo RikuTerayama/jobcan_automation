@@ -23,6 +23,7 @@ BASE_URL_DEFAULT = 'https://jobcan-automation.onrender.com'
 MAJOR_PATHS = ['/', '/autofill', '/tools', '/privacy', '/contact', '/about', '/best-practices', '/faq']
 PUBLIC_AFFILIATE_PATHS = ['/', '/tools', '/autofill', '/privacy', '/terms', '/contact', '/about', '/faq', '/guide', '/blog', '/case-studies']
 NON_UI_AFFILIATE_PATHS = ['/sitemap.xml', '/robots.txt', '/ads.txt', '/api/seo/crawl-urls']
+TWO_AMAZON_SECTION_PATHS = ['/', '/autofill', '/tools', '/guide']
 HEADER_PATHS = ['/', '/autofill', '/tools', '/guide', '/blog', '/case-studies']
 A8_ROTATION_SRC_FRAGMENT = 'rot3.a8.net/jsa/fdf80b714de10cbdd802fd2333444e15/c6f057b86584942e415435ffb1fa93d4.js'
 
@@ -515,23 +516,32 @@ def _run_checks(get_fn, base_url, use_headers=True):
             disclosure_count = len(soup.select('.affiliate-disclosure'))
             removed_text_found = [text for text in REMOVED_AFFILIATE_TEXT if text in body]
             slot_count = len(soup.select('[data-affiliate-slot]'))
-            network_rows = [node.get('data-affiliate-network') for node in soup.select('.affiliate-stack .affiliate-stack__row[data-affiliate-network]')]
-            normalized_rows = [v for v in network_rows if v]
+            row_nodes = soup.select('.affiliate-stack .affiliate-stack__row[data-affiliate-network]')
+            normalized_rows = [node.get('data-affiliate-network') for node in row_nodes if node.get('data-affiliate-network')]
             has_rakuten = 'rakuten' in normalized_rows
             has_a8 = 'a8' in normalized_rows
             has_amazon = 'amazon' in normalized_rows
             has_rotation_script = A8_ROTATION_SRC_FRAGMENT in body
-            has_amazon_cards = bool(soup.select_one('.amazon-recommendation-grid .amazon-recommendation-card'))
-            has_rakuten_cards = bool(soup.select_one('.affiliate-stack [data-affiliate-network="rakuten"] .affiliate-link-card'))
-            rakuten_pos = body.find('data-affiliate-network="rakuten"')
-            a8_pos = body.find('data-affiliate-network="a8"')
-            amazon_pos = body.find('data-affiliate-network="amazon"')
-            amazon_before_rakuten = (amazon_pos < rakuten_pos) if has_amazon and amazon_pos >= 0 and rakuten_pos >= 0 else (not has_amazon)
-            rakuten_before_a8 = rakuten_pos >= 0 and a8_pos >= 0 and rakuten_pos < a8_pos
-            top_amazon_visible = bool(soup.select_one('.affiliate-top-stack .affiliate-stack__row--amazon'))
-            rakuten_in_footer = bool(soup.select_one('footer .affiliate-stack__row--rakuten'))
-            a8_in_footer = bool(soup.select_one('footer .affiliate-stack__row--a8'))
-            has_removed_a8_text = 'A8.net のおすすめを見る' in body
+            amazon_card_count = len(soup.select('.amazon-recommendation-grid .amazon-recommendation-card'))
+            rakuten_card_count = len(soup.select('.affiliate-stack [data-affiliate-network="rakuten"] .affiliate-link-card'))
+            amazon_indices = [idx for idx, network in enumerate(normalized_rows) if network == 'amazon']
+            rakuten_indices = [idx for idx, network in enumerate(normalized_rows) if network == 'rakuten']
+            a8_indices = [idx for idx, network in enumerate(normalized_rows) if network == 'a8']
+            has_upper_amazon = bool(soup.select_one('[data-affiliate-tier="upper-amazon"] .affiliate-stack__row--amazon'))
+            has_mid_amazon = bool(soup.select_one('[data-affiliate-tier="mid-amazon"] .affiliate-stack__row--amazon'))
+            has_mid_rakuten = bool(soup.select_one('[data-affiliate-tier="mid-rakuten"] .affiliate-stack__row--rakuten'))
+            has_lower_a8 = bool(soup.select_one('[data-affiliate-tier="lower-a8"] .affiliate-stack__row--a8'))
+            amazon_before_rakuten = bool(amazon_indices and rakuten_indices and amazon_indices[0] < rakuten_indices[0]) if has_amazon and has_rakuten else (not has_amazon)
+            rakuten_before_a8 = bool(rakuten_indices and a8_indices and rakuten_indices[0] < a8_indices[0]) if has_rakuten and has_a8 else False
+            two_amazon_ok = True
+            if path in TWO_AMAZON_SECTION_PATHS and has_amazon:
+                two_amazon_ok = (
+                    has_upper_amazon
+                    and has_mid_amazon
+                    and len(amazon_indices) >= 2
+                    and amazon_indices[1] < (rakuten_indices[0] if rakuten_indices else 999)
+                )
+            has_removed_a8_text = any('A8.net のおすすめを見る' in link.get_text(' ', strip=True) for link in soup.select('a'))
             ok = (
                 'text/html' in content_type
                 and 'charset=utf-8' in content_type
@@ -543,20 +553,24 @@ def _run_checks(get_fn, base_url, use_headers=True):
                 and has_a8
                 and amazon_before_rakuten
                 and rakuten_before_a8
-                and (not has_amazon or top_amazon_visible)
-                and rakuten_in_footer
-                and a8_in_footer
-                and has_rakuten_cards
+                and two_amazon_ok
+                and has_mid_rakuten
+                and has_lower_a8
+                and rakuten_card_count == 2
                 and has_rotation_script
-                and (not has_amazon or has_amazon_cards)
+                and (not has_amazon or amazon_card_count >= 3)
                 and not has_removed_a8_text
                 and not removed_text_found
             )
             rows.append(
-                ('9c_affiliate_public', path,
-                 f'OK stack={stack_count} rows={normalized_rows} disclosures={disclosure_count} amazon_top={top_amazon_visible} rakuten_footer={rakuten_in_footer} a8_footer={a8_in_footer}' if ok else
-                 f'FAIL ct={content_type or "missing"} meta={meta_utf8} stack={stack_count} rows={normalized_rows} disclosures={disclosure_count} slots={slot_count} amazon_top={top_amazon_visible} rakuten_footer={rakuten_in_footer} a8_footer={a8_in_footer} amazon_cards={has_amazon_cards} rakuten_cards={has_rakuten_cards} a8={has_rotation_script} removed_a8_text={has_removed_a8_text} removed={removed_text_found}',
-                 ok)
+                (
+                    '9c_affiliate_public',
+                    path,
+                    f'OK stack={stack_count} rows={normalized_rows} disclosures={disclosure_count} upper_amazon={has_upper_amazon} mid_amazon={has_mid_amazon} mid_rakuten={has_mid_rakuten} lower_a8={has_lower_a8}'
+                    if ok else
+                    f'FAIL ct={content_type or "missing"} meta={meta_utf8} stack={stack_count} rows={normalized_rows} disclosures={disclosure_count} slots={slot_count} upper_amazon={has_upper_amazon} mid_amazon={has_mid_amazon} mid_rakuten={has_mid_rakuten} lower_a8={has_lower_a8} two_amazon_ok={two_amazon_ok} amazon_cards={amazon_card_count} rakuten_cards={rakuten_card_count} a8={has_rotation_script} removed_a8_text={has_removed_a8_text} removed={removed_text_found}',
+                    ok,
+                )
             )
             if not ok:
                 all_ok = False

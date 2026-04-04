@@ -267,6 +267,30 @@ img {
     margin: 0;
 }
 
+.affiliate-cards-section--upper {
+    margin-top: 14px;
+    margin-bottom: 20px;
+}
+
+.affiliate-cards-section--upper-mid {
+    margin-top: 24px;
+    margin-bottom: 22px;
+}
+
+.affiliate-cards-section--mid-rakuten {
+    margin-top: 26px;
+    margin-bottom: 20px;
+}
+
+.affiliate-cards-section--bottom-a8 {
+    margin-top: 22px;
+    margin-bottom: 10px;
+}
+
+.affiliate-cards-section--footer-fallback {
+    margin-top: 14px;
+}
+
 .affiliate-cards-section--top-rakuten {
     margin-top: 8px;
 }
@@ -332,8 +356,9 @@ img {
 
 .amazon-recommendation-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    overflow: visible;
 }
 
 .amazon-recommendation-card {
@@ -457,6 +482,11 @@ img {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.affiliate-footer-block .affiliate-link-grid--two-col {
+    max-width: 760px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .affiliate-footer-block .affiliate-link-grid--module {
     max-width: 760px;
     grid-template-columns: 1fr;
@@ -468,6 +498,10 @@ img {
 
 .affiliate-link-grid--module {
     grid-template-columns: 1fr;
+}
+
+.affiliate-link-grid--two-col {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .affiliate-link-card {
@@ -826,6 +860,10 @@ img {
     .affiliate-footer-block .affiliate-link-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    .amazon-recommendation-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 @media (min-width: 1200px) {
@@ -849,27 +887,26 @@ img {
     }
 
     .amazon-recommendation-grid {
-        display: flex;
+        display: grid;
+        grid-template-columns: 1fr;
         gap: 10px;
-        overflow-x: auto;
-        padding-bottom: 2px;
-        scroll-snap-type: x proximity;
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-    }
-
-    .amazon-recommendation-grid::-webkit-scrollbar {
-        display: none;
+        overflow: visible;
+        padding-bottom: 0;
+        scroll-snap-type: none;
     }
 
     .amazon-recommendation-card {
-        flex: 0 0 min(250px, 82vw);
-        scroll-snap-align: start;
+        flex: none;
+        scroll-snap-align: none;
     }
 
     .affiliate-footer-block .affiliate-link-grid,
     .seo-link-hub__grid--three,
     .guide-grid.guide-grid--2x2 {
+        grid-template-columns: 1fr;
+    }
+
+    .affiliate-footer-block .affiliate-link-grid--two-col {
         grid-template-columns: 1fr;
     }
 

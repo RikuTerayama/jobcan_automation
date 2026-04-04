@@ -1,4 +1,4 @@
-{% set affiliate_cards_variant = affiliate_cards_variant|default('grid') %}
+{% set affiliate_cards_variant = affiliate_cards_variant|default('two-col') %}
 {% set affiliate_cards = [
     {
         'href': 'https://rpx.a8.net/svt/ejp?a8mat=4AX5KD+97MGQA+2HOM+656YP&rakuten=y&a8ejpredirect=http%3A%2F%2Fhb.afl.rakuten.co.jp%2Fhgc%2F0ea62065.34400275.0ea62066.204f04c0%2Fa26020776127_4AX5KD_97MGQA_2HOM_656YP%3Fpc%3Dhttp%253A%252F%252Fwww.rakuten.co.jp%252F%26m%3Dhttp%253A%252F%252Fm.rakuten.co.jp%252F',
@@ -31,8 +31,10 @@
         'cta': 'まとめて探す'
     }
 ] %}
-{% if affiliate_cards_variant == 'module' %}
+{% if affiliate_cards_variant in ['module', 'single'] %}
     {% set display_cards = affiliate_cards[:1] %}
+{% elif affiliate_cards_variant in ['two-col', 'grid', 'rakuten-two'] %}
+    {% set display_cards = affiliate_cards[:2] %}
 {% else %}
     {% set display_cards = affiliate_cards %}
 {% endif %}

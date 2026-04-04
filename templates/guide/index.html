@@ -46,6 +46,13 @@
                 <a href="/glossary">用語集</a>
             </div>
         </section>
+        {% if affiliate_can_render_textlinks() and AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_items|default([])|length > 0) %}
+        {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=true, affiliate_section_class='affiliate-cards-section--upper', affiliate_section_tier='upper-amazon', amazon_items_override=amazon_affiliate_items[:3], amazon_section_title='Amazon Recommendations' %}
+            {% include 'includes/affiliate_cards_section.html' %}
+        {% endwith %}
+        {% set affiliate_upper_amazon_rendered = true %}
+        {% set affiliate_disclosure_rendered = true %}
+        {% endif %}
 
         <section class="guide-section" aria-labelledby="guide-core-heading">
             <h2 id="guide-core-heading">まず読むガイド</h2>
@@ -72,6 +79,13 @@
                 </article>
             </div>
         </section>
+        {% if affiliate_can_render_textlinks() and AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_items|default([])|length > 0) %}
+        {% set amazon_mid_items = amazon_affiliate_items[3:6] if (amazon_affiliate_items|length > 3) else amazon_affiliate_items[:3] %}
+        {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--upper-mid', affiliate_section_tier='mid-amazon', amazon_items_override=amazon_mid_items, amazon_section_title='Amazon Recommendations' %}
+            {% include 'includes/affiliate_cards_section.html' %}
+        {% endwith %}
+        {% set affiliate_mid_amazon_rendered = true %}
+        {% endif %}
 
         <section class="guide-section" aria-labelledby="guide-planning-heading">
             <h2 id="guide-planning-heading">導入判断と運用設計に役立つガイド</h2>
@@ -93,6 +107,12 @@
                 </article>
             </div>
         </section>
+        {% if affiliate_can_render_textlinks() %}
+        {% with affiliate_networks=['rakuten'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--mid-rakuten', affiliate_section_tier='mid-rakuten', affiliate_rakuten_variant='two-col' %}
+            {% include 'includes/affiliate_cards_section.html' %}
+        {% endwith %}
+        {% set affiliate_rakuten_rendered = true %}
+        {% endif %}
 
         <section class="guide-section" aria-labelledby="guide-tool-heading">
             <h2 id="guide-tool-heading">ツール別ガイド</h2>
