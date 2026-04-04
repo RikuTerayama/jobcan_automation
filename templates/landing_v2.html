@@ -39,6 +39,13 @@
                 <a href="/guide" class="btn btn-secondary">ガイドを見る</a>
             </div>
         </section>
+        {% if affiliate_can_render_textlinks() and AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_items|default([])|length > 0) %}
+        {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=true, affiliate_section_class='affiliate-cards-section--upper', affiliate_section_tier='upper-amazon', amazon_items_override=amazon_affiliate_items[:3], amazon_section_title='Amazon Recommendations' %}
+            {% include 'includes/affiliate_cards_section.html' %}
+        {% endwith %}
+        {% set affiliate_upper_amazon_rendered = true %}
+        {% set affiliate_disclosure_rendered = true %}
+        {% endif %}
 
         <section class="landing-section" aria-labelledby="starter-pages-heading">
             <div class="landing-section__header">
@@ -62,6 +69,16 @@
                 {% endfor %}
             </div>
         </section>
+        {% if affiliate_can_render_textlinks() and AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_items|default([])|length > 0) %}
+        {% set amazon_mid_items = amazon_affiliate_items[3:6] %}
+        {% if amazon_mid_items|length < 3 %}
+            {% set amazon_mid_items = amazon_affiliate_items[:3] %}
+        {% endif %}
+        {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--upper-mid', affiliate_section_tier='mid-amazon', amazon_items_override=amazon_mid_items, amazon_section_title='Amazon Recommendations' %}
+            {% include 'includes/affiliate_cards_section.html' %}
+        {% endwith %}
+        {% set affiliate_mid_amazon_rendered = true %}
+        {% endif %}
 
         {% with seo_link_hub_grid_class='seo-link-hub__grid--three' %}
             {% include 'includes/seo_link_hub.html' %}
@@ -85,6 +102,12 @@
                 {% endfor %}
             </div>
         </section>
+        {% if affiliate_can_render_textlinks() %}
+        {% with affiliate_networks=['rakuten'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--mid-rakuten', affiliate_section_tier='mid-rakuten', affiliate_rakuten_variant='two-col' %}
+            {% include 'includes/affiliate_cards_section.html' %}
+        {% endwith %}
+        {% set affiliate_rakuten_rendered = true %}
+        {% endif %}
 
         <section class="landing-section">
             <div class="landing-trust-card" data-reveal>

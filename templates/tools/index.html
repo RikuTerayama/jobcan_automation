@@ -229,16 +229,28 @@
                 <span class="copy-lines__line"><a href="/guide/complete" style="color: #4A9EFF;">完全ガイド</a>、<a href="/case-studies" style="color: #4A9EFF;">導入事例</a>、<a href="/blog" style="color: #4A9EFF;">ブログ</a>、<a href="/glossary" style="color: #4A9EFF;">用語集</a> もあわせてご利用ください。</span>
             </p>
         </div>
-        {% if affiliate_top_slot_mode == 'tool' and affiliate_top_slot_id %}
-        {% with slot_id=affiliate_top_slot_id, slot_render_fallback=true, slot_disable_widget=false, slot_extra_class='affiliate-slot--primary-inline affiliate-slot--content-inline' %}
-            {% include 'includes/affiliate_slot.html' %}
+        {% if affiliate_can_render_textlinks() and AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_items|default([])|length > 0) %}
+        {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=true, affiliate_section_class='affiliate-cards-section--upper', affiliate_section_tier='upper-amazon', amazon_items_override=amazon_affiliate_items[:3], amazon_section_title='Amazon Recommendations' %}
+            {% include 'includes/affiliate_cards_section.html' %}
         {% endwith %}
+        {% set affiliate_upper_amazon_rendered = true %}
+        {% set affiliate_disclosure_rendered = true %}
         {% endif %}
         
         <div style="max-width: 800px; margin: 0 auto 30px;" data-reveal data-reveal-delay="100">
             <input type="text" id="search-input" placeholder="🔍 ツール名や説明で検索..." 
                    style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: #FFFFFF; font-size: 1em;">
         </div>
+        {% if affiliate_can_render_textlinks() and AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_items|default([])|length > 0) %}
+        {% set amazon_mid_items = amazon_affiliate_items[3:6] %}
+        {% if amazon_mid_items|length < 3 %}
+            {% set amazon_mid_items = amazon_affiliate_items[:3] %}
+        {% endif %}
+        {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--upper-mid', affiliate_section_tier='mid-amazon', amazon_items_override=amazon_mid_items, amazon_section_title='Amazon Recommendations' %}
+            {% include 'includes/affiliate_cards_section.html' %}
+        {% endwith %}
+        {% set affiliate_mid_amazon_rendered = true %}
+        {% endif %}
         
         <div class="products-grid" id="products-grid" data-reveal-stagger>
             {% for product in products %}
@@ -290,6 +302,12 @@
         </div>
         
         <div id="no-results" hidden style="display: none; text-align: center; padding: 40px; color: rgba(255, 255, 255, 0.6);" aria-hidden="true"></div>
+        {% if affiliate_can_render_textlinks() %}
+        {% with affiliate_networks=['rakuten'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--mid-rakuten', affiliate_section_tier='mid-rakuten', affiliate_rakuten_variant='two-col' %}
+            {% include 'includes/affiliate_cards_section.html' %}
+        {% endwith %}
+        {% set affiliate_rakuten_rendered = true %}
+        {% endif %}
         
         <script>
             document.addEventListener('DOMContentLoaded', () => {

@@ -745,10 +745,12 @@
             </header>
             
             <div class="content" data-reveal data-reveal-delay="50">
-                {% if affiliate_top_slot_mode == 'autofill' and affiliate_top_slot_id %}
-                {% with slot_id=affiliate_top_slot_id, slot_render_fallback=true, slot_disable_widget=false, slot_extra_class='affiliate-slot--primary-inline affiliate-slot--content-inline' %}
-                    {% include 'includes/affiliate_slot.html' %}
+                {% if affiliate_can_render_textlinks() and AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_items|default([])|length > 0) %}
+                {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=true, affiliate_section_class='affiliate-cards-section--upper', affiliate_section_tier='upper-amazon', amazon_items_override=amazon_affiliate_items[:3], amazon_section_title='Amazon Recommendations' %}
+                    {% include 'includes/affiliate_cards_section.html' %}
                 {% endwith %}
+                {% set affiliate_upper_amazon_rendered = true %}
+                {% set affiliate_disclosure_rendered = true %}
                 {% endif %}
                 <h1 class="sr-only">Jobcan勤怠データ自動入力ツール</h1>
             <form id="uploadForm" enctype="multipart/form-data">
@@ -831,6 +833,16 @@
                     総合ガイドを読む →
                 </a>
             </section>
+            {% if affiliate_can_render_textlinks() and AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_items|default([])|length > 0) %}
+            {% set amazon_mid_items = amazon_affiliate_items[3:6] %}
+            {% if amazon_mid_items|length < 3 %}
+                {% set amazon_mid_items = amazon_affiliate_items[:3] %}
+            {% endif %}
+            {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--upper-mid', affiliate_section_tier='mid-amazon', amazon_items_override=amazon_mid_items, amazon_section_title='Amazon Recommendations' %}
+                {% include 'includes/affiliate_cards_section.html' %}
+            {% endwith %}
+            {% set affiliate_mid_amazon_rendered = true %}
+            {% endif %}
 
             <section aria-labelledby="use-cases-heading" style="margin-top: 50px; padding: 35px; background: rgba(255, 255, 255, 0.04); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.12);">
                 <h2 id="use-cases-heading" style="font-size: 1.7em; margin-bottom: 25px; color: #FFFFFF;">💼 こんな場面で活用できます</h2>
@@ -900,6 +912,12 @@
                     </div>
                 </div>
             </section>
+            {% if affiliate_can_render_textlinks() %}
+            {% with affiliate_networks=['rakuten'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--mid-rakuten', affiliate_section_tier='mid-rakuten', affiliate_rakuten_variant='two-col' %}
+                {% include 'includes/affiliate_cards_section.html' %}
+            {% endwith %}
+            {% set affiliate_rakuten_rendered = true %}
+            {% endif %}
 
 
             <section aria-labelledby="faq-highlight-heading" style="margin-top: 50px; padding: 35px; background: rgba(255, 255, 255, 0.04); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.12);">
