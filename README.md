@@ -11,7 +11,7 @@ Affiliate layout order across public pages is:
 
 - `AMAZON_CREATORS_CLIENT_ID`
 - `AMAZON_CREATORS_CLIENT_SECRET`
-- `AMAZON_ASSOCIATE_TAG` (example: `ieltsconsult-22`)
+- `AMAZON_ASSOCIATE_TAG` (example: `jobcanauto-22`)
 - `AMAZON_AFFILIATE_ENABLED` (`true` / `false`)
 - `AMAZON_CACHE_TTL_SECONDS` (default: `3300`)
 - `AMAZON_MAX_ITEMS` (default: `6`)
@@ -24,6 +24,7 @@ Affiliate layout order across public pages is:
 - Amazon credentials are used server-side only. Secrets are never exposed to client-side JavaScript.
 - Recommendation inputs use page path, page type, product tags/categories, and recent on-site browsing history from a first-party cookie.
 - Amazon destination URLs are generated from approved `query` / `query_variants` only (page titles/headings are never used as search query text).
+- Amazon `tag` is always injected from runtime `AMAZON_ASSOCIATE_TAG` (existing stale `tag=` in upstream URLs is overwritten).
 - Upper/Mid Amazon cards are selected from an approved theme pool (`lib/amazon_affiliate_map.py` -> `AMAZON_THEME_POOL`) using deterministic rotation.
 - Only `enabled: true` themes are eligible for production. Keep new AI-proposed themes as `enabled: false` until manual approval.
 - Rotation is stable per cadence bucket (`daily` / `weekly` / `biweekly`) and does not flicker per request.
@@ -47,6 +48,7 @@ Affiliate layout order across public pages is:
   2. `Auto-Deploy` status
   3. Manual deploy of latest commit if needed
 - If Render is tracking `main` while changes are only on `feature/add-csv-excel-utility`, production will not reflect those changes until merge/cherry-pick to `main` (or changing Render deploy branch).
+- After changing Render environment variables (including `AMAZON_ASSOCIATE_TAG`), trigger a service restart/redeploy so worker processes load the new value.
 
 Jobcan自動入力と各種業務効率化ツールを提供するWebアプリケーションです。
 
