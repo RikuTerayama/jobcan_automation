@@ -84,6 +84,18 @@ def get_settings() -> Dict[str, object]:
     }
 
 
+def _current_associate_tag(settings: Optional[Dict[str, object]] = None) -> str:
+    """Resolve the active associate tag from runtime env (single source of truth)."""
+    env_tag = (os.getenv("AMAZON_ASSOCIATE_TAG") or "").strip()
+    if env_tag:
+        if settings is not None:
+            settings["associate_tag"] = env_tag
+        return env_tag
+    if settings is None:
+        return ""
+    return str(settings.get("associate_tag") or "").strip()
+
+
 def _dedupe_keep_order(values: Iterable[str]) -> List[str]:
     seen = set()
     output: List[str] = []
@@ -366,7 +378,7 @@ def _make_cache_key(settings: Dict[str, object], keywords: List[str]) -> str:
     raw = "|".join(
         [
             str(settings.get("marketplace_locale", "")),
-            str(settings.get("associate_tag", "")),
+            _current_associate_tag(settings),
             str(settings.get("max_items", "")),
             "::".join(keywords[:10]),
         ]
@@ -443,25 +455,21 @@ def _get_access_token(settings: Dict[str, object]) -> Optional[str]:
 
 
 def _append_associate_tag(url: str, associate_tag: str) -> str:
-    if not url or not associate_tag:
+    if not url:
         return url
     parsed = urlparse(url)
     if "amazon." not in parsed.netloc:
         return url
-    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
-    if "tag" in query:
-        return url
-    query["tag"] = associate_tag
-    return urlunparse(parsed._replace(query=urlencode(query)))
+    query_pairs = [(k, v) for k, v in parse_qsl(parsed.query, keep_blank_values=True) if k.lower() != "tag"]
+    if associate_tag:
+        query_pairs.append(("tag", associate_tag))
+    return urlunparse(parsed._replace(query=urlencode(query_pairs)))
 
 
 def _build_search_url(settings: Dict[str, object], keyword: str) -> str:
     host = str(settings.get("marketplace_host") or "www.amazon.co.jp").strip()
-    params = {"k": keyword}
-    tag = str(settings.get("associate_tag") or "").strip()
-    if tag:
-        params["tag"] = tag
-    return f"https://{host}/s?{urlencode(params)}"
+    base_url = f"https://{host}/s?{urlencode({'k': keyword})}"
+    return _append_associate_tag(base_url, _current_associate_tag(settings))
 
 
 def _build_fallback_items(settings: Dict[str, object], keywords: List[str]) -> List[dict]:
@@ -590,13 +598,14 @@ def _extract_items(payload: dict, associate_tag: str, max_items: int) -> List[di
 
 
 def _search_items(settings: Dict[str, object], token: str, keyword: str) -> List[dict]:
+    associate_tag = _current_associate_tag(settings)
     endpoint = "https://{host}{base}/{operation}".format(
         host=settings["api_host"],
         base=str(settings["api_base_path"]).rstrip("/"),
         operation=str(settings["api_operation"]).lstrip("/"),
     )
     payload = {
-        "partnerTag": settings["associate_tag"],
+        "partnerTag": associate_tag,
         "partnerType": "Associates",
         "keywords": keyword,
         "itemCount": min(10, int(settings["max_items"])),
@@ -649,7 +658,7 @@ def _search_items(settings: Dict[str, object], token: str, keyword: str) -> List
         logger.warning("amazon_creators_search_semantic_error keyword=%s errors=%s", keyword, str(body.get("errors"))[:300])
         return []
 
-    return _extract_items(body, str(settings["associate_tag"]), int(settings["max_items"]))
+    return _extract_items(body, associate_tag, int(settings["max_items"]))
 
 
 def get_recommendations(
@@ -660,6 +669,7 @@ def get_recommendations(
     recent_history: Optional[Iterable[dict]] = None,
 ) -> Dict[str, object]:
     settings = get_settings()
+    associate_tag = _current_associate_tag(settings)
     enabled = bool(settings["enabled"])
 
     result: Dict[str, object] = {
@@ -685,7 +695,7 @@ def get_recommendations(
     result["keywords"] = keywords
     fallback_keywords = list(keywords) or list(DEFAULT_FALLBACK_KEYWORDS)
 
-    if not settings["associate_tag"]:
+    if not associate_tag:
         logger.warning("amazon_creators_missing_associate_tag path=%s page_type=%s", path, page_type)
         return _apply_fallback(result, "missing_associate_tag", settings, fallback_keywords)
 

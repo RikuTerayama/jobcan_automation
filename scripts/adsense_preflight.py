@@ -30,6 +30,12 @@ A8_ROTATION_SRC_FRAGMENT = 'rot3.a8.net/jsa/fdf80b714de10cbdd802fd2333444e15/c6f
 RAKUTEN_SMALL_CARD_IMAGE_FRAGMENT = '0eb4bbcf.7ab43877.0eb4bbaa.95151395'
 AMAZON_FORBIDDEN_QUERY_FRAGMENTS = ['jobcan autofill |', 'jobcan autofill']
 AMAZON_MAX_QUERY_LENGTH = 48
+AMAZON_EXPECTED_ASSOCIATE_TAG = (os.getenv('AMAZON_ASSOCIATE_TAG') or '').strip()
+AMAZON_DEPRECATED_ASSOCIATE_TAGS = {
+    tag.strip()
+    for tag in (os.getenv('AMAZON_DEPRECATED_ASSOCIATE_TAGS', '') or '').split(',')
+    if tag.strip()
+}
 
 # sitemap.xml に含まれるべき重要URL（完全一致：末尾スラッシュなし）
 SITEMAP_REQUIRED_URLS = ['/', '/autofill', '/tools', '/blog', '/glossary', '/guide/excel-format', '/best-practices', '/guide/complete', '/guide/comprehensive-guide']
@@ -533,13 +539,17 @@ def _run_checks(get_fn, base_url, use_headers=True):
                 for a in soup.select('.amazon-recommendation-grid .amazon-recommendation-card__anchor')
             ]
             amazon_queries = []
+            amazon_tags = []
             for href in amazon_hrefs:
                 parsed = urlparse(href or '')
                 if 'amazon.' not in (parsed.netloc or ''):
                     continue
                 query_value = parse_qs(parsed.query).get('k', [''])[0].strip()
+                tag_value = parse_qs(parsed.query).get('tag', [''])[0].strip()
                 if query_value:
                     amazon_queries.append(query_value)
+                if tag_value:
+                    amazon_tags.append(tag_value)
             invalid_amazon_queries = [
                 query
                 for query in amazon_queries
@@ -550,6 +560,13 @@ def _run_checks(get_fn, base_url, use_headers=True):
                     or any(fragment in query.lower() for fragment in AMAZON_FORBIDDEN_QUERY_FRAGMENTS)
                 )
             ]
+            invalid_amazon_tags = []
+            for tag in amazon_tags:
+                if AMAZON_EXPECTED_ASSOCIATE_TAG and tag != AMAZON_EXPECTED_ASSOCIATE_TAG:
+                    invalid_amazon_tags.append(tag)
+                    continue
+                if tag in AMAZON_DEPRECATED_ASSOCIATE_TAGS:
+                    invalid_amazon_tags.append(tag)
             rakuten_card_count = len(soup.select('.affiliate-stack [data-affiliate-network="rakuten"] .affiliate-link-card'))
             amazon_indices = [idx for idx, network in enumerate(normalized_rows) if network == 'amazon']
             rakuten_indices = [idx for idx, network in enumerate(normalized_rows) if network == 'rakuten']
@@ -588,6 +605,7 @@ def _run_checks(get_fn, base_url, use_headers=True):
                 and has_rotation_script
                 and (not has_amazon or amazon_card_count >= 3)
                 and (not has_amazon or len(invalid_amazon_queries) == 0)
+                and (not has_amazon or len(invalid_amazon_tags) == 0)
                 and not has_removed_a8_text
                 and not removed_text_found
             )
@@ -597,7 +615,7 @@ def _run_checks(get_fn, base_url, use_headers=True):
                     path,
                     f'OK stack={stack_count} rows={normalized_rows} disclosures={disclosure_count} upper_amazon={has_upper_amazon} mid_amazon={has_mid_amazon} mid_rakuten={has_mid_rakuten} lower_a8={has_lower_a8}'
                     if ok else
-                    f'FAIL ct={content_type or "missing"} meta={meta_utf8} stack={stack_count} rows={normalized_rows} disclosures={disclosure_count} slots={slot_count} upper_amazon={has_upper_amazon} mid_amazon={has_mid_amazon} mid_rakuten={has_mid_rakuten} lower_a8={has_lower_a8} two_amazon_ok={two_amazon_ok} amazon_cards={amazon_card_count} amazon_invalid_queries={invalid_amazon_queries[:2]} rakuten_cards={rakuten_card_count} small_rakuten={has_small_rakuten_card_image} a8={has_rotation_script} removed_a8_text={has_removed_a8_text} removed={removed_text_found}',
+                    f'FAIL ct={content_type or "missing"} meta={meta_utf8} stack={stack_count} rows={normalized_rows} disclosures={disclosure_count} slots={slot_count} upper_amazon={has_upper_amazon} mid_amazon={has_mid_amazon} mid_rakuten={has_mid_rakuten} lower_a8={has_lower_a8} two_amazon_ok={two_amazon_ok} amazon_cards={amazon_card_count} amazon_invalid_queries={invalid_amazon_queries[:2]} amazon_invalid_tags={invalid_amazon_tags[:2]} amazon_expected_tag={AMAZON_EXPECTED_ASSOCIATE_TAG or "unset"} rakuten_cards={rakuten_card_count} small_rakuten={has_small_rakuten_card_image} a8={has_rotation_script} removed_a8_text={has_removed_a8_text} removed={removed_text_found}',
                     ok,
                 )
             )
