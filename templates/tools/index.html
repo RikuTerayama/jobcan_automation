@@ -229,8 +229,8 @@
                 <span class="copy-lines__line"><a href="/guide/complete" style="color: #4A9EFF;">完全ガイド</a>、<a href="/case-studies" style="color: #4A9EFF;">導入事例</a>、<a href="/blog" style="color: #4A9EFF;">ブログ</a>、<a href="/glossary" style="color: #4A9EFF;">用語集</a> もあわせてご利用ください。</span>
             </p>
         </div>
-        {% if affiliate_can_render_textlinks() and AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_purpose_items|default([])|length > 0) %}
-        {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=true, affiliate_section_class='affiliate-cards-section--upper', affiliate_section_tier='upper-amazon', amazon_items_override=amazon_affiliate_purpose_items[:3], amazon_section_title='目的から選ぶ Amazon おすすめ' %}
+        {% if affiliate_can_render_textlinks() and AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_upper_items|default([])|length > 0) %}
+        {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=true, affiliate_section_class='affiliate-cards-section--upper', affiliate_section_tier='upper-amazon', amazon_items_override=amazon_affiliate_upper_items[:3], amazon_section_title='目的から選ぶ Amazon おすすめ' %}
             {% include 'includes/affiliate_cards_section.html' %}
         {% endwith %}
         {% set affiliate_upper_amazon_rendered = true %}
@@ -241,12 +241,8 @@
             <input type="text" id="search-input" placeholder="🔍 ツール名や説明で検索..." 
                    style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; color: #FFFFFF; font-size: 1em;">
         </div>
-        {% if affiliate_can_render_textlinks() and AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_items|default([])|length > 0) %}
-        {% set amazon_mid_items = amazon_affiliate_items[3:6] %}
-        {% if amazon_mid_items|length < 3 %}
-            {% set amazon_mid_items = amazon_affiliate_items[:3] %}
-        {% endif %}
-        {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--upper-mid', affiliate_section_tier='mid-amazon', amazon_items_override=amazon_mid_items, amazon_section_title='関連キーワードから探す Amazon おすすめ' %}
+        {% if affiliate_can_render_textlinks() and AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_mid_items|default([])|length > 0) %}
+        {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--upper-mid', affiliate_section_tier='mid-amazon', amazon_items_override=amazon_affiliate_mid_items[:3], amazon_section_title='関連キーワードから探す Amazon おすすめ' %}
             {% include 'includes/affiliate_cards_section.html' %}
         {% endwith %}
         {% set affiliate_mid_amazon_rendered = true %}

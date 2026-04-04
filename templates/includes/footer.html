@@ -1,17 +1,13 @@
 ﻿<footer style="background: var(--color-bg-primary, #121212); padding: var(--spacing-xl, 48px) var(--spacing-md, 16px); margin-top: var(--spacing-xl, 48px); border-top: 1px solid rgba(255, 255, 255, 0.1);">
     <div style="max-width: 1200px; margin: 0 auto;">
         {% set can_render_affiliate = affiliate_can_render_textlinks() %}
-        {% set has_amazon_items = AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_items|default([])|length > 0) %}
-        {% set has_amazon_purpose_items = AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_purpose_items|default([])|length > 0) %}
-        {% set footer_amazon_items = amazon_affiliate_items|default([]) %}
-        {% set footer_amazon_purpose_items = amazon_affiliate_purpose_items|default([]) %}
-        {% set footer_mid_amazon_items = footer_amazon_items[3:6] %}
-        {% if footer_mid_amazon_items|length < 3 %}
-            {% set footer_mid_amazon_items = footer_amazon_items[:3] %}
-        {% endif %}
+        {% set footer_amazon_upper_items = amazon_affiliate_upper_items|default([]) %}
+        {% set footer_amazon_mid_items = amazon_affiliate_mid_items|default([]) %}
+        {% set has_amazon_upper_items = AMAZON_AFFILIATE_ENABLED|default(false) and (footer_amazon_upper_items|length > 0) %}
+        {% set has_amazon_mid_items = AMAZON_AFFILIATE_ENABLED|default(false) and (footer_amazon_mid_items|length > 0) %}
         {% set affiliate_disclosure_rendered = affiliate_disclosure_rendered|default(false) %}
-        {% set footer_needs_upper_amazon = can_render_affiliate and has_amazon_purpose_items and not affiliate_upper_amazon_rendered|default(false) %}
-        {% set footer_needs_mid_amazon = can_render_affiliate and has_amazon_items and not affiliate_mid_amazon_rendered|default(false) %}
+        {% set footer_needs_upper_amazon = can_render_affiliate and has_amazon_upper_items and not affiliate_upper_amazon_rendered|default(false) %}
+        {% set footer_needs_mid_amazon = can_render_affiliate and has_amazon_mid_items and not affiliate_mid_amazon_rendered|default(false) %}
         {% set footer_needs_rakuten = can_render_affiliate and not affiliate_rakuten_rendered|default(false) %}
         {% set footer_needs_a8 = can_render_affiliate and not affiliate_a8_rendered|default(false) %}
         {% if related_content_section %}
@@ -24,7 +20,7 @@
             {% endwith %}
         {% endif %}
         {% if footer_needs_upper_amazon %}
-            {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=(not affiliate_disclosure_rendered), affiliate_section_class='affiliate-cards-section--upper affiliate-cards-section--footer-fallback', affiliate_section_tier='upper-amazon', amazon_items_override=footer_amazon_purpose_items[:3], amazon_section_title='気になる目的から選ぶ Amazon おすすめ' %}
+            {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=(not affiliate_disclosure_rendered), affiliate_section_class='affiliate-cards-section--upper affiliate-cards-section--footer-fallback', affiliate_section_tier='upper-amazon', amazon_items_override=footer_amazon_upper_items[:3], amazon_section_title='気になる目的から選ぶ Amazon おすすめ' %}
                 {% include 'includes/affiliate_cards_section.html' %}
             {% endwith %}
             {% set affiliate_upper_amazon_rendered = true %}
@@ -32,7 +28,7 @@
         {% endif %}
 
         {% if footer_needs_mid_amazon %}
-            {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--upper-mid affiliate-cards-section--footer-fallback', affiliate_section_tier='mid-amazon', amazon_items_override=footer_mid_amazon_items, amazon_section_title='関連キーワードから探す Amazon おすすめ' %}
+            {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--upper-mid affiliate-cards-section--footer-fallback', affiliate_section_tier='mid-amazon', amazon_items_override=footer_amazon_mid_items[:3], amazon_section_title='関連キーワードから探す Amazon おすすめ' %}
                 {% include 'includes/affiliate_cards_section.html' %}
             {% endwith %}
             {% set affiliate_mid_amazon_rendered = true %}

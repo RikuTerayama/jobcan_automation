@@ -6,12 +6,14 @@ import logging
 import os
 import threading
 import time
+from datetime import datetime
 from typing import Dict, Iterable, List, Optional
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import requests
+from zoneinfo import ZoneInfo
 
-from lib.amazon_affiliate_map import AMAZON_PURPOSE_GENRES, PAGE_TYPE_KEYWORDS, PATH_KEYWORD_RULES
+from lib.amazon_affiliate_map import AMAZON_THEME_POOL, PAGE_TYPE_KEYWORDS, PATH_KEYWORD_RULES
 
 logger = logging.getLogger(__name__)
 
@@ -133,14 +135,88 @@ def build_keywords(
     return _dedupe_keep_order(keyword_pool)
 
 
-def build_purpose_genre_cards(
+def _stable_hash_int(value: str) -> int:
+    return int(hashlib.sha256(value.encode("utf-8")).hexdigest()[:12], 16)
+
+
+def _rotation_bucket_key() -> str:
+    cadence = (os.getenv("AMAZON_THEME_ROTATION_CADENCE") or "daily").strip().lower()
+    tz_name = (os.getenv("AMAZON_THEME_ROTATION_TZ") or "Asia/Tokyo").strip() or "Asia/Tokyo"
+    try:
+        now = datetime.now(ZoneInfo(tz_name))
+    except Exception:
+        now = datetime.utcnow()
+
+    if cadence == "weekly":
+        iso = now.isocalendar()
+        return f"weekly:{iso.year}-W{iso.week:02d}"
+    if cadence == "biweekly":
+        iso = now.isocalendar()
+        biweek = ((iso.week - 1) // 2) + 1
+        return f"biweekly:{iso.year}-BW{biweek:02d}"
+    if cadence == "hourly":
+        return now.strftime("hourly:%Y-%m-%d-%H")
+    # default daily
+    return now.strftime("daily:%Y-%m-%d")
+
+
+def _enabled_theme_pool() -> List[Dict[str, object]]:
+    return [theme for theme in AMAZON_THEME_POOL if bool(theme.get("enabled", False))]
+
+
+def _theme_score(theme: Dict[str, object], path: str, page_type: str, context_keywords: List[str]) -> int:
+    score = 0
+    normalized_path = path or "/"
+    normalized_page_type = (page_type or "").strip()
+    context_text = " ".join([str(v) for v in context_keywords if v]).lower()
+
+    priority_page_types = [str(v) for v in (theme.get("priority_page_types") or [])]
+    if normalized_page_type and normalized_page_type in priority_page_types:
+        score += 3
+
+    priority_path_prefixes = [str(v) for v in (theme.get("priority_path_prefixes") or [])]
+    for prefix in priority_path_prefixes:
+        if prefix and normalized_path.startswith(prefix):
+            score += 4
+            break
+
+    query = str(theme.get("query") or "").strip().lower()
+    if query and query in context_text:
+        score += 1
+
+    for keyword in [str(v).strip().lower() for v in (theme.get("query_variants") or [])]:
+        if keyword and keyword in context_text:
+            score += 1
+            break
+
+    return score
+
+
+def _rotate_group(items: List[Dict[str, object]], seed: str) -> List[Dict[str, object]]:
+    if len(items) <= 1:
+        return list(items)
+    ordered = sorted(items, key=lambda x: str(x.get("id") or ""))
+    offset = _stable_hash_int(seed) % len(ordered)
+    return ordered[offset:] + ordered[:offset]
+
+
+def build_rotating_theme_cards(
     path: str,
     page_type: str,
     title: str = "",
     tags: Optional[Iterable[str]] = None,
     recent_history: Optional[Iterable[dict]] = None,
+    slot_id: str = "upper-amazon",
+    count: int = 3,
+    exclude_theme_ids: Optional[Iterable[str]] = None,
 ) -> List[dict]:
     settings = get_settings()
+    max_count = max(1, int(count))
+    exclude_ids = {str(v) for v in (exclude_theme_ids or []) if v}
+    approved_pool = _enabled_theme_pool()
+    if not approved_pool:
+        return []
+
     keyword_pool = build_keywords(
         path=path,
         page_type=page_type,
@@ -151,28 +227,98 @@ def build_purpose_genre_cards(
     if not keyword_pool:
         keyword_pool = list(PAGE_TYPE_KEYWORDS.get(page_type or "", [])) or list(DEFAULT_FALLBACK_KEYWORDS)
 
+    rotation_key = _rotation_bucket_key()
+    score_map: Dict[str, int] = {}
+    for theme in approved_pool:
+        theme_id = str(theme.get("id") or "")
+        score_map[theme_id] = _theme_score(theme, path, page_type, keyword_pool)
+
+    grouped_by_score: Dict[int, List[Dict[str, object]]] = {}
+    for theme in approved_pool:
+        theme_id = str(theme.get("id") or "")
+        score = score_map.get(theme_id, 0)
+        grouped_by_score.setdefault(score, []).append(theme)
+
+    ordered_candidates: List[Dict[str, object]] = []
+    for score in sorted(grouped_by_score.keys(), reverse=True):
+        rotated = _rotate_group(
+            grouped_by_score[score],
+            seed=f"{rotation_key}:{path}:{page_type}:{slot_id}:score:{score}",
+        )
+        ordered_candidates.extend(rotated)
+
+    selected_themes: List[Dict[str, object]] = []
+    for theme in ordered_candidates:
+        theme_id = str(theme.get("id") or "")
+        if theme_id in exclude_ids:
+            continue
+        selected_themes.append(theme)
+        if len(selected_themes) >= max_count:
+            break
+
+    if len(selected_themes) < max_count:
+        fallback_rotated_pool = _rotate_group(
+            approved_pool,
+            seed=f"{rotation_key}:{path}:{page_type}:{slot_id}:fallback",
+        )
+        used_ids = {str(theme.get("id") or "") for theme in selected_themes}
+        for theme in fallback_rotated_pool:
+            theme_id = str(theme.get("id") or "")
+            if theme_id in exclude_ids or theme_id in used_ids:
+                continue
+            selected_themes.append(theme)
+            used_ids.add(theme_id)
+            if len(selected_themes) >= max_count:
+                break
+
     cards: List[dict] = []
-    for genre in AMAZON_PURPOSE_GENRES[:3]:
-        genre_keywords = _dedupe_keep_order(
-            [str(genre.get("query") or "")]
-            + [str(v) for v in (genre.get("keywords") or [])]
+    for theme in selected_themes:
+        theme_id = str(theme.get("id") or "")
+        query_candidates = _dedupe_keep_order(
+            [str(theme.get("query") or "")]
+            + [str(v) for v in (theme.get("query_variants") or [])]
             + keyword_pool
         )
-        search_keyword = genre_keywords[0] if genre_keywords else DEFAULT_FALLBACK_KEYWORDS[0]
+        if not query_candidates:
+            query_candidates = list(DEFAULT_FALLBACK_KEYWORDS)
+        query_offset = _stable_hash_int(
+            f"{rotation_key}:{path}:{page_type}:{slot_id}:{theme_id}:query"
+        ) % len(query_candidates)
+        search_keyword = query_candidates[query_offset]
 
         cards.append(
             {
-                "title": str(genre.get("title") or search_keyword),
-                "category_label": str(genre.get("category_label") or "おすすめ"),
+                "title": str(theme.get("title") or search_keyword),
+                "category_label": str(theme.get("category_label") or "おすすめ"),
                 "image_url": "",
                 "url": _build_search_url(settings, search_keyword),
-                "cta": str(genre.get("cta") or "Amazonで見る"),
+                "cta": str(theme.get("cta") or "Amazonで見る"),
                 "keyword": search_keyword,
-                "purpose_id": str(genre.get("id") or ""),
+                "theme_id": theme_id,
+                "rotation_bucket": rotation_key,
             }
         )
 
     return cards
+
+
+def build_purpose_genre_cards(
+    path: str,
+    page_type: str,
+    title: str = "",
+    tags: Optional[Iterable[str]] = None,
+    recent_history: Optional[Iterable[dict]] = None,
+) -> List[dict]:
+    # Backward-compat wrapper.
+    return build_rotating_theme_cards(
+        path=path,
+        page_type=page_type,
+        title=title,
+        tags=tags,
+        recent_history=recent_history,
+        slot_id="upper-amazon",
+        count=3,
+    )
 
 
 def _make_cache_key(settings: Dict[str, object], keywords: List[str]) -> str:
