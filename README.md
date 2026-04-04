@@ -22,7 +22,8 @@ Affiliate layout order across public pages is:
 ### Operational notes
 
 - Amazon credentials are used server-side only. Secrets are never exposed to client-side JavaScript.
-- Recommendation inputs use page path, page type, page title metadata, product tags/categories, and recent on-site browsing history from a first-party cookie.
+- Recommendation inputs use page path, page type, product tags/categories, and recent on-site browsing history from a first-party cookie.
+- Amazon destination URLs are generated from approved `query` / `query_variants` only (page titles/headings are never used as search query text).
 - Upper/Mid Amazon cards are selected from an approved theme pool (`lib/amazon_affiliate_map.py` -> `AMAZON_THEME_POOL`) using deterministic rotation.
 - Only `enabled: true` themes are eligible for production. Keep new AI-proposed themes as `enabled: false` until manual approval.
 - Rotation is stable per cadence bucket (`daily` / `weekly` / `biweekly`) and does not flicker per request.

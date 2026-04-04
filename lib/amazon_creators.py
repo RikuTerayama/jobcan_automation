@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 _CACHE_LOCK = threading.Lock()
 _TOKEN_CACHE: Dict[str, object] = {"token": None, "expires_at": 0.0}
 _SEARCH_CACHE: Dict[str, Dict[str, object]] = {}
+_FORBIDDEN_QUERY_FRAGMENTS = ("jobcan autofill |", "jobcan autofill")
+_MAX_SEARCH_QUERY_LEN = 48
 DEFAULT_FALLBACK_KEYWORDS: List[str] = ["デスク収納", "ノートPCスタンド", "ケーブル整理", "タイマー"]
 
 
@@ -97,6 +99,31 @@ def _dedupe_keep_order(values: Iterable[str]) -> List[str]:
     return output
 
 
+def _normalize_search_keyword(value: str) -> str:
+    cleaned = " ".join(str(value or "").split()).strip()
+    if not cleaned:
+        return ""
+    lowered = cleaned.lower()
+    if any(fragment in lowered for fragment in _FORBIDDEN_QUERY_FRAGMENTS):
+        return ""
+    if "|" in cleaned or "｜" in cleaned:
+        return ""
+    if cleaned.startswith("http://") or cleaned.startswith("https://"):
+        return ""
+    if len(cleaned) > _MAX_SEARCH_QUERY_LEN:
+        return ""
+    return cleaned
+
+
+def _dedupe_search_keywords(values: Iterable[str]) -> List[str]:
+    normalized: List[str] = []
+    for value in values:
+        cleaned = _normalize_search_keyword(value)
+        if cleaned:
+            normalized.append(cleaned)
+    return _dedupe_keep_order(normalized)
+
+
 def build_keywords(
     path: str,
     page_type: str,
@@ -117,10 +144,6 @@ def build_keywords(
     if tags:
         keyword_pool.extend([str(tag) for tag in tags if tag])
 
-    if title:
-        # Keep the title itself as a weak hint to diversify the first query.
-        keyword_pool.append(str(title).strip())
-
     if recent_history:
         for entry in recent_history:
             if not isinstance(entry, dict):
@@ -132,7 +155,29 @@ def build_keywords(
             if hist_page_type:
                 keyword_pool.extend(PAGE_TYPE_KEYWORDS.get(str(hist_page_type), []))
 
-    return _dedupe_keep_order(keyword_pool)
+    return _dedupe_search_keywords(keyword_pool)
+
+
+def _fallback_keywords_for_page(path: str, page_type: str) -> List[str]:
+    fallback_pool: List[str] = []
+    fallback_pool.extend(PAGE_TYPE_KEYWORDS.get(page_type or "", []))
+    normalized_path = path or "/"
+    for prefix, words in PATH_KEYWORD_RULES:
+        if normalized_path.startswith(prefix):
+            fallback_pool.extend(words)
+            break
+    fallback_pool.extend(DEFAULT_FALLBACK_KEYWORDS)
+    fallback_keywords = _dedupe_search_keywords(fallback_pool)
+    if fallback_keywords:
+        return fallback_keywords
+    return ["在宅勤務 グッズ", "デスク整理 グッズ", "ビジネス書 おすすめ"]
+
+
+def _theme_query_candidates(theme: Dict[str, object]) -> List[str]:
+    return _dedupe_search_keywords(
+        [str(theme.get("query") or "")]
+        + [str(v) for v in (theme.get("query_variants") or [])]
+    )
 
 
 def _stable_hash_int(value: str) -> int:
@@ -225,7 +270,7 @@ def build_rotating_theme_cards(
         recent_history=recent_history,
     )
     if not keyword_pool:
-        keyword_pool = list(PAGE_TYPE_KEYWORDS.get(page_type or "", [])) or list(DEFAULT_FALLBACK_KEYWORDS)
+        keyword_pool = _fallback_keywords_for_page(path, page_type)
 
     rotation_key = _rotation_bucket_key()
     score_map: Dict[str, int] = {}
@@ -274,13 +319,9 @@ def build_rotating_theme_cards(
     cards: List[dict] = []
     for theme in selected_themes:
         theme_id = str(theme.get("id") or "")
-        query_candidates = _dedupe_keep_order(
-            [str(theme.get("query") or "")]
-            + [str(v) for v in (theme.get("query_variants") or [])]
-            + keyword_pool
-        )
+        query_candidates = _theme_query_candidates(theme)
         if not query_candidates:
-            query_candidates = list(DEFAULT_FALLBACK_KEYWORDS)
+            query_candidates = _fallback_keywords_for_page(path, page_type)
         query_offset = _stable_hash_int(
             f"{rotation_key}:{path}:{page_type}:{slot_id}:{theme_id}:query"
         ) % len(query_candidates)
@@ -427,7 +468,10 @@ def _build_fallback_items(settings: Dict[str, object], keywords: List[str]) -> L
     max_items = max(1, int(settings.get("max_items") or 6))
     items: List[dict] = []
     seen_urls = set()
-    for keyword in _dedupe_keep_order(keywords):
+    fallback_keywords = _dedupe_search_keywords(keywords)
+    if not fallback_keywords:
+        fallback_keywords = _fallback_keywords_for_page("/", "")
+    for keyword in fallback_keywords:
         cleaned = (keyword or "").strip()
         if not cleaned:
             continue
@@ -636,7 +680,7 @@ def get_recommendations(
         recent_history=recent_history,
     )
     if not keywords:
-        keywords = list(PAGE_TYPE_KEYWORDS.get(page_type or "", [])) or list(DEFAULT_FALLBACK_KEYWORDS)
+        keywords = _fallback_keywords_for_page(path, page_type)
 
     result["keywords"] = keywords
     fallback_keywords = list(keywords) or list(DEFAULT_FALLBACK_KEYWORDS)
