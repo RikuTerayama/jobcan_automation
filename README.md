@@ -15,16 +15,28 @@ Affiliate layout order across public pages is:
 - `AMAZON_AFFILIATE_ENABLED` (`true` / `false`)
 - `AMAZON_CACHE_TTL_SECONDS` (default: `3300`)
 - `AMAZON_MAX_ITEMS` (default: `6`)
+- `AMAZON_THEME_ROTATION_CADENCE` (`daily` / `weekly` / `biweekly`, default: `daily`)
+- `AMAZON_THEME_ROTATION_TZ` (default: `Asia/Tokyo`)
 - `AFFILIATE_STACK_ONLY` (default: `true`)
 
 ### Operational notes
 
 - Amazon credentials are used server-side only. Secrets are never exposed to client-side JavaScript.
 - Recommendation inputs use page path, page type, page title metadata, product tags/categories, and recent on-site browsing history from a first-party cookie.
-- If Amazon API auth is incomplete, API returns an error, or no items are returned, the server renders keyword-based Amazon fallback links (search URLs with contextual keywords). Page rendering does not break.
+- Upper/Mid Amazon cards are selected from an approved theme pool (`lib/amazon_affiliate_map.py` -> `AMAZON_THEME_POOL`) using deterministic rotation.
+- Only `enabled: true` themes are eligible for production. Keep new AI-proposed themes as `enabled: false` until manual approval.
+- Rotation is stable per cadence bucket (`daily` / `weekly` / `biweekly`) and does not flicker per request.
+- Theme display copy (`title`, `category_label`) and destination query (`query`, `query_variants`) are managed separately.
+- If Amazon API auth is incomplete, API returns an error, or no items are returned, the page still renders and theme-based Amazon links remain available.
 - Affiliate placement is intentionally distributed: Amazon (upper area), Rakuten (mid section), A8.net (bottom area). Do not collapse all three into one footer-only block.
 - The A8.net bottom text link (`A8.net のおすすめを見る`) is intentionally removed; only the A8 rotation banner remains.
 - After deploy, verify `/`, `/guide`, `/faq`, `/privacy`, `/terms`, and `/contact` to confirm ordering and placement.
+
+### Theme refresh workflow (recommended)
+
+1. ChatGPT proposes 6 candidate themes (purpose/pain/workstyle based).
+2. Human reviewer enables 3-6 approved themes in `AMAZON_THEME_POOL`.
+3. Production rotates only approved entries by cadence.
 
 ### Render deploy-branch checklist (important)
 
