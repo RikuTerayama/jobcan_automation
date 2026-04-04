@@ -345,8 +345,17 @@ img {
 }
 
 .affiliate-stack__label--amazon {
-    color: rgba(155, 195, 255, 0.9);
-    letter-spacing: 0.04em;
+    color: rgba(190, 218, 255, 0.92);
+    letter-spacing: 0.02em;
+    text-transform: none;
+    font-size: 0.84rem;
+    font-weight: 600;
+}
+
+.affiliate-stack__row--amazon .affiliate-stack__head {
+    justify-content: center;
+    text-align: center;
+    margin-bottom: 10px;
 }
 
 .affiliate-stack__row--amazon {
@@ -362,7 +371,7 @@ img {
 }
 
 .amazon-recommendation-card {
-    min-height: 172px;
+    min-height: 176px;
     border-radius: 12px;
     border: 1px solid rgba(74, 158, 255, 0.16);
     background: linear-gradient(180deg, rgba(18, 29, 44, 0.78), rgba(14, 18, 26, 0.84));
@@ -379,10 +388,13 @@ img {
 .amazon-recommendation-card__anchor {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
     height: 100%;
-    padding: 9px 10px 10px;
+    padding: 12px 12px 11px;
     color: var(--color-text-primary);
+    text-align: center;
     text-decoration: none;
 }
 
@@ -413,16 +425,27 @@ img {
     object-fit: contain;
 }
 
+.amazon-recommendation-card__category {
+    margin: 0;
+    color: rgba(190, 218, 255, 0.86);
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
 .amazon-recommendation-card__title {
     color: var(--color-text-primary);
     font-size: 0.82rem;
-    line-height: 1.4;
-    text-align: left;
+    line-height: 1.45;
+    text-align: center;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    min-height: 2.8em;
+    min-height: 2.9em;
+    width: 100%;
+    margin: 0 auto;
 }
 
 .amazon-recommendation-card__cta {
@@ -438,7 +461,8 @@ img {
     font-size: 0.74rem;
     font-weight: 600;
     letter-spacing: 0.02em;
-    padding: 0 10px;
+    padding: 0 11px;
+    align-self: center;
 }
 
 .affiliate-a8-banner {

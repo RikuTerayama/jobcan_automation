@@ -11,7 +11,7 @@ from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 
 import requests
 
-from lib.amazon_affiliate_map import PAGE_TYPE_KEYWORDS, PATH_KEYWORD_RULES
+from lib.amazon_affiliate_map import AMAZON_PURPOSE_GENRES, PAGE_TYPE_KEYWORDS, PATH_KEYWORD_RULES
 
 logger = logging.getLogger(__name__)
 
@@ -131,6 +131,48 @@ def build_keywords(
                 keyword_pool.extend(PAGE_TYPE_KEYWORDS.get(str(hist_page_type), []))
 
     return _dedupe_keep_order(keyword_pool)
+
+
+def build_purpose_genre_cards(
+    path: str,
+    page_type: str,
+    title: str = "",
+    tags: Optional[Iterable[str]] = None,
+    recent_history: Optional[Iterable[dict]] = None,
+) -> List[dict]:
+    settings = get_settings()
+    keyword_pool = build_keywords(
+        path=path,
+        page_type=page_type,
+        title=title,
+        tags=tags,
+        recent_history=recent_history,
+    )
+    if not keyword_pool:
+        keyword_pool = list(PAGE_TYPE_KEYWORDS.get(page_type or "", [])) or list(DEFAULT_FALLBACK_KEYWORDS)
+
+    cards: List[dict] = []
+    for genre in AMAZON_PURPOSE_GENRES[:3]:
+        genre_keywords = _dedupe_keep_order(
+            [str(genre.get("query") or "")]
+            + [str(v) for v in (genre.get("keywords") or [])]
+            + keyword_pool
+        )
+        search_keyword = genre_keywords[0] if genre_keywords else DEFAULT_FALLBACK_KEYWORDS[0]
+
+        cards.append(
+            {
+                "title": str(genre.get("title") or search_keyword),
+                "category_label": str(genre.get("category_label") or "おすすめ"),
+                "image_url": "",
+                "url": _build_search_url(settings, search_keyword),
+                "cta": str(genre.get("cta") or "Amazonで見る"),
+                "keyword": search_keyword,
+                "purpose_id": str(genre.get("id") or ""),
+            }
+        )
+
+    return cards
 
 
 def _make_cache_key(settings: Dict[str, object], keywords: List[str]) -> str:
