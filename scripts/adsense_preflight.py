@@ -26,6 +26,7 @@ NON_UI_AFFILIATE_PATHS = ['/sitemap.xml', '/robots.txt', '/ads.txt', '/api/seo/c
 TWO_AMAZON_SECTION_PATHS = ['/', '/autofill', '/tools', '/guide']
 HEADER_PATHS = ['/', '/autofill', '/tools', '/guide', '/blog', '/case-studies']
 A8_ROTATION_SRC_FRAGMENT = 'rot3.a8.net/jsa/fdf80b714de10cbdd802fd2333444e15/c6f057b86584942e415435ffb1fa93d4.js'
+RAKUTEN_SMALL_CARD_IMAGE_FRAGMENT = '0eb4bbcf.7ab43877.0eb4bbaa.95151395'
 
 # sitemap.xml に含まれるべき重要URL（完全一致：末尾スラッシュなし）
 SITEMAP_REQUIRED_URLS = ['/', '/autofill', '/tools', '/blog', '/glossary', '/guide/excel-format', '/best-practices', '/guide/complete', '/guide/comprehensive-guide']
@@ -522,6 +523,7 @@ def _run_checks(get_fn, base_url, use_headers=True):
             has_a8 = 'a8' in normalized_rows
             has_amazon = 'amazon' in normalized_rows
             has_rotation_script = A8_ROTATION_SRC_FRAGMENT in body
+            has_small_rakuten_card_image = RAKUTEN_SMALL_CARD_IMAGE_FRAGMENT in body
             amazon_card_count = len(soup.select('.amazon-recommendation-grid .amazon-recommendation-card'))
             rakuten_card_count = len(soup.select('.affiliate-stack [data-affiliate-network="rakuten"] .affiliate-link-card'))
             amazon_indices = [idx for idx, network in enumerate(normalized_rows) if network == 'amazon']
@@ -557,6 +559,7 @@ def _run_checks(get_fn, base_url, use_headers=True):
                 and has_mid_rakuten
                 and has_lower_a8
                 and rakuten_card_count == 2
+                and not has_small_rakuten_card_image
                 and has_rotation_script
                 and (not has_amazon or amazon_card_count >= 3)
                 and not has_removed_a8_text
@@ -568,7 +571,7 @@ def _run_checks(get_fn, base_url, use_headers=True):
                     path,
                     f'OK stack={stack_count} rows={normalized_rows} disclosures={disclosure_count} upper_amazon={has_upper_amazon} mid_amazon={has_mid_amazon} mid_rakuten={has_mid_rakuten} lower_a8={has_lower_a8}'
                     if ok else
-                    f'FAIL ct={content_type or "missing"} meta={meta_utf8} stack={stack_count} rows={normalized_rows} disclosures={disclosure_count} slots={slot_count} upper_amazon={has_upper_amazon} mid_amazon={has_mid_amazon} mid_rakuten={has_mid_rakuten} lower_a8={has_lower_a8} two_amazon_ok={two_amazon_ok} amazon_cards={amazon_card_count} rakuten_cards={rakuten_card_count} a8={has_rotation_script} removed_a8_text={has_removed_a8_text} removed={removed_text_found}',
+                    f'FAIL ct={content_type or "missing"} meta={meta_utf8} stack={stack_count} rows={normalized_rows} disclosures={disclosure_count} slots={slot_count} upper_amazon={has_upper_amazon} mid_amazon={has_mid_amazon} mid_rakuten={has_mid_rakuten} lower_a8={has_lower_a8} two_amazon_ok={two_amazon_ok} amazon_cards={amazon_card_count} rakuten_cards={rakuten_card_count} small_rakuten={has_small_rakuten_card_image} a8={has_rotation_script} removed_a8_text={has_removed_a8_text} removed={removed_text_found}',
                     ok,
                 )
             )
