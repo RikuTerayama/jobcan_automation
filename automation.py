@@ -713,6 +713,21 @@ def perform_login(page, email, password, job_id, jobs, company_id=None):
         jobs[job_id]['login_message'] = '❌ ログイン処理でエラーが発生しました'
         return False, "login_error", error_msg
 
+def return_to_attendance_safely(page, job_id, jobs):
+    """出勤簿ページへの戻り遷移を安全に実行する。失敗しても次データ処理を継続。"""
+    attendance_url = "https://ssl.jobcan.jp/employee/attendance"
+    add_job_log(job_id, "🔄 出勤簿ページに戻ります", jobs)
+    try:
+        page.goto(attendance_url, timeout=30000)
+        # networkidle は外部通信で詰まりやすいため、戻り遷移は DOM 読込完了で十分
+        page.wait_for_load_state('domcontentloaded', timeout=15000)
+    except Exception as e:
+        error_text = str(e)
+        if "ERR_ABORTED" in error_text:
+            add_job_log(job_id, f"⚠️ 出勤簿への戻り遷移が中断されました（継続します）: {error_text}", jobs)
+        else:
+            add_job_log(job_id, f"⚠️ 出勤簿への戻り遷移でエラー（継続します）: {error_text}", jobs)
+
 def perform_actual_data_input(page, data_source, total_data, pandas_available, job_id, jobs):
     """実際のデータ入力を実行"""
     try:
@@ -862,8 +877,10 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                     try:
                         # 人間らしいタイピングで入力
                         if not human_like_typing(page, 'input[type="text"]', end_time_4digit, job_id, jobs):
-                            add_job_log(job_id, "❌ 終業時刻入力に失敗しました", jobs)
-                            continue
+                            add_job_log(job_id, "⚠️ 終業時刻のタイピング入力に失敗。fill入力で再試行します", jobs)
+                            if not reliable_fill(page, 'input[type="text"]:visible', end_time_4digit, job_id, jobs):
+                                add_job_log(job_id, "❌ 終業時刻入力に失敗しました", jobs)
+                                continue
                         
                         # 人間らしい待機
                         human_like_wait()
@@ -928,10 +945,8 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                     # データ処理完了ログを出力
                     add_job_log(job_id, f"✅ データ {processed_count}/{total_data} の処理が完了しました: {date_str}", jobs)
                     
-                    # 出勤簿ページに戻る
-                    add_job_log(job_id, "🔄 出勤簿ページに戻ります", jobs)
-                    page.goto("https://ssl.jobcan.jp/employee/attendance")
-                    page.wait_for_load_state('networkidle', timeout=30000)
+                    # 出勤簿ページに戻る（失敗しても次データ処理を継続）
+                    return_to_attendance_safely(page, job_id, jobs)
                     
                     update_progress(job_id, 6, f"勤怠データ入力中 ({processed_count}/{total_data})", jobs, processed_count, total_data)
                     # 処理間隔（4番目以降は長めに待機）
@@ -1101,8 +1116,10 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                     try:
                         # 人間らしいタイピングで入力
                         if not human_like_typing(page, 'input[type="text"]', end_time_4digit, job_id, jobs):
-                            add_job_log(job_id, "❌ 終業時刻入力に失敗しました", jobs)
-                            continue
+                            add_job_log(job_id, "⚠️ 終業時刻のタイピング入力に失敗。fill入力で再試行します", jobs)
+                            if not reliable_fill(page, 'input[type="text"]:visible', end_time_4digit, job_id, jobs):
+                                add_job_log(job_id, "❌ 終業時刻入力に失敗しました", jobs)
+                                continue
                         
                         # 人間らしい待機
                         human_like_wait()
@@ -1167,10 +1184,8 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                     # データ処理完了ログを出力
                     add_job_log(job_id, f"✅ データ {processed_count}/{total_data} の処理が完了しました: {date_str}", jobs)
                     
-                    # 出勤簿ページに戻る
-                    add_job_log(job_id, "🔄 出勤簿ページに戻ります", jobs)
-                    page.goto("https://ssl.jobcan.jp/employee/attendance")
-                    page.wait_for_load_state('networkidle', timeout=30000)
+                    # 出勤簿ページに戻る（失敗しても次データ処理を継続）
+                    return_to_attendance_safely(page, job_id, jobs)
                     
                     update_progress(job_id, 6, f"勤怠データ入力中 ({processed_count}/{total_data})", jobs, processed_count, total_data)
                     # 処理間隔（4番目以降は長めに待機）
@@ -1210,12 +1225,13 @@ def human_like_typing(page, selector, text, job_id, jobs):
         try:
             add_job_log(job_id, f"⌨️ 人間らしいタイピングを実行 (試行 {attempt + 1}/{max_retries}): {selector}", jobs)
             
-            # 要素が表示されるまで待機（タイムアウト短縮）
-            page.wait_for_selector(selector, state='visible', timeout=3000)
+            # 可視要素を対象に待機（短すぎる待機で取りこぼさない）
+            visible_selector = f"{selector}:visible"
+            page.wait_for_selector(visible_selector, state='visible', timeout=8000)
             
             # 要素をクリックしてフォーカス
-            element = page.locator(selector).first
-            if not element.is_visible():
+            element = page.locator(visible_selector).first
+            if not element.is_visible() or not element.is_enabled():
                 add_job_log(job_id, f"⚠️ 要素が見えません: {selector}", jobs)
                 if attempt < max_retries - 1:
                     human_like_wait(1.0, 2.0)
@@ -1227,13 +1243,13 @@ def human_like_typing(page, selector, text, job_id, jobs):
             human_like_wait(0.5, 1.0)
             
             # 既存の内容をクリア
-            page.fill(selector, "")
+            element.fill("")
             human_like_wait(0.3, 0.8)
             
             # 人間らしいタイピング（ランダムな遅延・短縮版）
             for i, char in enumerate(text):
                 try:
-                    page.type(selector, char, delay=random.uniform(30, 100))
+                    element.type(char, delay=random.uniform(30, 100))
                     # 長い文字列の場合は途中で少し待機
                     if i > 0 and i % 10 == 0:
                         human_like_wait(0.1, 0.2)
@@ -1251,7 +1267,7 @@ def human_like_typing(page, selector, text, job_id, jobs):
             
             # 入力内容の確認
             try:
-                actual_value = page.input_value(selector)
+                actual_value = element.input_value()
                 if actual_value == text:
                     add_job_log(job_id, f"✅ タイピング成功: {selector}", jobs)
                     return True
