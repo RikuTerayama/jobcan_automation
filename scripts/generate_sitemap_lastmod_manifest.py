@@ -29,23 +29,12 @@ def url_path_to_template_rel(url_path):
     special = {
         "": "landing.html",
         "autofill": "autofill.html",
-        "guide": "guide/index.html",
-        "guide/complete": "guide/complete-guide.html",
-        "guide/comprehensive-guide": "guide/comprehensive-guide.html",
-        "blog": "blog/index.html",
         "tools": "tools/index.html",
-        "sitemap.html": "sitemap.html",
-        "case-studies": "case-studies.html",
-        "case-study/contact-center": "case-study-contact-center.html",
-        "case-study/consulting-firm": "case-study-consulting-firm.html",
-        "case-study/remote-startup": "case-study-remote-startup.html",
+        "tools/csv": "tools/csv.html",
+        "faq": "faq_lite.html",
     }
     if path in special:
         return special[path]
-    if path.startswith("guide/"):
-        return "guide/" + path.split("/", 1)[1] + ".html"
-    if path.startswith("blog/"):
-        return "blog/" + path.split("/", 1)[1] + ".html"
     if path.startswith("tools/"):
         return "tools/" + path.split("/", 1)[1] + ".html"
     return (path + ".html") if path else "landing.html"
@@ -54,31 +43,8 @@ def url_path_to_template_rel(url_path):
 def get_sitemap_url_paths():
     """sitemap に含まれる URL パスの一覧（固定＋PRODUCTS 相当）"""
     fixed = [
-        "/", "/autofill", "/about", "/faq",
-        "/glossary", "/best-practices", "/case-studies",
-        "/guide", "/guide/autofill", "/guide/complete", "/guide/comprehensive-guide",
-        "/guide/getting-started", "/guide/excel-format", "/guide/troubleshooting",
-        "/tools", "/blog",
-        "/blog/implementation-checklist", "/blog/automation-roadmap",
-        "/blog/workstyle-reform-automation", "/blog/excel-attendance-limits",
-        "/blog/playwright-security", "/blog/month-end-closing-hell-and-automation",
-        "/blog/excel-format-mistakes-and-design", "/blog/convince-it-and-hr-for-automation",
-        "/blog/playwright-jobcan-challenges-and-solutions", "/blog/jobcan-auto-input-tools-overview",
-        "/blog/reduce-manual-work-checklist", "/blog/jobcan-month-end-tips",
-        "/blog/jobcan-auto-input-dos-and-donts", "/blog/month-end-closing-checklist",
-        "/case-study/contact-center", "/case-study/consulting-firm", "/case-study/remote-startup",
+        "/", "/autofill", "/tools", "/tools/csv", "/faq",
     ]
-    try:
-        sys.path.insert(0, REPO_ROOT)
-        from lib.products_catalog import PRODUCTS
-        for p in PRODUCTS:
-            if p.get("status") == "available":
-                if p.get("path") and p["path"] not in fixed:
-                    fixed.append(p["path"])
-                if p.get("guide_path") and p["guide_path"] not in fixed:
-                    fixed.append(p["guide_path"])
-    except Exception:
-        pass
     return fixed
 
 

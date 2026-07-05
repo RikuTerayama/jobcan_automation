@@ -199,6 +199,23 @@ SEO_DEFAULTS = {
 }
 
 
+SIMPLIFIED_SEO_PATHS = frozenset((
+    '/',
+    '/autofill',
+    '/tools',
+    '/tools/csv',
+    '/faq',
+    '/privacy',
+    '/terms',
+    '/contact',
+))
+
+SEO_DEFAULTS = {
+    path: config
+    for path, config in SEO_DEFAULTS.items()
+    if path in SIMPLIFIED_SEO_PATHS
+}
+
 NOINDEX_PATHS = frozenset(
     path for path, config in SEO_DEFAULTS.items() if config.get('robots', '').startswith('noindex')
 )
@@ -260,6 +277,12 @@ TOOL_APPLICATIONS = {
     },
 }
 
+
+TOOL_APPLICATIONS = {
+    path: config
+    for path, config in TOOL_APPLICATIONS.items()
+    if path in SIMPLIFIED_SEO_PATHS
+}
 
 BLOG_ARTICLES = [
     {
@@ -753,10 +776,22 @@ def get_article_schema(path, base_url, default_title='', default_description='')
 def get_related_content(path):
     section = RELATED_CONTENT.get(path)
     if section:
-        return deepcopy(section)
+        return _simplified_related_content(section)
 
     for prefix, config in RELATED_CONTENT_PREFIXES:
         if path.startswith(prefix):
-            return deepcopy(config)
+            return _simplified_related_content(config)
 
     return None
+
+
+def _simplified_related_content(section):
+    allowed_paths = SIMPLIFIED_SEO_PATHS | frozenset(('/tools/csv',))
+    copied = deepcopy(section)
+    copied['links'] = [
+        link for link in copied.get('links', [])
+        if isinstance(link, dict) and link.get('path') in allowed_paths
+    ]
+    if not copied['links']:
+        return None
+    return copied
