@@ -70,6 +70,69 @@ MAX_ACTIVE_SESSIONS = int(os.getenv("MAX_ACTIVE_SESSIONS", _default_sessions))
 JOB_TIMEOUT_SEC = int(os.getenv("JOB_TIMEOUT_SEC", "300"))  # 5分
 
 app = Flask(__name__)
+
+# Phase 1 simplified site: keep only the core free tool routes.
+SIMPLIFIED_PRODUCT_PATHS = frozenset(('/autofill', '/tools/csv'))
+SIMPLIFIED_SITEMAP_URLS = (
+    ('/', 'daily', '1.0'),
+    ('/autofill', 'daily', '1.0'),
+    ('/tools', 'weekly', '0.8'),
+    ('/tools/csv', 'weekly', '0.8'),
+    ('/faq', 'weekly', '0.7'),
+)
+SIMPLIFIED_REDIRECTS = {
+    '/guide/autofill': '/autofill',
+    '/guide/excel-format': '/tools/csv',
+    '/guide/csv': '/tools/csv',
+    '/guide/getting-started': '/',
+    '/about': '/',
+    '/glossary': '/faq',
+    '/best-practices': '/faq',
+    '/sitemap.html': '/sitemap.xml',
+    '/tools/image-batch': '/tools',
+    '/tools/image-cleanup': '/tools',
+    '/tools/pdf': '/tools',
+    '/tools/seo': '/tools',
+    '/tools/minutes': '/tools',
+}
+SIMPLIFIED_DISABLED_API_PATHS = frozenset((
+    '/api/seo/crawl-urls',
+    '/api/minutes/format',
+    '/api/pdf/lock',
+))
+
+
+def _simplified_products(products):
+    """Return only the tool cards kept in the lightweight version."""
+    if not isinstance(products, list):
+        return []
+    simplified = []
+    for product in products:
+        if not isinstance(product, dict):
+            continue
+        if product.get('status') != 'available':
+            continue
+        if product.get('path') not in SIMPLIFIED_PRODUCT_PATHS:
+            continue
+        product_copy = dict(product)
+        # Guide pages redirect in the lightweight site, so do not surface guide CTAs.
+        product_copy['guide_path'] = ''
+        simplified.append(product_copy)
+    return simplified
+
+
+def _simplified_redirect_target(path):
+    """Map removed public pages to their lightweight destination."""
+    normalized = (path or '/').rstrip('/') or '/'
+    if normalized in SIMPLIFIED_REDIRECTS:
+        return SIMPLIFIED_REDIRECTS[normalized]
+    if normalized == '/guide' or normalized.startswith('/guide/'):
+        return '/'
+    if normalized == '/blog' or normalized.startswith('/blog/'):
+        return '/'
+    if normalized == '/case-studies' or normalized.startswith('/case-study/'):
+        return '/'
+    return None
 # Phase 5: Render 等プロキシ配下で実クライアント IP を request.remote_addr に反映（単段プロキシ前提）
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
@@ -203,6 +266,13 @@ def before_request():
     
     g.start_time = time.time()
     g.request_id = request.headers.get('X-Request-ID', str(uuid.uuid4())[:8])
+
+    if request.path in SIMPLIFIED_DISABLED_API_PATHS:
+        return Response('Not Found', status=404, mimetype='text/plain')
+
+    redirect_target = _simplified_redirect_target(request.path)
+    if redirect_target:
+        return redirect(redirect_target, code=301)
     
     # P1: 定期的にprune_jobsを実行（メモリ最適化）
     # ヘルスチェックや静的ファイルリクエストは除外
@@ -956,7 +1026,7 @@ def inject_env_vars():
         related_content_section = get_related_content(current_path)
         blog_articles = get_blog_articles()
 
-        products_list = PRODUCTS
+        products_list = _simplified_products(PRODUCTS)
         if not isinstance(products_list, list):
             logger.warning(
                 f"context_processor products_catalog not a list type={type(products_list).__name__} - using []"
@@ -1839,7 +1909,7 @@ def index():
     products = []
     try:
         from lib.products_catalog import PRODUCTS
-        products = list(PRODUCTS) if isinstance(PRODUCTS, list) else []
+        products = _simplified_products(PRODUCTS)
     except Exception as import_error:
         request_id = getattr(g, 'request_id', 'unknown')
         logger.warning(
@@ -2245,7 +2315,7 @@ def tools_index():
     """ツール一覧ページ"""
     try:
         from lib.products_catalog import PRODUCTS
-        products = list(PRODUCTS) if isinstance(PRODUCTS, list) else []
+        products = _simplified_products(PRODUCTS)
     except Exception as import_error:
         logger.warning(
             f"tools_page_products_empty reason=import_failed exception={type(import_error).__name__} error={str(import_error)}"
@@ -2256,7 +2326,7 @@ def tools_index():
 @app.route('/faq')
 def faq():
     """よくある質問（FAQ）"""
-    return render_template('faq.html')
+    return render_template('faq_lite.html')
 
 @app.route('/glossary')
 def glossary():
@@ -3205,6 +3275,28 @@ def _sitemap_lastmod_for_path(url_path):
 
 @app.route('/sitemap.xml')
 def sitemap():
+    from datetime import datetime
+
+    base_url = (os.getenv('BASE_URL') or 'https://jobcan-automation.onrender.com').rstrip('/')
+    today = datetime.now().strftime('%Y-%m-%d')
+    urls = [
+        (url_path, changefreq, priority, today)
+        for url_path, changefreq, priority in SIMPLIFIED_SITEMAP_URLS
+    ]
+    xml_parts = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+    ]
+    for url_path, changefreq, priority, lastmod_default in urls:
+        lastmod = _sitemap_lastmod_for_path(url_path) or lastmod_default
+        xml_parts.append('  <url>')
+        xml_parts.append(f'    <loc>{base_url + url_path}</loc>')
+        xml_parts.append(f'    <changefreq>{changefreq}</changefreq>')
+        xml_parts.append(f'    <priority>{priority}</priority>')
+        xml_parts.append(f'    <lastmod>{lastmod}</lastmod>')
+        xml_parts.append('  </url>')
+    xml_parts.append('</urlset>')
+    return Response('\n'.join(xml_parts), mimetype='application/xml')
     """XMLサイトマップを動的生成（P0-1: PRODUCTSから自動生成）"""
     from flask import url_for
     from datetime import datetime

@@ -926,7 +926,7 @@ def print_table(rows):
         print(f"{r[0]:<{w1}} {r[1]:<{w2}} [{status}] {r[2]}")
 
 
-def main():
+def legacy_main():
     parser = argparse.ArgumentParser(description='AdSense preflight check')
     parser.add_argument('--live', metavar='BASE_URL', default=None,
                         help=f'Use live server (default: {BASE_URL_DEFAULT})')
@@ -946,6 +946,122 @@ def main():
         print("ALL CHECKS PASSED")
         return 0
     print("SOME CHECKS FAILED - fix before AdSense re-application")
+    return 1
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Lightweight site preflight check')
+    parser.add_argument('--live', metavar='BASE_URL', default=None)
+    args = parser.parse_args()
+
+    required_200 = [
+        '/', '/autofill', '/tools', '/tools/csv', '/faq',
+        '/privacy', '/terms', '/contact',
+        '/robots.txt', '/sitemap.xml', '/ads.txt',
+        '/healthz', '/readyz', '/ping',
+    ]
+    redirects = {
+        '/guide': '/',
+        '/guide/autofill': '/autofill',
+        '/guide/excel-format': '/tools/csv',
+        '/guide/getting-started': '/',
+        '/guide/complete': '/',
+        '/blog': '/',
+        '/blog/automation-roadmap': '/',
+        '/case-studies': '/',
+        '/case-study/contact-center': '/',
+        '/glossary': '/faq',
+        '/best-practices': '/faq',
+        '/about': '/',
+        '/sitemap.html': '/sitemap.xml',
+        '/tools/image-batch': '/tools',
+        '/tools/image-cleanup': '/tools',
+        '/tools/pdf': '/tools',
+        '/tools/seo': '/tools',
+    }
+    disabled_api = ['/api/seo/crawl-urls', '/api/minutes/format', '/api/pdf/lock']
+    sitemap_required = ['/', '/autofill', '/tools', '/tools/csv', '/faq']
+    sitemap_forbidden = [
+        '/blog', '/case-studies', '/case-study/', '/glossary', '/best-practices',
+        '/about', '/sitemap.html', '/guide', '/tools/image-batch',
+        '/tools/image-cleanup', '/tools/pdf', '/tools/seo',
+    ]
+    forbidden_links = [
+        '/blog', '/case-studies', '/case-study/', '/glossary', '/best-practices',
+        '/about', '/sitemap.html', '/guide', '/tools/image-batch',
+        '/tools/image-cleanup', '/tools/pdf', '/tools/seo',
+    ]
+
+    if args.live:
+        import urllib.request
+        import urllib.error
+
+        base_url = args.live.rstrip('/')
+
+        def request_path(path, method='GET'):
+            req = urllib.request.Request(base_url + path, method=method)
+            try:
+                with urllib.request.urlopen(req) as resp:
+                    body = resp.read().decode('utf-8', errors='replace')
+                    return resp.status, body, dict(resp.headers)
+            except urllib.error.HTTPError as exc:
+                body = exc.read().decode('utf-8', errors='replace')
+                return exc.code, body, dict(exc.headers)
+    else:
+        from app import app
+        app.config['TESTING'] = True
+        client = app.test_client()
+
+        def request_path(path, method='GET'):
+            resp = client.open(path, method=method, follow_redirects=False)
+            return resp.status_code, resp.get_data(as_text=True), dict(resp.headers)
+
+    rows = []
+
+    def add(check, path, ok, detail):
+        rows.append((check, path, detail, ok))
+
+    for path in required_200:
+        status, _, headers = request_path(path)
+        ok = status == 200
+        if path in ('/', '/autofill', '/tools', '/tools/csv', '/faq', '/privacy', '/terms', '/contact'):
+            ok = ok and 'text/html' in (headers.get('Content-Type') or '')
+        add('required_200', path, ok, f'status={status}')
+
+    for path, target in redirects.items():
+        status, _, headers = request_path(path)
+        location = headers.get('Location') or ''
+        ok = status == 301 and target in location
+        add('redirect_301', path, ok, f'status={status} location={location}')
+
+    for path in disabled_api:
+        status, _, _ = request_path(path, method='POST')
+        ok = status == 404
+        add('disabled_api', path, ok, f'status={status}')
+
+    status, sitemap_body, _ = request_path('/sitemap.xml')
+    for path in sitemap_required:
+        ok = status == 200 and f'https://jobcan-automation.onrender.com{path}' in sitemap_body
+        if not ok and status == 200:
+            ok = f'<loc>http://test{path}</loc>' in sitemap_body or f'<loc>https://jobcan-automation.onrender.com{path}</loc>' in sitemap_body
+        add('sitemap_required', path, ok, f'status={status}')
+    for fragment in sitemap_forbidden:
+        ok = fragment not in sitemap_body
+        add('sitemap_forbidden', fragment, ok, 'absent' if ok else 'present')
+
+    for page in ['/', '/autofill', '/tools', '/faq']:
+        status, body, _ = request_path(page)
+        for fragment in forbidden_links:
+            ok = fragment not in body
+            add('rendered_links', f'{page} -> {fragment}', ok, 'absent' if ok else 'present')
+
+    print_table(rows)
+    print()
+    all_ok = all(row[3] for row in rows)
+    if all_ok:
+        print('ALL CHECKS PASSED')
+        return 0
+    print('SOME CHECKS FAILED')
     return 1
 
 

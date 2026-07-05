@@ -1,5 +1,24 @@
 {% set seo_link_hub_path = request.path|default('/') if request is defined and request else '/' %}
-{% if seo_link_hub_path in ['/', '/blog', '/tools', '/guide', '/case-studies'] %}
+{% if seo_link_hub_path in ['/', '/tools'] %}
+<section class="seo-link-hub{% if seo_link_hub_class %} {{ seo_link_hub_class }}{% endif %}" aria-labelledby="seo-link-hub-heading">
+    <h2 id="seo-link-hub-heading">必要なページだけを確認</h2>
+    <div class="seo-link-hub__grid{% if seo_link_hub_grid_class %} {{ seo_link_hub_grid_class }}{% endif %}">
+        <a class="seo-link-hub__card" href="/autofill">
+            <strong>Jobcan AutoFill</strong>
+            <span>Excel の勤怠データを使って Jobcan 入力を進めるメインツールです。</span>
+        </a>
+        <a class="seo-link-hub__card" href="/tools/csv">
+            <strong>CSV/Excel ツール</strong>
+            <span>CSV と Excel の確認・変換を行う軽量ツールです。</span>
+        </a>
+        <a class="seo-link-hub__card" href="/faq">
+            <strong>FAQ</strong>
+            <span>使い方、ファイル形式、セキュリティ、エラー時の確認ポイントをまとめています。</span>
+        </a>
+    </div>
+</section>
+{% endif %}
+{% if false %}
 <section class="seo-link-hub{% if seo_link_hub_class %} {{ seo_link_hub_class }}{% endif %}" aria-labelledby="seo-link-hub-heading">
     {% if seo_link_hub_path == '/' %}
     <h2 id="seo-link-hub-heading">まず確認したいページ</h2>

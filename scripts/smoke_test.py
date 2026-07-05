@@ -17,7 +17,7 @@ def run_with_test_client():
     from app import app
     app.config['TESTING'] = True
     client = app.test_client()
-    paths = ['/', '/autofill', '/about', '/tools', '/healthz']
+    paths = ['/', '/autofill', '/tools', '/tools/csv', '/faq', '/privacy', '/terms', '/contact', '/healthz', '/readyz', '/ping']
     error_phrase = '⚠️ エラーが発生しました'
     n_per_path = 10
     failed = []
@@ -51,7 +51,7 @@ def run_deploy_verification():
     failed = []
 
     # 200 期待: エラー表示なし
-    for path in ['/tools/seo', '/tools/csv', '/guide/csv']:
+    for path in ['/tools/csv', '/faq', '/privacy', '/terms', '/contact']:
         resp = client.get(path, follow_redirects=False)
         body = resp.data.decode('utf-8')
         if resp.status_code != 200:
@@ -62,7 +62,13 @@ def run_deploy_verification():
     # 301 期待: /tools/minutes -> /tools, /guide/minutes -> /guide (Location はパスまたは絶対URL)
     for path, expect_suffix in [
         ('/tools/minutes', '/tools'),
-        ('/guide/minutes', '/guide'),
+        ('/guide/minutes', '/'),
+        ('/guide/csv', '/tools/csv'),
+        ('/tools/seo', '/tools'),
+        ('/blog/automation-roadmap', '/'),
+        ('/case-studies', '/'),
+        ('/glossary', '/faq'),
+        ('/sitemap.html', '/sitemap.xml'),
     ]:
         resp = client.get(path, follow_redirects=False)
         loc = (resp.headers.get('Location') or '').strip()
@@ -76,8 +82,13 @@ def run_deploy_verification():
     loc = (resp.headers.get('Location') or '').strip()
     if resp.status_code != 301:
         failed.append(f"path=/tools/pdf/ expected 301 got {resp.status_code}")
-    elif '/tools/pdf' not in loc:
-        failed.append(f"path=/tools/pdf/ expected Location .../tools/pdf got {loc}")
+    elif not loc.endswith('/tools'):
+        failed.append(f"path=/tools/pdf/ expected Location .../tools got {loc}")
+
+    for path in ['/api/seo/crawl-urls', '/api/minutes/format', '/api/pdf/lock']:
+        resp = client.post(path)
+        if resp.status_code != 404:
+            failed.append(f"path={path} expected 404 got {resp.status_code}")
 
     if failed:
         for f in failed:
