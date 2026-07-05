@@ -33,6 +33,7 @@ from utils import (
     load_excel_data,
     validate_excel_data,
     extract_date_info,
+    normalize_time_format,
     add_job_log,
     update_progress,
     pandas_available,
@@ -173,58 +174,24 @@ def reliable_fill(page, selector: str, text: str, job_id: str, jobs: dict, retri
     return False
 
 def convert_time_to_4digit(time_str):
-    """時刻を4桁の数字形式に変換（HH:MM:SS形式にも対応）"""
-    try:
-        # 時刻文字列を処理
-        if isinstance(time_str, str):
-            time_str = time_str.strip()
-            
-            # 複数の時刻形式に対応
-            time_formats = [
-                '%H:%M:%S',    # 09:00:00
-                '%H:%M',       # 09:00
-                '%H:%M:%S.%f', # 09:00:00.000
-                '%H:%M.%f',    # 09:00.000
-            ]
-            
-            # datetime.strptimeで解析を試行
-            parsed_time = None
-            for fmt in time_formats:
-                try:
-                    parsed_time = datetime.strptime(time_str, fmt)
-                    break
-                except ValueError:
-                    continue
-            
-            if parsed_time:
-                # HH:MM形式に変換してから4桁に
-                return parsed_time.strftime('%H%M')
-            
-            # 従来の方法（コロン除去）も試行
-            parts = time_str.replace(':', '').replace('：', '').replace(' ', '')
-            if len(parts) >= 4:
-                # 最初の4文字を取得（時分）
-                return parts[:4]
-            elif len(parts) == 2:
-                # 時のみの場合、分を00で補完
-                return f"{parts}00"
-            else:
-                # その他の形式の場合
-                return str(time_str)
-                
-        elif hasattr(time_str, 'strftime'):
-            # datetimeオブジェクトの場合
-            return time_str.strftime('%H%M')
-        elif hasattr(time_str, 'time'):
-            # datetime.timeオブジェクトの場合
-            return time_str.strftime('%H%M')
-        else:
-            # その他の場合、文字列に変換して処理
-            return convert_time_to_4digit(str(time_str))
-            
-    except Exception as e:
-        # エラーの場合は元の値を返す
+    """時刻をJobcan入力用の4桁以上の数字形式に変換（深夜の26時/29時にも対応）。"""
+    normalized_time, error = normalize_time_format(time_str)
+    if error:
         return str(time_str)
+    return normalized_time.replace(':', '')
+
+
+def adjust_overnight_end_time(start_time_4digit: str, end_time_4digit: str) -> str:
+    """22:00-02:00 のような日跨ぎを Jobcan 向けに 2600 として扱う。"""
+    try:
+        start_hour = int(start_time_4digit[:-2])
+        end_hour = int(end_time_4digit[:-2])
+        end_minute = int(end_time_4digit[-2:])
+        if end_hour < 12 <= start_hour and int(end_time_4digit) <= int(start_time_4digit):
+            return f"{end_hour + 24:02d}{end_minute:02d}"
+    except Exception:
+        return end_time_4digit
+    return end_time_4digit
 
 def check_login_status(page, job_id, jobs):
     """ログイン状態を詳細にチェック"""
@@ -724,7 +691,7 @@ def return_to_attendance_safely(page, job_id, jobs):
     except Exception as e:
         error_text = str(e)
         if "ERR_ABORTED" in error_text:
-            add_job_log(job_id, f"⚠️ 出勤簿への戻り遷移が中断されました（継続します）: {error_text}", jobs)
+            logger.info("attendance_return_aborted job_id=%s detail=%s", job_id, error_text)
         else:
             add_job_log(job_id, f"⚠️ 出勤簿への戻り遷移でエラー（継続します）: {error_text}", jobs)
 
@@ -771,6 +738,7 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                     # 時刻を4桁形式に変換
                     start_time_4digit = convert_time_to_4digit(start_time)
                     end_time_4digit = convert_time_to_4digit(end_time)
+                    end_time_4digit = adjust_overnight_end_time(start_time_4digit, end_time_4digit)
                     
                     # 打刻修正ページに移動
                     modify_url = f"https://ssl.jobcan.jp/employee/adit/modify?year={year}&month={month}&day={day}"
@@ -1013,6 +981,7 @@ def perform_actual_data_input(page, data_source, total_data, pandas_available, j
                     # 時刻を4桁形式に変換
                     start_time_4digit = convert_time_to_4digit(start_time)
                     end_time_4digit = convert_time_to_4digit(end_time)
+                    end_time_4digit = adjust_overnight_end_time(start_time_4digit, end_time_4digit)
                     
                     # 打刻修正ページに移動
                     modify_url = f"https://ssl.jobcan.jp/employee/adit/modify?year={year}&month={month}&day={day}"

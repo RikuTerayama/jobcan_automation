@@ -1,5 +1,6 @@
 import time
 import tempfile
+import numbers
 from datetime import datetime, date
 import calendar
 import re
@@ -202,6 +203,9 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                         start_minutes = int(start_parts[0]) * 60 + int(start_parts[1])
                         end_minutes = int(end_parts[0]) * 60 + int(end_parts[1])
                         
+                        if end_minutes <= start_minutes and int(end_parts[0]) < 12 <= int(start_parts[0]):
+                            end_minutes += 24 * 60
+
                         # 勤務時間が短すぎる場合
                         work_hours = (end_minutes - start_minutes) / 60
                         if work_hours < 0.5:  # 30分未満
@@ -289,6 +293,9 @@ def validate_excel_data(data_source, pandas_available, job_id, jobs):
                         start_minutes = int(start_parts[0]) * 60 + int(start_parts[1])
                         end_minutes = int(end_parts[0]) * 60 + int(end_parts[1])
                         
+                        if end_minutes <= start_minutes and int(end_parts[0]) < 12 <= int(start_parts[0]):
+                            end_minutes += 24 * 60
+
                         # 勤務時間が短すぎる場合
                         work_hours = (end_minutes - start_minutes) / 60
                         if work_hours < 0.5:  # 30分未満
@@ -668,6 +675,20 @@ def simulate_data_processing(job_id, data_source, total_data, pandas_available, 
         update_progress(job_id, 6, f"データ処理中... ({i + 1}/{total_data})", jobs, i + 1, total_data)
         add_job_log(job_id, f"データ処理進捗: {progress}%", jobs)
 
+def _normalize_time_parts(hours: int, minutes: int) -> Tuple[str, Optional[str]]:
+    """HH:MM形式へ正規化する。深夜勤務向けに24時超えも許容する。"""
+    if minutes < 0 or minutes > 59:
+        return None, f"分が無効です: {minutes}"
+    if hours < 0 or hours > 47:
+        return None, f"時が無効です: {hours} (0〜47時で入力してください)"
+    return f"{hours:02d}:{minutes:02d}", None
+
+
+def _normalize_from_total_minutes(total_minutes: int) -> Tuple[str, Optional[str]]:
+    hours, minutes = divmod(total_minutes, 60)
+    return _normalize_time_parts(hours, minutes)
+
+
 def normalize_time_format(time_value) -> Tuple[str, Optional[str]]:
     """
     時刻値を正規化してHH:MM形式に変換
@@ -679,44 +700,53 @@ def normalize_time_format(time_value) -> Tuple[str, Optional[str]]:
         Tuple[str, Optional[str]]: (正規化された時刻文字列, エラーメッセージ)
     """
     try:
+        if hasattr(time_value, 'total_seconds'):
+            total_minutes = int(round(time_value.total_seconds() / 60))
+            return _normalize_from_total_minutes(total_minutes)
+
+        if isinstance(time_value, numbers.Real) and not isinstance(time_value, bool):
+            numeric_value = float(time_value)
+            if 0 <= numeric_value < 2 and not numeric_value.is_integer():
+                total_minutes = int(round(numeric_value * 24 * 60))
+                return _normalize_from_total_minutes(total_minutes)
+            numeric_str = str(int(numeric_value)) if numeric_value.is_integer() else str(time_value)
+            return normalize_time_format(numeric_str)
+
+        if hasattr(time_value, 'hour') and hasattr(time_value, 'minute'):
+            return _normalize_time_parts(int(time_value.hour), int(time_value.minute))
+
         if isinstance(time_value, str):
             time_str = str(time_value).strip()
-            
-            # 複数の時刻形式を試行
-            time_formats = [
-                '%H:%M:%S',    # 09:00:00
-                '%H:%M',       # 09:00
-                '%H:%M:%S.%f', # 09:00:00.000
-                '%H:%M.%f',    # 09:00.000
-            ]
-            
-            parsed_time = None
-            for fmt in time_formats:
-                try:
-                    parsed_time = datetime.strptime(time_str, fmt).time()
-                    break
-                except ValueError:
-                    continue
-            
-            if parsed_time is None:
-                return None, f"時刻形式が無効です: {time_value} (期待形式: HH:MM または HH:MM:SS)"
-            
-            # HH:MM形式に正規化
-            normalized_time = parsed_time.strftime('%H:%M')
-            return normalized_time, None
-            
-        elif hasattr(time_value, 'time'):
-            # datetime.timeオブジェクトの場合
-            normalized_time = time_value.strftime('%H:%M')
-            return normalized_time, None
-            
-        elif hasattr(time_value, 'strftime'):
-            # datetimeオブジェクトの場合
-            normalized_time = time_value.strftime('%H:%M')
-            return normalized_time, None
-            
-        else:
-            return None, f"時刻形式が無効です: {time_value}"
+            if not time_str:
+                return None, f"時刻形式が無効です: {time_value}"
+
+            normalized = (
+                time_str.replace('：', ':')
+                .replace('時', ':')
+                .replace('分', '')
+                .replace('　', ' ')
+                .strip()
+            )
+            normalized = re.sub(r'\s+', '', normalized)
+
+            match = re.match(r'^(\d{1,2})(?::(\d{1,2}))?(?::\d{1,2}(?:\.\d+)?)?$', normalized)
+            if match:
+                hours = int(match.group(1))
+                minutes = int(match.group(2) or 0)
+                return _normalize_time_parts(hours, minutes)
+
+            digits = re.sub(r'\D', '', normalized)
+            if digits:
+                if len(digits) <= 2:
+                    return _normalize_time_parts(int(digits), 0)
+                if len(digits) == 3:
+                    return _normalize_time_parts(int(digits[0]), int(digits[1:]))
+                if len(digits) >= 4:
+                    return _normalize_time_parts(int(digits[:-2]), int(digits[-2:]))
+
+            return None, f"時刻形式が無効です: {time_value} (例: 09:00, 900, 26:00, 29時30分)"
+
+        return None, f"時刻形式が無効です: {time_value}"
         
     except Exception as e:
         return None, f"時刻の解析に失敗しました: {time_value} - {str(e)}"
