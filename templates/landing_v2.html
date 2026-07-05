@@ -39,14 +39,6 @@
                 <a href="/faq" class="btn btn-secondary">FAQを見る</a>
             </div>
         </section>
-        {% if affiliate_can_render_textlinks() and AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_upper_items|default([])|length > 0) %}
-        {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=true, affiliate_section_class='affiliate-cards-section--upper', affiliate_section_tier='upper-amazon', amazon_items_override=amazon_affiliate_upper_items[:3], amazon_section_title='気になる目的から選ぶ Amazon おすすめ' %}
-            {% include 'includes/affiliate_cards_section.html' %}
-        {% endwith %}
-        {% set affiliate_upper_amazon_rendered = true %}
-        {% set affiliate_disclosure_rendered = true %}
-        {% endif %}
-
         <section class="landing-section" aria-labelledby="starter-pages-heading">
             <div class="landing-section__header">
                 <p class="landing-section__eyebrow">Quick Start</p>
@@ -66,12 +58,12 @@
                 {% endfor %}
             </div>
         </section>
-        {% if affiliate_can_render_textlinks() and AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_mid_items|default([])|length > 0) %}
-        {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--upper-mid', affiliate_section_tier='mid-amazon', amazon_items_override=amazon_affiliate_mid_items[:3], amazon_section_title='関連キーワードから探す Amazon おすすめ' %}
-            {% include 'includes/affiliate_cards_section.html' %}
+        {% with amazon_section_key='home', amazon_section_show_disclosure=true %}
+            {% include 'includes/amazon_lightweight_section.html' %}
         {% endwith %}
+        {% set affiliate_disclosure_rendered = true %}
+        {% set affiliate_upper_amazon_rendered = true %}
         {% set affiliate_mid_amazon_rendered = true %}
-        {% endif %}
 
         {% with seo_link_hub_grid_class='seo-link-hub__grid--three' %}
             {% include 'includes/seo_link_hub.html' %}

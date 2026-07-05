@@ -1,0 +1,33 @@
+{% set amazon_section_key = amazon_section_key|default('') %}
+{% set amazon_section = amazon_lightweight_sections.get(amazon_section_key) if amazon_lightweight_sections is defined and amazon_lightweight_sections else none %}
+{% set amazon_section_items = amazon_section['items'] if amazon_section and 'items' in amazon_section else [] %}
+{% if amazon_section and amazon_section_items %}
+<section class="amazon-lite-section" id="{{ amazon_section.anchor_id|default('amazon-work-items') }}" data-amazon-lite-section="{{ amazon_section_key }}">
+    {% if amazon_section_show_disclosure|default(true) %}
+        {% include 'includes/affiliate_disclosure.html' %}
+    {% endif %}
+    <div class="amazon-lite-section__inner">
+        <div class="amazon-lite-section__header">
+            <p class="amazon-lite-section__eyebrow">Amazon Associates</p>
+            <h2>{{ amazon_section.title }}</h2>
+            {% if amazon_section.lead %}
+            <p>{{ amazon_section.lead }}</p>
+            {% endif %}
+        </div>
+        <div class="amazon-lite-grid" role="list" aria-label="{{ amazon_section.title }}">
+            {% for item in amazon_section_items[:3] %}
+            <article class="amazon-lite-card" role="listitem">
+                <span class="amazon-lite-card__category">{{ item.category_label }}</span>
+                <h3>{{ item.title }}</h3>
+                {% if item.description %}
+                <p>{{ item.description }}</p>
+                {% endif %}
+                <a href="{{ item.url }}" target="_blank" rel="nofollow sponsored noopener" class="amazon-lite-card__cta">
+                    {{ item.cta|default('Amazonで探す') }}
+                </a>
+            </article>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}

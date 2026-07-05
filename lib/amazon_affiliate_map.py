@@ -114,3 +114,165 @@ PAGE_TYPE_KEYWORDS: Dict[str, List[str]] = {
     "contact": ["在宅勤務 グッズ", "デスク収納"],
     "generic": ["在宅勤務 グッズ", "デスク収納", "ビジネス書 おすすめ"],
 }
+
+
+# Lightweight Amazon Associates sections for the simplified site.
+# These are static, approved editorial themes. They intentionally avoid price,
+# inventory, rating, or review claims so they stay stable without API refreshes.
+LIGHTWEIGHT_AMAZON_SECTIONS: Dict[str, Dict[str, object]] = {
+    "home": {
+        "anchor_id": "amazon-work-items",
+        "title": "作業をもっと楽にするアイテム",
+        "lead": "ツール利用の前後で使いやすい、業務効率化向けの周辺アイテムをまとめています。",
+        "items": [
+            {
+                "category_label": "勤怠入力",
+                "title": "勤怠入力を楽にする",
+                "description": "テンキーや入力しやすい周辺機器をまとめて探せます。",
+                "query": "テンキー ワイヤレス",
+                "query_variants": ["テンキー", "ワイヤレスマウス", "キーボード", "タイマー"],
+                "cta": "Amazonで探す",
+            },
+            {
+                "category_label": "CSV/Excel",
+                "title": "Excel/CSV作業を楽にする",
+                "description": "確認作業や表計算の効率化に役立つアイテムを見比べられます。",
+                "query": "Excel 効率化 本",
+                "query_variants": ["Excel効率化本", "テンキー", "モバイルモニター", "USB-Cハブ"],
+                "cta": "Amazonで探す",
+            },
+            {
+                "category_label": "デスク作業",
+                "title": "デスク作業を楽にする",
+                "description": "長時間の入力や確認作業をしやすくするデスク周りを整えます。",
+                "query": "デスクワーク 便利グッズ",
+                "query_variants": ["デスク収納", "ノートPCスタンド", "モニターアーム", "フットレスト"],
+                "cta": "Amazonで探す",
+            },
+        ],
+    },
+    "autofill": {
+        "anchor_id": "amazon-autofill-items",
+        "title": "勤怠入力を楽にする周辺アイテム",
+        "lead": "入力や確認を少し楽にしたい方向けの、控えめな補助導線です。",
+        "items": [
+            {
+                "category_label": "入力補助",
+                "title": "テンキーで数字入力をしやすくする",
+                "description": "勤務時間や日付の確認入力を、手元で扱いやすくできます。",
+                "query": "テンキー",
+                "query_variants": ["ワイヤレス テンキー", "テンキー USB"],
+                "cta": "Amazonで探す",
+            },
+            {
+                "category_label": "操作環境",
+                "title": "マウス・キーボードを見直す",
+                "description": "毎月の入力作業を進めやすい操作環境を整えられます。",
+                "query": "ワイヤレスマウス キーボード",
+                "query_variants": ["ワイヤレスマウス", "キーボード"],
+                "cta": "Amazonで探す",
+            },
+            {
+                "category_label": "時間管理",
+                "title": "作業時間を区切って集中する",
+                "description": "タイマーを使って、入力や確認の作業時間を管理しやすくします。",
+                "query": "タイマー デスク",
+                "query_variants": ["タイマー 勉強", "デスク タイマー"],
+                "cta": "Amazonで探す",
+            },
+        ],
+    },
+    "tools": {
+        "anchor_id": "amazon-tools-items",
+        "title": "業務効率化アイテムを見る",
+        "lead": "ツールとあわせて使いやすい、入力・確認・デスク環境の補助アイテムです。",
+        "items": [
+            {
+                "category_label": "入力",
+                "title": "数字入力を楽にする周辺機器",
+                "description": "勤怠やCSV確認で使いやすいテンキー類を探せます。",
+                "query": "テンキー",
+                "query_variants": ["ワイヤレス テンキー", "テンキー Bluetooth"],
+                "cta": "Amazonで探す",
+            },
+            {
+                "category_label": "表示",
+                "title": "確認画面を見やすくする",
+                "description": "表や資料を見比べやすいモニター周辺を確認できます。",
+                "query": "モバイルモニター",
+                "query_variants": ["ノートPCスタンド", "モニターアーム"],
+                "cta": "Amazonで探す",
+            },
+            {
+                "category_label": "整理",
+                "title": "デスク周りを整える",
+                "description": "ケーブルや小物を整理して、作業前後の手間を減らします。",
+                "query": "デスク収納",
+                "query_variants": ["ケーブル整理", "USB-Cハブ"],
+                "cta": "Amazonで探す",
+            },
+        ],
+    },
+    "csv": {
+        "anchor_id": "amazon-csv-items",
+        "title": "Excel/CSV作業を楽にするアイテム",
+        "lead": "変換や確認作業の前後で使いやすい、表計算まわりの補助アイテムです。",
+        "items": [
+            {
+                "category_label": "入力補助",
+                "title": "テンキーで表入力を進めやすくする",
+                "description": "数値入力や確認が多い作業に向いた周辺機器を探せます。",
+                "query": "テンキー",
+                "query_variants": ["ワイヤレス テンキー", "テンキー USB"],
+                "cta": "Amazonで探す",
+            },
+            {
+                "category_label": "学習",
+                "title": "Excel効率化の本を見比べる",
+                "description": "関数や表整理を学び直したいときの参考書を探せます。",
+                "query": "Excel 効率化 本",
+                "query_variants": ["Excel 本 おすすめ", "Excel 関数 本"],
+                "cta": "Amazonで探す",
+            },
+            {
+                "category_label": "作業環境",
+                "title": "画面と接続まわりを整える",
+                "description": "モバイルモニターやUSB-Cハブで確認環境を整えられます。",
+                "query": "モバイルモニター USB-Cハブ",
+                "query_variants": ["モバイルモニター", "USB-Cハブ"],
+                "cta": "Amazonで探す",
+            },
+        ],
+    },
+    "faq": {
+        "anchor_id": "amazon-faq-items",
+        "title": "作業環境を整えたい方へ",
+        "lead": "よくある質問を確認したあとに、作業しやすい環境づくりも見直せます。",
+        "items": [
+            {
+                "category_label": "入力環境",
+                "title": "入力しやすい周辺機器を探す",
+                "description": "テンキー、マウス、キーボードなどをまとめて確認できます。",
+                "query": "入力 作業 効率化 グッズ",
+                "query_variants": ["テンキー", "ワイヤレスマウス", "キーボード"],
+                "cta": "Amazonで探す",
+            },
+            {
+                "category_label": "デスク環境",
+                "title": "長時間作業をしやすくする",
+                "description": "姿勢や机まわりを整えるアイテムを探せます。",
+                "query": "デスクワーク 快適 グッズ",
+                "query_variants": ["フットレスト", "クッション デスクワーク", "ノートPCスタンド"],
+                "cta": "Amazonで探す",
+            },
+            {
+                "category_label": "仕事術",
+                "title": "業務効率化のヒントを読む",
+                "description": "仕事術やExcel効率化の本を見比べられます。",
+                "query": "仕事術 本",
+                "query_variants": ["ビジネス書 おすすめ", "Excel効率化本"],
+                "cta": "Amazonで探す",
+            },
+        ],
+    },
+}

@@ -13,7 +13,12 @@ from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
 import requests
 from zoneinfo import ZoneInfo
 
-from lib.amazon_affiliate_map import AMAZON_THEME_POOL, PAGE_TYPE_KEYWORDS, PATH_KEYWORD_RULES
+from lib.amazon_affiliate_map import (
+    AMAZON_THEME_POOL,
+    LIGHTWEIGHT_AMAZON_SECTIONS,
+    PAGE_TYPE_KEYWORDS,
+    PATH_KEYWORD_RULES,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -372,6 +377,76 @@ def build_purpose_genre_cards(
         slot_id="upper-amazon",
         count=3,
     )
+
+
+def _lightweight_section_key(path: str) -> str:
+    normalized = (path or "/").rstrip("/") or "/"
+    if normalized == "/":
+        return "home"
+    if normalized == "/autofill":
+        return "autofill"
+    if normalized == "/tools":
+        return "tools"
+    if normalized == "/tools/csv":
+        return "csv"
+    if normalized == "/faq":
+        return "faq"
+    return ""
+
+
+def build_lightweight_amazon_sections(path: str, page_type: str = "") -> Dict[str, dict]:
+    """Build static, lightweight Amazon Associates sections for the simplified site.
+
+    This intentionally avoids the Creators API and never exposes credentials. It
+    uses approved editorial themes and the current associate tag when available.
+    """
+    section_key = _lightweight_section_key(path)
+    if not section_key:
+        return {}
+
+    section = LIGHTWEIGHT_AMAZON_SECTIONS.get(section_key)
+    if not isinstance(section, dict):
+        return {}
+
+    settings = get_settings()
+    rotation_key = _rotation_bucket_key()
+    cards: List[dict] = []
+    for index, raw_item in enumerate(section.get("items") or []):
+        if not isinstance(raw_item, dict):
+            continue
+        query_candidates = _dedupe_search_keywords(
+            [str(raw_item.get("query") or "")]
+            + [str(v) for v in (raw_item.get("query_variants") or [])]
+        )
+        if not query_candidates:
+            query_candidates = _fallback_keywords_for_page(path, page_type)
+        query = query_candidates[
+            _stable_hash_int(f"{rotation_key}:{section_key}:{index}:lightweight") % len(query_candidates)
+        ]
+        cards.append(
+            {
+                "category_label": str(raw_item.get("category_label") or "おすすめ"),
+                "title": str(raw_item.get("title") or query),
+                "description": str(raw_item.get("description") or ""),
+                "url": _build_search_url(settings, query),
+                "cta": str(raw_item.get("cta") or "Amazonで探す"),
+                "keyword": query,
+            }
+        )
+
+    if not cards:
+        return {}
+
+    return {
+        section_key: {
+            "anchor_id": str(section.get("anchor_id") or f"amazon-{section_key}-items"),
+            "title": str(section.get("title") or "作業をもっと楽にするアイテム"),
+            "lead": str(section.get("lead") or ""),
+            "items": cards[:3],
+            "rotation_bucket": rotation_key,
+            "source": "lightweight_static",
+        }
+    }
 
 
 def _make_cache_key(settings: Dict[str, object], keywords: List[str]) -> str:

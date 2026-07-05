@@ -969,6 +969,9 @@ def main():
         '/about', '/sitemap.html', '/guide', '/tools/image-batch',
         '/tools/image-cleanup', '/tools/pdf', '/tools/seo',
     ]
+    amazon_lite_pages = ['/', '/autofill', '/tools', '/tools/csv', '/faq']
+    variable_commerce_terms = ['価格', '在庫', 'レビュー数', '割引率', '星評価']
+    amazon_associates_disclosure = 'Amazonのアソシエイトとして、当サイトは適格販売により収入を得ています。'
 
     if args.live:
         import urllib.request
@@ -1032,6 +1035,28 @@ def main():
         for fragment in forbidden_links:
             ok = fragment not in body
             add('rendered_links', f'{page} -> {fragment}', ok, 'absent' if ok else 'present')
+
+    for page in amazon_lite_pages:
+        status, body, _ = request_path(page)
+        section_count = body.count('<section class="amazon-lite-section"')
+        card_count = body.count('<article class="amazon-lite-card"')
+        link_count = body.count('amazon.co.jp/s?k=')
+        has_disclosure = amazon_associates_disclosure in body
+        has_variable_claims = any(term in body for term in variable_commerce_terms)
+        ok = (
+            status == 200
+            and section_count >= 1
+            and card_count >= 3
+            and link_count >= 3
+            and has_disclosure
+            and not has_variable_claims
+        )
+        add(
+            'amazon_lite',
+            page,
+            ok,
+            f'status={status} sections={section_count} cards={card_count} links={link_count} disclosure={has_disclosure} variable_claims={has_variable_claims}',
+        )
 
     print_table(rows)
     print()

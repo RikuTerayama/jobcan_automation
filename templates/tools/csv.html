@@ -47,6 +47,12 @@
         {% set tool_intro_steps = ['ファイルを選択（ドラッグ＆ドロップまたはボタン）', '文字コード・操作モードを選択', '実行してプレビュー確認のうえダウンロード'] %}
         {% set tool_intro_notice = '個人情報・機密情報を含むファイルは取り扱いにお気をつけください。' %}
         {% include 'includes/tool_intro.html' %}
+        {% with amazon_section_key='csv', amazon_section_show_disclosure=true %}
+            {% include 'includes/amazon_lightweight_section.html' %}
+        {% endwith %}
+        {% set affiliate_disclosure_rendered = true %}
+        {% set affiliate_upper_amazon_rendered = true %}
+        {% set affiliate_mid_amazon_rendered = true %}
         <div class="tool-section">
             <h3>📁 ファイル選択</h3>
             <p style="color: rgba(255, 255, 255, 0.8);">CSV または Excel ファイルをドラッグ＆ドロップ、または下のボタンで選択してください。（対応: .csv, .xlsx）</p>
