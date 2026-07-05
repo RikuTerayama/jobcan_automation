@@ -342,8 +342,7 @@
                         <option value="images-to-pdf">画像→PDF</option>
                         <option value="extract-images">埋め込み画像抽出（試験版）</option>
                     </optgroup>
-                    <optgroup label="保護の解除・付与">
-                        <option value="unlock-pdf">ロック解除（パスワード必須）</option>
+                    <optgroup label="保護の付与">
                         <option value="lock-pdf">ロック付与（暗号化して出力）</option>
                     </optgroup>
                 </select>
@@ -361,14 +360,6 @@
                 <input type="password" id="output-pdf-password" placeholder="8文字以上推奨" autocomplete="off">
                 <p class="info-text" style="color: #FF9800;">⚠️ パスワードを忘れると開けられません。控えておいてください。</p>
             </div>
-            <!-- ロック解除の同意 -->
-            <div id="unlock-consent-group" class="option-group" style="display: none;">
-                <label style="display: flex; align-items: flex-start; gap: 8px; cursor: pointer;">
-                    <input type="checkbox" id="unlock-consent" autocomplete="off">
-                    <span>このPDFのロック解除について、権限があることを確認しました。パスワードの推測や不正利用は行いません。</span>
-                </label>
-            </div>
-            
             <div id="extract-options" class="option-group" style="display: none;">
                 <label>ページ範囲（例: 1-3,5,7-9）</label>
                 <input type="text" id="extract-range" placeholder="1-3,5,7-9">
@@ -713,7 +704,6 @@
             document.getElementById('extract-images-options').style.display = 'none';
             document.getElementById('input-pdf-password-group').style.display = 'none';
             document.getElementById('output-pdf-password-group').style.display = 'none';
-            document.getElementById('unlock-consent-group').style.display = 'none';
             
             // モードに応じて表示
             if (mode === 'extract') {
@@ -733,9 +723,6 @@
             } else if (mode === 'extract-images') {
                 document.getElementById('extract-images-options').style.display = 'block';
                 document.getElementById('input-pdf-password-group').style.display = 'block';
-            } else if (mode === 'unlock-pdf') {
-                document.getElementById('input-pdf-password-group').style.display = 'block';
-                document.getElementById('unlock-consent-group').style.display = 'block';
             } else if (mode === 'lock-pdf') {
                 document.getElementById('output-pdf-password-group').style.display = 'block';
             }
@@ -790,8 +777,6 @@
                 disabled = files.length < 1;
             } else if (mode === 'extract-images') {
                 disabled = files.length < 1;
-            } else if (mode === 'unlock-pdf') {
-                disabled = files.length !== 1 || !document.getElementById('unlock-consent').checked;
             } else if (mode === 'lock-pdf') {
                 const outPw = document.getElementById('output-pdf-password').value.trim();
                 disabled = files.length !== 1 || !outPw;
@@ -803,7 +788,6 @@
         // 範囲入力の監視
         document.getElementById('extract-range')?.addEventListener('input', updateRunButton);
         document.getElementById('split-range')?.addEventListener('input', updateRunButton);
-        document.getElementById('unlock-consent')?.addEventListener('change', updateRunButton);
         document.getElementById('output-pdf-password')?.addEventListener('input', updateRunButton);
         document.getElementById('input-pdf-password')?.addEventListener('input', updateRunButton);
         
@@ -918,44 +902,6 @@
                             password: inputPdfPassword || undefined
                         }, ctx);
                     });
-                } else if (mode === 'unlock-pdf') {
-                    if (!document.getElementById('unlock-consent').checked) {
-                        handleError(new Error('ロック解除を行うには、権限があるPDFのみ・パスワード推測は行わないことに同意してください。'));
-                        return;
-                    }
-                    const file = toolRunner.selectedFiles[0];
-                    const password = document.getElementById('input-pdf-password').value;
-                    document.getElementById('run-button').style.display = 'none';
-                    document.getElementById('cancel-button').style.display = 'block';
-                    document.getElementById('progress-section').style.display = 'block';
-                    document.getElementById('progress-text').textContent = 'ロック解除中...';
-                    pdfApiAbortController = new AbortController();
-                    try {
-                        const form = new FormData();
-                        form.append('file', file);
-                        form.append('password', password);
-                        const res = await fetch('/api/pdf/unlock', { method: 'POST', body: form, signal: pdfApiAbortController.signal });
-                        if (!res.ok) {
-                            const data = await res.json().catch(() => ({}));
-                            const code = data.error_code || data.error;
-                            const rid = data.request_id ? ` (request_id: ${data.request_id})` : '';
-                            const msgMap = { need_password: 'このPDFはパスワード保護されています。パスワードを入力してください。', incorrect_password: 'パスワードが違います。', file_required: 'ファイルを選択してください。', file_too_large: 'ファイルが大きすぎます。', read_failed: 'ファイルの読み込みに失敗しました。', decrypt_failed: 'ロック解除に失敗しました。', corrupt_pdf: 'PDFの構造に問題があるか、対応していない形式です。', unsupported_encryption: 'このPDFの暗号方式には対応していません。', not_encrypted_but_failed: 'ロック解除に失敗しました。', unsupported: 'ロック解除に失敗しました。' };
-                            const msg = msgMap[code] || 'ロック解除に失敗しました。';
-                            handleError(new Error(msg + rid));
-                            return;
-                        }
-                        const blob = await res.blob();
-                        const disp = res.headers.get('Content-Disposition');
-                        const filename = (disp && /filename\*?=(?:UTF-8'')?([^;\s]+)/i.exec(disp)) ? decodeURIComponent(RegExp.$1.replace(/^["']|["']$/g, '')) : (file.name ? file.name.replace(/\.pdf$/i, '') + '_unlocked.pdf' : 'unlocked.pdf');
-                        toolRunner.outputs = [{ blob, filename, mime: 'application/pdf' }];
-                        document.getElementById('output-section').style.display = 'block';
-                        showDownloadPanel(toolRunner.outputs);
-                    } finally {
-                        pdfApiAbortController = null;
-                        document.getElementById('run-button').style.display = 'block';
-                        document.getElementById('cancel-button').style.display = 'none';
-                        document.getElementById('progress-section').style.display = 'none';
-                    }
                 } else if (mode === 'lock-pdf') {
                     const file = toolRunner.selectedFiles[0];
                     const password = document.getElementById('output-pdf-password').value;
@@ -973,7 +919,7 @@
                             const data = await res.json().catch(() => ({}));
                             const code = data.error_code || data.error;
                             const rid = data.request_id ? ` (request_id: ${data.request_id})` : '';
-                            const msgMap = { missing_password: '出力用パスワードを入力してください。', file_required: 'ファイルを選択してください。', file_too_large: 'ファイルが大きすぎます（50MB以下）。', read_failed: 'ファイルの読み込みに失敗しました。', already_encrypted: 'このPDFは既にパスワード保護されています。ロック解除してから再度ロック付与してください。', corrupt_pdf: 'PDFの構造に問題があるか、対応していない形式です。', unsupported_pdf: 'このPDFにはロック付与に対応していません。', encrypt_failed: 'ロック付与に失敗しました。PDFの形式やサイズを確認してください。', unsupported: 'ロック付与に失敗しました。' };
+                            const msgMap = { missing_password: '出力用パスワードを入力してください。', file_required: 'ファイルを選択してください。', file_too_large: 'ファイルが大きすぎます（50MB以下）。', read_failed: 'ファイルの読み込みに失敗しました。', already_encrypted: 'このPDFは既にパスワード保護されています。保護されていないPDFを選択してください。', corrupt_pdf: 'PDFの構造に問題があるか、対応していない形式です。', unsupported_pdf: 'このPDFにはロック付与に対応していません。', encrypt_failed: 'ロック付与に失敗しました。PDFの形式やサイズを確認してください。', unsupported: 'ロック付与に失敗しました。' };
                             const msg = msgMap[code] || 'ロック付与に失敗しました。';
                             handleError(new Error(msg + rid));
                             return;
@@ -1022,7 +968,7 @@
         // キャンセル
         function cancelOperation() {
             const mode = document.getElementById('mode').value;
-            if (mode === 'unlock-pdf' || mode === 'lock-pdf') {
+            if (mode === 'lock-pdf') {
                 pdfApiAbortController?.abort();
             } else {
                 toolRunner.cancel();
