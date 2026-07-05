@@ -224,3 +224,17 @@ PRODUCTS = [
         ]
     }
 ]
+
+# Phase 1.5 lightweight surface:
+# Keep only products that remain publicly reachable. Older tool definitions are
+# left above for now to avoid a risky large-file rewrite, but are not exported to
+# templates or context processors.
+_PUBLIC_PRODUCT_IDS = {'autofill', 'csv'}
+PRODUCTS = [
+    {
+        **product,
+        'guide_path': '',
+    }
+    for product in PRODUCTS
+    if product.get('id') in _PUBLIC_PRODUCT_IDS
+]

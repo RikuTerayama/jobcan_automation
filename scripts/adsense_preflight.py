@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-AdSense 再申請前ゲート: 不承認要因ゼロを自動チェック。
-- テストクライアント使用（サーバ不要）: デフォルト
-- 本番確認: --live https://jobcan-automation.onrender.com
+Lightweight public-site preflight.
 
-NG があれば exit 1 で終了。
-使用例:
+The active main() validates the simplified Phase 1 surface: kept routes return
+200, retired routes redirect or 404, sitemap excludes old SEO pages, and
+rendered public pages do not link to retired URLs.
+
+Usage:
   python scripts/adsense_preflight.py
   python scripts/adsense_preflight.py --live https://jobcan-automation.onrender.com
 """
@@ -20,6 +21,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 BASE_URL_DEFAULT = 'https://jobcan-automation.onrender.com'
 
+# Legacy constants below support older helper functions that are no longer
+# called by main(). Phase 2 can remove that legacy helper block once no external
+# caller imports it.
 # 主要ページ（GSC 404 解消対象含む）
 MAJOR_PATHS = ['/', '/autofill', '/tools', '/privacy', '/contact', '/about', '/best-practices', '/faq']
 PUBLIC_AFFILIATE_PATHS = ['/', '/tools', '/autofill', '/privacy', '/terms', '/contact', '/about', '/faq', '/guide', '/blog', '/case-studies']
@@ -106,8 +110,8 @@ HUB_LINK_REQUIREMENTS = {
         '/tools/seo',
     ],
 }
-RELATED_CONTENT_REQUIRED_PATHS = ['/glossary', '/best-practices', '/guide/complete', '/guide/comprehensive-guide']
-INTENTIONALLY_EXCLUDED_PATHS = ['/privacy', '/terms', '/contact', '/sitemap.html']
+RELATED_CONTENT_REQUIRED_PATHS = ['/autofill', '/tools/csv', '/faq']
+INTENTIONALLY_EXCLUDED_PATHS = ['/privacy', '/terms', '/contact']
 
 # 不整合文字列（ヒット0が必須）
 DISALLOWED_STRINGS = [
@@ -121,15 +125,10 @@ DISALLOWED_STRINGS = [
 # /tools サーバ返却HTMLに含まれてはいけない文言（本文・script 含む）
 NO_RESULTS_FORBIDDEN = '検索条件に一致するツールが見つかりませんでした。'
 VISIBLE_TEXT_INTEGRITY_PATHS = [
-    '/', '/faq', '/guide', '/guide/getting-started', '/guide/excel-format',
-    '/guide/troubleshooting', '/guide/complete', '/guide/comprehensive-guide',
-    '/guide/csv', '/guide/image-batch', '/guide/image-cleanup', '/guide/pdf',
-    '/guide/seo', '/blog', '/glossary', '/best-practices', '/case-studies',
-    '/case-study/contact-center', '/case-study/consulting-firm',
-    '/case-study/remote-startup', '/privacy', '/terms', '/contact',
+    '/', '/autofill', '/tools', '/tools/csv', '/faq', '/privacy', '/terms', '/contact',
 ]
 VISIBLE_TEXT_FORBIDDEN = ['</h1>', '</h2>', '</h3>', '</p>', '</li>', '</a>', '/h1>', '/h2>', '/h3>', '/p>', '/li>', '/a>', '/strong>', '�']
-FOOTER_INTEGRITY_PATHS = ['/', '/privacy', '/terms', '/contact', '/blog']
+FOOTER_INTEGRITY_PATHS = ['/', '/privacy', '/terms', '/contact', '/faq']
 FOOTER_REQUIRED_TEXT = [
     'プライバシーポリシー',
     '利用規約',
@@ -145,36 +144,16 @@ TOP_INLINE_REQUIREMENTS = {
         'slot': 'public_top_inline',
         'selector': '.page-header + [data-affiliate-slot="public_top_inline"]',
     },
-    '/tools/image-batch': {
+    '/tools/csv': {
         'slot': 'public_top_inline',
         'selector': '.tool-intro + [data-affiliate-slot="public_top_inline"]',
-    },
-    '/tools/pdf': {
-        'slot': 'public_top_inline',
-        'selector': '.tool-intro + [data-affiliate-slot="public_top_inline"]',
-    },
-    '/tools/seo': {
-        'slot': 'public_top_inline',
-        'selector': '.tool-intro + [data-affiliate-slot="public_top_inline"]',
-    },
-    '/guide': {
-        'slot': 'public_top_inline',
-        'selector': '.affiliate-top-shell [data-affiliate-slot="public_top_inline"]',
     },
     '/faq': {
         'slot': 'public_top_inline',
         'selector': '.affiliate-top-shell [data-affiliate-slot="public_top_inline"]',
     },
-    '/blog': {
-        'slot': 'blog_index_after_intro',
-        'selector': '.blog-index-hero + [data-affiliate-slot="blog_index_after_intro"]',
-    },
-    '/case-studies': {
-        'slot': 'case_index_after_intro',
-        'selector': '.case-hero + [data-affiliate-slot="case_index_after_intro"]',
-    },
 }
-NO_HEADER_TOP_SLOT_PATHS = ['/autofill', '/tools', '/tools/image-batch', '/tools/pdf', '/tools/seo']
+NO_HEADER_TOP_SLOT_PATHS = ['/autofill', '/tools', '/tools/csv']
 HOME_GRID_EXPECTED_COUNT = 6
 HOME_USE_CASE_MIN_COUNT = 4
 GUIDE_CORE_CARD_COUNT = 4
@@ -195,7 +174,6 @@ PUBLIC_UI_FORBIDDEN_COPY = [
 REMOVED_AFFILIATE_TEXT = ['Sponsored Picks', 'おすすめ情報', '本文の流れを崩さずに見られる、落ち着いたおすすめ導線です。']
 
 PUBLIC_TEMPLATE_SOURCE_PATHS = [
-    'templates/index.html',
     'templates/landing.html',
     'templates/landing_v2.html',
     'templates/includes/footer.html',

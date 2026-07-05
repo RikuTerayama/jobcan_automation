@@ -21,8 +21,8 @@ AMAZON_THEME_POOL: List[Dict[str, object]] = [
         "query": "在宅勤務 快適 グッズ",
         "query_variants": ["在宅勤務 快適化 アイテム", "リモートワーク 快適 グッズ"],
         "cta": "Amazonで見る",
-        "priority_page_types": ["landing", "guide", "tool", "tool_index", "trust_sensitive"],
-        "priority_path_prefixes": ["/", "/autofill", "/guide", "/tools"],
+        "priority_page_types": ["landing", "tool", "tool_index", "trust_sensitive", "info"],
+        "priority_path_prefixes": ["/", "/autofill", "/tools", "/faq"],
     },
     {
         "id": "desk-organization-productivity",
@@ -33,7 +33,7 @@ AMAZON_THEME_POOL: List[Dict[str, object]] = [
         "query_variants": ["デスク周り 整理 便利グッズ", "作業効率アップ デスクアイテム"],
         "cta": "Amazonで見る",
         "priority_page_types": ["landing", "tool", "tool_index", "info", "generic"],
-        "priority_path_prefixes": ["/", "/tools", "/faq", "/about"],
+        "priority_path_prefixes": ["/", "/tools", "/faq"],
     },
     {
         "id": "business-books-ai",
@@ -43,8 +43,8 @@ AMAZON_THEME_POOL: List[Dict[str, object]] = [
         "query": "ビジネス書 おすすめ",
         "query_variants": ["生成AI 本", "仕事術 本"],
         "cta": "Amazonで見る",
-        "priority_page_types": ["blog_index", "article", "guide", "info"],
-        "priority_path_prefixes": ["/blog", "/guide", "/glossary", "/best-practices"],
+        "priority_page_types": ["landing", "info", "generic"],
+        "priority_path_prefixes": ["/", "/faq"],
     },
     {
         "id": "long-hours-deskwork",
@@ -54,8 +54,8 @@ AMAZON_THEME_POOL: List[Dict[str, object]] = [
         "query": "長時間 デスクワーク 疲労軽減 グッズ",
         "query_variants": ["デスクワーク 疲れ対策 アイテム", "仕事中 疲労軽減 グッズ"],
         "cta": "Amazonで見る",
-        "priority_page_types": ["landing", "guide", "tool", "trust_sensitive"],
-        "priority_path_prefixes": ["/", "/autofill", "/guide", "/tools"],
+        "priority_page_types": ["landing", "tool", "trust_sensitive"],
+        "priority_path_prefixes": ["/", "/autofill", "/tools"],
     },
     {
         "id": "posture-shoulder-back",
@@ -65,8 +65,8 @@ AMAZON_THEME_POOL: List[Dict[str, object]] = [
         "query": "姿勢改善 肩こり 腰痛 対策 グッズ",
         "query_variants": ["肩こり 腰痛 デスクワーク 対策", "姿勢サポート アイテム"],
         "cta": "Amazonで見る",
-        "priority_page_types": ["landing", "guide", "info", "trust_sensitive"],
-        "priority_path_prefixes": ["/", "/guide", "/faq", "/about", "/autofill"],
+        "priority_page_types": ["landing", "tool", "info", "trust_sensitive"],
+        "priority_path_prefixes": ["/", "/faq", "/autofill", "/tools"],
     },
     {
         "id": "space-saving-desk",
@@ -88,8 +88,8 @@ AMAZON_THEME_POOL: List[Dict[str, object]] = [
         "query": "集中力 作業環境 グッズ",
         "query_variants": [],
         "cta": "Amazonで見る",
-        "priority_page_types": ["landing", "guide"],
-        "priority_path_prefixes": ["/", "/guide"],
+        "priority_page_types": ["landing", "info"],
+        "priority_path_prefixes": ["/", "/faq"],
     },
 ]
 
@@ -97,30 +97,20 @@ AMAZON_THEME_POOL: List[Dict[str, object]] = [
 AMAZON_PURPOSE_GENRES = AMAZON_THEME_POOL
 
 PATH_KEYWORD_RULES: List[Tuple[str, List[str]]] = [
-    ("/guide", ["在宅勤務 快適 グッズ", "デスク整理 仕事効率化 グッズ", "ビジネス書 AI活用本 おすすめ"]),
-    ("/tools/image", ["デスク整理 仕事効率化 グッズ", "ケーブル整理", "在宅勤務 快適 グッズ"]),
-    ("/tools/pdf", ["デスク整理 仕事効率化 グッズ", "在宅勤務 快適 グッズ", "業務効率化 本"]),
-    ("/tools/seo", ["ビジネス書 AI活用本 おすすめ", "デスク整理 仕事効率化 グッズ", "生成AI 活用"]),
-    ("/tools/csv", ["デスク整理 仕事効率化 グッズ", "在宅勤務 快適 グッズ", "ビジネス書 AI活用本 おすすめ"]),
-    ("/tools", ["デスク整理 仕事効率化 グッズ", "在宅勤務 快適 グッズ", "ビジネス書 AI活用本 おすすめ"]),
-    ("/autofill", ["在宅勤務 快適 グッズ", "デスク整理 仕事効率化 グッズ", "ビジネス書 AI活用本 おすすめ"]),
-    ("/blog", ["ビジネス書 AI活用本 おすすめ", "業務効率化 本", "デスク整理 仕事効率化 グッズ"]),
-    ("/case", ["在宅勤務 快適 グッズ", "デスク整理 仕事効率化 グッズ", "ビジネス書 AI活用本 おすすめ"]),
-    ("/faq", ["デスク整理 仕事効率化 グッズ", "在宅勤務 快適 グッズ", "ビジネス書 AI活用本 おすすめ"]),
-    ("/glossary", ["ビジネス書 AI活用本 おすすめ", "在宅勤務 快適 グッズ", "デスク整理 仕事効率化 グッズ"]),
+    ("/tools/csv", ["デスク収納", "仕事効率化 グッズ", "ビジネス書 おすすめ"]),
+    ("/tools", ["デスク収納", "在宅勤務 グッズ", "仕事効率化 グッズ"]),
+    ("/autofill", ["在宅勤務 グッズ", "デスクワーク 快適 グッズ", "仕事術 本"]),
+    ("/faq", ["仕事効率化 グッズ", "ビジネス書 おすすめ", "デスクワーク 快適 グッズ"]),
+    ("/", ["在宅勤務 グッズ", "デスク収納", "ビジネス書 おすすめ"]),
 ]
 
 PAGE_TYPE_KEYWORDS: Dict[str, List[str]] = {
-    "landing": ["在宅勤務 快適 グッズ", "デスク整理 仕事効率化 グッズ", "ビジネス書 AI活用本 おすすめ"],
-    "guide": ["在宅勤務 快適 グッズ", "ビジネス書 AI活用本 おすすめ", "デスク整理 仕事効率化 グッズ"],
-    "tool": ["デスク整理 仕事効率化 グッズ", "在宅勤務 快適 グッズ", "ビジネス書 AI活用本 おすすめ"],
-    "tool_index": ["デスク整理 仕事効率化 グッズ", "在宅勤務 快適 グッズ", "ビジネス書 AI活用本 おすすめ"],
-    "article": ["ビジネス書 AI活用本 おすすめ", "デスク整理 仕事効率化 グッズ", "在宅勤務 快適 グッズ"],
-    "blog_index": ["ビジネス書 AI活用本 おすすめ", "業務効率化 本", "デスク整理 仕事効率化 グッズ"],
-    "case_index": ["在宅勤務 快適 グッズ", "デスク整理 仕事効率化 グッズ", "ビジネス書 AI活用本 おすすめ"],
-    "info": ["デスク整理 仕事効率化 グッズ", "在宅勤務 快適 グッズ", "ビジネス書 AI活用本 おすすめ"],
-    "trust_sensitive": ["在宅勤務 快適 グッズ", "デスク整理 仕事効率化 グッズ", "ビジネス書 AI活用本 おすすめ"],
-    "legal": ["ビジネス書 AI活用本 おすすめ", "デスク整理 仕事効率化 グッズ"],
-    "contact": ["在宅勤務 快適 グッズ", "デスク整理 仕事効率化 グッズ"],
-    "generic": ["在宅勤務 快適 グッズ", "デスク整理 仕事効率化 グッズ", "ビジネス書 AI活用本 おすすめ"],
+    "landing": ["在宅勤務 グッズ", "デスク収納", "ビジネス書 おすすめ"],
+    "tool": ["デスク収納", "仕事効率化 グッズ", "デスクワーク 快適 グッズ"],
+    "tool_index": ["デスク収納", "在宅勤務 グッズ", "仕事効率化 グッズ"],
+    "trust_sensitive": ["在宅勤務 グッズ", "デスクワーク 快適 グッズ", "仕事術 本"],
+    "info": ["仕事効率化 グッズ", "ビジネス書 おすすめ", "デスクワーク 快適 グッズ"],
+    "legal": ["ビジネス書 おすすめ", "仕事効率化 グッズ"],
+    "contact": ["在宅勤務 グッズ", "デスク収納"],
+    "generic": ["在宅勤務 グッズ", "デスク収納", "ビジネス書 おすすめ"],
 }

@@ -621,6 +621,51 @@ RELATED_CONTENT_PREFIXES = (
     ),
 )
 
+# Phase 1.5 lightweight overrides. The historical SEO/content definitions above
+# are kept only as source history context; runtime helpers should expose the
+# simplified public surface.
+BLOG_ARTICLES = []
+ARTICLE_SCHEMA_PAGES = {}
+RELATED_CONTENT = {
+    '/': {
+        'title': 'まず使うページ',
+        'intro': 'Jobcan入力とCSV/Excel整形に絞って確認できます。',
+        'links': [
+            {'path': '/autofill', 'label': 'Jobcan AutoFill', 'description': 'Excelから勤怠入力をまとめて処理します。'},
+            {'path': '/tools/csv', 'label': 'CSV/Excelユーティリティ', 'description': 'CSVやExcelの整形・変換に使えます。'},
+            {'path': '/faq', 'label': 'FAQ', 'description': '利用前の注意点とよくある質問を確認できます。'},
+        ],
+    },
+    '/tools': {
+        'title': '利用できるツール',
+        'intro': '現在公開している軽量ツールだけを表示します。',
+        'links': [
+            {'path': '/autofill', 'label': 'Jobcan AutoFill', 'description': '勤怠入力の補助に使えます。'},
+            {'path': '/tools/csv', 'label': 'CSV/Excelユーティリティ', 'description': '表データの整形に使えます。'},
+            {'path': '/faq', 'label': 'FAQ', 'description': 'ファイル形式や安全性を確認できます。'},
+        ],
+    },
+    '/autofill': {
+        'title': 'あわせて確認する',
+        'intro': '入力前の確認やCSV/Excel整形に移動できます。',
+        'links': [
+            {'path': '/tools/csv', 'label': 'CSV/Excelユーティリティ', 'description': '入力前の表データ整形に使えます。'},
+            {'path': '/faq', 'label': 'FAQ', 'description': '利用前の注意点を確認できます。'},
+            {'path': '/privacy', 'label': 'プライバシーポリシー', 'description': 'データの扱いを確認できます。'},
+        ],
+    },
+    '/tools/csv': {
+        'title': '次に使うページ',
+        'intro': '整形したデータを勤怠入力や確認作業につなげられます。',
+        'links': [
+            {'path': '/autofill', 'label': 'Jobcan AutoFill', 'description': '整えたExcelデータを入力補助に使えます。'},
+            {'path': '/tools', 'label': 'ツール一覧', 'description': '現在公開中のツールを確認できます。'},
+            {'path': '/faq', 'label': 'FAQ', 'description': 'CSV/Excel利用時の注意点を確認できます。'},
+        ],
+    },
+}
+RELATED_CONTENT_PREFIXES = ()
+
 
 def get_seo_defaults(path):
     config = deepcopy(SEO_DEFAULTS.get(path, {}))
