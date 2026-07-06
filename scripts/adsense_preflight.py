@@ -933,7 +933,7 @@ def main():
     args = parser.parse_args()
 
     required_200 = [
-        '/', '/autofill', '/tools', '/tools/csv', '/faq',
+        '/', '/autofill', '/tools', '/tools/csv', '/recommend', '/faq',
         '/privacy', '/terms', '/contact',
         '/robots.txt', '/sitemap.xml', '/ads.txt',
         '/healthz', '/readyz', '/ping',
@@ -958,7 +958,7 @@ def main():
         '/tools/seo': '/tools',
     }
     disabled_api = ['/api/seo/crawl-urls', '/api/minutes/format', '/api/pdf/lock']
-    sitemap_required = ['/', '/autofill', '/tools', '/tools/csv', '/faq']
+    sitemap_required = ['/', '/autofill', '/tools', '/tools/csv', '/recommend', '/faq']
     sitemap_forbidden = [
         '/blog', '/case-studies', '/case-study/', '/glossary', '/best-practices',
         '/about', '/sitemap.html', '/guide', '/tools/image-batch',
@@ -969,7 +969,7 @@ def main():
         '/about', '/sitemap.html', '/guide', '/tools/image-batch',
         '/tools/image-cleanup', '/tools/pdf', '/tools/seo',
     ]
-    amazon_lite_pages = ['/', '/autofill', '/tools', '/tools/csv', '/faq']
+    amazon_lite_pages = ['/', '/autofill', '/tools', '/tools/csv', '/recommend', '/faq']
     variable_commerce_terms = ['価格', '在庫', 'レビュー数', '割引率', '星評価']
     amazon_associates_disclosure = 'Amazonのアソシエイトとして、当サイトは適格販売により収入を得ています。'
 
@@ -1005,7 +1005,7 @@ def main():
     for path in required_200:
         status, _, headers = request_path(path)
         ok = status == 200
-        if path in ('/', '/autofill', '/tools', '/tools/csv', '/faq', '/privacy', '/terms', '/contact'):
+        if path in ('/', '/autofill', '/tools', '/tools/csv', '/recommend', '/faq', '/privacy', '/terms', '/contact'):
             ok = ok and 'text/html' in (headers.get('Content-Type') or '')
         add('required_200', path, ok, f'status={status}')
 
@@ -1030,7 +1030,7 @@ def main():
         ok = fragment not in sitemap_body
         add('sitemap_forbidden', fragment, ok, 'absent' if ok else 'present')
 
-    for page in ['/', '/autofill', '/tools', '/faq']:
+    for page in ['/', '/autofill', '/tools', '/recommend', '/faq']:
         status, body, _ = request_path(page)
         for fragment in forbidden_links:
             ok = fragment not in body
@@ -1038,16 +1038,21 @@ def main():
 
     for page in amazon_lite_pages:
         status, body, _ = request_path(page)
-        section_count = body.count('<section class="amazon-lite-section"')
-        card_count = body.count('<article class="amazon-lite-card"')
+        if page == '/recommend':
+            section_count = body.count('<section class="recommend-category-grid"')
+            card_count = body.count('<article class="recommend-category-card"')
+        else:
+            section_count = body.count('<section class="amazon-lite-section"')
+            card_count = body.count('<article class="amazon-lite-card"')
         link_count = body.count('amazon.co.jp/s?k=')
         has_disclosure = amazon_associates_disclosure in body
         has_variable_claims = any(term in body for term in variable_commerce_terms)
+        min_cards = 4 if page == '/recommend' else 3
         ok = (
             status == 200
             and section_count >= 1
-            and card_count >= 3
-            and link_count >= 3
+            and card_count >= min_cards
+            and link_count >= min_cards
             and has_disclosure
             and not has_variable_claims
         )
@@ -1055,7 +1060,7 @@ def main():
             'amazon_lite',
             page,
             ok,
-            f'status={status} sections={section_count} cards={card_count} links={link_count} disclosure={has_disclosure} variable_claims={has_variable_claims}',
+            f'status={status} sections={section_count} cards={card_count}/{min_cards} links={link_count}/{min_cards} disclosure={has_disclosure} variable_claims={has_variable_claims}',
         )
 
     print_table(rows)

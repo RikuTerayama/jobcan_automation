@@ -1,0 +1,49 @@
+﻿<!doctype html>
+<html lang="ja" class="no-js">
+<head>
+    {% set page_title = '業務効率化アイテムおすすめ | Jobcan AutoFill' %}
+    {% set page_description = 'Jobcan 入力、Excel/CSV 作業、デスク作業を少し楽にしたい方向けに、作業環境づくりのヒントをカテゴリ別にまとめています。' %}
+    {% include 'includes/head_meta.html' %}
+</head>
+<body>
+    {% include 'includes/header.html' %}
+    {% include 'includes/breadcrumb.html' %}
+    {% set recommend_section = amazon_lightweight_sections.get('recommend') if amazon_lightweight_sections is defined and amazon_lightweight_sections else none %}
+    {% set recommend_items = recommend_section['items'] if recommend_section and 'items' in recommend_section else [] %}
+    <main class="recommend-shell">
+        <section class="recommend-hero">
+            <p class="recommend-hero__eyebrow">Amazon Associates</p>
+            <h1>業務効率化アイテムおすすめ</h1>
+            <p class="recommend-hero__lead">
+                Jobcan 入力、Excel/CSV 作業、デスク作業を少し楽にする周辺アイテムをカテゴリ別に紹介します。
+                ツール利用の主役はあくまで作業そのものなので、必要なものだけを控えめに見比べられる入口としてご利用ください。
+            </p>
+            <p class="recommend-disclosure">Amazonのアソシエイトとして、当サイトは適格販売により収入を得ています。</p>
+        </section>
+
+        {% if recommend_items %}
+        <section class="recommend-category-grid" aria-label="業務効率化アイテムカテゴリ">
+            {% for item in recommend_items %}
+            <article class="recommend-category-card">
+                <span class="recommend-category-card__label">{{ item.category_label }}</span>
+                <h2>{{ item.title }}</h2>
+                <p>{{ item.description }}</p>
+                <a href="{{ item.url }}" target="_blank" rel="nofollow sponsored noopener" class="recommend-category-card__cta">
+                    {{ item.cta|default('Amazonで探す') }}
+                </a>
+            </article>
+            {% endfor %}
+        </section>
+        {% endif %}
+
+        <nav class="faq-lite__links" aria-label="関連ページ">
+            <a href="/">ホームへ戻る</a>
+            <a href="/autofill">Jobcan AutoFill</a>
+            <a href="/tools/csv">CSV/Excelツール</a>
+            <a href="/faq">FAQ</a>
+        </nav>
+    </main>
+    {% set affiliate_disclosure_rendered = true %}
+    {% include 'includes/footer.html' %}
+</body>
+</html>

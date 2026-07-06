@@ -82,6 +82,7 @@ def get_footer_columns():
         {'title': 'ツール一覧', 'links': tool_links},
         {'title': 'リソース', 'links': [
             {'name': 'よくある質問', 'path': '/faq'},
+            {'name': '業務効率化アイテムおすすめ', 'path': '/recommend'},
         ]},
         {'title': '法務情報', 'links': [
             {'name': 'プライバシーポリシー', 'path': '/privacy'},

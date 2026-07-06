@@ -28,6 +28,11 @@
             </article>
             {% endfor %}
         </div>
+        {% if amazon_section.more_path and amazon_section.more_label %}
+        <p class="amazon-lite-section__more">
+            <a href="{{ amazon_section.more_path }}">{{ amazon_section.more_label }}</a>
+        </p>
+        {% endif %}
     </div>
 </section>
 {% endif %}

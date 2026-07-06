@@ -91,6 +91,8 @@ def get_settings() -> Dict[str, object]:
 
 def _current_associate_tag(settings: Optional[Dict[str, object]] = None) -> str:
     """Resolve the active associate tag from runtime env (single source of truth)."""
+    # Production should set AMAZON_ASSOCIATE_TAG; when absent, search links render
+    # without a tag so the page still works in local/test environments.
     env_tag = (os.getenv("AMAZON_ASSOCIATE_TAG") or "").strip()
     if env_tag:
         if settings is not None:
@@ -391,6 +393,8 @@ def _lightweight_section_key(path: str) -> str:
         return "csv"
     if normalized == "/faq":
         return "faq"
+    if normalized == "/recommend":
+        return "recommend"
     return ""
 
 
@@ -442,8 +446,10 @@ def build_lightweight_amazon_sections(path: str, page_type: str = "") -> Dict[st
             "anchor_id": str(section.get("anchor_id") or f"amazon-{section_key}-items"),
             "title": str(section.get("title") or "作業をもっと楽にするアイテム"),
             "lead": str(section.get("lead") or ""),
-            "items": cards[:3],
+            "items": cards[: max(1, int(section.get("max_items") or 3))],
             "rotation_bucket": rotation_key,
+            "more_label": str(section.get("more_label") or ""),
+            "more_path": str(section.get("more_path") or ""),
             "source": "lightweight_static",
         }
     }

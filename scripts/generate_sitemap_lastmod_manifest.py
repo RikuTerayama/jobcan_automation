@@ -32,6 +32,7 @@ def url_path_to_template_rel(url_path):
         "tools": "tools/index.html",
         "tools/csv": "tools/csv.html",
         "faq": "faq_lite.html",
+        "recommend": "recommend.html",
     }
     if path in special:
         return special[path]
@@ -43,7 +44,7 @@ def url_path_to_template_rel(url_path):
 def get_sitemap_url_paths():
     """sitemap に含まれる URL パスの一覧（固定＋PRODUCTS 相当）"""
     fixed = [
-        "/", "/autofill", "/tools", "/tools/csv", "/faq",
+        "/", "/autofill", "/tools", "/tools/csv", "/recommend", "/faq",
     ]
     return fixed
 

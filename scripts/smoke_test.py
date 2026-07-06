@@ -17,7 +17,7 @@ def run_with_test_client():
     from app import app
     app.config['TESTING'] = True
     client = app.test_client()
-    paths = ['/', '/autofill', '/tools', '/tools/csv', '/faq', '/privacy', '/terms', '/contact', '/healthz', '/readyz', '/ping']
+    paths = ['/', '/autofill', '/tools', '/tools/csv', '/recommend', '/faq', '/privacy', '/terms', '/contact', '/healthz', '/readyz', '/ping']
     error_phrase = '⚠️ エラーが発生しました'
     n_per_path = 10
     failed = []
@@ -51,7 +51,7 @@ def run_deploy_verification():
     failed = []
 
     # 200 期待: エラー表示なし
-    for path in ['/tools/csv', '/faq', '/privacy', '/terms', '/contact']:
+    for path in ['/tools/csv', '/recommend', '/faq', '/privacy', '/terms', '/contact']:
         resp = client.get(path, follow_redirects=False)
         body = resp.data.decode('utf-8')
         if resp.status_code != 200:

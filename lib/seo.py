@@ -80,6 +80,12 @@ SEO_DEFAULTS = {
         'og_type': 'website',
         'breadcrumb_title': 'FAQ',
     },
+    '/recommend': {
+        'title': '業務効率化アイテムおすすめ | Jobcan AutoFill',
+        'description': 'Jobcan 入力、Excel/CSV 作業、デスク作業を少し楽にしたい方向けに、作業環境づくりのヒントをカテゴリ別にまとめています。',
+        'og_type': 'website',
+        'breadcrumb_title': '業務効率化アイテムおすすめ',
+    },
     '/glossary': {
         'description': '勤怠管理、Jobcan、自動入力に関連する用語集です。打刻、勤務時間、Playwright などの用語をわかりやすく整理しています。',
         'og_type': 'website',
@@ -205,6 +211,7 @@ SIMPLIFIED_SEO_PATHS = frozenset((
     '/tools',
     '/tools/csv',
     '/faq',
+    '/recommend',
     '/privacy',
     '/terms',
     '/contact',

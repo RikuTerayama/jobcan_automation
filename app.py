@@ -79,6 +79,7 @@ SIMPLIFIED_SITEMAP_URLS = (
     ('/autofill', 'daily', '1.0'),
     ('/tools', 'weekly', '0.8'),
     ('/tools/csv', 'weekly', '0.8'),
+    ('/recommend', 'weekly', '0.7'),
     ('/faq', 'weekly', '0.7'),
 )
 SIMPLIFIED_REDIRECTS = {
@@ -2335,6 +2336,12 @@ def faq():
     """よくある質問（FAQ）"""
     return render_template('faq_lite.html')
 
+
+@app.route('/recommend')
+def recommend():
+    """業務効率化アイテムおすすめ"""
+    return render_template('recommend.html')
+
 @app.route('/glossary')
 def glossary():
     """用語集"""
@@ -3253,6 +3260,7 @@ def _sitemap_lastmod_for_path(url_path):
         'guide/comprehensive-guide': 'guide/comprehensive-guide.html',
         'blog': 'blog/index.html',
         'tools': 'tools/index.html',
+        'recommend': 'recommend.html',
         'sitemap.html': 'sitemap.html',
         'case-studies': 'case-studies.html',
         'case-study/contact-center': 'case-study-contact-center.html',

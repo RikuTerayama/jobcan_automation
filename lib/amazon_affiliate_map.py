@@ -124,6 +124,8 @@ LIGHTWEIGHT_AMAZON_SECTIONS: Dict[str, Dict[str, object]] = {
         "anchor_id": "amazon-work-items",
         "title": "作業をもっと楽にするアイテム",
         "lead": "ツール利用の前後で使いやすい、業務効率化向けの周辺アイテムをまとめています。",
+        "more_label": "業務効率化アイテムをまとめて見る",
+        "more_path": "/recommend",
         "items": [
             {
                 "category_label": "勤怠入力",
@@ -155,6 +157,8 @@ LIGHTWEIGHT_AMAZON_SECTIONS: Dict[str, Dict[str, object]] = {
         "anchor_id": "amazon-autofill-items",
         "title": "勤怠入力を楽にする周辺アイテム",
         "lead": "入力や確認を少し楽にしたい方向けの、控えめな補助導線です。",
+        "more_label": "作業環境のおすすめをまとめて見る",
+        "more_path": "/recommend",
         "items": [
             {
                 "category_label": "入力補助",
@@ -186,6 +190,8 @@ LIGHTWEIGHT_AMAZON_SECTIONS: Dict[str, Dict[str, object]] = {
         "anchor_id": "amazon-tools-items",
         "title": "業務効率化アイテムを見る",
         "lead": "ツールとあわせて使いやすい、入力・確認・デスク環境の補助アイテムです。",
+        "more_label": "カテゴリ別にまとめて見る",
+        "more_path": "/recommend",
         "items": [
             {
                 "category_label": "入力",
@@ -217,6 +223,8 @@ LIGHTWEIGHT_AMAZON_SECTIONS: Dict[str, Dict[str, object]] = {
         "anchor_id": "amazon-csv-items",
         "title": "Excel/CSV作業を楽にするアイテム",
         "lead": "変換や確認作業の前後で使いやすい、表計算まわりの補助アイテムです。",
+        "more_label": "Excel作業向けのおすすめをまとめて見る",
+        "more_path": "/recommend",
         "items": [
             {
                 "category_label": "入力補助",
@@ -248,6 +256,8 @@ LIGHTWEIGHT_AMAZON_SECTIONS: Dict[str, Dict[str, object]] = {
         "anchor_id": "amazon-faq-items",
         "title": "作業環境を整えたい方へ",
         "lead": "よくある質問を確認したあとに、作業しやすい環境づくりも見直せます。",
+        "more_label": "カテゴリ別のおすすめを見る",
+        "more_path": "/recommend",
         "items": [
             {
                 "category_label": "入力環境",
@@ -271,6 +281,46 @@ LIGHTWEIGHT_AMAZON_SECTIONS: Dict[str, Dict[str, object]] = {
                 "description": "仕事術やExcel効率化の本を見比べられます。",
                 "query": "仕事術 本",
                 "query_variants": ["ビジネス書 おすすめ", "Excel効率化本"],
+                "cta": "Amazonで探す",
+            },
+        ],
+    },
+    "recommend": {
+        "anchor_id": "recommend-categories",
+        "title": "業務効率化アイテムおすすめ",
+        "lead": "Jobcan入力、Excel/CSV作業、デスク作業を少し楽にする周辺アイテムをカテゴリ別にまとめています。",
+        "max_items": 4,
+        "items": [
+            {
+                "category_label": "勤怠入力",
+                "title": "勤怠入力を楽にする",
+                "description": "入力作業を少し楽にしたい方向けに、テンキーや操作しやすい周辺機器を探せます。",
+                "query": "テンキー ワイヤレス",
+                "query_variants": ["テンキー", "ワイヤレスマウス", "キーボード"],
+                "cta": "Amazonで探す",
+            },
+            {
+                "category_label": "Excel/CSV",
+                "title": "Excel/CSV作業を楽にする",
+                "description": "Excel作業が多い方向けに、入力補助や学習用の本、確認環境を見比べられます。",
+                "query": "Excel 効率化 本",
+                "query_variants": ["Excel効率化本", "Excel 関数 本", "モバイルモニター"],
+                "cta": "Amazonで探す",
+            },
+            {
+                "category_label": "デスク作業",
+                "title": "デスク作業を楽にする",
+                "description": "デスク周りを整えたい方向けに、収納や姿勢サポート系のアイテムを探せます。",
+                "query": "デスクワーク 快適 グッズ",
+                "query_variants": ["デスク収納", "ノートPCスタンド", "フットレスト"],
+                "cta": "Amazonで探す",
+            },
+            {
+                "category_label": "時間管理",
+                "title": "時間管理・集中を助ける",
+                "description": "作業時間を区切って集中したい方向けに、タイマーや仕事術の本を確認できます。",
+                "query": "タイマー デスク",
+                "query_variants": ["タイマー 勉強", "仕事術 本", "ビジネス書 おすすめ"],
                 "cta": "Amazonで探す",
             },
         ],
