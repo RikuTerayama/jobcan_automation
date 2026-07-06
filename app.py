@@ -23,7 +23,6 @@ from automation import process_jobcan_automation
 from lib.seo import (
     build_breadcrumb_items,
     get_article_schema,
-    get_blog_articles,
     get_page_kind,
     get_related_content,
     get_seo_defaults,
@@ -527,20 +526,6 @@ AFFILIATE_SLOT_RULES = {
         'breakpoint_policy': 'all',
         'allow_rotation': True,
     },
-    'blog_index_after_intro': {
-        'page_types': ('blog_index',),
-        'paths': ('/blog',),
-        'default_size': '300x250',
-        'breakpoint_policy': 'all',
-        'allow_rotation': True,
-    },
-    'case_index_after_intro': {
-        'page_types': ('case_index',),
-        'paths': ('/case-studies',),
-        'default_size': '300x250',
-        'breakpoint_policy': 'all',
-        'allow_rotation': True,
-    },
     'public_top_inline': {
         'page_types': ('article', 'guide', 'info', 'tool', 'tool_index', 'trust_sensitive', 'legal', 'contact', 'generic'),
         'default_size': '300x250',
@@ -575,8 +560,6 @@ AFFILIATE_SLOT_RULES = {
 
 PUBLIC_AFFILIATE_PAGE_TYPES = frozenset((
     'landing',
-    'blog_index',
-    'case_index',
     'article',
     'guide',
     'info',
@@ -603,17 +586,7 @@ def get_affiliate_page_type(path):
         return 'landing'
     if normalized_path == '/autofill':
         return 'trust_sensitive'
-    if normalized_path == '/blog':
-        return 'blog_index'
-    if normalized_path.startswith('/blog/'):
-        return 'article'
-    if normalized_path == '/case-studies':
-        return 'case_index'
-    if normalized_path.startswith('/case-study/'):
-        return 'article'
-    if normalized_path == '/guide' or normalized_path.startswith('/guide/'):
-        return 'guide'
-    if normalized_path in ('/about', '/faq', '/glossary', '/best-practices'):
+    if normalized_path == '/faq':
         return 'info'
     if normalized_path == '/tools':
         return 'tool_index'
@@ -851,12 +824,6 @@ def _build_affiliate_page_tags(path, seo_defaults, products):
 
     if normalized_path == '/autofill':
         tags.extend(['勤怠', '自動入力', '業務効率化'])
-    elif normalized_path.startswith('/guide'):
-        tags.extend(['ガイド', '運用', '手順'])
-    elif normalized_path.startswith('/blog'):
-        tags.extend(['ブログ', '解説', 'ノウハウ'])
-    elif normalized_path.startswith('/case'):
-        tags.extend(['導入事例', '業務改善'])
     elif normalized_path.startswith('/tools'):
         tags.extend(['ツール', '効率化'])
 
@@ -1027,7 +994,7 @@ def inject_env_vars():
             breadcrumb_title=seo_defaults.get('breadcrumb_title', ''),
         )
         related_content_section = get_related_content(current_path)
-        blog_articles = get_blog_articles()
+        blog_articles = []
 
         products_list = _simplified_products(PRODUCTS)
         if not isinstance(products_list, list):
@@ -2016,7 +1983,7 @@ def index():
             <ul>
                 <li><a href="/autofill">Jobcan自動入力</a></li>
                 <li><a href="/tools">ツール一覧</a></li>
-                <li><a href="/about">サイトについて</a></li>
+                <li><a href="/faq">よくある質問</a></li>
             </ul>
         </div>
         
@@ -2062,180 +2029,6 @@ def contact():
     """お問い合わせページ"""
     return render_template('contact.html')
 
-@app.route('/guide')
-def guide_index():
-    """ガイド一覧ページ（Jobcan / Tools の2セクション）"""
-    try:
-        from lib.products_catalog import PRODUCTS
-        products = [p for p in PRODUCTS if isinstance(p, dict) and p.get('status') == 'available']
-    except Exception:
-        products = []
-    return render_template('guide/index.html', products=products)
-
-
-@app.route('/guide/autofill')
-def guide_autofill():
-    """Jobcan AutoFill 統合ガイド（他ツールと同粒度の1ツール=1ガイド）"""
-    return render_template('guide/autofill.html')
-
-
-@app.route('/guide/getting-started')
-def guide_getting_started():
-    """はじめての使い方ガイド"""
-    return render_template('guide/getting-started.html')
-
-
-@app.route('/guide/excel-format')
-def guide_excel_format():
-    """Excelファイルの作成方法ガイド"""
-    return render_template('guide/excel-format.html')
-
-
-@app.route('/guide/troubleshooting')
-def guide_troubleshooting():
-    """トラブルシューティングガイド"""
-    return render_template('guide/troubleshooting.html')
-
-@app.route('/guide/complete')
-def guide_complete():
-    """完全ガイド"""
-    return render_template('guide/complete-guide.html')
-
-@app.route('/guide/comprehensive-guide')
-def guide_comprehensive_guide():
-    """Jobcan勤怠管理を効率化する総合ガイド"""
-    return render_template('guide/comprehensive-guide.html')
-
-@app.route('/guide/image-batch')
-def guide_image_batch():
-    """画像一括変換ツールガイド"""
-    return render_template('guide/image-batch.html')
-
-@app.route('/guide/pdf')
-def guide_pdf():
-    """PDFユーティリティガイド"""
-    return render_template('guide/pdf.html')
-
-@app.route('/guide/image-cleanup')
-def guide_image_cleanup():
-    """画像ユーティリティガイド"""
-    return render_template('guide/image-cleanup.html')
-
-@app.route('/guide/minutes')
-def guide_minutes():
-    """旧議事録ガイドURL: 301で /guide へ"""
-    return redirect('/guide', code=301)
-
-@app.route('/guide/seo')
-def guide_seo():
-    """Web/SEOユーティリティガイド"""
-    return render_template('guide/seo.html')
-
-@app.route('/guide/csv')
-def guide_csv():
-    """CSV/Excelユーティリティガイド"""
-    return render_template('guide/csv.html')
-
-@app.route('/tools/image-batch')
-def tools_image_batch():
-    """画像一括変換ツール"""
-    from lib.routes import get_product_by_path
-    product = get_product_by_path('/tools/image-batch')
-    return render_template('tools/image-batch.html', product=product)
-
-@app.route('/tools/pdf')
-def tools_pdf():
-    """PDFユーティリティ"""
-    from lib.routes import get_product_by_path
-    product = get_product_by_path('/tools/pdf')
-    return render_template('tools/pdf.html', product=product)
-
-
-# PDF ロック付与 API（案B: サーバ併用）
-# パスワードはログ・永続化しない。
-# エラー時は error_code と request_id を返す（message は返さない。パスワードは絶対に出さない）。
-PDF_API_MAX_BYTES = 50 * 1024 * 1024  # 50MB
-
-def _pdf_api_error(error_code, status=400):
-    rid = uuid.uuid4().hex[:12]
-    return jsonify(success=False, error_code=error_code, request_id=rid), status
-
-
-@app.route('/api/pdf/lock', methods=['POST'])
-def api_pdf_lock():
-    """PDFにパスワードを付与して暗号化して返す。password は form で受け取り、ログに出さない。"""
-    try:
-        file = request.files.get('file')
-        password = (request.form.get('password') or '').strip()
-        if not file or file.filename == '':
-            return _pdf_api_error('file_required')
-        if not password:
-            return _pdf_api_error('missing_password')
-        try:
-            pdf_bytes = file.read()
-        except Exception:
-            return _pdf_api_error('read_failed')
-        if len(pdf_bytes) > PDF_API_MAX_BYTES:
-            return _pdf_api_error('file_too_large')
-        try:
-            from lib.pdf_lock_unlock import encrypt_pdf
-            out_bytes = encrypt_pdf(pdf_bytes, password)
-        except ValueError as e:
-            err = str(e)
-            if err == 'already_encrypted':
-                return _pdf_api_error('already_encrypted')
-            if err == 'corrupt_pdf':
-                return _pdf_api_error('corrupt_pdf')
-            if err == 'unsupported_pdf':
-                return _pdf_api_error('unsupported_pdf')
-            return _pdf_api_error('encrypt_failed')
-        except Exception as e:
-            rid = uuid.uuid4().hex[:12]
-            logging.getLogger(__name__).warning('pdf lock encrypt_failed request_id=%s %s', rid, type(e).__name__)
-            logging.getLogger(__name__).debug('pdf lock encrypt_failed traceback', exc_info=True)
-            return jsonify(success=False, error_code='encrypt_failed', request_id=rid), 400
-        from io import BytesIO
-        name = file.filename or 'document.pdf'
-        if not name.lower().endswith('.pdf'):
-            name += '.pdf'
-        base = name[:-4] if name.lower().endswith('.pdf') else name
-        return send_file(
-            BytesIO(out_bytes),
-            mimetype='application/pdf',
-            as_attachment=True,
-            download_name=f'{base}_locked.pdf'
-        )
-    except Exception as e:
-        rid = uuid.uuid4().hex[:12]
-        logging.getLogger(__name__).exception('pdf lock request_id=%s %s', rid, type(e).__name__)
-        return jsonify(success=False, error_code='unsupported', request_id=rid), 500
-
-
-@app.route('/tools/image-cleanup')
-def tools_image_cleanup():
-    """画像ユーティリティ"""
-    from lib.routes import get_product_by_path
-    product = get_product_by_path('/tools/image-cleanup')
-    return render_template('tools/image-cleanup.html', product=product)
-
-@app.route('/tools/minutes')
-def tools_minutes():
-    """旧議事録ツールURL: 301で /tools へ"""
-    return redirect('/tools', code=301)
-
-
-@app.route('/api/minutes/format', methods=['POST'])
-def api_minutes_format():
-    """旧議事録API: 410 Gone"""
-    return jsonify(error_code='gone'), 410
-
-
-@app.route('/tools/seo')
-def tools_seo():
-    """Web/SEOユーティリティ"""
-    from lib.routes import get_product_by_path
-    product = get_product_by_path('/tools/seo')
-    return render_template('tools/seo.html', product=product)
 
 @app.route('/tools/csv')
 def tools_csv():
@@ -2244,92 +2037,6 @@ def tools_csv():
     product = get_product_by_path('/tools/csv')
     return render_template('tools/csv.html', product=product)
 
-
-# 簡易レート制限: /api/seo/crawl-urls を IP ごとに 60 秒に 1 回まで
-_crawl_rate_by_ip = {}
-_crawl_rate_lock = threading.Lock()
-_CRAWL_RATE_SEC = 60
-
-
-def _is_valid_ip(s):
-    """妥当な IPv4/IPv6 形式なら True。"""
-    if not s or not isinstance(s, str):
-        return False
-    s = s.strip()
-    try:
-        import ipaddress
-        ipaddress.ip_address(s)
-        return True
-    except (ValueError, TypeError):
-        return False
-
-
-def _get_client_ip_for_crawl():
-    """request.access_route / X-Forwarded-For から妥当なIPを採用し、なければ remote_addr。"""
-    candidates = []
-    if getattr(request, 'access_route', None):
-        candidates.extend(request.access_route)
-    xff = request.headers.get('X-Forwarded-For', '')
-    if xff:
-        candidates.extend(p.strip() for p in xff.split(',') if p.strip())
-    if request.remote_addr:
-        candidates.append(request.remote_addr)
-    for c in candidates:
-        if _is_valid_ip(c):
-            return c
-    return request.remote_addr or 'unknown'
-
-
-@app.route('/api/seo/crawl-urls', methods=['POST'])
-def api_seo_crawl_urls():
-    """同一ホスト内でURLをクロールし、URL一覧を返す。sitemap用。SSRF対策・レート制限あり。"""
-    client_ip = _get_client_ip_for_crawl()
-    now = time.time()
-    with _crawl_rate_lock:
-        last = _crawl_rate_by_ip.get(client_ip, 0)
-        if now - last < _CRAWL_RATE_SEC:
-            resp = jsonify(
-                success=False,
-                error='しばらく待ってから再度お試しください（1分に1回まで）',
-                retry_after_sec=_CRAWL_RATE_SEC
-            )
-            resp.status_code = 429
-            resp.headers['Retry-After'] = str(_CRAWL_RATE_SEC)
-            return resp
-        _crawl_rate_by_ip[client_ip] = now
-
-    try:
-        data = request.get_json(force=True, silent=True) or {}
-    except Exception:
-        data = {}
-    start_url = (data.get('start_url') or '').strip()
-    if not start_url:
-        return jsonify(success=False, error='start_url を指定してください'), 400
-
-    from lib.seo_crawler import crawl, is_url_safe_for_crawl
-    safe, err_msg = is_url_safe_for_crawl(start_url)
-    if not safe:
-        return jsonify(success=False, error=err_msg or 'このURLは許可されていません'), 400
-
-    max_urls = data.get('max_urls', 300)
-    max_depth = data.get('max_depth', 3)
-    try:
-        max_urls = int(max_urls)
-        max_depth = int(max_depth)
-    except (TypeError, ValueError):
-        max_urls = 300
-        max_depth = 3
-    max_urls = max(1, min(1000, max_urls))
-    max_depth = max(0, min(10, max_depth))
-
-    urls, warnings = crawl(
-        start_url=start_url,
-        max_urls=max_urls,
-        max_depth=max_depth,
-        request_timeout=5,
-        total_timeout=60
-    )
-    return jsonify(success=True, urls=urls, warnings=warnings)
 
 
 @app.route('/tools')
@@ -2356,120 +2063,6 @@ def recommend():
     """業務効率化アイテムおすすめ"""
     return render_template('recommend.html')
 
-@app.route('/glossary')
-def glossary():
-    """用語集"""
-    return render_template('glossary.html')
-
-@app.route('/about')
-def about():
-    """サイトについて"""
-    return render_template('about.html')
-
-@app.route('/best-practices')
-def best_practices():
-    """ベストプラクティス"""
-    return render_template('best-practices.html')
-
-@app.route('/case-studies')
-def case_studies_index():
-    """導入事例一覧"""
-    return render_template('case-studies.html')
-
-@app.route('/case-study/contact-center')
-def case_study_contact_center():
-    """導入事例：コンタクトセンター"""
-    return render_template('case-study-contact-center.html')
-
-@app.route('/blog')
-def blog_index():
-    """ブログ一覧"""
-    return render_template('blog/index.html')
-
-@app.route('/blog/implementation-checklist')
-def blog_implementation_checklist():
-    """ブログ記事：導入チェックリスト"""
-    return render_template('blog/implementation-checklist.html')
-
-@app.route('/blog/automation-roadmap')
-def blog_automation_roadmap():
-    """ブログ記事：90日ロードマップ"""
-    return render_template('blog/automation-roadmap.html')
-
-@app.route('/blog/workstyle-reform-automation')
-def blog_workstyle_reform_automation():
-    """ブログ記事：働き方改革と自動化"""
-    return render_template('blog/workstyle-reform-automation.html')
-
-@app.route('/blog/excel-attendance-limits')
-def blog_excel_attendance_limits():
-    """ブログ記事：Excel管理の限界と自動化ツール"""
-    return render_template('blog/excel-attendance-limits.html')
-
-@app.route('/blog/playwright-security')
-def blog_playwright_security():
-    """ブログ記事：Playwrightによるブラウザ自動化のセキュリティ"""
-    return render_template('blog/playwright-security.html')
-
-@app.route('/blog/month-end-closing-hell-and-automation')
-def blog_month_end_closing_hell_and_automation():
-    """ブログ記事：月末締めが地獄になる理由と自動化"""
-    return render_template('blog/month-end-closing-hell-and-automation.html')
-
-@app.route('/blog/excel-format-mistakes-and-design')
-def blog_excel_format_mistakes_and_design():
-    """ブログ記事：Excelフォーマットのミス10選"""
-    return render_template('blog/excel-format-mistakes-and-design.html')
-
-@app.route('/blog/convince-it-and-hr-for-automation')
-def blog_convince_it_and_hr_for_automation():
-    """ブログ記事：情シス・人事を説得する5ステップ"""
-    return render_template('blog/convince-it-and-hr-for-automation.html')
-
-@app.route('/blog/playwright-jobcan-challenges-and-solutions')
-def blog_playwright_jobcan_challenges_and_solutions():
-    """ブログ記事：Playwrightでハマったポイント"""
-    return render_template('blog/playwright-jobcan-challenges-and-solutions.html')
-
-@app.route('/blog/jobcan-auto-input-tools-overview')
-def blog_jobcan_auto_input_tools_overview():
-    """ブログ記事：Jobcan自動入力ツールの全体像と選び方"""
-    return render_template('blog/jobcan-auto-input-tools-overview.html')
-
-@app.route('/blog/reduce-manual-work-checklist')
-def blog_reduce_manual_work_checklist():
-    """ブログ記事：勤怠管理の手入力を減らすための実務チェックリスト"""
-    return render_template('blog/reduce-manual-work-checklist.html')
-
-@app.route('/blog/jobcan-month-end-tips')
-def blog_jobcan_month_end_tips():
-    """ブログ記事：Jobcan月末締めをラクにするための7つの実践テクニック"""
-    return render_template('blog/jobcan-month-end-tips.html')
-
-@app.route('/blog/jobcan-auto-input-dos-and-donts')
-def blog_jobcan_auto_input_dos_and_donts():
-    """ブログ記事：Jobcan自動入力のやり方と、やってはいけないNG自動化"""
-    return render_template('blog/jobcan-auto-input-dos-and-donts.html')
-
-@app.route('/blog/month-end-closing-checklist')
-def blog_month_end_closing_checklist():
-    """ブログ記事：月末の勤怠締め地獄を減らすための現実的なチェックリスト"""
-    return render_template('blog/month-end-closing-checklist.html')
-
-@app.route('/case-study/consulting-firm')
-def case_study_consulting_firm():
-    """導入事例：コンサルティングファーム"""
-    return render_template('case-study-consulting-firm.html')
-
-@app.route('/case-study/remote-startup')
-def case_study_remote_startup():
-    """導入事例：小規模スタートアップ"""
-    return render_template('case-study-remote-startup.html')
-
-@app.route('/sitemap.html')
-def sitemap_html():
-    """HTMLサイトマップ"""
-    return render_template('sitemap.html')
 
 # === ヘルスチェックエンドポイント（Render用・超軽量） ===
 @app.route('/healthz')
@@ -3277,24 +2870,11 @@ def _sitemap_lastmod_for_path(url_path):
     special = {
         '': 'landing.html',
         'autofill': 'autofill.html',
-        'guide': 'guide/index.html',
-        'guide/complete': 'guide/complete-guide.html',
-        'guide/comprehensive-guide': 'guide/comprehensive-guide.html',
-        'blog': 'blog/index.html',
         'tools': 'tools/index.html',
         'recommend': 'recommend.html',
-        'sitemap.html': 'sitemap.html',
-        'case-studies': 'case-studies.html',
-        'case-study/contact-center': 'case-study-contact-center.html',
-        'case-study/consulting-firm': 'case-study-consulting-firm.html',
-        'case-study/remote-startup': 'case-study-remote-startup.html',
     }
     if path in special:
         rel = special[path]
-    elif path.startswith('guide/'):
-        rel = 'guide/' + path.split('/', 1)[1] + '.html'
-    elif path.startswith('blog/'):
-        rel = 'blog/' + path.split('/', 1)[1] + '.html'
     elif path.startswith('tools/'):
         rel = 'tools/' + path.split('/', 1)[1] + '.html'
     else:
@@ -3334,117 +2914,6 @@ def sitemap():
         xml_parts.append('  </url>')
     xml_parts.append('</urlset>')
     return Response('\n'.join(xml_parts), mimetype='application/xml')
-    """XMLサイトマップを動的生成（P0-1: PRODUCTSから自動生成）"""
-    from flask import url_for
-    from datetime import datetime
-    
-    # PRODUCTSのインポート（失敗しても続行）
-    try:
-        from lib.routes import PRODUCTS
-    except Exception as import_error:
-        logger.warning(f"sitemap_import_failed error={str(import_error)} - using empty list")
-        PRODUCTS = []
-    
-    # ベースURL（環境変数があれば採用、末尾スラッシュは除去して二重スラッシュを防ぐ）
-    base_url = (os.getenv('BASE_URL') or 'https://jobcan-automation.onrender.com').rstrip('/')
-    
-    # 現在日付を取得（lastmod のフォールバック）
-    today = datetime.now().strftime('%Y-%m-%d')
-    
-    # サイトマップに含めるURLのリスト
-    # 形式: (url_path, changefreq, priority, lastmod)
-    # P0-1: 固定ページは維持
-    urls = [
-        # 主要ページ
-        ('/', 'daily', '1.0', today),
-        ('/autofill', 'daily', '1.0', today),
-        ('/about', 'monthly', '0.8', today),
-        ('/faq', 'weekly', '0.8', today),
-        ('/glossary', 'monthly', '0.7', today),
-        ('/best-practices', 'monthly', '0.8', today),
-        ('/case-studies', 'monthly', '0.8', today),
-        
-        # ガイドページ（一覧＋固定）
-        ('/guide', 'weekly', '0.9', today),
-        ('/guide/autofill', 'weekly', '0.9', today),
-        ('/guide/complete', 'weekly', '0.9', today),
-        ('/guide/comprehensive-guide', 'weekly', '0.9', today),
-        ('/guide/getting-started', 'weekly', '0.9', today),
-        ('/guide/excel-format', 'weekly', '0.9', today),
-        ('/guide/troubleshooting', 'weekly', '0.8', today),
-        
-        # ツール一覧ページ
-        ('/tools', 'weekly', '0.9', today),
-        
-        # ブログ一覧
-        ('/blog', 'daily', '0.8', today),
-        
-        # ブログ記事（固定リストを維持）
-        ('/blog/implementation-checklist', 'monthly', '0.7', today),
-        ('/blog/automation-roadmap', 'monthly', '0.7', today),
-        ('/blog/workstyle-reform-automation', 'monthly', '0.7', today),
-        ('/blog/excel-attendance-limits', 'monthly', '0.7', today),
-        ('/blog/playwright-security', 'monthly', '0.7', today),
-        ('/blog/month-end-closing-hell-and-automation', 'monthly', '0.7', today),
-        ('/blog/excel-format-mistakes-and-design', 'monthly', '0.7', today),
-        ('/blog/convince-it-and-hr-for-automation', 'monthly', '0.7', today),
-        ('/blog/playwright-jobcan-challenges-and-solutions', 'monthly', '0.7', today),
-        ('/blog/jobcan-auto-input-tools-overview', 'monthly', '0.7', today),
-        ('/blog/reduce-manual-work-checklist', 'monthly', '0.7', today),
-        ('/blog/jobcan-month-end-tips', 'monthly', '0.7', today),
-        ('/blog/jobcan-auto-input-dos-and-donts', 'monthly', '0.7', today),
-        ('/blog/month-end-closing-checklist', 'monthly', '0.7', today),
-        
-        # 導入事例（固定リストを維持）
-        ('/case-study/contact-center', 'monthly', '0.8', today),
-        ('/case-study/consulting-firm', 'monthly', '0.8', today),
-        ('/case-study/remote-startup', 'monthly', '0.8', today),
-    ]
-    
-    # P0-1: PRODUCTSから利用可能なツールページとガイドページを自動生成
-    # URL重複を防ぐために、既存のURLパスを集合で管理
-    seen_urls = {url_path for url_path, _, _, _ in urls}
-    
-    # PRODUCTSがリストであることを確認（恒久対策：型安全性）
-    products_list = PRODUCTS if isinstance(PRODUCTS, list) else []
-    for product in products_list:
-        if product.get('status') == 'available':
-            # product.pathを追加（重複チェック）
-            product_path = product.get('path')
-            if product_path and product_path not in seen_urls:
-                # ツールページの優先度と更新頻度を設定
-                changefreq = 'monthly'
-                priority = '0.7'
-                urls.append((product_path, changefreq, priority, today))
-                seen_urls.add(product_path)
-            
-            # guide_pathを追加（重複チェック）
-            guide_path = product.get('guide_path')
-            if guide_path and guide_path not in seen_urls:
-                urls.append((guide_path, 'monthly', '0.8', today))
-                seen_urls.add(guide_path)
-    
-    # XMLサイトマップを生成
-    xml_parts = [
-        '<?xml version="1.0" encoding="UTF-8"?>',
-        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
-    ]
-    
-    for url_path, changefreq, priority, lastmod_default in urls:
-        lastmod = _sitemap_lastmod_for_path(url_path) or lastmod_default
-        full_url = base_url + url_path
-        xml_parts.append('  <url>')
-        xml_parts.append(f'    <loc>{full_url}</loc>')
-        xml_parts.append(f'    <changefreq>{changefreq}</changefreq>')
-        xml_parts.append(f'    <priority>{priority}</priority>')
-        xml_parts.append(f'    <lastmod>{lastmod}</lastmod>')
-        xml_parts.append('  </url>')
-    
-    xml_parts.append('</urlset>')
-    
-    xml_content = '\n'.join(xml_parts)
-    
-    return Response(xml_content, mimetype='application/xml')
 
 def monitor_processing_resources(data_index, total_data):
     """データ処理中のリソース監視（4番目以降で強化）"""
