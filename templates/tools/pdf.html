@@ -1,0 +1,1037 @@
+﻿<!doctype html>
+<html lang="ja" class="no-js">
+<head>
+    {% set page_title = 'PDFユーティリティ - 結合・分割・圧縮・パスワード付与 | Jobcan AutoFill' %}
+    {% set page_description = 'PDFの結合、分割、ページ抽出、圧縮、画像変換、保護されていないPDFへのパスワード付与に対応した無料ツールです。' %}
+    {% set breadcrumb_title = product.name|default('PDFユーティリティ') %}
+    {% include 'includes/head_meta.html' %}
+    {# P1-4: SoftwareApplication讒矩蛹悶ョ繝ｼ繧ｿ #}
+    {% if product %}
+    {% include 'includes/structured_data.html' %}
+    {% block extra_structured_data %}
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "{{ product.name|e }}",
+        "description": "{{ product.description|e }}",
+        "url": "https://jobcan-automation.onrender.com{{ product.path }}",
+        "applicationCategory": "WebApplication",
+        "operatingSystem": "Web Browser",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "JPY"
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "Jobcan AutoFill",
+            "url": "https://jobcan-automation.onrender.com"
+        }
+    }
+    </script>
+    {% endblock %}
+    {% endif %}
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;
+        }
+        
+        body {
+            font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #121212 0%, #1A1A1A 50%, #0F0F0F 100%);
+            min-height: 100vh;
+            color: #FFFFFF;
+            letter-spacing: 0.05em;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .page-header {
+            text-align: center;
+            padding: 40px 20px;
+            margin-bottom: 40px;
+        }
+        
+        .page-header h1 {
+            font-size: 2.5em;
+            margin: 0 0 15px 0;
+            color: #FFFFFF;
+            font-weight: 600;
+        }
+        
+        .page-header p {
+            font-size: 1.1em;
+            color: rgba(255, 255, 255, 0.8);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .tool-section {
+            background: rgba(30, 30, 30, 0.5);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .tool-section h3 {
+            color: #4A9EFF;
+            font-size: 1.3em;
+            margin: 0 0 20px 0;
+        }
+        
+        .file-list {
+            margin-top: 20px;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .file-item-info {
+            flex: 1;
+        }
+        
+        .file-item-name {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 0.95em;
+            margin-bottom: 4px;
+        }
+        
+        .file-item-size {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85em;
+        }
+        
+        .file-item-remove {
+            padding: 6px 12px;
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+            border-radius: 6px;
+            color: #F44336;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+        
+        .file-item-remove:hover {
+            background: rgba(244, 67, 54, 0.3);
+        }
+        
+        .option-group {
+            margin-bottom: 20px;
+        }
+        
+        .option-group label {
+            display: block;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        
+        .option-group input,
+        .option-group select {
+            width: 100%;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: #FFFFFF;
+            font-size: 0.95em;
+        }
+        
+        .option-group input[type="range"] {
+            padding: 0;
+        }
+        
+        .action-button {
+            padding: 12px 24px;
+            background: rgba(74, 158, 255, 0.2);
+            border: 1px solid rgba(74, 158, 255, 0.5);
+            border-radius: 8px;
+            color: #4A9EFF;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .action-button:hover:not(:disabled) {
+            background: rgba(74, 158, 255, 0.3);
+        }
+        
+        .action-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .progress-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4A9EFF, #6BB6FF);
+            transition: width 0.3s;
+        }
+        
+        .task-list {
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .task-item {
+            padding: 8px;
+            font-size: 0.9em;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .task-item.queued {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .task-item.running {
+            color: #4A9EFF;
+        }
+        
+        .task-item.success {
+            color: #4CAF50;
+        }
+        
+        .task-item.error {
+            color: #F44336;
+        }
+        
+        .error-message {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            color: #F44336;
+        }
+        
+        .rejected-files {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255, 152, 0, 0.2);
+            border: 1px solid rgba(255, 152, 0, 0.5);
+            border-radius: 8px;
+        }
+        
+        .rejected-file {
+            margin-top: 8px;
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .info-text {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.85em;
+            margin-top: 5px;
+        }
+        
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .preset-button {
+            padding: 8px 16px;
+            background: rgba(74, 158, 255, 0.2);
+            border: 1px solid rgba(74, 158, 255, 0.5);
+            border-radius: 6px;
+            color: #4A9EFF;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+        
+        .preset-button:hover {
+            background: rgba(74, 158, 255, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .page-header h1 {
+                font-size: 2em;
+            }
+            
+            .container {
+                padding: 20px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% include 'includes/header.html' %}
+    {% include 'includes/breadcrumb.html' %}
+    
+    <div class="container">
+        <div class="page-header">
+            <h1 data-reveal>PDFユーティリティ</h1>
+            <p data-reveal data-reveal-delay="50">PDFの結合、分割、ページ抽出、圧縮、画像変換、保護されていないPDFへのパスワード付与を扱えます。</p>
+        </div>
+        {% set tool_intro_what = 'PDFをブラウザ内で整理するための軽量ツールです。パスワード付与のみサーバー側で処理し、処理後の一時ファイルは削除します。' %}
+        {% set tool_intro_steps = ['PDFまたは画像ファイルを選択', '操作モードと必要な範囲を指定', '処理結果をダウンロード'] %}
+        {% set tool_intro_notice = '大きなPDFは処理前に拒否される場合があります。閲覧制限を外すための処理は提供していません。' %}
+        {% include 'includes/tool_intro.html' %}
+
+        <div class="tool-section">
+            <h3>ファイル選択</h3>
+            <div id="dropzone" class="file-dropzone" style="border: 2px dashed rgba(74, 158, 255, 0.5); border-radius: 12px; padding: 60px 20px; text-align: center; background: rgba(74, 158, 255, 0.05); transition: all 0.3s; cursor: pointer;">
+                <div style="font-size: 3em; margin-bottom: 20px;">PDF</div>
+                <p style="color: rgba(255, 255, 255, 0.9); font-size: 1.1em; margin: 0 0 10px 0; font-weight: 500;">ファイルをドラッグ＆ドロップ</p>
+                <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.95em; margin: 0;">またはクリックしてファイルを選択</p>
+                <p id="dropzone-hint" style="color: rgba(255, 255, 255, 0.5); font-size: 0.85em; margin: 15px 0 0 0;">PDFは最大20ファイル、1ファイル20MBまでを目安にしてください。</p>
+                <input type="file" id="file-input" accept="application/pdf" multiple style="display: none;">
+            </div>
+            <div id="file-list" class="file-list"></div>
+            <div id="rejected-files" class="rejected-files" style="display: none;"></div>
+        </div>
+
+        <div class="tool-section">
+            <h3>操作設定</h3>
+            <div class="option-group">
+                <label>操作モード</label>
+                <select id="mode" onchange="updateModeOptions()">
+                    <optgroup label="基本操作">
+                        <option value="merge">結合</option>
+                        <option value="extract">ページ抽出</option>
+                        <option value="split">分割</option>
+                        <option value="to-images">PDFを画像に変換</option>
+                    </optgroup>
+                    <optgroup label="拡張操作">
+                        <option value="compress">圧縮</option>
+                        <option value="images-to-pdf">画像をPDFに変換</option>
+                        <option value="extract-images">埋め込み画像を抽出</option>
+                    </optgroup>
+                    <optgroup label="保護">
+                        <option value="lock-pdf">PDFにパスワードを付与</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div id="output-pdf-password-group" class="option-group" style="display: none;">
+                <label>出力PDFに設定するパスワード</label>
+                <input type="password" id="output-pdf-password" placeholder="8文字以上を推奨" autocomplete="off">
+                <p class="info-text" style="color: #FF9800;">パスワードを忘れるとPDFを開けません。安全な場所に控えてください。</p>
+            </div>
+
+            <div id="extract-options" class="option-group" style="display: none;">
+                <label>抽出するページ範囲（例: 1-3,5,7-9）</label>
+                <input type="text" id="extract-range" placeholder="1-3,5,7-9">
+                <p class="info-text">抽出したいページ番号を指定してください。</p>
+            </div>
+
+            <div id="split-options" class="option-group" style="display: none;">
+                <label>分割グループ（例: 1-3;4-6;7-10）</label>
+                <input type="text" id="split-range" placeholder="1-3;4-6;7-10">
+                <p class="info-text">セミコロンでグループを区切り、各グループ内はカンマでページ範囲を指定します。</p>
+            </div>
+
+            <div id="to-images-options" class="option-group" style="display: none;">
+                <label>画像形式</label>
+                <select id="image-format">
+                    <option value="png">PNG</option>
+                    <option value="jpeg">JPEG</option>
+                </select>
+            </div>
+
+            <div id="to-images-scale" class="option-group" style="display: none;">
+                <label>スケール</label>
+                <select id="image-scale">
+                    <option value="1.0">1.0x（標準）</option>
+                    <option value="1.5">1.5x</option>
+                    <option value="2.0">2.0x（高解像度）</option>
+                </select>
+            </div>
+
+            <div id="to-images-quality" class="option-group" style="display: none;">
+                <label>品質 <span id="quality-value">0.9</span></label>
+                <input type="range" id="image-quality" min="0.1" max="1.0" step="0.1" value="0.9">
+            </div>
+
+            <div id="compress-options" class="option-group" style="display: none;">
+                <label>プリセット</label>
+                <div class="preset-buttons" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+                    <button class="preset-button" onclick="applyCompressPreset('email')">メール向け</button>
+                    <button class="preset-button" onclick="applyCompressPreset('balanced')">バランス</button>
+                    <button class="preset-button" onclick="applyCompressPreset('quality')">画質優先</button>
+                </div>
+                <label style="margin-top: 15px;">品質 <span id="compress-quality-value">0.75</span></label>
+                <input type="range" id="compress-quality" min="0.5" max="0.9" step="0.05" value="0.75">
+                <label style="margin-top: 15px;">スケール</label>
+                <select id="compress-scale">
+                    <option value="1.0">1.0x</option>
+                    <option value="1.5" selected>1.5x</option>
+                    <option value="2.0">2.0x</option>
+                </select>
+                <label style="margin-top: 15px;">最大長辺（px）</label>
+                <input type="number" id="compress-max-long-edge" min="800" max="4000" value="2000">
+                <p class="info-text" style="color: #FF9800; margin-top: 10px;">圧縮方式によっては文字選択や検索ができなくなる場合があります。</p>
+            </div>
+
+            <div id="images-to-pdf-options" class="option-group" style="display: none;">
+                <label>ページサイズ</label>
+                <select id="images-page-size">
+                    <option value="auto">自動（画像サイズに合わせる）</option>
+                    <option value="a4">A4</option>
+                    <option value="letter">Letter</option>
+                </select>
+                <label style="margin-top: 15px;">余白（pt）</label>
+                <input type="number" id="images-margin" min="0" max="100" value="24">
+                <p class="info-text" style="margin-top: 10px;">画像の順序はファイル名順で処理します。</p>
+            </div>
+
+            <div id="extract-images-options" class="option-group" style="display: none;">
+                <div class="info-text" style="margin-bottom: 15px; padding: 12px; background: rgba(74, 158, 255, 0.08); border-radius: 8px; border-left: 3px solid rgba(74, 158, 255, 0.5);">
+                    <strong>埋め込み画像の抽出について</strong>
+                    <ul style="margin: 10px 0 0 0; padding-left: 20px; line-height: 1.6;">
+                        <li>PDF内の画像を取り出し、画像ファイルとして保存します。</li>
+                        <li>PDFの種類によっては、ページ全体が画像として保存される場合があります。</li>
+                        <li>保護されたPDFや権限制限付きPDFでは抽出できない場合があります。</li>
+                    </ul>
+                </div>
+                <label>画像形式</label>
+                <select id="extract-images-format">
+                    <option value="png">PNG</option>
+                    <option value="jpeg">JPEG</option>
+                </select>
+                <div id="extract-images-quality-group" style="display: none; margin-top: 15px;">
+                    <label>品質 <span id="extract-images-quality-value">0.9</span></label>
+                    <input type="range" id="extract-images-quality" min="0.1" max="1.0" step="0.1" value="0.9">
+                </div>
+                <label style="margin-top: 15px;">最大抽出数（PDFあたり）</label>
+                <input type="number" id="extract-images-max" min="10" max="500" value="200">
+                <p class="info-text" style="color: #FF9800; margin-top: 10px;">PDFによっては抽出できない場合があります。</p>
+            </div>
+
+            <button id="run-button" class="action-button" onclick="runOperation()">実行する</button>
+            <button id="cancel-button" class="action-button" onclick="cancelOperation()" style="display: none; background: rgba(244, 67, 54, 0.2); border-color: rgba(244, 67, 54, 0.5); color: #F44336;">キャンセル</button>
+        </div>
+
+        <div id="progress-section" class="tool-section" style="display: none;">
+            <h3>処理状況</h3>
+            <div id="progress-info" class="progress-info">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span id="progress-text">待機中...</span>
+                    <span id="progress-percent">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%;"></div>
+                </div>
+                <div id="task-list" class="task-list"></div>
+            </div>
+        </div>
+
+        <div id="output-section" class="tool-section" style="display: none;">
+            <h3>ダウンロード</h3>
+            <div id="download-panel"></div>
+        </div>
+
+        <div id="error-section" class="tool-section" style="display: none;">
+            <h3>エラー</h3>
+            <div id="error-message" class="error-message"></div>
+        </div>
+
+        <div class="tool-kb-anchor-link" style="text-align: center; margin: 28px 0 16px 0;"><a href="#about-tool" style="color: #4A9EFF;">使い方・FAQを読む →</a></div>
+        {% include 'includes/tool_content_blocks.html' %}
+
+        {% with amazon_section_key='pdf', amazon_section_show_disclosure=true %}
+            {% include 'includes/amazon_lightweight_section.html' %}
+        {% endwith %}
+        {% set affiliate_disclosure_rendered = true %}
+        {% set affiliate_upper_amazon_rendered = true %}
+        {% set affiliate_mid_amazon_rendered = true %}
+    </div>
+
+    {% include 'includes/related_tools.html' %}
+    {% include 'includes/footer.html' %}
+    
+    <!-- PDF繝ｩ繧､繝悶Λ繝ｪ・・DN・・-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        // pdf.js繧偵げ繝ｭ繝ｼ繝舌Ν螟画焚縺ｨ縺励※險ｭ螳・
+        window.pdfjsLib = pdfjsLib;
+    </script>
+    
+    <!-- JSZip CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <!-- 蜈ｱ騾壹Λ繧､繝悶Λ繝ｪ -->
+    <script src="{{ url_for('static', filename='js/file-validation.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/file-utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/zip-utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/tool-runner.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pdf-range.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pdf-ops.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pdf-render.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pdf-compress.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pdf-images-to-pdf.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pdf-extract-images.js') }}"></script>
+    
+    <script>
+        let toolRunner = null;
+        let currentMode = 'merge';
+        let pdfApiAbortController = null; // lock API 繧ｭ繝｣繝ｳ繧ｻ繝ｫ逕ｨ・医ヱ繧ｹ繝ｯ繝ｼ繝峨・蜷ｫ繧√↑縺・ｼ・
+        
+        // 蛻晄悄蛹・
+        document.addEventListener('DOMContentLoaded', () => {
+            toolRunner = new ToolRunner({
+                maxConcurrency: 1, // PDF蜃ｦ逅・・驥阪＞縺ｮ縺ｧ1縺､縺壹▽
+                onProgress: updateProgress,
+                onComplete: handleComplete,
+                onError: handleError
+            });
+            toolRunner.toolId = 'pdf';
+            
+            setupDropzone();
+            updateModeOptions();
+            
+            // 蜩∬ｳｪ繧ｹ繝ｩ繧､繝繝ｼ
+            const qualityInput = document.getElementById('image-quality');
+            if (qualityInput) {
+                qualityInput.addEventListener('input', () => {
+                    document.getElementById('quality-value').textContent = qualityInput.value;
+                });
+            }
+            
+            // 蝨ｧ邵ｮ蜩∬ｳｪ繧ｹ繝ｩ繧､繝繝ｼ
+            const compressQualityInput = document.getElementById('compress-quality');
+            if (compressQualityInput) {
+                compressQualityInput.addEventListener('input', () => {
+                    document.getElementById('compress-quality-value').textContent = compressQualityInput.value;
+                });
+            }
+            
+            // 蝓九ａ霎ｼ縺ｿ逕ｻ蜒乗歓蜃ｺ縺ｮ蠖｢蠑丞､画峩
+            const extractImagesFormat = document.getElementById('extract-images-format');
+            if (extractImagesFormat) {
+                extractImagesFormat.addEventListener('change', () => {
+                    const format = extractImagesFormat.value;
+                    const qualityGroup = document.getElementById('extract-images-quality-group');
+                    qualityGroup.style.display = format === 'jpeg' ? 'block' : 'none';
+                });
+            }
+            
+            // 蝓九ａ霎ｼ縺ｿ逕ｻ蜒乗歓蜃ｺ縺ｮ蜩∬ｳｪ繧ｹ繝ｩ繧､繝繝ｼ
+            const extractImagesQualityInput = document.getElementById('extract-images-quality');
+            if (extractImagesQualityInput) {
+                extractImagesQualityInput.addEventListener('input', () => {
+                    document.getElementById('extract-images-quality-value').textContent = extractImagesQualityInput.value;
+                });
+            }
+        });
+        
+        // 繝峨Ο繝・・繧ｾ繝ｼ繝ｳ縺ｮ險ｭ螳・
+        function setupDropzone() {
+            const dropzone = document.getElementById('dropzone');
+            const fileInput = document.getElementById('file-input');
+            
+            dropzone.addEventListener('click', () => fileInput.click());
+            
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.style.borderColor = 'rgba(74, 158, 255, 0.8)';
+                dropzone.style.background = 'rgba(74, 158, 255, 0.1)';
+            });
+            
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.style.borderColor = 'rgba(74, 158, 255, 0.5)';
+                dropzone.style.background = 'rgba(74, 158, 255, 0.05)';
+            });
+            
+            dropzone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.style.borderColor = 'rgba(74, 158, 255, 0.5)';
+                dropzone.style.background = 'rgba(74, 158, 255, 0.05)';
+                handleFiles(Array.from(e.dataTransfer.files));
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                const files = Array.from(e.target.files || []);
+                fileInput.value = '';
+                handleFiles(files);
+            });
+        }
+        
+        // 繝輔ぃ繧､繝ｫ蜃ｦ逅・
+        function handleFiles(files) {
+            const mode = document.getElementById('mode').value;
+            let rules;
+            
+            if (mode === 'images-to-pdf') {
+                rules = {
+                    maxFiles: 100,
+                    maxFileSize: 20 * 1024 * 1024,
+                    maxTotalSize: 200 * 1024 * 1024,
+                    allowedExtensions: ['.png', '.jpg', '.jpeg', '.webp'],
+                    allowedMimeTypes: ['image/png', 'image/jpeg', 'image/webp']
+                };
+            } else {
+                let maxFiles = 20;
+                if (mode === 'to-images' || mode === 'extract-images') {
+                    maxFiles = 10;
+                }
+                rules = {
+                    maxFiles: maxFiles,
+                    maxFileSize: 50 * 1024 * 1024,
+                    maxTotalSize: 300 * 1024 * 1024,
+                    allowedExtensions: ['.pdf'],
+                    allowedMimeTypes: ['application/pdf']
+                };
+            }
+            
+            const { okFiles, rejected } = FileValidation.validateFiles(files, rules);
+            
+            if (okFiles.length > 0) {
+                toolRunner.addFiles(okFiles);
+                updateFileList();
+                updateRunButton();
+            }
+            
+            if (rejected.length > 0) {
+                showRejectedFiles(rejected);
+            }
+        }
+        
+        // 繝輔ぃ繧､繝ｫ荳隕ｧ繧呈峩譁ｰ
+        function updateFileList() {
+            const fileList = document.getElementById('file-list');
+            fileList.innerHTML = '';
+            
+            toolRunner.selectedFiles.forEach((file, index) => {
+                const item = document.createElement('div');
+                item.className = 'file-item';
+                item.innerHTML = `
+                    <div class="file-item-info">
+                        <div class="file-item-name">${file.name}</div>
+                        <div class="file-item-size">${FileUtils.formatBytes(file.size)}</div>
+                    </div>
+                    <button class="file-item-remove" onclick="removeFile(${index})">蜑企勁</button>
+                `;
+                fileList.appendChild(item);
+            });
+        }
+        
+        // 繝輔ぃ繧､繝ｫ蜑企勁
+        function removeFile(index) {
+            toolRunner.removeFile(index);
+            updateFileList();
+            updateRunButton();
+        }
+        
+        // 諡貞凄縺輔ｌ縺溘ヵ繧｡繧､繝ｫ繧定｡ｨ遉ｺ
+        function showRejectedFiles(rejected) {
+            const container = document.getElementById('rejected-files');
+            container.style.display = 'block';
+            container.innerHTML = '<strong>莉･荳九・繝輔ぃ繧､繝ｫ縺ｯ蜃ｦ逅・〒縺阪∪縺帙ｓ縺ｧ縺励◆・・/strong>';
+            
+            rejected.forEach(({ file, reason }) => {
+                const div = document.createElement('div');
+                div.className = 'rejected-file';
+                div.textContent = `${file.name}: ${reason}`;
+                container.appendChild(div);
+            });
+        }
+        
+        // 繝｢繝ｼ繝峨が繝励す繝ｧ繝ｳ繧呈峩譁ｰ
+        function updateModeOptions() {
+            const mode = document.getElementById('mode').value;
+            currentMode = mode;
+            
+            // 縺吶∋縺ｦ縺ｮ繧ｪ繝励す繝ｧ繝ｳ繧帝撼陦ｨ遉ｺ
+            document.getElementById('extract-options').style.display = 'none';
+            document.getElementById('split-options').style.display = 'none';
+            document.getElementById('to-images-options').style.display = 'none';
+            document.getElementById('to-images-scale').style.display = 'none';
+            document.getElementById('to-images-quality').style.display = 'none';
+            document.getElementById('compress-options').style.display = 'none';
+            document.getElementById('images-to-pdf-options').style.display = 'none';
+            document.getElementById('extract-images-options').style.display = 'none';
+                        document.getElementById('output-pdf-password-group').style.display = 'none';
+            
+            // 繝｢繝ｼ繝峨↓蠢懊§縺ｦ陦ｨ遉ｺ
+            if (mode === 'extract') {
+                document.getElementById('extract-options').style.display = 'block';
+            } else if (mode === 'split') {
+                document.getElementById('split-options').style.display = 'block';
+            } else if (mode === 'to-images') {
+                document.getElementById('to-images-options').style.display = 'block';
+                document.getElementById('to-images-scale').style.display = 'block';
+                document.getElementById('to-images-quality').style.display = 'block';            } else if (mode === 'compress') {
+                document.getElementById('compress-options').style.display = 'block';            } else if (mode === 'images-to-pdf') {
+                document.getElementById('images-to-pdf-options').style.display = 'block';
+            } else if (mode === 'extract-images') {
+                document.getElementById('extract-images-options').style.display = 'block';            } else if (mode === 'lock-pdf') {
+                document.getElementById('output-pdf-password-group').style.display = 'block';
+            }
+            
+            // 繝輔ぃ繧､繝ｫ蜈･蜉帙・accept縺ｨ隍・焚驕ｸ謚槭ｒ譖ｴ譁ｰ
+            const fileInput = document.getElementById('file-input');
+            const dropzoneHint = document.getElementById('dropzone-hint');
+            
+            if (mode === 'images-to-pdf') {
+                fileInput.setAttribute('accept', 'image/png,image/jpeg,image/webp');
+                fileInput.setAttribute('multiple', '');
+                dropzoneHint.textContent = '蟇ｾ蠢懷ｽ｢蠑・ PNG, JPG, WebP・域怙螟ｧ100繝輔ぃ繧､繝ｫ縲・繝輔ぃ繧､繝ｫ20MB縺ｾ縺ｧ・・;
+            } else {
+                fileInput.setAttribute('accept', 'application/pdf');
+                if (mode === 'merge' || mode === 'to-images' || mode === 'extract-images') {
+                    fileInput.setAttribute('multiple', '');
+                } else {
+                    fileInput.removeAttribute('multiple');
+                }
+                const pdfMaxFiles = (mode === 'to-images' || mode === 'extract-images') ? 10 : 20;
+                dropzoneHint.textContent = `蟇ｾ蠢懷ｽ｢蠑・ PDF・域怙螟ｧ${pdfMaxFiles}繝輔ぃ繧､繝ｫ縲・繝輔ぃ繧､繝ｫ20MBまで・荏;
+            }
+            
+            // 螳溯｡檎憾諷九・縺ｿ繝ｪ繧ｻ繝・ヨ・磯∈謚槭ヵ繧｡繧､繝ｫ縺ｯ邯ｭ謖・ｼ・
+            toolRunner.resetRunState();
+            updateFileList();
+            updateRunButton();
+            fileInput.value = '';
+        }
+        
+        // 螳溯｡後・繧ｿ繝ｳ縺ｮ迥ｶ諷九ｒ譖ｴ譁ｰ
+        function updateRunButton() {
+            const mode = document.getElementById('mode').value;
+            const files = toolRunner.selectedFiles;
+            const button = document.getElementById('run-button');
+            
+            let disabled = false;
+            
+            if (mode === 'merge') {
+                disabled = files.length < 2;
+            } else if (mode === 'extract') {
+                const range = document.getElementById('extract-range').value.trim();
+                disabled = files.length !== 1 || !range;
+            } else if (mode === 'split') {
+                const range = document.getElementById('split-range').value.trim();
+                disabled = files.length !== 1 || !range;
+            } else if (mode === 'to-images') {
+                disabled = files.length < 1;
+            } else if (mode === 'compress') {
+                disabled = files.length !== 1;
+            } else if (mode === 'images-to-pdf') {
+                disabled = files.length < 1;
+            } else if (mode === 'extract-images') {
+                disabled = files.length < 1;
+            } else if (mode === 'lock-pdf') {
+                const outPw = document.getElementById('output-pdf-password').value.trim();
+                disabled = files.length !== 1 || !outPw;
+            }
+            
+            button.disabled = disabled || toolRunner.isRunning;
+        }
+        
+        // 遽・峇蜈･蜉帙・逶｣隕・
+        document.getElementById('extract-range')?.addEventListener('input', updateRunButton);
+        document.getElementById('split-range')?.addEventListener('input', updateRunButton);
+        document.getElementById('output-pdf-password')?.addEventListener('input', updateRunButton);        
+        // 謫堺ｽ懷ｮ溯｡・
+        async function runOperation() {
+            const mode = document.getElementById('mode').value;
+            const files = toolRunner.selectedFiles;
+            
+            document.getElementById('run-button').style.display = 'none';
+            document.getElementById('cancel-button').style.display = 'block';
+            document.getElementById('progress-section').style.display = 'block';
+            document.getElementById('output-section').style.display = 'none';
+            document.getElementById('error-section').style.display = 'none';
+            
+            try {
+                if (mode === 'merge') {
+                    await toolRunner.runBatch(async (files, ctx) => {
+                        return await PdfOps.mergePdfs(files, ctx);
+                    });
+                } else if (mode === 'extract') {
+                    const rangeStr = document.getElementById('extract-range').value.trim();
+                    const pages = PdfRange.parseExtractRange(rangeStr);
+                    
+                    // 邱上・繝ｼ繧ｸ謨ｰ繧貞叙蠕励＠縺ｦ繝舌Μ繝・・繧ｷ繝ｧ繝ｳ
+                    const pageCount = await PdfOps.getPageCount(files[0]);
+                    const validation = PdfRange.validatePages(pages, pageCount);
+                    if (!validation.valid) {
+                        throw new Error(`辟｡蜉ｹ縺ｪ繝壹・繧ｸ逡ｪ蜿ｷ: ${validation.invalid.join(', ')} (邱上・繝ｼ繧ｸ謨ｰ: ${pageCount})`);
+                    }
+                    
+                    await toolRunner.runBatch(async (files, ctx) => {
+                        return await PdfOps.extractPdf(files[0], pages, ctx);
+                    });
+                } else if (mode === 'split') {
+                    const rangeStr = document.getElementById('split-range').value.trim();
+                    const pageGroups = PdfRange.parseSplitRange(rangeStr);
+                    
+                    if (pageGroups.length === 0) {
+                        throw new Error('繧ｰ繝ｫ繝ｼ繝礼ｯ・峇縺檎┌蜉ｹ縺ｧ縺・);
+                    }
+                    
+                    // 邱上・繝ｼ繧ｸ謨ｰ繧貞叙蠕励＠縺ｦ繝舌Μ繝・・繧ｷ繝ｧ繝ｳ
+                    const pageCount = await PdfOps.getPageCount(files[0]);
+                    for (const group of pageGroups) {
+                        const validation = PdfRange.validatePages(group, pageCount);
+                        if (!validation.valid) {
+                            throw new Error(`辟｡蜉ｹ縺ｪ繝壹・繧ｸ逡ｪ蜿ｷ: ${validation.invalid.join(', ')} (邱上・繝ｼ繧ｸ謨ｰ: ${pageCount})`);
+                        }
+                    }
+                    
+                    await toolRunner.runBatch(async (files, ctx) => {
+                        return await PdfOps.splitPdf(files[0], pageGroups, ctx);
+                    });
+                } else if (mode === 'to-images') {
+                    const format = document.getElementById('image-format').value;
+                    const scale = parseFloat(document.getElementById('image-scale').value);
+                    const quality = parseFloat(document.getElementById('image-quality').value);                    
+                    await toolRunner.run(async (file, ctx) => {
+                        return await PdfRender.pdfToImages(file, {
+                            format,
+                            scale,
+                            quality,                        }, ctx);
+                    });
+                } else if (mode === 'compress') {
+                    const PC = globalThis.PdfCompress;
+                    if (!PC) {
+                        console.error('[pdf] globalThis.PdfCompress not available; check Network for /static/js/pdf-compress.js');
+                        handleError(new Error('蝨ｧ邵ｮ讖溯・縺ｮ隱ｭ縺ｿ霎ｼ縺ｿ縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲ゅ・繝ｼ繧ｸ繧貞・隱ｭ縺ｿ霎ｼ縺ｿ縺励※縺上□縺輔＞縲・));
+                        return;
+                    }
+                    const quality = parseFloat(document.getElementById('compress-quality').value);
+                    const scale = parseFloat(document.getElementById('compress-scale').value);
+                    const maxLongEdge = parseInt(document.getElementById('compress-max-long-edge').value);                    
+                    await toolRunner.runBatch(async (files, ctx) => {
+                        return await PC.compressPdfByRasterize(files[0], {
+                            quality,
+                            scale,
+                            maxLongEdge,                        }, ctx);
+                    });
+                } else if (mode === 'images-to-pdf') {
+                    const pageSize = document.getElementById('images-page-size').value;
+                    const margin = parseInt(document.getElementById('images-margin').value);
+                    
+                    await toolRunner.runBatch(async (files, ctx) => {
+                        return await PdfImagesToPdf.imagesToPdf(files, {
+                            pageSize,
+                            fit: 'contain',
+                            margin,
+                            background: '#FFFFFF'
+                        }, ctx);
+                    });
+                } else if (mode === 'extract-images') {
+                    const format = document.getElementById('extract-images-format').value;
+                    const quality = parseFloat(document.getElementById('extract-images-quality').value);
+                    const maxPerPdf = parseInt(document.getElementById('extract-images-max').value);                    
+                    await toolRunner.run(async (file, ctx) => {
+                        return await PdfExtractImages.extractEmbeddedImages(file, {
+                            format,
+                            quality,
+                            maxPerPdf,
+                            includePageIndexInName: true,                        }, ctx);
+                    });
+                } else if (mode === 'lock-pdf') {
+                    const file = toolRunner.selectedFiles[0];
+                    const password = document.getElementById('output-pdf-password').value;
+                    document.getElementById('run-button').style.display = 'none';
+                    document.getElementById('cancel-button').style.display = 'block';
+                    document.getElementById('progress-section').style.display = 'block';
+                    document.getElementById('progress-text').textContent = '繝ｭ繝・け莉倅ｸ惹ｸｭ...';
+                    pdfApiAbortController = new AbortController();
+                    try {
+                        const form = new FormData();
+                        form.append('file', file);
+                        form.append('password', password);
+                        const res = await fetch('/api/pdf/lock', { method: 'POST', body: form, signal: pdfApiAbortController.signal });
+                        if (!res.ok) {
+                            const data = await res.json().catch(() => ({}));
+                            const code = data.error_code || data.error;
+                            const rid = data.request_id ? ` (request_id: ${data.request_id})` : '';
+                            const msgMap = { missing_password: '蜃ｺ蜉帷畑繝代せ繝ｯ繝ｼ繝峨ｒ蜈･蜉帙＠縺ｦ縺上□縺輔＞縲・, file_required: '繝輔ぃ繧､繝ｫ繧帝∈謚槭＠縺ｦ縺上□縺輔＞縲・, file_too_large: '繝輔ぃ繧､繝ｫ縺悟､ｧ縺阪☆縺弱∪縺呻ｼ・0MB莉･荳具ｼ峨・, read_failed: '繝輔ぃ繧､繝ｫ縺ｮ隱ｭ縺ｿ霎ｼ縺ｿ縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・, already_encrypted: '縺薙・PDF縺ｯ譌｢縺ｫ繝代せ繝ｯ繝ｼ繝我ｿ晁ｭｷ縺輔ｌ縺ｦ縺・∪縺吶ゆｿ晁ｭｷ縺輔ｌ縺ｦ縺・↑縺ПDF繧帝∈謚槭＠縺ｦ縺上□縺輔＞縲・, corrupt_pdf: 'PDF縺ｮ讒矩縺ｫ蝠城｡後′縺ゅｋ縺九∝ｯｾ蠢懊＠縺ｦ縺・↑縺・ｽ｢蠑上〒縺吶・, unsupported_pdf: '縺薙・PDF縺ｫ縺ｯ繝ｭ繝・け莉倅ｸ弱↓蟇ｾ蠢懊＠縺ｦ縺・∪縺帙ｓ縲・, encrypt_failed: '繝ｭ繝・け莉倅ｸ弱↓螟ｱ謨励＠縺ｾ縺励◆縲１DF縺ｮ蠖｢蠑上ｄ繧ｵ繧､繧ｺ繧堤｢ｺ隱阪＠縺ｦ縺上□縺輔＞縲・, unsupported: '繝ｭ繝・け莉倅ｸ弱↓螟ｱ謨励＠縺ｾ縺励◆縲・ };
+                            const msg = msgMap[code] || '繝ｭ繝・け莉倅ｸ弱↓螟ｱ謨励＠縺ｾ縺励◆縲・;
+                            handleError(new Error(msg + rid));
+                            return;
+                        }
+                        const blob = await res.blob();
+                        const disp = res.headers.get('Content-Disposition');
+                        const filename = (disp && /filename\*?=(?:UTF-8'')?([^;\s]+)/i.exec(disp)) ? decodeURIComponent(RegExp.$1.replace(/^["']|["']$/g, '')) : (file.name ? file.name.replace(/\.pdf$/i, '') + '_locked.pdf' : 'locked.pdf');
+                        toolRunner.outputs = [{ blob, filename, mime: 'application/pdf' }];
+                        document.getElementById('output-section').style.display = 'block';
+                        showDownloadPanel(toolRunner.outputs);
+                    } finally {
+                        pdfApiAbortController = null;
+                        document.getElementById('run-button').style.display = 'block';
+                        document.getElementById('cancel-button').style.display = 'none';
+                        document.getElementById('progress-section').style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                if (error?.name === 'AbortError') {
+                    document.getElementById('progress-text').textContent = '繧ｭ繝｣繝ｳ繧ｻ繝ｫ縺輔ｌ縺ｾ縺励◆';
+                    return;
+                }
+                handleError(error);
+            }
+        }
+        
+        // 蝨ｧ邵ｮ繝励Μ繧ｻ繝・ヨ繧帝←逕ｨ
+        function applyCompressPreset(preset) {
+            if (preset === 'email') {
+                document.getElementById('compress-quality').value = 0.7;
+                document.getElementById('compress-scale').value = 1.0;
+                document.getElementById('compress-max-long-edge').value = 1600;
+            } else if (preset === 'balanced') {
+                document.getElementById('compress-quality').value = 0.75;
+                document.getElementById('compress-scale').value = 1.5;
+                document.getElementById('compress-max-long-edge').value = 2000;
+            } else if (preset === 'quality') {
+                document.getElementById('compress-quality').value = 0.85;
+                document.getElementById('compress-scale').value = 2.0;
+                document.getElementById('compress-max-long-edge').value = 2600;
+            }
+            document.getElementById('compress-quality-value').textContent = document.getElementById('compress-quality').value;
+        }
+        
+        
+        // 繧ｭ繝｣繝ｳ繧ｻ繝ｫ
+        function cancelOperation() {
+            const mode = document.getElementById('mode').value;
+            if (mode === 'lock-pdf') {
+                pdfApiAbortController?.abort();
+            } else {
+                toolRunner.cancel();
+            }
+            document.getElementById('run-button').style.display = 'block';
+            document.getElementById('cancel-button').style.display = 'none';
+        }
+        
+        // 騾ｲ謐玲峩譁ｰ
+        function updateProgress() {
+            const progress = toolRunner.getProgress();
+            
+            document.getElementById('progress-text').textContent = 
+                `螳御ｺ・ ${progress.completed}/${progress.total} | 螳溯｡御ｸｭ: ${progress.running} | 繧ｨ繝ｩ繝ｼ: ${progress.errors}`;
+            document.getElementById('progress-percent').textContent = `${progress.progress}%`;
+            document.getElementById('progress-bar-fill').style.width = `${progress.progress}%`;
+            
+            const taskList = document.getElementById('task-list');
+            taskList.innerHTML = '';
+            
+            progress.tasksState.forEach(([index, state]) => {
+                const file = toolRunner.selectedFiles[index];
+                const item = document.createElement('div');
+                item.className = `task-item ${state.status}`;
+                item.textContent = `${file.name}: ${state.message || state.status}`;
+                taskList.appendChild(item);
+            });
+        }
+        
+        // 螳御ｺ・・逅・
+        function handleComplete({ outputs, errors, cancelled }) {
+            document.getElementById('run-button').style.display = 'block';
+            document.getElementById('cancel-button').style.display = 'none';
+            
+            if (cancelled) {
+                document.getElementById('progress-text').textContent = '繧ｭ繝｣繝ｳ繧ｻ繝ｫ縺輔ｌ縺ｾ縺励◆';
+                return;
+            }
+            
+            if (outputs.length > 0) {
+                showDownloadPanel(outputs);
+            }
+            
+            if (errors.length > 0) {
+                showErrors(errors);
+            }
+        }
+        
+        // 繝繧ｦ繝ｳ繝ｭ繝ｼ繝峨ヱ繝阪Ν繧定｡ｨ遉ｺ
+        function showDownloadPanel(outputs) {
+            const panel = document.getElementById('download-panel');
+            panel.innerHTML = '';
+            
+            const totalSize = outputs.reduce((sum, o) => sum + o.blob.size, 0);
+            panel.innerHTML += `<p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 15px;">蜃ｺ蜉帙ヵ繧｡繧､繝ｫ: ${outputs.length}莉ｶ・亥粋險・ ${FileUtils.formatBytes(totalSize)}・・/p>`;
+            
+            if (outputs.length === 1) {
+                const button = document.createElement('button');
+                button.className = 'action-button';
+                button.textContent = `繝繧ｦ繝ｳ繝ｭ繝ｼ繝・ ${outputs[0].filename}`;
+                button.onclick = () => toolRunner.downloadSingle(0);
+                panel.appendChild(button);
+            } else {
+                // 隍・焚繝輔ぃ繧､繝ｫ縺ｮ蝣ｴ蜷医・ZIP繝繧ｦ繝ｳ繝ｭ繝ｼ繝峨ｒ謗ｨ螂ｨ
+                const zipButton = document.createElement('button');
+                zipButton.className = 'action-button';
+                zipButton.textContent = '逃 ZIP縺ｧ荳諡ｬ繝繧ｦ繝ｳ繝ｭ繝ｼ繝・;
+                zipButton.onclick = async () => {
+                    try {
+                        await toolRunner.downloadAllZip('pdf-tools-output.zip');
+                    } catch (error) {
+                        alert(`ZIP菴懈・繧ｨ繝ｩ繝ｼ: ${error.message}`);
+                    }
+                };
+                panel.appendChild(zipButton);
+            }
+            
+            document.getElementById('output-section').style.display = 'block';
+        }
+        
+        // 繧ｨ繝ｩ繝ｼ陦ｨ遉ｺ
+        function showErrors(errors) {
+            const errorSection = document.getElementById('error-section');
+            const errorMessage = document.getElementById('error-message');
+            
+            errorMessage.innerHTML = '<strong>以下のファイルでエラーが発生しました:</strong><ul style="margin-top: 10px;">';
+            errors.forEach(({ sourceIndex, message }) => {
+                const file = toolRunner.selectedFiles[sourceIndex];
+                errorMessage.innerHTML += `<li>${file.name}: ${message}</li>`;
+            });
+            errorMessage.innerHTML += '</ul>';
+            
+            errorSection.style.display = 'block';
+        }
+        
+        // 繧ｨ繝ｩ繝ｼ繝上Φ繝峨Λ・医ヱ繧ｹ繝ｯ繝ｼ繝蛾未騾｣繧ｨ繝ｩ繝ｼ譎ゅ・蜈･蜉帶ｬ・∈繝輔か繝ｼ繧ｫ繧ｹ縲ゅヱ繧ｹ繝ｯ繝ｼ繝画枚蟄怜・縺ｯ繝ｭ繧ｰ縺ｫ蜃ｺ縺輔↑縺・ｼ・
+        function handleError(error) {
+            document.getElementById('error-section').style.display = 'block';
+            document.getElementById('error-message').textContent = `エラー: ${error.message}`;
+            if (error?.message && error.message.includes('パスワード')) {
+                if (pwEl && pwEl.offsetParent !== null) pwEl.focus();
+            }
+        }
+    </script>
+</body>
+</html>
+

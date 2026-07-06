@@ -1,75 +1,72 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-スモークテスト: 軽量版で残す公開ページを複数回アクセスし、
-全て 200 かつエラーページ表示がないことを確認する。
-使用例: python scripts/smoke_test.py
-        BASE_URL=http://localhost:5000 python scripts/smoke_test.py
-"""
+"""Smoke tests for the Jobcan + PDF lightweight site."""
+
 import os
 import sys
 
-# プロジェクトルートをパスに追加
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+KEPT_PATHS = [
+    '/', '/autofill', '/tools', '/tools/pdf', '/recommend', '/faq',
+    '/privacy', '/terms', '/contact', '/healthz', '/readyz', '/ping',
+]
+ERROR_PAGE_MARKER = '<title>エラーが発生しました | Jobcan AutoFill</title>'
+
+
 def run_with_test_client():
-    """Flask test client で実行（サーバー不要）"""
     from app import app
     app.config['TESTING'] = True
     client = app.test_client()
-    paths = ['/', '/autofill', '/tools', '/tools/csv', '/recommend', '/faq', '/privacy', '/terms', '/contact', '/healthz', '/readyz', '/ping']
-    error_phrase = '⚠️ エラーが発生しました'
-    n_per_path = 10
     failed = []
-
-    for path in paths:
+    n_per_path = 10
+    for path in KEPT_PATHS:
         for i in range(n_per_path):
             response = client.get(path)
-            body = response.data.decode('utf-8')
+            body = response.data.decode('utf-8', errors='replace')
             if response.status_code != 200:
                 failed.append(f"path={path} run={i+1} status={response.status_code}")
-            elif path != '/healthz' and error_phrase in body:
+            elif path not in ('/healthz', '/readyz', '/ping') and ERROR_PAGE_MARKER in body:
                 failed.append(f"path={path} run={i+1} body contains error page")
-
     if failed:
-        for f in failed:
-            print(f"FAIL: {f}")
+        for item in failed:
+            print(f"FAIL: {item}")
         print(f"Total failures: {len(failed)}")
         return 1
-    print(f"OK: {len(paths)} paths x {n_per_path} requests = all 200, no error page")
+    print(f"OK: {len(KEPT_PATHS)} paths x {n_per_path} requests = all 200, no error page")
     return 0
 
+
 def run_deploy_verification():
-    """
-    本番デプロイ前検証: 残すページ 200、削除対象 301、無効API 404 を確認。
-    使用例: python scripts/smoke_test.py --deploy
-    """
     from app import app
     app.config['TESTING'] = True
     client = app.test_client()
-    error_phrase = '⚠️ エラーが発生しました'
     failed = []
 
-    # 200 期待: エラー表示なし
-    for path in ['/tools/csv', '/recommend', '/faq', '/privacy', '/terms', '/contact']:
+    for path in KEPT_PATHS:
         resp = client.get(path, follow_redirects=False)
-        body = resp.data.decode('utf-8')
+        body = resp.data.decode('utf-8', errors='replace')
         if resp.status_code != 200:
             failed.append(f"path={path} expected 200 got {resp.status_code}")
-        elif error_phrase in body:
+        elif path not in ('/healthz', '/readyz', '/ping') and ERROR_PAGE_MARKER in body:
             failed.append(f"path={path} body contains error page")
 
-    # 301 期待: 削除対象ページは近い残存ページへ移動する。
-    for path, expect_suffix in [
-        ('/tools/minutes', '/tools'),
-        ('/guide/minutes', '/'),
-        ('/guide/csv', '/tools/csv'),
+    redirects = [
+        ('/tools/csv', '/tools'),
+        ('/tools/csv/', '/tools'),
+        ('/guide/csv', '/tools'),
+        ('/guide/excel-format', '/tools'),
+        ('/guide/autofill', '/autofill'),
         ('/tools/seo', '/tools'),
+        ('/tools/image-batch', '/tools'),
+        ('/tools/image-cleanup', '/tools'),
         ('/blog/automation-roadmap', '/'),
         ('/case-studies', '/'),
         ('/glossary', '/faq'),
+        ('/best-practices', '/faq'),
         ('/sitemap.html', '/sitemap.xml'),
-    ]:
+    ]
+    for path, expect_suffix in redirects:
         resp = client.get(path, follow_redirects=False)
         loc = (resp.headers.get('Location') or '').strip()
         if resp.status_code != 301:
@@ -77,33 +74,27 @@ def run_deploy_verification():
         elif not loc.endswith(expect_suffix) and expect_suffix not in loc:
             failed.append(f"path={path} expected Location...{expect_suffix} got {loc}")
 
-    # 末尾スラッシュ: /tools/pdf/ -> 301 -> /tools
-    resp = client.get('/tools/pdf/', follow_redirects=False)
-    loc = (resp.headers.get('Location') or '').strip()
-    if resp.status_code != 301:
-        failed.append(f"path=/tools/pdf/ expected 301 got {resp.status_code}")
-    elif not loc.endswith('/tools'):
-        failed.append(f"path=/tools/pdf/ expected Location .../tools got {loc}")
-
-    for path in ['/api/seo/crawl-urls', '/api/minutes/format', '/api/pdf/lock']:
+    for path in ['/api/seo/crawl-urls', '/api/minutes/format', '/api/pdf/unlock']:
         resp = client.post(path)
         if resp.status_code != 404:
             failed.append(f"path={path} expected 404 got {resp.status_code}")
 
+    resp = client.post('/api/pdf/lock')
+    if resp.status_code == 404:
+        failed.append('path=/api/pdf/lock expected enabled API got 404')
+
     if failed:
-        for f in failed:
-            print(f"FAIL: {f}")
+        for item in failed:
+            print(f"FAIL: {item}")
         print(f"Total: {len(failed)}")
         return 1
-    print("OK: deploy verification (kept routes 200; retired routes 301; disabled APIs 404)")
+    print('OK: deploy verification (kept routes 200; retired routes 301; disabled APIs 404; pdf lock enabled)')
     return 0
 
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--deploy', action='store_true', help='Run deploy verification (301/200 checks)')
+    parser.add_argument('--deploy', action='store_true', help='Run deploy verification checks')
     args = parser.parse_args()
-    if args.deploy:
-        sys.exit(run_deploy_verification())
-    sys.exit(run_with_test_client())
+    sys.exit(run_deploy_verification() if args.deploy else run_with_test_client())

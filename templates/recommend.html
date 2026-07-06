@@ -1,8 +1,8 @@
 ﻿<!doctype html>
 <html lang="ja" class="no-js">
 <head>
-    {% set page_title = '業務効率化アイテムおすすめ | Jobcan AutoFill' %}
-    {% set page_description = 'Jobcan 入力、Excel/CSV 作業、デスク作業を少し楽にしたい方向けに、作業環境づくりのヒントをカテゴリ別にまとめています。' %}
+    {% set page_title = 'コンサルワーク向けアイテムおすすめ | Jobcan AutoFill' %}
+    {% set page_description = 'Jobcan入力、PDF・書類作業、資料作成、集中環境を整えたい方向けに、Amazon Associatesの検索導線をカテゴリ別にまとめています。' %}
     {% include 'includes/head_meta.html' %}
 </head>
 <body>
@@ -13,16 +13,16 @@
     <main class="recommend-shell">
         <section class="recommend-hero">
             <p class="recommend-hero__eyebrow">Amazon Associates</p>
-            <h1>業務効率化アイテムおすすめ</h1>
+            <h1>コンサルワーク向けアイテムおすすめ</h1>
             <p class="recommend-hero__lead">
-                Jobcan 入力、Excel/CSV 作業、デスク作業を少し楽にする周辺アイテムをカテゴリ別に紹介します。
-                ツール利用の主役はあくまで作業そのものなので、必要なものだけを控えめに見比べられる入口としてご利用ください。
+                Jobcan入力、PDF・書類作業、資料作成、集中環境を整えたい方向けに、カテゴリ別の検索導線をまとめています。
+                日々変わる販売条件や評価情報は表示せず、必要なテーマだけを控えめに見比べられる入口として提供します。
             </p>
             <p class="recommend-disclosure">Amazonのアソシエイトとして、当サイトは適格販売により収入を得ています。</p>
         </section>
 
         {% if recommend_items %}
-        <section class="recommend-category-grid" aria-label="業務効率化アイテムカテゴリ">
+        <section class="recommend-category-grid" aria-label="コンサルワーク向けアイテムカテゴリ">
             {% for item in recommend_items %}
             <article class="recommend-category-card">
                 <span class="recommend-category-card__label">{{ item.category_label }}</span>
@@ -39,7 +39,7 @@
         <nav class="faq-lite__links" aria-label="関連ページ">
             <a href="/">ホームへ戻る</a>
             <a href="/autofill">Jobcan AutoFill</a>
-            <a href="/tools/csv">CSV/Excelツール</a>
+            <a href="/tools/pdf">PDFツール</a>
             <a href="/faq">FAQ</a>
         </nav>
     </main>

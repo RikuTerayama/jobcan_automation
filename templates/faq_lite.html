@@ -1,72 +1,22 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
     {% set page_title = 'FAQ | Jobcan AutoFill' %}
-    {% set page_description = 'Jobcan AutoFill と CSV/Excel ツールの使い方、ファイル形式、セキュリティ、エラー時の確認ポイントをまとめています。' %}
+    {% set page_description = 'Jobcan AutoFill と PDFツールの使い方、データの扱い、Render無料版での制約、保護済みPDFの扱いをまとめています。' %}
     {% include 'includes/head_meta.html' %}
     <style>
-        body {
-            margin: 0;
-            background: linear-gradient(135deg, #121212 0%, #1A1A1A 50%, #0F0F0F 100%);
-            color: #fff;
-            font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif;
-            line-height: 1.8;
-        }
-        .faq-lite {
-            max-width: 920px;
-            margin: 0 auto;
-            padding: 56px 20px;
-        }
-        .faq-lite__hero {
-            margin-bottom: 32px;
-            text-align: center;
-        }
-        .faq-lite__hero h1 {
-            margin: 0 0 16px;
-            font-size: clamp(2rem, 4vw, 3rem);
-        }
-        .faq-lite__hero p {
-            margin: 0 auto;
-            max-width: 720px;
-            color: rgba(255, 255, 255, 0.78);
-        }
-        .faq-lite__grid {
-            display: grid;
-            gap: 18px;
-        }
-        .faq-lite__item {
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            border-radius: 16px;
-            background: rgba(255, 255, 255, 0.045);
-            padding: 22px;
-        }
-        .faq-lite__item h2 {
-            margin: 0 0 10px;
-            color: #7ab7ff;
-            font-size: 1.15rem;
-        }
-        .faq-lite__item p {
-            margin: 0;
-            color: rgba(255, 255, 255, 0.84);
-        }
-        .faq-lite__links {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 12px;
-            margin-top: 32px;
-        }
-        .faq-lite__links a {
-            color: #7ab7ff;
-            text-decoration: none;
-            border: 1px solid rgba(122, 183, 255, 0.35);
-            border-radius: 999px;
-            padding: 10px 16px;
-            background: rgba(122, 183, 255, 0.08);
-        }
-        .faq-lite__links a:hover {
-            background: rgba(122, 183, 255, 0.16);
-        }
+        body { margin: 0; background: linear-gradient(135deg, #121212 0%, #1A1A1A 50%, #0F0F0F 100%); color: #fff; font-family: 'Noto Sans JP', 'Helvetica Neue', 'Segoe UI', sans-serif; line-height: 1.8; }
+        .faq-lite { max-width: 920px; margin: 0 auto; padding: 56px 20px; }
+        .faq-lite__hero { margin-bottom: 32px; text-align: center; }
+        .faq-lite__hero h1 { margin: 0 0 16px; font-size: clamp(2rem, 4vw, 3rem); }
+        .faq-lite__hero p { margin: 0 auto; max-width: 720px; color: rgba(255,255,255,.78); }
+        .faq-lite__grid { display: grid; gap: 18px; }
+        .faq-lite__item { border: 1px solid rgba(255,255,255,.12); border-radius: 16px; background: rgba(255,255,255,.045); padding: 22px; }
+        .faq-lite__item h2 { margin: 0 0 10px; color: #7ab7ff; font-size: 1.15rem; }
+        .faq-lite__item p { margin: 0; color: rgba(255,255,255,.84); }
+        .faq-lite__links { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 32px; }
+        .faq-lite__links a { color: #7ab7ff; text-decoration: none; border: 1px solid rgba(122,183,255,.35); border-radius: 999px; padding: 10px 16px; background: rgba(122,183,255,.08); }
+        .faq-lite__links a:hover { background: rgba(122,183,255,.16); }
     </style>
 </head>
 <body>
@@ -75,38 +25,39 @@
     <main class="faq-lite">
         <section class="faq-lite__hero">
             <h1>FAQ</h1>
-            <p>Jobcan AutoFill と CSV/Excel ツールを使う前に確認したいポイントだけをまとめています。</p>
+            <p>Jobcan AutoFill と PDFツールを使う前に確認したいポイントだけをまとめています。</p>
         </section>
         <section class="faq-lite__grid" aria-label="FAQ">
             <article class="faq-lite__item">
                 <h2>Jobcan AutoFill は何をするツールですか？</h2>
-                <p>Excel に入力した勤怠データをもとに、Jobcan への入力作業をまとめて進める無料ツールです。</p>
+                <p>Excelに入力した勤怠データをもとに、Jobcanへの入力作業を補助する無料ツールです。実行後は必ずJobcan側の登録内容を確認してください。</p>
             </article>
             <article class="faq-lite__item">
                 <h2>ログイン情報やExcelファイルは保存されますか？</h2>
-                <p>処理に必要な間だけ一時的に扱い、完了後に削除する方針です。詳細はプライバシーポリシーをご確認ください。</p>
+                <p>処理に必要な間だけ一時的に扱い、完了後に一時ファイルを削除します。ログイン情報は永続保存しない方針です。</p>
             </article>
             <article class="faq-lite__item">
-                <h2>Excel の時刻形式はどうすればよいですか？</h2>
-                <p>開始時刻と終了時刻を入力してください。深夜勤務などの扱いは、現在のAutoFill処理側の仕様に従います。</p>
+                <h2>PDFツールでは何ができますか？</h2>
+                <p>PDFの結合、分割、ページ抽出、圧縮、PDFから画像への変換、画像からPDFへの変換、保護されていないPDFへのパスワード付与ができます。</p>
             </article>
             <article class="faq-lite__item">
-                <h2>CSV/Excel ツールは何に使えますか？</h2>
-                <p>CSV と Excel の変換や、業務データの確認に使う軽量ツールです。</p>
+                <h2>保護済みPDFを開く機能はありますか？</h2>
+                <p>ありません。PDFツールは整理やパスワード付与を目的としており、閲覧制限を外すための機能は公開しません。</p>
             </article>
             <article class="faq-lite__item">
-                <h2>PDFロック解除機能はありますか？</h2>
-                <p>ありません。簡素版ではPDFロック解除機能は提供しません。</p>
+                <h2>PDFのパスワード付与に制限はありますか？</h2>
+                <p>Render無料版でメモリを圧迫しないよう、サーバーで処理するPDFパスワード付与にはファイルサイズ上限を設けています。</p>
             </article>
             <article class="faq-lite__item">
-                <h2>問題が解決しない場合はどうすればよいですか？</h2>
-                <p>入力ファイルの形式、Jobcanのログイン可否、ネットワーク状態を確認したうえで、お問い合わせページからご連絡ください。</p>
+                <h2>混雑時はどうなりますか？</h2>
+                <p>Jobcan AutoFill は同時実行数を抑えており、混雑時は順番待ちまたは混雑中として案内します。Render再起動時はメモリ上のキューが消える可能性があります。</p>
             </article>
         </section>
         <nav class="faq-lite__links" aria-label="Related pages">
             <a href="/autofill">AutoFillを使う</a>
+            <a href="/tools/pdf">PDFツール</a>
             <a href="/tools">ツール一覧</a>
-            <a href="/tools/csv">CSV/Excelツール</a>
+            <a href="/recommend">関連アイテム</a>
             <a href="/privacy">プライバシーポリシー</a>
             <a href="/contact">お問い合わせ</a>
         </nav>

@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 Shared navigation and footer link definitions.
 Keep labels in UTF-8 so common layout text stays stable across pages.
@@ -9,7 +9,7 @@ except Exception:
     PRODUCTS = []
 
 
-SIMPLIFIED_PRODUCT_PATHS = frozenset(('/autofill', '/tools/csv'))
+SIMPLIFIED_PRODUCT_PATHS = frozenset(('/autofill', '/tools/pdf'))
 
 
 def _visible_products():

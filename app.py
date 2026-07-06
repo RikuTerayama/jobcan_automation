@@ -64,28 +64,29 @@ if MEMORY_WARNING_MB >= MEMORY_LIMIT_MB:
     MEMORY_WARNING_MB = int(MEMORY_LIMIT_MB * 0.9)
     logger.warning(f"memory_threshold_auto_corrected WARNING_MB={MEMORY_WARNING_MB} LIMIT_MB={MEMORY_LIMIT_MB}")
 MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", "10"))
-# Render本番では同時実行を直列化（512MB/0.5CPUで複数Playwrightは高リスク）。未設定時はRENDER検知で1に寄せる
-_default_sessions = "1" if os.getenv("RENDER") else "20"
-MAX_ACTIVE_SESSIONS = int(os.getenv("MAX_ACTIVE_SESSIONS", _default_sessions))
+PDF_LOCK_MAX_FILE_SIZE_MB = int(os.getenv("PDF_LOCK_MAX_FILE_SIZE_MB", "20"))
+# Jobcan AutoFill uses Playwright/Chrome, so the safe default is one active run.
+# Local/dev can still override this with MAX_ACTIVE_SESSIONS when needed.
+MAX_ACTIVE_SESSIONS = int(os.getenv("MAX_ACTIVE_SESSIONS", "1"))
 # ジョブ全体のハードタイムアウト（秒）。超過でstatus=timeoutに遷移
 JOB_TIMEOUT_SEC = int(os.getenv("JOB_TIMEOUT_SEC", "300"))  # 5分
 
 app = Flask(__name__)
 
 # Phase 1 simplified site: keep only the core free tool routes.
-SIMPLIFIED_PRODUCT_PATHS = frozenset(('/autofill', '/tools/csv'))
+SIMPLIFIED_PRODUCT_PATHS = frozenset(('/autofill', '/tools/pdf'))
 SIMPLIFIED_SITEMAP_URLS = (
     ('/', 'daily', '1.0'),
     ('/autofill', 'daily', '1.0'),
     ('/tools', 'weekly', '0.8'),
-    ('/tools/csv', 'weekly', '0.8'),
+    ('/tools/pdf', 'weekly', '0.8'),
     ('/recommend', 'weekly', '0.7'),
     ('/faq', 'weekly', '0.7'),
 )
 SIMPLIFIED_REDIRECTS = {
     '/guide/autofill': '/autofill',
-    '/guide/excel-format': '/tools/csv',
-    '/guide/csv': '/tools/csv',
+    '/guide/excel-format': '/tools',
+    '/guide/csv': '/tools',
     '/guide/getting-started': '/',
     '/about': '/',
     '/glossary': '/faq',
@@ -93,14 +94,13 @@ SIMPLIFIED_REDIRECTS = {
     '/sitemap.html': '/sitemap.xml',
     '/tools/image-batch': '/tools',
     '/tools/image-cleanup': '/tools',
-    '/tools/pdf': '/tools',
+    '/tools/csv': '/tools',
     '/tools/seo': '/tools',
     '/tools/minutes': '/tools',
 }
 SIMPLIFIED_DISABLED_API_PATHS = frozenset((
     '/api/seo/crawl-urls',
     '/api/minutes/format',
-    '/api/pdf/lock',
 ))
 
 
@@ -1215,7 +1215,7 @@ job_queue = deque()
 queued_job_params = {}
 # queued の最大待機時間（超過でtimeout扱い・ファイル削除）
 QUEUED_MAX_WAIT_SEC = int(os.getenv("QUEUED_MAX_WAIT_SEC", "1800"))  # 30分
-MAX_QUEUE_SIZE = int(os.getenv("MAX_QUEUE_SIZE", "5"))  # キュー上限（メモリ保護）
+MAX_QUEUE_SIZE = int(os.getenv("MAX_QUEUE_SIZE", "3"))  # キュー上限（メモリ保護）
 QUEUE_HEARTBEAT_TIMEOUT_SEC = int(os.getenv("QUEUE_HEARTBEAT_TIMEOUT_SEC", "90"))
 QUEUE_DISCONNECT_GRACE_SEC = int(os.getenv("QUEUE_DISCONNECT_GRACE_SEC", "15"))
 ACTIVE_CLIENT_STALE_WARNING_SEC = int(os.getenv("ACTIVE_CLIENT_STALE_WARNING_SEC", "180"))
@@ -2030,13 +2030,78 @@ def contact():
     return render_template('contact.html')
 
 
-@app.route('/tools/csv')
-def tools_csv():
-    """CSV/Excelユーティリティ"""
+@app.route('/tools/pdf')
+def tools_pdf():
+    """PDF utility page."""
     from lib.routes import get_product_by_path
-    product = get_product_by_path('/tools/csv')
-    return render_template('tools/csv.html', product=product)
+    product = get_product_by_path('/tools/pdf')
+    return render_template('tools/pdf.html', product=product)
 
+
+def _pdf_api_error(error_code, status=400):
+    request_id = uuid.uuid4().hex[:12]
+    return jsonify(success=False, error_code=error_code, request_id=request_id), status
+
+
+@app.route('/api/pdf/lock', methods=['POST'])
+def api_pdf_lock():
+    """Attach a user password to an unencrypted PDF. Unlock/decrypt APIs are not exposed."""
+    try:
+        resources = get_system_resources()
+        if resources['memory_mb'] > MEMORY_WARNING_MB:
+            logger.warning(
+                f"pdf_lock_memory_guard_blocked memory_mb={resources['memory_mb']:.1f} warning_threshold={MEMORY_WARNING_MB}"
+            )
+            return _pdf_api_error('server_busy', status=503)
+
+        file = request.files.get('file')
+        password = (request.form.get('password') or '').strip()
+        if not file or file.filename == '':
+            return _pdf_api_error('file_required')
+        if not password:
+            return _pdf_api_error('missing_password')
+
+        max_bytes = PDF_LOCK_MAX_FILE_SIZE_MB * 1024 * 1024
+        content_length = request.content_length or 0
+        if content_length and content_length > max_bytes + 1024 * 1024:
+            return _pdf_api_error('file_too_large')
+
+        try:
+            pdf_bytes = file.read(max_bytes + 1)
+        except Exception:
+            return _pdf_api_error('read_failed')
+        if len(pdf_bytes) > max_bytes:
+            return _pdf_api_error('file_too_large')
+
+        try:
+            from lib.pdf_lock_unlock import encrypt_pdf
+            out_bytes = encrypt_pdf(pdf_bytes, password)
+        except ValueError as exc:
+            err = str(exc)
+            if err in {'already_encrypted', 'corrupt_pdf', 'unsupported_pdf'}:
+                return _pdf_api_error(err)
+            return _pdf_api_error('encrypt_failed')
+        except Exception as exc:
+            request_id = uuid.uuid4().hex[:12]
+            logger.warning('pdf_lock_encrypt_failed request_id=%s error=%s', request_id, type(exc).__name__)
+            logger.debug('pdf_lock_encrypt_failed traceback', exc_info=True)
+            return jsonify(success=False, error_code='encrypt_failed', request_id=request_id), 400
+
+        from io import BytesIO
+        name = file.filename or 'document.pdf'
+        if not name.lower().endswith('.pdf'):
+            name += '.pdf'
+        base = name[:-4] if name.lower().endswith('.pdf') else name
+        return send_file(
+            BytesIO(out_bytes),
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=f'{base}_locked.pdf',
+        )
+    except Exception as exc:
+        request_id = uuid.uuid4().hex[:12]
+        logger.exception('pdf_lock_request_failed request_id=%s error=%s', request_id, type(exc).__name__)
+        return jsonify(success=False, error_code='unsupported', request_id=request_id), 500
 
 
 @app.route('/tools')
