@@ -43,5 +43,9 @@ services:
       # === 同時実行制限（503エラー対策）===
       - key: MAX_ACTIVE_SESSIONS
         value: "1"  # 同時接続数制限（free plan 512MB）
+      - key: MAX_QUEUE_SIZE
+        value: "5"  # Free plan guardrail: keep the in-memory queue short
       - key: MAX_FILE_SIZE_MB
-        value: "10" 
+        value: "10"
+      - key: AMAZON_ASSOCIATE_TAG
+        sync: false

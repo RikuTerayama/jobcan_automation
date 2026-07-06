@@ -12,6 +12,7 @@ import logging
 import hashlib
 import re
 import json
+import io
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template, send_file, Response, redirect, g, has_request_context
 from werkzeug.exceptions import NotFound, MethodNotAllowed
@@ -1247,7 +1248,7 @@ job_queue = deque()
 queued_job_params = {}
 # queued の最大待機時間（超過でtimeout扱い・ファイル削除）
 QUEUED_MAX_WAIT_SEC = int(os.getenv("QUEUED_MAX_WAIT_SEC", "1800"))  # 30分
-MAX_QUEUE_SIZE = int(os.getenv("MAX_QUEUE_SIZE", "50"))  # キュー上限（メモリ保護）
+MAX_QUEUE_SIZE = int(os.getenv("MAX_QUEUE_SIZE", "5"))  # キュー上限（メモリ保護）
 QUEUE_HEARTBEAT_TIMEOUT_SEC = int(os.getenv("QUEUE_HEARTBEAT_TIMEOUT_SEC", "90"))
 QUEUE_DISCONNECT_GRACE_SEC = int(os.getenv("QUEUE_DISCONNECT_GRACE_SEC", "15"))
 ACTIVE_CLIENT_STALE_WARNING_SEC = int(os.getenv("ACTIVE_CLIENT_STALE_WARNING_SEC", "180"))
@@ -1558,6 +1559,19 @@ def cleanup_user_session(session_id):
             print(f"セッションクリーンアップ完了: {session_id}")
     except Exception as e:
         print(f"セッションクリーンアップエラー {session_id}: {e}")
+
+
+def remove_temp_download_file(file_path):
+    """Remove a generated download file after Flask finishes sending it."""
+    if not file_path:
+        return
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            logger.info(f"temp_download_removed path={file_path}")
+    except Exception as e:
+        logger.warning(f"temp_download_remove_failed path={file_path} error={e}")
+
 
 def register_session(session_id, job_id):
     """セッションを登録"""
@@ -2643,8 +2657,12 @@ def download_template():
             return jsonify({'error': 'テンプレートファイルの生成に失敗しました'}), 500
         
         print(f"テンプレートファイル作成成功: {template_file}")
+        with open(template_file, 'rb') as f:
+            template_buffer = io.BytesIO(f.read())
+        template_buffer.seek(0)
+        remove_temp_download_file(template_file)
         return send_file(
-            template_file,
+            template_buffer,
             as_attachment=True,
             download_name='jobcan_template.xlsx',
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -2668,8 +2686,12 @@ def download_previous_template():
             return jsonify({'error': '先月テンプレートファイルの生成に失敗しました'}), 500
         
         print(f"先月テンプレートファイル作成成功: {template_file}")
+        with open(template_file, 'rb') as f:
+            template_buffer = io.BytesIO(f.read())
+        template_buffer.seek(0)
+        remove_temp_download_file(template_file)
         return send_file(
-            template_file,
+            template_buffer,
             as_attachment=True,
             download_name='jobcan_previous_month_template.xlsx',
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
