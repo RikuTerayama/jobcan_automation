@@ -139,6 +139,7 @@
     <script>
         let currentJobId = null;
         let pollTimer = null;
+        let jobActive = false;
 
         function setStatus(title, message, logs) {
             document.getElementById('statusPanel').classList.add('is-visible');
@@ -151,11 +152,16 @@
 
         function buildQueuedMessage(result) {
             const pos = result.queue_position ? `あなたの順番: ${result.queue_position}番目です。` : '順番待ちです。';
-            return `${pos} このタブを開いたままにすると、自分の順番になったとき自動で開始します。タブを閉じたり通信が長時間止まると、待機が自動的に失効することがあります。`;
+            const limit = result.queue_limit ? `待機枠は最大${result.queue_limit}件です。` : '';
+            return `${pos} このタブを開いたままにすると、自分の順番になったとき自動で開始します。${limit} タブを閉じたり通信が長時間止まると、待機が自動的に失効することがあります。`;
         }
 
         document.getElementById('uploadForm').addEventListener('submit', async (event) => {
             event.preventDefault();
+            if (jobActive) {
+                setStatus('処理中です', '現在の処理または順番待ちが終わってから、再度実行してください。');
+                return;
+            }
             const formData = new FormData(event.currentTarget);
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
@@ -166,16 +172,20 @@
                 const response = await fetch('/upload', { method: 'POST', body: formData });
                 const result = await response.json().catch(() => ({}));
                 if (!response.ok && result.error_code === 'QUEUE_FULL') {
-                    setStatus('混雑しています', result.error || '現在混雑しています。少し時間をおいてからお試しください。');
+                    const retry = result.retry_after_sec ? `目安として${result.retry_after_sec}秒ほど空けてから再試行してください。` : '少し時間をおいてからお試しください。';
+                    setStatus('混雑しています', result.error || `現在、無料枠の処理上限に達しています。${retry}`);
                     document.getElementById('retryBtn').style.display = 'inline-flex';
+                    submitBtn.disabled = false;
                     return;
                 }
                 if (!response.ok) {
                     setStatus('送信できませんでした', result.error || '入力内容を確認してください。');
                     document.getElementById('retryBtn').style.display = 'inline-flex';
+                    submitBtn.disabled = false;
                     return;
                 }
                 currentJobId = result.job_id;
+                jobActive = true;
                 if (result.status === 'queued') {
                     setStatus('順番待ちです', buildQueuedMessage(result));
                     document.getElementById('cancelQueuedBtn').style.display = 'inline-flex';
@@ -186,7 +196,6 @@
             } catch (error) {
                 setStatus('通信に失敗しました', 'ネットワーク状態を確認してから再試行してください。');
                 document.getElementById('retryBtn').style.display = 'inline-flex';
-            } finally {
                 submitBtn.disabled = false;
             }
         });
@@ -196,30 +205,37 @@
             if (pollTimer) clearInterval(pollTimer);
             pollTimer = setInterval(async () => {
                 try {
-                    const response = await fetch(`/status/${currentJobId}`);
+                    const response = await fetch(`/status/${currentJobId}?last_n=120`);
                     const status = await response.json();
+                    const logs = status.progress_log || status.logs || [];
                     if (status.status === 'queued') {
-                        setStatus('順番待ちです', buildQueuedMessage(status), status.progress_log || []);
+                        setStatus('順番待ちです', buildQueuedMessage(status), logs);
                         document.getElementById('cancelQueuedBtn').style.display = 'inline-flex';
                         return;
                     }
                     document.getElementById('cancelQueuedBtn').style.display = 'none';
                     if (status.status === 'completed') {
                         clearInterval(pollTimer);
-                        setStatus('完了しました', status.message || '処理が完了しました。Jobcan側の内容を確認してください。', status.progress_log || []);
+                        jobActive = false;
+                        document.getElementById('submitBtn').disabled = false;
+                        setStatus('完了しました', status.message || '処理が完了しました。Jobcan側の内容を確認してください。', logs);
                     } else if (['failed', 'error', 'cancelled', 'expired'].includes(status.status)) {
                         clearInterval(pollTimer);
-                        setStatus('処理を完了できませんでした', status.error || status.message || '内容を確認して再試行してください。', status.progress_log || []);
+                        jobActive = false;
+                        document.getElementById('submitBtn').disabled = false;
+                        setStatus('処理を完了できませんでした', status.error || status.message || '内容を確認して再試行してください。', logs);
                         document.getElementById('retryBtn').style.display = 'inline-flex';
                     } else {
-                        setStatus('処理中です', status.message || 'Jobcanへ入力しています。', status.progress_log || []);
+                        setStatus('処理中です', status.message || 'Jobcanへ入力しています。', logs);
                     }
                 } catch (error) {
                     clearInterval(pollTimer);
+                    jobActive = false;
+                    document.getElementById('submitBtn').disabled = false;
                     setStatus('状態を確認できませんでした', '通信が中断されました。少し時間をおいて再試行してください。');
                     document.getElementById('retryBtn').style.display = 'inline-flex';
                 }
-            }, 3000);
+            }, 5000);
         }
 
         async function cancelQueuedJob() {
@@ -227,6 +243,8 @@
             try {
                 await fetch(`/cancel/${currentJobId}`, { method: 'POST' });
                 if (pollTimer) clearInterval(pollTimer);
+                jobActive = false;
+                document.getElementById('submitBtn').disabled = false;
                 setStatus('待機をキャンセルしました', '必要な場合は内容を確認して再度実行してください。');
                 document.getElementById('cancelQueuedBtn').style.display = 'none';
                 document.getElementById('retryBtn').style.display = 'inline-flex';
@@ -236,9 +254,24 @@
         }
 
         function retryProcess() {
+            jobActive = false;
+            currentJobId = null;
+            document.getElementById('submitBtn').disabled = false;
             document.getElementById('statusPanel').classList.remove('is-visible');
             document.getElementById('retryBtn').style.display = 'none';
         }
+
+        function detachCurrentJob() {
+            if (!currentJobId || !jobActive) return;
+            const endpoint = `/api/queue/detach/${currentJobId}`;
+            if (navigator.sendBeacon) {
+                navigator.sendBeacon(endpoint, new Blob([], { type: 'application/json' }));
+            } else {
+                fetch(endpoint, { method: 'POST', keepalive: true }).catch(() => {});
+            }
+        }
+
+        window.addEventListener('pagehide', detachCurrentJob);
 
         function downloadTemplate(type) {
             const endpoint = type === 'previous' ? '/download-previous-template' : '/download-template';

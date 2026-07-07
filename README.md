@@ -47,6 +47,12 @@ Operational notes for Render Free:
   plan spin-down clears queued/running state.
 - AutoFill is intentionally limited to one active session by default. Additional
   users should retry later or wait in the short queue.
+- When the short queue is full, `/upload` returns `503` with
+  `error_code=QUEUE_FULL`, `retry_after_sec`, and queue limit metadata instead
+  of starting another Chrome/Playwright run.
+- The AutoFill UI keeps the submit button disabled while a job is running or
+  queued, polls `/status/<job_id>` at a conservative interval, and sends a
+  best-effort detach signal when the tab closes.
 - After changing `AMAZON_ASSOCIATE_TAG` or other Render env vars, trigger a
   restart/redeploy so worker processes read the new values.
 
