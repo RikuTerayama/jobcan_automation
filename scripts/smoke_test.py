@@ -153,6 +153,11 @@ def run_jobcan_guardrail_verification():
             if status_json.get('queue_limit') != app_module.MAX_QUEUE_SIZE:
                 failed.append('/status did not expose queue_limit')
 
+        detach_resp = client.post('/api/queue/detach/guard-queued-0')
+        detach_json = detach_resp.get_json(silent=True) or {}
+        if detach_resp.status_code != 200 or detach_json.get('status') != 'queued':
+            failed.append(f"/api/queue/detach queued expected queued got status={detach_resp.status_code} body={detach_json}")
+
         upload_resp = client.post(
             '/upload',
             data={
