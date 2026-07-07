@@ -87,6 +87,21 @@ Operational notes for Render Free:
 - If Render is tracking `main` while changes are only on `feature/add-csv-excel-utility`, production will not reflect those changes until merge/cherry-pick to `main` (or changing Render deploy branch).
 - After changing Render environment variables (including `AMAZON_ASSOCIATE_TAG`), trigger a service restart/redeploy so worker processes load the new value.
 
+### Production verification checklist
+
+After merging or manually deploying the latest branch, verify:
+
+- `/` shows the simplified Jobcan/PDF choice as the primary entry point.
+- `/autofill` starts with template download and file upload guidance before credentials and execution.
+- `/tools/pdf` starts with the PDF operation chooser and does not expose unlock/decrypt UI.
+- `/tools/csv` redirects to `/tools`.
+- `/api/pdf/lock` remains enabled and `/api/pdf/unlock` remains `404`.
+- `/sitemap.xml` includes `/tools/pdf` and does not include `/tools/csv`.
+- `/recommend` and the footer keep the Amazon Associates disclosure.
+- `/healthz` returns quickly during and after deploy.
+
+If production still shows the old UI, check that the PR was merged into the Render deploy branch, Auto Deploy is enabled or a manual deploy was triggered, the deployed commit SHA matches the GitHub branch, and the service was restarted after environment variable changes.
+
 Jobcan閾ｪ蜍募・蜉帙→蜷・ｨｮ讌ｭ蜍吝柑邇・喧繝・・繝ｫ繧呈署萓帙☆繧妓eb繧｢繝励Μ繧ｱ繝ｼ繧ｷ繝ｧ繝ｳ縺ｧ縺吶・
 
 ## 噫 讖溯・讎りｦ・
