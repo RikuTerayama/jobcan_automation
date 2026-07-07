@@ -8,12 +8,13 @@
 <body>
     {% include 'includes/header.html' %}
     {% set starter_pages = [
-        {'eyebrow': 'Primary', 'title': 'Jobcan AutoFill', 'path': '/autofill', 'description': 'Excelテンプレートから勤怠データを読み込み、Jobcanへの入力作業を補助します。', 'cta': 'AutoFillを使う', 'icon': '✓'},
-        {'eyebrow': 'PDF', 'title': 'PDFツール', 'path': '/tools/pdf', 'description': 'PDFの結合、分割、ページ抽出、圧縮、画像変換、パスワード付与を扱えます。', 'cta': 'PDFツールを見る', 'icon': 'PDF'},
-        {'eyebrow': 'Hub', 'title': 'ツール一覧', 'path': '/tools', 'description': '現在使えるJobcan AutoFillとPDFツールを一覧で確認できます。', 'cta': 'ツール一覧を見る', 'icon': 'Tools'},
-        {'eyebrow': 'FAQ', 'title': 'よくある質問', 'path': '/faq', 'description': '使い方、データの扱い、保護済みPDFの扱いなどを確認できます。', 'cta': 'FAQを見る', 'icon': '?'},
-        {'eyebrow': 'Recommend', 'title': '関連アイテム', 'path': '/recommend', 'description': 'コンサルワーク、資料作成、PDF作業に役立つ周辺アイテムを探せます。', 'cta': 'おすすめを見る', 'icon': 'A'},
-        {'eyebrow': 'Contact', 'title': 'お問い合わせ', 'path': '/contact', 'description': '不具合報告や改善要望はこちらから送れます。', 'cta': '問い合わせる', 'icon': 'Mail'}
+        {'eyebrow': 'Jobcan', 'title': 'Jobcan AutoFill', 'path': '/autofill', 'description': 'Excelテンプレートに入力した勤怠情報を使い、Jobcanへの入力作業を補助します。', 'cta': '勤怠入力を始める', 'icon': 'Time'},
+        {'eyebrow': 'PDF', 'title': 'PDFツール', 'path': '/tools/pdf', 'description': 'PDFの結合、分割、ページ抽出、圧縮、画像変換、パスワード付与を扱えます。', 'cta': 'PDF作業を始める', 'icon': 'PDF'}
+    ] %}
+    {% set support_pages = [
+        {'title': 'FAQ', 'path': '/faq', 'description': '使い方、データの扱い、混雑時の挙動を確認できます。'},
+        {'title': '関連アイテム', 'path': '/recommend', 'description': 'コンサルワーク、資料作成、PDF作業に役立つ周辺アイテムを探せます。'},
+        {'title': 'お問い合わせ', 'path': '/contact', 'description': '不具合報告や改善要望はこちらから送れます。'}
     ] %}
     {% set use_cases = [
         {'eyebrow': 'Jobcan', 'title': '月次の勤怠入力をまとめて進めたい', 'description': 'Excelテンプレートに整理した勤怠データを使い、Jobcanへの入力作業を効率化できます。'},
@@ -25,29 +26,26 @@
         <section class="landing-hero hero">
             <div class="landing-hero__eyebrow" data-reveal>Jobcan AutoFill</div>
             <h1 data-reveal data-reveal-delay="40">
-                <span class="landing-hero__headline-line">勤怠入力の自動化と、</span>
-                <span class="landing-hero__headline-line">PDF作業の効率化を</span>
-                <span class="landing-hero__headline-line">一つの導線で。</span>
+                <span class="landing-hero__headline-line">何をしたいですか？</span>
             </h1>
             <p class="landing-hero__lead copy-lines copy-lines--hero" data-reveal data-reveal-delay="80">
-                <span class="copy-lines__line">Jobcanの勤怠入力を楽にしたい人向けに、</span>
-                <span class="copy-lines__line">AutoFillとPDFの結合・分割・パスワード付与ツールをまとめています。</span>
-                <span class="copy-lines__line">必要な機能だけに絞り、Jobcan入力とPDF作業を迷わず使える構成にしています。</span>
+                <span class="copy-lines__line">Jobcanの勤怠入力をまとめて進めるか、</span>
+                <span class="copy-lines__line">提出前のPDFを整理するかを選んでください。</span>
             </p>
             <div class="landing-hero__actions" data-reveal data-reveal-delay="120">
-                <a href="/autofill" class="btn btn-primary">AutoFillを使う</a>
-                <a href="/tools/pdf" class="btn btn-secondary">PDFツールを見る</a>
+                <a href="/autofill" class="btn btn-primary">勤怠入力を始める</a>
+                <a href="/tools/pdf" class="btn btn-secondary">PDF作業を始める</a>
             </div>
         </section>
 
-        <section class="landing-section" aria-labelledby="starter-pages-heading">
+        <section class="landing-section landing-section--first" aria-labelledby="starter-pages-heading">
             <div class="landing-section__header">
-                <p class="landing-section__eyebrow">Quick Start</p>
-                <h2 id="starter-pages-heading">まず確認したいページ</h2>
+                <p class="landing-section__eyebrow">Start Here</p>
+                <h2 id="starter-pages-heading">使う機能を選ぶ</h2>
             </div>
-            <div class="landing-tool-grid" data-reveal-stagger>
+            <div class="landing-primary-grid" data-reveal-stagger>
                 {% for item in starter_pages %}
-                <a href="{{ item.path }}" class="landing-tool-card">
+                <a href="{{ item.path }}" class="landing-tool-card landing-tool-card--primary">
                     <span class="landing-tool-card__meta">
                         <span class="landing-tool-card__eyebrow">{{ item.eyebrow }}</span>
                         <span class="landing-tool-card__icon" aria-hidden="true">{{ item.icon }}</span>
@@ -60,16 +58,21 @@
             </div>
         </section>
 
-        {% with amazon_section_key='home', amazon_section_show_disclosure=true %}
-            {% include 'includes/amazon_lightweight_section.html' %}
-        {% endwith %}
-        {% set affiliate_disclosure_rendered = true %}
-        {% set affiliate_upper_amazon_rendered = true %}
-        {% set affiliate_mid_amazon_rendered = true %}
-
-        {% with seo_link_hub_grid_class='seo-link-hub__grid--three' %}
-            {% include 'includes/seo_link_hub.html' %}
-        {% endwith %}
+        <section class="landing-section landing-section--compact" aria-labelledby="support-pages-heading">
+            <div class="landing-section__header">
+                <p class="landing-section__eyebrow">Support</p>
+                <h2 id="support-pages-heading">迷ったときに見るページ</h2>
+            </div>
+            <div class="landing-secondary-grid" data-reveal-stagger>
+                {% for item in support_pages %}
+                <a href="{{ item.path }}" class="landing-page-card landing-page-card--quiet">
+                    <h3>{{ item.title }}</h3>
+                    <p>{{ item.description }}</p>
+                    <span class="landing-page-card__cta">見る</span>
+                </a>
+                {% endfor %}
+            </div>
+        </section>
 
         <section class="landing-section" aria-labelledby="use-cases-heading">
             <div class="landing-section__header">
@@ -86,13 +89,6 @@
                 {% endfor %}
             </div>
         </section>
-
-        {% if affiliate_can_render_textlinks() %}
-        {% with affiliate_networks=['rakuten'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--mid-rakuten', affiliate_section_tier='mid-rakuten', affiliate_rakuten_variant='two-col' %}
-            {% include 'includes/affiliate_cards_section.html' %}
-        {% endwith %}
-        {% set affiliate_rakuten_rendered = true %}
-        {% endif %}
 
         <section class="landing-section">
             <div class="landing-trust-card" data-reveal>
@@ -116,6 +112,20 @@
                 </div>
             </div>
         </section>
+
+        {% with amazon_section_key='home', amazon_section_show_disclosure=true %}
+            {% include 'includes/amazon_lightweight_section.html' %}
+        {% endwith %}
+        {% set affiliate_disclosure_rendered = true %}
+        {% set affiliate_upper_amazon_rendered = true %}
+        {% set affiliate_mid_amazon_rendered = true %}
+
+        {% if affiliate_can_render_textlinks() %}
+        {% with affiliate_networks=['rakuten'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--mid-rakuten', affiliate_section_tier='mid-rakuten', affiliate_rakuten_variant='two-col' %}
+            {% include 'includes/affiliate_cards_section.html' %}
+        {% endwith %}
+        {% set affiliate_rakuten_rendered = true %}
+        {% endif %}
     </main>
     {% include 'includes/footer.html' %}
 </body>

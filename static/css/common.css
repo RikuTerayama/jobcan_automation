@@ -1538,6 +1538,14 @@ img {
     margin-top: 56px;
 }
 
+.landing-section--first {
+    margin-top: 34px;
+}
+
+.landing-section--compact {
+    margin-top: 42px;
+}
+
 .landing-inline-affiliate {
     margin-top: 34px;
 }
@@ -1565,6 +1573,18 @@ img {
     gap: 18px;
 }
 
+.landing-primary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+}
+
+.landing-secondary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
 .landing-tool-card,
 .landing-page-card,
 .landing-use-card {
@@ -1587,6 +1607,24 @@ img {
     background: linear-gradient(180deg, rgba(74, 158, 255, 0.08), rgba(255, 255, 255, 0.03));
     text-decoration: none;
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.22);
+}
+
+.landing-tool-card--primary {
+    min-height: 280px;
+    padding: 30px;
+    background:
+        radial-gradient(circle at 20% 0%, rgba(74, 158, 255, 0.18), transparent 32%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025));
+}
+
+.landing-tool-card--primary h3 {
+    font-size: clamp(1.45rem, 3vw, 2rem);
+}
+
+.landing-page-card--quiet {
+    padding: 18px;
+    min-height: auto;
+    box-shadow: none;
 }
 
 .landing-tool-card__meta {
@@ -1815,6 +1853,8 @@ img {
 
     .landing-page-grid,
     .landing-tool-grid,
+    .landing-primary-grid,
+    .landing-secondary-grid,
     .landing-use-grid,
     .landing-trust-grid {
         grid-template-columns: 1fr;

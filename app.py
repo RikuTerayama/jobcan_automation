@@ -2001,7 +2001,7 @@ def index():
 def autofill():
     """Jobcan自動入力ツール（旧ホームページ）"""
     try:
-        return render_template('autofill.html')
+        return render_template('autofill_lite.html')
     except Exception as e:
         # 例外をログに記録してから、エラーハンドラに委譲（例外を再発生）
         request_id = getattr(g, 'request_id', 'unknown')
@@ -2035,7 +2035,7 @@ def tools_pdf():
     """PDF utility page."""
     from lib.routes import get_product_by_path
     product = get_product_by_path('/tools/pdf')
-    return render_template('tools/pdf.html', product=product)
+    return render_template('tools/pdf_lite.html', product=product)
 
 
 def _pdf_api_error(error_code, status=400):
@@ -2934,8 +2934,9 @@ def _sitemap_lastmod_for_path(url_path):
     path = (url_path or '').strip('/') or ''
     special = {
         '': 'landing.html',
-        'autofill': 'autofill.html',
+        'autofill': 'autofill_lite.html',
         'tools': 'tools/index.html',
+        'tools/pdf': 'tools/pdf_lite.html',
         'recommend': 'recommend.html',
     }
     if path in special:
