@@ -1,11 +1,11 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ja" class="no-js">
 <head>
-    {% set page_title = 'PDFユーティリティ - 結合・分割・抽出・圧縮・画像変換 | ブラウザ内処理でアップロード不要' %}
-    {% set page_description = 'PDFの結合・分割・ページ抽出、PDF→画像変換、圧縮、画像→PDF変換、埋め込み画像抽出に対応した無料ツール。ブラウザ内で実行され、ファイルはアップロードされません。' %}
+    {% set page_title = 'PDFユーティリティ - 結合・分割・圧縮・パスワード付与 | Jobcan AutoFill' %}
+    {% set page_description = 'PDFの結合、分割、ページ抽出、圧縮、画像変換、保護されていないPDFへのパスワード付与に対応した無料ツールです。' %}
     {% set breadcrumb_title = product.name|default('PDFユーティリティ') %}
     {% include 'includes/head_meta.html' %}
-    {# P1-4: SoftwareApplication構造化データ #}
+    {# P1-4: SoftwareApplication讒矩蛹悶ョ繝ｼ繧ｿ #}
     {% if product %}
     {% include 'includes/structured_data.html' %}
     {% block extra_structured_data %}
@@ -300,78 +300,67 @@
     
     <div class="container">
         <div class="page-header">
-            <h1 data-reveal>📄 PDFユーティリティ</h1>
-            <p data-reveal data-reveal-delay="50">ローカル処理。ファイルはアップロードせず、ブラウザ内で変換します。</p>
+            <h1 data-reveal>PDFユーティリティ</h1>
+            <p data-reveal data-reveal-delay="50">PDFの結合、分割、ページ抽出、圧縮、画像変換、保護されていないPDFへのパスワード付与を扱えます。</p>
         </div>
-        {% set tool_intro_what = 'PDFの結合・分割・ページ抽出、PDF⇄画像変換、圧縮、画像→PDF、埋め込み画像抽出をブラウザ内で実行します。' %}
-        {% set tool_intro_steps = ['ファイルを選択（複数可）', '操作モード・オプションを設定', '実行してダウンロード'] %}
-        {% set tool_intro_notice = '個人情報・機密情報を含むPDFは取り扱いにお気をつけください。' %}
+        {% set tool_intro_what = 'PDFをブラウザ内で整理するための軽量ツールです。パスワード付与のみサーバー側で処理し、処理後の一時ファイルは削除します。' %}
+        {% set tool_intro_steps = ['PDFまたは画像ファイルを選択', '操作モードと必要な範囲を指定', '処理結果をダウンロード'] %}
+        {% set tool_intro_notice = '大きなPDFは処理前に拒否される場合があります。閲覧制限を外すための処理は提供していません。' %}
         {% include 'includes/tool_intro.html' %}
+
         <div class="tool-section">
-            <h3>📁 ファイル選択</h3>
+            <h3>ファイル選択</h3>
             <div id="dropzone" class="file-dropzone" style="border: 2px dashed rgba(74, 158, 255, 0.5); border-radius: 12px; padding: 60px 20px; text-align: center; background: rgba(74, 158, 255, 0.05); transition: all 0.3s; cursor: pointer;">
-                <div style="font-size: 3em; margin-bottom: 20px;">📁</div>
-                <p style="color: rgba(255, 255, 255, 0.9); font-size: 1.1em; margin: 0 0 10px 0; font-weight: 500;">
-                    ファイルをドラッグ＆ドロップ
-                </p>
-                <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.95em; margin: 0;">
-                    またはクリックしてファイルを選択
-                </p>
-                <p id="dropzone-hint" style="color: rgba(255, 255, 255, 0.5); font-size: 0.85em; margin: 15px 0 0 0;">
-                    対応形式: PDF（操作により最大10または20ファイル、1ファイル50MBまで）
-                </p>
+                <div style="font-size: 3em; margin-bottom: 20px;">PDF</div>
+                <p style="color: rgba(255, 255, 255, 0.9); font-size: 1.1em; margin: 0 0 10px 0; font-weight: 500;">ファイルをドラッグ＆ドロップ</p>
+                <p style="color: rgba(255, 255, 255, 0.6); font-size: 0.95em; margin: 0;">またはクリックしてファイルを選択</p>
+                <p id="dropzone-hint" style="color: rgba(255, 255, 255, 0.5); font-size: 0.85em; margin: 15px 0 0 0;">PDFは最大20ファイル、1ファイル20MBまでを目安にしてください。</p>
                 <input type="file" id="file-input" accept="application/pdf" multiple style="display: none;">
             </div>
             <div id="file-list" class="file-list"></div>
             <div id="rejected-files" class="rejected-files" style="display: none;"></div>
         </div>
-        
+
         <div class="tool-section">
-            <h3>⚙️ 操作設定</h3>
+            <h3>操作設定</h3>
             <div class="option-group">
                 <label>操作モード</label>
                 <select id="mode" onchange="updateModeOptions()">
-                    <optgroup label="v1: 基本操作">
+                    <optgroup label="基本操作">
                         <option value="merge">結合</option>
-                        <option value="extract">抽出</option>
+                        <option value="extract">ページ抽出</option>
                         <option value="split">分割</option>
-                        <option value="to-images">PDF→画像</option>
+                        <option value="to-images">PDFを画像に変換</option>
                     </optgroup>
-                    <optgroup label="v2: 拡張機能">
+                    <optgroup label="拡張操作">
                         <option value="compress">圧縮</option>
-                        <option value="images-to-pdf">画像→PDF</option>
-                        <option value="extract-images">埋め込み画像抽出（試験版）</option>
+                        <option value="images-to-pdf">画像をPDFに変換</option>
+                        <option value="extract-images">埋め込み画像を抽出</option>
                     </optgroup>
-                    <optgroup label="保護の付与">
-                        <option value="lock-pdf">ロック付与（暗号化して出力）</option>
+                    <optgroup label="保護">
+                        <option value="lock-pdf">PDFにパスワードを付与</option>
                     </optgroup>
                 </select>
             </div>
-            
-            <!-- 入力PDF用パスワード（保護されている場合のみ使用。ログ・永続化しません） -->
-            <div id="input-pdf-password-group" class="option-group" style="display: none;">
-                <label>入力PDFのパスワード（保護されている場合）</label>
-                <input type="password" id="input-pdf-password" placeholder="保護されていない場合は空でOK" autocomplete="off">
-                <p class="info-text">パスワードはサーバに送信後すぐ破棄され、ログには出しません。</p>
-            </div>
-            <!-- 出力PDF用パスワード（ロック付与時） -->
+
             <div id="output-pdf-password-group" class="option-group" style="display: none;">
                 <label>出力PDFに設定するパスワード</label>
-                <input type="password" id="output-pdf-password" placeholder="8文字以上推奨" autocomplete="off">
-                <p class="info-text" style="color: #FF9800;">⚠️ パスワードを忘れると開けられません。控えておいてください。</p>
+                <input type="password" id="output-pdf-password" placeholder="8文字以上を推奨" autocomplete="off">
+                <p class="info-text" style="color: #FF9800;">パスワードを忘れるとPDFを開けません。安全な場所に控えてください。</p>
             </div>
+
             <div id="extract-options" class="option-group" style="display: none;">
-                <label>ページ範囲（例: 1-3,5,7-9）</label>
+                <label>抽出するページ範囲（例: 1-3,5,7-9）</label>
                 <input type="text" id="extract-range" placeholder="1-3,5,7-9">
-                <p class="info-text">抽出するページ番号を指定（1始まり）</p>
+                <p class="info-text">抽出したいページ番号を指定してください。</p>
             </div>
-            
+
             <div id="split-options" class="option-group" style="display: none;">
-                <label>グループ範囲（例: 1-3;4-6;7-10）</label>
+                <label>分割グループ（例: 1-3;4-6;7-10）</label>
                 <input type="text" id="split-range" placeholder="1-3;4-6;7-10">
-                <p class="info-text">セミコロン(;)でグループを区切り、各グループ内はカンマ(,)でページ範囲を指定</p>
+                <p class="info-text">セミコロンでグループを区切り、各グループ内はカンマでページ範囲を指定します。</p>
             </div>
-            
+
             <div id="to-images-options" class="option-group" style="display: none;">
                 <label>画像形式</label>
                 <select id="image-format">
@@ -379,7 +368,7 @@
                     <option value="jpeg">JPEG</option>
                 </select>
             </div>
-            
+
             <div id="to-images-scale" class="option-group" style="display: none;">
                 <label>スケール</label>
                 <select id="image-scale">
@@ -388,17 +377,16 @@
                     <option value="2.0">2.0x（高解像度）</option>
                 </select>
             </div>
-            
+
             <div id="to-images-quality" class="option-group" style="display: none;">
                 <label>品質 <span id="quality-value">0.9</span></label>
                 <input type="range" id="image-quality" min="0.1" max="1.0" step="0.1" value="0.9">
             </div>
-            
-            <!-- v2: 圧縮オプション -->
+
             <div id="compress-options" class="option-group" style="display: none;">
                 <label>プリセット</label>
                 <div class="preset-buttons" style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
-                    <button class="preset-button" onclick="applyCompressPreset('email')">メール用</button>
+                    <button class="preset-button" onclick="applyCompressPreset('email')">メール向け</button>
                     <button class="preset-button" onclick="applyCompressPreset('balanced')">バランス</button>
                     <button class="preset-button" onclick="applyCompressPreset('quality')">画質優先</button>
                 </div>
@@ -412,12 +400,9 @@
                 </select>
                 <label style="margin-top: 15px;">最大長辺（px）</label>
                 <input type="number" id="compress-max-long-edge" min="800" max="4000" value="2000">
-                <p class="info-text" style="color: #FF9800; margin-top: 10px;">
-                    ⚠️ 注意: この方式は文字検索やテキスト選択ができなくなります（ページが画像になります）
-                </p>
+                <p class="info-text" style="color: #FF9800; margin-top: 10px;">圧縮方式によっては文字選択や検索ができなくなる場合があります。</p>
             </div>
-            
-            <!-- v2: 画像→PDFオプション -->
+
             <div id="images-to-pdf-options" class="option-group" style="display: none;">
                 <label>ページサイズ</label>
                 <select id="images-page-size">
@@ -425,28 +410,18 @@
                     <option value="a4">A4</option>
                     <option value="letter">Letter</option>
                 </select>
-                <label style="margin-top: 15px;">マージン（pt）</label>
+                <label style="margin-top: 15px;">余白（pt）</label>
                 <input type="number" id="images-margin" min="0" max="100" value="24">
-                <p class="info-text" style="margin-top: 10px;">
-                    画像の順序がPDFの順序になります（ファイル名順で処理）
-                </p>
+                <p class="info-text" style="margin-top: 10px;">画像の順序はファイル名順で処理します。</p>
             </div>
-            
-            <!-- v2: 埋め込み画像抽出オプション -->
+
             <div id="extract-images-options" class="option-group" style="display: none;">
                 <div class="info-text" style="margin-bottom: 15px; padding: 12px; background: rgba(74, 158, 255, 0.08); border-radius: 8px; border-left: 3px solid rgba(74, 158, 255, 0.5);">
-                    <strong>埋め込み画像抽出（試験版）について</strong>
+                    <strong>埋め込み画像の抽出について</strong>
                     <ul style="margin: 10px 0 0 0; padding-left: 20px; line-height: 1.6;">
-                        <li>PDFの中に含まれる画像を取り出し、画像ファイルとして保存します。</li>
-                        <li>PDFの種類によっては「画像だけ」ではなく「ページ全体を画像として保存」する形になることがあります（試験版）。</li>
-                        <li>うまく抽出できない主なケース:
-                            <ul style="margin-top: 4px; padding-left: 18px;">
-                                <li>図形や文字中心（ベクター中心）のPDF</li>
-                                <li>保護（暗号化/権限制限）されたPDF</li>
-                                <li>ページ数が多いPDF（重くなるため、必要ページだけに分割すると安定します）</li>
-                            </ul>
-                        </li>
-                        <li>複数の画像が出力された場合は「ZIPで一括ダウンロード」でまとめて保存できます。</li>
+                        <li>PDF内の画像を取り出し、画像ファイルとして保存します。</li>
+                        <li>PDFの種類によっては、ページ全体が画像として保存される場合があります。</li>
+                        <li>保護されたPDFや権限制限付きPDFでは抽出できない場合があります。</li>
                     </ul>
                 </div>
                 <label>画像形式</label>
@@ -460,17 +435,15 @@
                 </div>
                 <label style="margin-top: 15px;">最大抽出数（PDFあたり）</label>
                 <input type="number" id="extract-images-max" min="10" max="500" value="200">
-                <p class="info-text" style="color: #FF9800; margin-top: 10px;">
-                    ⚠️ 試験版: PDFによっては抽出できない場合があります
-                </p>
+                <p class="info-text" style="color: #FF9800; margin-top: 10px;">PDFによっては抽出できない場合があります。</p>
             </div>
-            
-            <button id="run-button" class="action-button" onclick="runOperation()">実行</button>
+
+            <button id="run-button" class="action-button" onclick="runOperation()">実行する</button>
             <button id="cancel-button" class="action-button" onclick="cancelOperation()" style="display: none; background: rgba(244, 67, 54, 0.2); border-color: rgba(244, 67, 54, 0.5); color: #F44336;">キャンセル</button>
         </div>
-        
+
         <div id="progress-section" class="tool-section" style="display: none;">
-            <h3>📊 進捗状況</h3>
+            <h3>処理状況</h3>
             <div id="progress-info" class="progress-info">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                     <span id="progress-text">待機中...</span>
@@ -482,36 +455,43 @@
                 <div id="task-list" class="task-list"></div>
             </div>
         </div>
-        
+
         <div id="output-section" class="tool-section" style="display: none;">
-            <h3>📥 ダウンロード</h3>
+            <h3>ダウンロード</h3>
             <div id="download-panel"></div>
         </div>
-        
+
         <div id="error-section" class="tool-section" style="display: none;">
-            <h3>❌ エラー</h3>
+            <h3>エラー</h3>
             <div id="error-message" class="error-message"></div>
         </div>
 
-        <div class="tool-kb-anchor-link" style="text-align: center; margin: 28px 0 16px 0;"><a href="#about-tool" style="color: #4A9EFF;">使い方・FAQを読む ↓</a></div>
+        <div class="tool-kb-anchor-link" style="text-align: center; margin: 28px 0 16px 0;"><a href="#about-tool" style="color: #4A9EFF;">使い方・FAQを読む →</a></div>
         {% include 'includes/tool_content_blocks.html' %}
+
+        {% with amazon_section_key='pdf', amazon_section_show_disclosure=true %}
+            {% include 'includes/amazon_lightweight_section.html' %}
+        {% endwith %}
+        {% set affiliate_disclosure_rendered = true %}
+        {% set affiliate_upper_amazon_rendered = true %}
+        {% set affiliate_mid_amazon_rendered = true %}
     </div>
 
     {% include 'includes/related_tools.html' %}
     {% include 'includes/footer.html' %}
     
-    <!-- PDFライブラリ（CDN） -->
+    <!-- PDF繝ｩ繧､繝悶Λ繝ｪ・・DN・・-->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
-        // pdf.jsをグローバル変数として設定
+        // pdf.js繧偵げ繝ｭ繝ｼ繝舌Ν螟画焚縺ｨ縺励※險ｭ螳・
         window.pdfjsLib = pdfjsLib;
     </script>
     
     <!-- JSZip CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     
-    <!-- 共通ライブラリ -->
+    <!-- 蜈ｱ騾壹Λ繧､繝悶Λ繝ｪ -->
     <script src="{{ url_for('static', filename='js/file-validation.js') }}"></script>
     <script src="{{ url_for('static', filename='js/file-utils.js') }}"></script>
     <script src="{{ url_for('static', filename='js/zip-utils.js') }}"></script>
@@ -526,12 +506,12 @@
     <script>
         let toolRunner = null;
         let currentMode = 'merge';
-        let pdfApiAbortController = null; // unlock/lock API キャンセル用（パスワードは含めない）
+        let pdfApiAbortController = null; // lock API 繧ｭ繝｣繝ｳ繧ｻ繝ｫ逕ｨ・医ヱ繧ｹ繝ｯ繝ｼ繝峨・蜷ｫ繧√↑縺・ｼ・
         
-        // 初期化
+        // 蛻晄悄蛹・
         document.addEventListener('DOMContentLoaded', () => {
             toolRunner = new ToolRunner({
-                maxConcurrency: 1, // PDF処理は重いので1つずつ
+                maxConcurrency: 1, // PDF蜃ｦ逅・・驥阪＞縺ｮ縺ｧ1縺､縺壹▽
                 onProgress: updateProgress,
                 onComplete: handleComplete,
                 onError: handleError
@@ -541,7 +521,7 @@
             setupDropzone();
             updateModeOptions();
             
-            // 品質スライダー
+            // 蜩∬ｳｪ繧ｹ繝ｩ繧､繝繝ｼ
             const qualityInput = document.getElementById('image-quality');
             if (qualityInput) {
                 qualityInput.addEventListener('input', () => {
@@ -549,7 +529,7 @@
                 });
             }
             
-            // 圧縮品質スライダー
+            // 蝨ｧ邵ｮ蜩∬ｳｪ繧ｹ繝ｩ繧､繝繝ｼ
             const compressQualityInput = document.getElementById('compress-quality');
             if (compressQualityInput) {
                 compressQualityInput.addEventListener('input', () => {
@@ -557,7 +537,7 @@
                 });
             }
             
-            // 埋め込み画像抽出の形式変更
+            // 蝓九ａ霎ｼ縺ｿ逕ｻ蜒乗歓蜃ｺ縺ｮ蠖｢蠑丞､画峩
             const extractImagesFormat = document.getElementById('extract-images-format');
             if (extractImagesFormat) {
                 extractImagesFormat.addEventListener('change', () => {
@@ -567,7 +547,7 @@
                 });
             }
             
-            // 埋め込み画像抽出の品質スライダー
+            // 蝓九ａ霎ｼ縺ｿ逕ｻ蜒乗歓蜃ｺ縺ｮ蜩∬ｳｪ繧ｹ繝ｩ繧､繝繝ｼ
             const extractImagesQualityInput = document.getElementById('extract-images-quality');
             if (extractImagesQualityInput) {
                 extractImagesQualityInput.addEventListener('input', () => {
@@ -576,7 +556,7 @@
             }
         });
         
-        // ドロップゾーンの設定
+        // 繝峨Ο繝・・繧ｾ繝ｼ繝ｳ縺ｮ險ｭ螳・
         function setupDropzone() {
             const dropzone = document.getElementById('dropzone');
             const fileInput = document.getElementById('file-input');
@@ -608,7 +588,7 @@
             });
         }
         
-        // ファイル処理
+        // 繝輔ぃ繧､繝ｫ蜃ｦ逅・
         function handleFiles(files) {
             const mode = document.getElementById('mode').value;
             let rules;
@@ -648,7 +628,7 @@
             }
         }
         
-        // ファイル一覧を更新
+        // 繝輔ぃ繧､繝ｫ荳隕ｧ繧呈峩譁ｰ
         function updateFileList() {
             const fileList = document.getElementById('file-list');
             fileList.innerHTML = '';
@@ -661,24 +641,24 @@
                         <div class="file-item-name">${file.name}</div>
                         <div class="file-item-size">${FileUtils.formatBytes(file.size)}</div>
                     </div>
-                    <button class="file-item-remove" onclick="removeFile(${index})">削除</button>
+                    <button class="file-item-remove" onclick="removeFile(${index})">蜑企勁</button>
                 `;
                 fileList.appendChild(item);
             });
         }
         
-        // ファイル削除
+        // 繝輔ぃ繧､繝ｫ蜑企勁
         function removeFile(index) {
             toolRunner.removeFile(index);
             updateFileList();
             updateRunButton();
         }
         
-        // 拒否されたファイルを表示
+        // 諡貞凄縺輔ｌ縺溘ヵ繧｡繧､繝ｫ繧定｡ｨ遉ｺ
         function showRejectedFiles(rejected) {
             const container = document.getElementById('rejected-files');
             container.style.display = 'block';
-            container.innerHTML = '<strong>以下のファイルは処理できませんでした：</strong>';
+            container.innerHTML = '<strong>莉･荳九・繝輔ぃ繧､繝ｫ縺ｯ蜃ｦ逅・〒縺阪∪縺帙ｓ縺ｧ縺励◆・・/strong>';
             
             rejected.forEach(({ file, reason }) => {
                 const div = document.createElement('div');
@@ -688,12 +668,12 @@
             });
         }
         
-        // モードオプションを更新
+        // 繝｢繝ｼ繝峨が繝励す繝ｧ繝ｳ繧呈峩譁ｰ
         function updateModeOptions() {
             const mode = document.getElementById('mode').value;
             currentMode = mode;
             
-            // すべてのオプションを非表示
+            // 縺吶∋縺ｦ縺ｮ繧ｪ繝励す繝ｧ繝ｳ繧帝撼陦ｨ遉ｺ
             document.getElementById('extract-options').style.display = 'none';
             document.getElementById('split-options').style.display = 'none';
             document.getElementById('to-images-options').style.display = 'none';
@@ -702,10 +682,9 @@
             document.getElementById('compress-options').style.display = 'none';
             document.getElementById('images-to-pdf-options').style.display = 'none';
             document.getElementById('extract-images-options').style.display = 'none';
-            document.getElementById('input-pdf-password-group').style.display = 'none';
-            document.getElementById('output-pdf-password-group').style.display = 'none';
+                        document.getElementById('output-pdf-password-group').style.display = 'none';
             
-            // モードに応じて表示
+            // 繝｢繝ｼ繝峨↓蠢懊§縺ｦ陦ｨ遉ｺ
             if (mode === 'extract') {
                 document.getElementById('extract-options').style.display = 'block';
             } else if (mode === 'split') {
@@ -713,28 +692,22 @@
             } else if (mode === 'to-images') {
                 document.getElementById('to-images-options').style.display = 'block';
                 document.getElementById('to-images-scale').style.display = 'block';
-                document.getElementById('to-images-quality').style.display = 'block';
-                document.getElementById('input-pdf-password-group').style.display = 'block';
-            } else if (mode === 'compress') {
-                document.getElementById('compress-options').style.display = 'block';
-                document.getElementById('input-pdf-password-group').style.display = 'block';
-            } else if (mode === 'images-to-pdf') {
+                document.getElementById('to-images-quality').style.display = 'block';            } else if (mode === 'compress') {
+                document.getElementById('compress-options').style.display = 'block';            } else if (mode === 'images-to-pdf') {
                 document.getElementById('images-to-pdf-options').style.display = 'block';
             } else if (mode === 'extract-images') {
-                document.getElementById('extract-images-options').style.display = 'block';
-                document.getElementById('input-pdf-password-group').style.display = 'block';
-            } else if (mode === 'lock-pdf') {
+                document.getElementById('extract-images-options').style.display = 'block';            } else if (mode === 'lock-pdf') {
                 document.getElementById('output-pdf-password-group').style.display = 'block';
             }
             
-            // ファイル入力のacceptと複数選択を更新
+            // 繝輔ぃ繧､繝ｫ蜈･蜉帙・accept縺ｨ隍・焚驕ｸ謚槭ｒ譖ｴ譁ｰ
             const fileInput = document.getElementById('file-input');
             const dropzoneHint = document.getElementById('dropzone-hint');
             
             if (mode === 'images-to-pdf') {
                 fileInput.setAttribute('accept', 'image/png,image/jpeg,image/webp');
                 fileInput.setAttribute('multiple', '');
-                dropzoneHint.textContent = '対応形式: PNG, JPG, WebP（最大100ファイル、1ファイル20MBまで）';
+                dropzoneHint.textContent = '蟇ｾ蠢懷ｽ｢蠑・ PNG, JPG, WebP・域怙螟ｧ100繝輔ぃ繧､繝ｫ縲・繝輔ぃ繧､繝ｫ20MB縺ｾ縺ｧ・・;
             } else {
                 fileInput.setAttribute('accept', 'application/pdf');
                 if (mode === 'merge' || mode === 'to-images' || mode === 'extract-images') {
@@ -743,17 +716,17 @@
                     fileInput.removeAttribute('multiple');
                 }
                 const pdfMaxFiles = (mode === 'to-images' || mode === 'extract-images') ? 10 : 20;
-                dropzoneHint.textContent = `対応形式: PDF（最大${pdfMaxFiles}ファイル、1ファイル50MBまで）`;
+                dropzoneHint.textContent = `蟇ｾ蠢懷ｽ｢蠑・ PDF・域怙螟ｧ${pdfMaxFiles}繝輔ぃ繧､繝ｫ縲・繝輔ぃ繧､繝ｫ20MBまで・荏;
             }
             
-            // 実行状態のみリセット（選択ファイルは維持）
+            // 螳溯｡檎憾諷九・縺ｿ繝ｪ繧ｻ繝・ヨ・磯∈謚槭ヵ繧｡繧､繝ｫ縺ｯ邯ｭ謖・ｼ・
             toolRunner.resetRunState();
             updateFileList();
             updateRunButton();
             fileInput.value = '';
         }
         
-        // 実行ボタンの状態を更新
+        // 螳溯｡後・繧ｿ繝ｳ縺ｮ迥ｶ諷九ｒ譖ｴ譁ｰ
         function updateRunButton() {
             const mode = document.getElementById('mode').value;
             const files = toolRunner.selectedFiles;
@@ -785,13 +758,11 @@
             button.disabled = disabled || toolRunner.isRunning;
         }
         
-        // 範囲入力の監視
+        // 遽・峇蜈･蜉帙・逶｣隕・
         document.getElementById('extract-range')?.addEventListener('input', updateRunButton);
         document.getElementById('split-range')?.addEventListener('input', updateRunButton);
-        document.getElementById('output-pdf-password')?.addEventListener('input', updateRunButton);
-        document.getElementById('input-pdf-password')?.addEventListener('input', updateRunButton);
-        
-        // 操作実行
+        document.getElementById('output-pdf-password')?.addEventListener('input', updateRunButton);        
+        // 謫堺ｽ懷ｮ溯｡・
         async function runOperation() {
             const mode = document.getElementById('mode').value;
             const files = toolRunner.selectedFiles;
@@ -811,11 +782,11 @@
                     const rangeStr = document.getElementById('extract-range').value.trim();
                     const pages = PdfRange.parseExtractRange(rangeStr);
                     
-                    // 総ページ数を取得してバリデーション
+                    // 邱上・繝ｼ繧ｸ謨ｰ繧貞叙蠕励＠縺ｦ繝舌Μ繝・・繧ｷ繝ｧ繝ｳ
                     const pageCount = await PdfOps.getPageCount(files[0]);
                     const validation = PdfRange.validatePages(pages, pageCount);
                     if (!validation.valid) {
-                        throw new Error(`無効なページ番号: ${validation.invalid.join(', ')} (総ページ数: ${pageCount})`);
+                        throw new Error(`辟｡蜉ｹ縺ｪ繝壹・繧ｸ逡ｪ蜿ｷ: ${validation.invalid.join(', ')} (邱上・繝ｼ繧ｸ謨ｰ: ${pageCount})`);
                     }
                     
                     await toolRunner.runBatch(async (files, ctx) => {
@@ -826,15 +797,15 @@
                     const pageGroups = PdfRange.parseSplitRange(rangeStr);
                     
                     if (pageGroups.length === 0) {
-                        throw new Error('グループ範囲が無効です');
+                        throw new Error('繧ｰ繝ｫ繝ｼ繝礼ｯ・峇縺檎┌蜉ｹ縺ｧ縺・);
                     }
                     
-                    // 総ページ数を取得してバリデーション
+                    // 邱上・繝ｼ繧ｸ謨ｰ繧貞叙蠕励＠縺ｦ繝舌Μ繝・・繧ｷ繝ｧ繝ｳ
                     const pageCount = await PdfOps.getPageCount(files[0]);
                     for (const group of pageGroups) {
                         const validation = PdfRange.validatePages(group, pageCount);
                         if (!validation.valid) {
-                            throw new Error(`無効なページ番号: ${validation.invalid.join(', ')} (総ページ数: ${pageCount})`);
+                            throw new Error(`辟｡蜉ｹ縺ｪ繝壹・繧ｸ逡ｪ蜿ｷ: ${validation.invalid.join(', ')} (邱上・繝ｼ繧ｸ謨ｰ: ${pageCount})`);
                         }
                     }
                     
@@ -844,36 +815,28 @@
                 } else if (mode === 'to-images') {
                     const format = document.getElementById('image-format').value;
                     const scale = parseFloat(document.getElementById('image-scale').value);
-                    const quality = parseFloat(document.getElementById('image-quality').value);
-                    const inputPdfPassword = document.getElementById('input-pdf-password').value;
-                    
+                    const quality = parseFloat(document.getElementById('image-quality').value);                    
                     await toolRunner.run(async (file, ctx) => {
                         return await PdfRender.pdfToImages(file, {
                             format,
                             scale,
-                            quality,
-                            password: inputPdfPassword || undefined
-                        }, ctx);
+                            quality,                        }, ctx);
                     });
                 } else if (mode === 'compress') {
                     const PC = globalThis.PdfCompress;
                     if (!PC) {
                         console.error('[pdf] globalThis.PdfCompress not available; check Network for /static/js/pdf-compress.js');
-                        handleError(new Error('圧縮機能の読み込みに失敗しました。ページを再読み込みしてください。'));
+                        handleError(new Error('蝨ｧ邵ｮ讖溯・縺ｮ隱ｭ縺ｿ霎ｼ縺ｿ縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲ゅ・繝ｼ繧ｸ繧貞・隱ｭ縺ｿ霎ｼ縺ｿ縺励※縺上□縺輔＞縲・));
                         return;
                     }
                     const quality = parseFloat(document.getElementById('compress-quality').value);
                     const scale = parseFloat(document.getElementById('compress-scale').value);
-                    const maxLongEdge = parseInt(document.getElementById('compress-max-long-edge').value);
-                    const inputPdfPassword = document.getElementById('input-pdf-password').value;
-                    
+                    const maxLongEdge = parseInt(document.getElementById('compress-max-long-edge').value);                    
                     await toolRunner.runBatch(async (files, ctx) => {
                         return await PC.compressPdfByRasterize(files[0], {
                             quality,
                             scale,
-                            maxLongEdge,
-                            password: inputPdfPassword || undefined
-                        }, ctx);
+                            maxLongEdge,                        }, ctx);
                     });
                 } else if (mode === 'images-to-pdf') {
                     const pageSize = document.getElementById('images-page-size').value;
@@ -890,17 +853,13 @@
                 } else if (mode === 'extract-images') {
                     const format = document.getElementById('extract-images-format').value;
                     const quality = parseFloat(document.getElementById('extract-images-quality').value);
-                    const maxPerPdf = parseInt(document.getElementById('extract-images-max').value);
-                    const inputPdfPassword = document.getElementById('input-pdf-password').value;
-                    
+                    const maxPerPdf = parseInt(document.getElementById('extract-images-max').value);                    
                     await toolRunner.run(async (file, ctx) => {
                         return await PdfExtractImages.extractEmbeddedImages(file, {
                             format,
                             quality,
                             maxPerPdf,
-                            includePageIndexInName: true,
-                            password: inputPdfPassword || undefined
-                        }, ctx);
+                            includePageIndexInName: true,                        }, ctx);
                     });
                 } else if (mode === 'lock-pdf') {
                     const file = toolRunner.selectedFiles[0];
@@ -908,7 +867,7 @@
                     document.getElementById('run-button').style.display = 'none';
                     document.getElementById('cancel-button').style.display = 'block';
                     document.getElementById('progress-section').style.display = 'block';
-                    document.getElementById('progress-text').textContent = 'ロック付与中...';
+                    document.getElementById('progress-text').textContent = '繝ｭ繝・け莉倅ｸ惹ｸｭ...';
                     pdfApiAbortController = new AbortController();
                     try {
                         const form = new FormData();
@@ -919,8 +878,8 @@
                             const data = await res.json().catch(() => ({}));
                             const code = data.error_code || data.error;
                             const rid = data.request_id ? ` (request_id: ${data.request_id})` : '';
-                            const msgMap = { missing_password: '出力用パスワードを入力してください。', file_required: 'ファイルを選択してください。', file_too_large: 'ファイルが大きすぎます（50MB以下）。', read_failed: 'ファイルの読み込みに失敗しました。', already_encrypted: 'このPDFは既にパスワード保護されています。保護されていないPDFを選択してください。', corrupt_pdf: 'PDFの構造に問題があるか、対応していない形式です。', unsupported_pdf: 'このPDFにはロック付与に対応していません。', encrypt_failed: 'ロック付与に失敗しました。PDFの形式やサイズを確認してください。', unsupported: 'ロック付与に失敗しました。' };
-                            const msg = msgMap[code] || 'ロック付与に失敗しました。';
+                            const msgMap = { missing_password: '蜃ｺ蜉帷畑繝代せ繝ｯ繝ｼ繝峨ｒ蜈･蜉帙＠縺ｦ縺上□縺輔＞縲・, file_required: '繝輔ぃ繧､繝ｫ繧帝∈謚槭＠縺ｦ縺上□縺輔＞縲・, file_too_large: '繝輔ぃ繧､繝ｫ縺悟､ｧ縺阪☆縺弱∪縺呻ｼ・0MB莉･荳具ｼ峨・, read_failed: '繝輔ぃ繧､繝ｫ縺ｮ隱ｭ縺ｿ霎ｼ縺ｿ縺ｫ螟ｱ謨励＠縺ｾ縺励◆縲・, already_encrypted: '縺薙・PDF縺ｯ譌｢縺ｫ繝代せ繝ｯ繝ｼ繝我ｿ晁ｭｷ縺輔ｌ縺ｦ縺・∪縺吶ゆｿ晁ｭｷ縺輔ｌ縺ｦ縺・↑縺ПDF繧帝∈謚槭＠縺ｦ縺上□縺輔＞縲・, corrupt_pdf: 'PDF縺ｮ讒矩縺ｫ蝠城｡後′縺ゅｋ縺九∝ｯｾ蠢懊＠縺ｦ縺・↑縺・ｽ｢蠑上〒縺吶・, unsupported_pdf: '縺薙・PDF縺ｫ縺ｯ繝ｭ繝・け莉倅ｸ弱↓蟇ｾ蠢懊＠縺ｦ縺・∪縺帙ｓ縲・, encrypt_failed: '繝ｭ繝・け莉倅ｸ弱↓螟ｱ謨励＠縺ｾ縺励◆縲１DF縺ｮ蠖｢蠑上ｄ繧ｵ繧､繧ｺ繧堤｢ｺ隱阪＠縺ｦ縺上□縺輔＞縲・, unsupported: '繝ｭ繝・け莉倅ｸ弱↓螟ｱ謨励＠縺ｾ縺励◆縲・ };
+                            const msg = msgMap[code] || '繝ｭ繝・け莉倅ｸ弱↓螟ｱ謨励＠縺ｾ縺励◆縲・;
                             handleError(new Error(msg + rid));
                             return;
                         }
@@ -939,14 +898,14 @@
                 }
             } catch (error) {
                 if (error?.name === 'AbortError') {
-                    document.getElementById('progress-text').textContent = 'キャンセルされました';
+                    document.getElementById('progress-text').textContent = '繧ｭ繝｣繝ｳ繧ｻ繝ｫ縺輔ｌ縺ｾ縺励◆';
                     return;
                 }
                 handleError(error);
             }
         }
         
-        // 圧縮プリセットを適用
+        // 蝨ｧ邵ｮ繝励Μ繧ｻ繝・ヨ繧帝←逕ｨ
         function applyCompressPreset(preset) {
             if (preset === 'email') {
                 document.getElementById('compress-quality').value = 0.7;
@@ -965,7 +924,7 @@
         }
         
         
-        // キャンセル
+        // 繧ｭ繝｣繝ｳ繧ｻ繝ｫ
         function cancelOperation() {
             const mode = document.getElementById('mode').value;
             if (mode === 'lock-pdf') {
@@ -977,12 +936,12 @@
             document.getElementById('cancel-button').style.display = 'none';
         }
         
-        // 進捗更新
+        // 騾ｲ謐玲峩譁ｰ
         function updateProgress() {
             const progress = toolRunner.getProgress();
             
             document.getElementById('progress-text').textContent = 
-                `完了: ${progress.completed}/${progress.total} | 実行中: ${progress.running} | エラー: ${progress.errors}`;
+                `螳御ｺ・ ${progress.completed}/${progress.total} | 螳溯｡御ｸｭ: ${progress.running} | 繧ｨ繝ｩ繝ｼ: ${progress.errors}`;
             document.getElementById('progress-percent').textContent = `${progress.progress}%`;
             document.getElementById('progress-bar-fill').style.width = `${progress.progress}%`;
             
@@ -998,13 +957,13 @@
             });
         }
         
-        // 完了処理
+        // 螳御ｺ・・逅・
         function handleComplete({ outputs, errors, cancelled }) {
             document.getElementById('run-button').style.display = 'block';
             document.getElementById('cancel-button').style.display = 'none';
             
             if (cancelled) {
-                document.getElementById('progress-text').textContent = 'キャンセルされました';
+                document.getElementById('progress-text').textContent = '繧ｭ繝｣繝ｳ繧ｻ繝ｫ縺輔ｌ縺ｾ縺励◆';
                 return;
             }
             
@@ -1017,30 +976,30 @@
             }
         }
         
-        // ダウンロードパネルを表示
+        // 繝繧ｦ繝ｳ繝ｭ繝ｼ繝峨ヱ繝阪Ν繧定｡ｨ遉ｺ
         function showDownloadPanel(outputs) {
             const panel = document.getElementById('download-panel');
             panel.innerHTML = '';
             
             const totalSize = outputs.reduce((sum, o) => sum + o.blob.size, 0);
-            panel.innerHTML += `<p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 15px;">出力ファイル: ${outputs.length}件（合計: ${FileUtils.formatBytes(totalSize)}）</p>`;
+            panel.innerHTML += `<p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 15px;">蜃ｺ蜉帙ヵ繧｡繧､繝ｫ: ${outputs.length}莉ｶ・亥粋險・ ${FileUtils.formatBytes(totalSize)}・・/p>`;
             
             if (outputs.length === 1) {
                 const button = document.createElement('button');
                 button.className = 'action-button';
-                button.textContent = `ダウンロード: ${outputs[0].filename}`;
+                button.textContent = `繝繧ｦ繝ｳ繝ｭ繝ｼ繝・ ${outputs[0].filename}`;
                 button.onclick = () => toolRunner.downloadSingle(0);
                 panel.appendChild(button);
             } else {
-                // 複数ファイルの場合はZIPダウンロードを推奨
+                // 隍・焚繝輔ぃ繧､繝ｫ縺ｮ蝣ｴ蜷医・ZIP繝繧ｦ繝ｳ繝ｭ繝ｼ繝峨ｒ謗ｨ螂ｨ
                 const zipButton = document.createElement('button');
                 zipButton.className = 'action-button';
-                zipButton.textContent = '📦 ZIPで一括ダウンロード';
+                zipButton.textContent = '逃 ZIP縺ｧ荳諡ｬ繝繧ｦ繝ｳ繝ｭ繝ｼ繝・;
                 zipButton.onclick = async () => {
                     try {
                         await toolRunner.downloadAllZip('pdf-tools-output.zip');
                     } catch (error) {
-                        alert(`ZIP作成エラー: ${error.message}`);
+                        alert(`ZIP菴懈・繧ｨ繝ｩ繝ｼ: ${error.message}`);
                     }
                 };
                 panel.appendChild(zipButton);
@@ -1049,12 +1008,12 @@
             document.getElementById('output-section').style.display = 'block';
         }
         
-        // エラー表示
+        // 繧ｨ繝ｩ繝ｼ陦ｨ遉ｺ
         function showErrors(errors) {
             const errorSection = document.getElementById('error-section');
             const errorMessage = document.getElementById('error-message');
             
-            errorMessage.innerHTML = '<strong>以下のファイルでエラーが発生しました：</strong><ul style="margin-top: 10px;">';
+            errorMessage.innerHTML = '<strong>以下のファイルでエラーが発生しました:</strong><ul style="margin-top: 10px;">';
             errors.forEach(({ sourceIndex, message }) => {
                 const file = toolRunner.selectedFiles[sourceIndex];
                 errorMessage.innerHTML += `<li>${file.name}: ${message}</li>`;
@@ -1064,15 +1023,15 @@
             errorSection.style.display = 'block';
         }
         
-        // エラーハンドラ（パスワード関連エラー時は入力欄へフォーカス。パスワード文字列はログに出さない）
+        // 繧ｨ繝ｩ繝ｼ繝上Φ繝峨Λ・医ヱ繧ｹ繝ｯ繝ｼ繝蛾未騾｣繧ｨ繝ｩ繝ｼ譎ゅ・蜈･蜉帶ｬ・∈繝輔か繝ｼ繧ｫ繧ｹ縲ゅヱ繧ｹ繝ｯ繝ｼ繝画枚蟄怜・縺ｯ繝ｭ繧ｰ縺ｫ蜃ｺ縺輔↑縺・ｼ・
         function handleError(error) {
             document.getElementById('error-section').style.display = 'block';
             document.getElementById('error-message').textContent = `エラー: ${error.message}`;
             if (error?.message && error.message.includes('パスワード')) {
-                const pwEl = document.getElementById('input-pdf-password');
                 if (pwEl && pwEl.offsetParent !== null) pwEl.focus();
             }
         }
     </script>
 </body>
 </html>
+

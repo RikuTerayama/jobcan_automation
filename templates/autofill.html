@@ -745,13 +745,6 @@
             </header>
             
             <div class="content" data-reveal data-reveal-delay="50">
-                {% if affiliate_can_render_textlinks() and AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_upper_items|default([])|length > 0) %}
-                {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=true, affiliate_section_class='affiliate-cards-section--upper', affiliate_section_tier='upper-amazon', amazon_items_override=amazon_affiliate_upper_items[:3], amazon_section_title='目的で選べる Amazon おすすめ' %}
-                    {% include 'includes/affiliate_cards_section.html' %}
-                {% endwith %}
-                {% set affiliate_upper_amazon_rendered = true %}
-                {% set affiliate_disclosure_rendered = true %}
-                {% endif %}
                 <h1 class="sr-only">Jobcan勤怠データ自動入力ツール</h1>
             <form id="uploadForm" enctype="multipart/form-data">
                 <div class="form-group">
@@ -778,6 +771,11 @@
                     勤怠データを自動入力
                 </button>
             </form>
+            {% with amazon_section_key='autofill', amazon_section_show_disclosure=true %}
+                {% include 'includes/amazon_lightweight_section.html' %}
+            {% endwith %}
+            {% set affiliate_disclosure_rendered = true %}
+            {% set affiliate_upper_amazon_rendered = true %}
             
             <section class="info-section" aria-labelledby="usage-heading">
                 <h2 id="usage-heading">使用方法</h2>
@@ -833,12 +831,7 @@
                     FAQを見る →
                 </a>
             </section>
-            {% if affiliate_can_render_textlinks() and AMAZON_AFFILIATE_ENABLED|default(false) and (amazon_affiliate_mid_items|default([])|length > 0) %}
-            {% with affiliate_networks=['amazon'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--upper-mid', affiliate_section_tier='mid-amazon', amazon_items_override=amazon_affiliate_mid_items[:3], amazon_section_title='関連キーワードから探す Amazon おすすめ' %}
-                {% include 'includes/affiliate_cards_section.html' %}
-            {% endwith %}
             {% set affiliate_mid_amazon_rendered = true %}
-            {% endif %}
 
             <section aria-labelledby="use-cases-heading" style="margin-top: 50px; padding: 35px; background: rgba(255, 255, 255, 0.04); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.12);">
                 <h2 id="use-cases-heading" style="font-size: 1.7em; margin-bottom: 25px; color: #FFFFFF;">💼 こんな場面で活用できます</h2>

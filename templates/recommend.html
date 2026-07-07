@@ -1,0 +1,49 @@
+﻿<!doctype html>
+<html lang="ja" class="no-js">
+<head>
+    {% set page_title = 'コンサルワーク向けアイテムおすすめ | Jobcan AutoFill' %}
+    {% set page_description = 'Jobcan入力、PDF・書類作業、資料作成、集中環境を整えたい方向けに、Amazon Associatesの検索導線をカテゴリ別にまとめています。' %}
+    {% include 'includes/head_meta.html' %}
+</head>
+<body>
+    {% include 'includes/header.html' %}
+    {% include 'includes/breadcrumb.html' %}
+    {% set recommend_section = amazon_lightweight_sections.get('recommend') if amazon_lightweight_sections is defined and amazon_lightweight_sections else none %}
+    {% set recommend_items = recommend_section['items'] if recommend_section and 'items' in recommend_section else [] %}
+    <main class="recommend-shell">
+        <section class="recommend-hero">
+            <p class="recommend-hero__eyebrow">Amazon Associates</p>
+            <h1>コンサルワーク向けアイテムおすすめ</h1>
+            <p class="recommend-hero__lead">
+                Jobcan入力、PDF・書類作業、資料作成、集中環境を整えたい方向けに、カテゴリ別の検索導線をまとめています。
+                日々変わる販売条件や評価情報は表示せず、必要なテーマだけを控えめに見比べられる入口として提供します。
+            </p>
+            <p class="recommend-disclosure">Amazonのアソシエイトとして、当サイトは適格販売により収入を得ています。</p>
+        </section>
+
+        {% if recommend_items %}
+        <section class="recommend-category-grid" aria-label="コンサルワーク向けアイテムカテゴリ">
+            {% for item in recommend_items %}
+            <article class="recommend-category-card">
+                <span class="recommend-category-card__label">{{ item.category_label }}</span>
+                <h2>{{ item.title }}</h2>
+                <p>{{ item.description }}</p>
+                <a href="{{ item.url }}" target="_blank" rel="nofollow sponsored noopener" class="recommend-category-card__cta">
+                    {{ item.cta|default('Amazonで探す') }}
+                </a>
+            </article>
+            {% endfor %}
+        </section>
+        {% endif %}
+
+        <nav class="faq-lite__links" aria-label="関連ページ">
+            <a href="/">ホームへ戻る</a>
+            <a href="/autofill">Jobcan AutoFill</a>
+            <a href="/tools/pdf">PDFツール</a>
+            <a href="/faq">FAQ</a>
+        </nav>
+    </main>
+    {% set affiliate_disclosure_rendered = true %}
+    {% include 'includes/footer.html' %}
+</body>
+</html>
