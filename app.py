@@ -19,7 +19,6 @@ from werkzeug.exceptions import NotFound, MethodNotAllowed
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from utils import allowed_file, create_template_excel, create_previous_month_template_excel
-from automation import process_jobcan_automation
 from lib.seo import (
     build_breadcrumb_items,
     get_article_schema,
@@ -1645,10 +1644,10 @@ def maybe_start_next_job():
 
 def run_automation_impl(job_id, email, password, file_path, session_dir, session_id, company_id, file_size):
     """1ジョブ分の自動化実行。完了後 maybe_start_next_job で次を起動。"""
-    from automation import process_jobcan_automation
     bg_start_time = time.time()
     logger.info(f"bg_job_start job_id={job_id} session_id={session_id} file_size={file_size}")
     try:
+        from automation import process_jobcan_automation
         process_jobcan_automation(
             job_id, email, password, file_path, jobs, session_dir, session_id, company_id,
             job_timeout_sec=JOB_TIMEOUT_SEC

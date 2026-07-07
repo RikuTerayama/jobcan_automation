@@ -6,6 +6,7 @@ import calendar
 import re
 import os
 import uuid
+import importlib.util
 from typing import Tuple, List, Optional
 
 # ライブラリの利用可能性をチェック
@@ -28,11 +29,7 @@ try:
 except ImportError:
     jpholiday_available = False
 
-try:
-    from playwright.sync_api import sync_playwright
-    playwright_available = True
-except ImportError:
-    playwright_available = False
+playwright_available = importlib.util.find_spec("playwright") is not None
 
 def get_weekdays_in_current_month():
     """本日の月の平日（土日・祝日を除く）を取得"""

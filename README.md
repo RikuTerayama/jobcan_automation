@@ -55,6 +55,9 @@ Operational notes for Render Free:
   best-effort detach signal when the tab closes.
 - After changing `AMAZON_ASSOCIATE_TAG` or other Render env vars, trigger a
   restart/redeploy so worker processes read the new values.
+- `automation.py` is imported lazily from the Jobcan worker path so normal page
+  rendering does not load the AutoFill implementation at Flask startup. Chrome
+  still starts only when a Jobcan run actually begins.
 
 ### Operational notes
 
@@ -101,6 +104,19 @@ After merging or manually deploying the latest branch, verify:
 - `/healthz` returns quickly during and after deploy.
 
 If production still shows the old UI, check that the PR was merged into the Render deploy branch, Auto Deploy is enabled or a manual deploy was triggered, the deployed commit SHA matches the GitHub branch, and the service was restarted after environment variable changes.
+
+### Dependency notes for the lightweight build
+
+- `playwright`: required while Jobcan AutoFill remains in this service.
+- `openpyxl`, `pandas`, `jpholiday`: used by Jobcan Excel template/read/holiday handling.
+- `pypdf`: required for server-side PDF password locking.
+- `psutil`: used for memory guardrails and health/resource reporting.
+- `requests`: used by the Amazon server-side integration and deploy verification helpers.
+- `beautifulsoup4`: retained for crawler/audit utilities; review before removing from runtime dependencies.
+
+If Jobcan AutoFill is split into a separate service later, Playwright/Chrome and
+some Excel-processing dependencies can be revisited. Do not remove them while
+AutoFill remains active.
 
 Jobcan閾ｪ蜍募・蜉帙→蜷・ｨｮ讌ｭ蜍吝柑邇・喧繝・・繝ｫ繧呈署萓帙☆繧妓eb繧｢繝励Μ繧ｱ繝ｼ繧ｷ繝ｧ繝ｳ縺ｧ縺吶・
 
