@@ -90,6 +90,24 @@ Operational notes for Render Free:
 - If Render is tracking `main` while changes are only on `feature/add-csv-excel-utility`, production will not reflect those changes until merge/cherry-pick to `main` (or changing Render deploy branch).
 - After changing Render environment variables (including `AMAZON_ASSOCIATE_TAG`), trigger a service restart/redeploy so worker processes load the new value.
 
+### Recommended deploy workflow
+
+Prefer **Option A: Render deploys `main`, and production updates after PR merge**.
+This keeps review, rollback, and deployed commit tracking clear. For a one-person
+project, direct feature-branch deploys are workable for fast iteration, but they
+make it easier to forget which branch production is actually running.
+
+Option comparison:
+
+- Option A (`main` deploy after PR merge): safest, easiest to audit, and easiest
+  to roll back from GitHub history.
+- Option B (`feature/add-csv-excel-utility` direct deploy): fastest while PR
+  creation is blocked, but treat the feature branch as the production branch and
+  keep manual deploy notes explicit.
+
+If the GitHub integration cannot create PRs, push the branch and create the PR
+manually from the compare URL before switching Render back to `main`.
+
 ### Production verification checklist
 
 After merging or manually deploying the latest branch, verify:
@@ -105,6 +123,35 @@ After merging or manually deploying the latest branch, verify:
 
 If production still shows the old UI, check that the PR was merged into the Render deploy branch, Auto Deploy is enabled or a manual deploy was triggered, the deployed commit SHA matches the GitHub branch, and the service was restarted after environment variable changes.
 
+### Render Dashboard checklist
+
+When production behavior is unclear, check:
+
+- `Settings -> Build & Deploy -> Branch`
+- Auto Deploy ON/OFF
+- Latest deploy commit SHA
+- Environment Variables, especially `AMAZON_ASSOCIATE_TAG`, `MAX_ACTIVE_SESSIONS`, `MAX_QUEUE_SIZE`, and `PDF_LOCK_MAX_FILE_SIZE_MB`
+- Manual Deploy history
+- Whether `Clear build cache & deploy` is needed after dependency or Docker changes
+- Restart/redeploy after environment variable changes
+
+### Jobcan production run log checklist
+
+Do not test with real Jobcan credentials casually. When running a controlled
+production check, watch Render logs for:
+
+- Job start time, `job_id`, queue position, and active session count
+- `job_queued`, `job_started`, `job_completed`, `job_timeout`, and `job_error`
+- Playwright browser startup only after a Jobcan run begins
+- `page_close`, `context_close`, and `browser_close` cleanup results
+- Memory guardrail logs and RSS trends during the run
+- `503 QUEUE_FULL` events and `retry_after_sec`
+- PDF lock requests happening near the same time as Jobcan runs
+
+Queued jobs can be cancelled from the UI. Running jobs are not forcibly stopped
+by the queue cancel endpoint; if a run is already active, wait for completion,
+timeout, or the automation cleanup path.
+
 ### Dependency notes for the lightweight build
 
 - `playwright`: required while Jobcan AutoFill remains in this service.
@@ -117,6 +164,13 @@ If production still shows the old UI, check that the PR was merged into the Rend
 If Jobcan AutoFill is split into a separate service later, Playwright/Chrome and
 some Excel-processing dependencies can be revisited. Do not remove them while
 AutoFill remains active.
+
+### Suggested next phases
+
+- Phase 10: Amazon CTR copy/layout experiments for the consultant-focused recommendation flow.
+- Phase 11: Controlled real Jobcan run with Render log review.
+- Phase 12: Clean up unrelated untracked audit/docs files outside the production branch scope.
+- Phase 13: Decide whether AutoFill should remain in this web service or move to a separate worker/service.
 
 Jobcan閾ｪ蜍募・蜉帙→蜷・ｨｮ讌ｭ蜍吝柑邇・喧繝・・繝ｫ繧呈署萓帙☆繧妓eb繧｢繝励Μ繧ｱ繝ｼ繧ｷ繝ｧ繝ｳ縺ｧ縺吶・
 
