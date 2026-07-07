@@ -4,6 +4,9 @@
 
 import os
 import sys
+import time
+from collections import deque
+from io import BytesIO
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -92,9 +95,122 @@ def run_deploy_verification():
     return 0
 
 
+def run_jobcan_guardrail_verification():
+    """Exercise queue guardrails without starting Playwright."""
+    import importlib
+
+    app_module = importlib.import_module('app')
+    app_module.app.config['TESTING'] = True
+    client = app_module.app.test_client()
+    failed = []
+    now = time.time()
+
+    with app_module.jobs_lock:
+        saved_jobs = dict(app_module.jobs)
+        saved_queue = deque(app_module.job_queue)
+        saved_params = dict(app_module.queued_job_params)
+        saved_index = dict(app_module.queue_identity_index)
+        app_module.jobs.clear()
+        app_module.job_queue.clear()
+        app_module.queued_job_params.clear()
+        app_module.queue_identity_index.clear()
+
+        app_module.jobs['guard-running'] = {
+            'status': 'running',
+            'queue_key': 'guard-running-key',
+            'start_time': now,
+            'last_updated': now,
+            'last_heartbeat_at': now,
+            'lease_expires_at': now + 90,
+            'logs': [],
+        }
+        for i in range(app_module.MAX_QUEUE_SIZE):
+            job_id = f'guard-queued-{i}'
+            queue_key = f'guard-queued-key-{i}'
+            app_module.jobs[job_id] = {
+                'status': 'queued',
+                'queue_key': queue_key,
+                'start_time': now,
+                'queued_at': now,
+                'last_updated': now,
+                'last_heartbeat_at': now,
+                'lease_expires_at': now + 90,
+                'logs': [],
+                'session_id': f'guard-session-{i}',
+            }
+            app_module.job_queue.append(job_id)
+            app_module.queued_job_params[job_id] = {'queue_key': queue_key}
+            app_module.queue_identity_index[queue_key] = job_id
+
+    try:
+        status_resp = client.get('/status/guard-queued-0')
+        if status_resp.status_code != 200:
+            failed.append(f"/status/guard-queued-0 expected 200 got {status_resp.status_code}")
+        else:
+            status_json = status_resp.get_json(silent=True) or {}
+            if status_json.get('status') != 'queued':
+                failed.append(f"/status/guard-queued-0 expected queued got {status_json.get('status')}")
+            if status_json.get('queue_limit') != app_module.MAX_QUEUE_SIZE:
+                failed.append('/status did not expose queue_limit')
+
+        upload_resp = client.post(
+            '/upload',
+            data={
+                'file': (BytesIO(b'not-a-real-xlsx-but-extension-is-allowed'), 'guardrail.xlsx'),
+                'email': 'phase6-guard@example.com',
+                'company_id': 'phase6-company',
+                'password': 'secret',
+            },
+            content_type='multipart/form-data',
+        )
+        upload_json = upload_resp.get_json(silent=True) or {}
+        if upload_resp.status_code != 503:
+            failed.append(f"/upload queue full expected 503 got {upload_resp.status_code}")
+        if upload_json.get('error_code') != 'QUEUE_FULL':
+            failed.append(f"/upload queue full expected QUEUE_FULL got {upload_json.get('error_code')}")
+        if upload_json.get('queue_limit') != app_module.MAX_QUEUE_SIZE:
+            failed.append('/upload queue full did not expose queue_limit')
+        if upload_json.get('retry_after_sec') is None:
+            failed.append('/upload queue full did not expose retry_after_sec')
+
+        cancel_resp = client.post('/cancel/guard-queued-0')
+        cancel_json = cancel_resp.get_json(silent=True) or {}
+        if cancel_resp.status_code != 200 or cancel_json.get('status') != 'cancelled':
+            failed.append(f"/cancel queued expected cancelled got status={cancel_resp.status_code} body={cancel_json}")
+
+        if client.post('/api/pdf/unlock').status_code != 404:
+            failed.append('/api/pdf/unlock expected 404')
+        csv_resp = client.get('/tools/csv', follow_redirects=False)
+        if csv_resp.status_code != 301:
+            failed.append(f"/tools/csv expected 301 got {csv_resp.status_code}")
+    finally:
+        with app_module.jobs_lock:
+            app_module.jobs.clear()
+            app_module.jobs.update(saved_jobs)
+            app_module.job_queue.clear()
+            app_module.job_queue.extend(saved_queue)
+            app_module.queued_job_params.clear()
+            app_module.queued_job_params.update(saved_params)
+            app_module.queue_identity_index.clear()
+            app_module.queue_identity_index.update(saved_index)
+
+    if failed:
+        for item in failed:
+            print(f"FAIL: {item}")
+        print(f"Total: {len(failed)}")
+        return 1
+    print('OK: Jobcan queue guardrails (QUEUE_FULL, status, cancel) verified without Playwright')
+    return 0
+
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('--deploy', action='store_true', help='Run deploy verification checks')
+    parser.add_argument('--jobcan-guardrails', action='store_true', help='Run lightweight Jobcan queue guardrail checks')
     args = parser.parse_args()
-    sys.exit(run_deploy_verification() if args.deploy else run_with_test_client())
+    if args.deploy:
+        sys.exit(run_deploy_verification())
+    if args.jobcan_guardrails:
+        sys.exit(run_jobcan_guardrail_verification())
+    sys.exit(run_with_test_client())

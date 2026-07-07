@@ -1391,6 +1391,9 @@ def build_existing_job_response_locked(job_id, job_info):
         'status': status,
         'existing_job': True,
         'status_url': f'/status/{job_id}',
+        'retry_after_sec': 5 if status in QUEUE_LIVE_STATUSES else None,
+        'queue_limit': MAX_QUEUE_SIZE,
+        'max_active_sessions': MAX_ACTIVE_SESSIONS,
         'message': '既存の順番待ちを再利用しています。'
         if status == 'queued'
         else '既存の処理状態を再利用しています。'
@@ -2481,9 +2484,14 @@ def upload_file():
                         except Exception:
                             pass
                     return jsonify({
-                        'error': '現在混雑しています。しばらくしてからお試しください。',
+                        'error': '現在、無料枠の処理上限に達しています。しばらくしてからお試しください。',
                         'error_code': 'QUEUE_FULL',
-                        'status_code': 503
+                        'status_code': 503,
+                        'retry_after_sec': 60,
+                        'queue_limit': MAX_QUEUE_SIZE,
+                        'queue_size': len(job_queue),
+                        'running_count': running_count,
+                        'max_active_sessions': MAX_ACTIVE_SESSIONS,
                     }), 503
                 # キューに登録
                 jobs[job_id] = {
@@ -2532,6 +2540,11 @@ def upload_file():
                     'status': 'queued',
                     'queue_position': queue_position,
                     'message': '現在、他ユーザーが作業中です。順番に処理します。このまま開いておくと自動で開始します。',
+                    'retry_after_sec': 5,
+                    'queue_limit': MAX_QUEUE_SIZE,
+                    'queue_size': len(job_queue),
+                    'running_count': running_count,
+                    'max_active_sessions': MAX_ACTIVE_SESSIONS,
                     'status_url': f'/status/{job_id}'
                 }), 202
             
@@ -2745,7 +2758,10 @@ def get_status(job_id):
                 'user_message': user_message,
                 'session_id': job.get('session_id', ''),
                 'resources': resources,
-                'resource_warnings': job.get('resource_warnings', [])
+                'resource_warnings': job.get('resource_warnings', []),
+                'retry_after_sec': 5 if job.get('status') in QUEUE_LIVE_STATUSES else None,
+                'queue_limit': MAX_QUEUE_SIZE,
+                'max_active_sessions': MAX_ACTIVE_SESSIONS,
             }
             if queue_position is not None:
                 response_data['queue_position'] = queue_position
