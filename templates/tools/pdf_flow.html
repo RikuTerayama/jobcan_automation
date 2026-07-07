@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="ja" class="no-js">
+<head>
+    {% set page_title = 'PDFツール | 結合・分割・圧縮・パスワード付与' %}
+    {% set page_description = 'PDFの結合、分割、ページ抽出、圧縮、画像変換、画像抽出、パスワード付与に対応した無料ツールです。保護されたPDFの読み込みには対応していません。' %}
+    {% set breadcrumb_title = product.name|default('PDFツール') %}
+    {% include 'includes/head_meta.html' %}
+    <style>
+        .pdf-shell { max-width: 1100px; margin: 0 auto; padding: 42px 20px 72px; }
+        .pdf-hero { margin-bottom: 26px; }
+        .pdf-hero h1 { margin: 0 0 12px; font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.1; }
+        .pdf-hero p { max-width: 780px; color: rgba(255,255,255,.8); line-height: 1.8; }
+        .pdf-step-card, .pdf-panel { padding: 24px; border-radius: 22px; background: rgba(18,22,30,.92); border: 1px solid rgba(255,255,255,.1); box-shadow: 0 20px 40px rgba(0,0,0,.2); margin-top: 22px; }
+        .pdf-step-card h2, .pdf-panel h2, .pdf-panel h3 { margin-top: 0; }
+        .pdf-mode-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+        .pdf-mode-card { padding: 16px; border-radius: 16px; border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04); color: #fff; text-align: left; cursor: pointer; }
+        .pdf-mode-card strong { display: block; margin-bottom: 6px; color: #fff; }
+        .pdf-mode-card span { color: rgba(255,255,255,.72); font-size: .9rem; line-height: 1.5; }
+        .pdf-mode-card.is-active { border-color: rgba(74,158,255,.55); background: rgba(74,158,255,.14); }
+        .pdf-work-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr); gap: 18px; align-items: start; }
+        .file-dropzone { border: 2px dashed rgba(74,158,255,.45); border-radius: 18px; padding: 46px 20px; text-align: center; background: rgba(74,158,255,.06); cursor: pointer; }
+        .file-dropzone.is-dragover { border-color: rgba(155,195,255,.9); background: rgba(74,158,255,.12); }
+        .file-list { margin-top: 16px; }
+        .file-item { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 12px; border-radius: 12px; background: rgba(0,0,0,.25); margin-bottom: 8px; }
+        .file-item-name { color: #fff; word-break: break-all; }
+        .file-item-size, .info-text { color: rgba(255,255,255,.65); font-size: .9rem; }
+        .file-item-remove, .action-button, .preset-button { border: 1px solid rgba(74,158,255,.4); background: rgba(74,158,255,.16); color: #fff; border-radius: 12px; padding: 10px 14px; cursor: pointer; text-decoration: none; }
+        .file-item-remove { flex: 0 0 auto; }
+        .action-button { width: 100%; margin-top: 18px; font-weight: 700; }
+        .action-button:disabled { opacity: .55; cursor: not-allowed; }
+        .option-group { margin-bottom: 16px; }
+        .option-group label { display: block; margin-bottom: 8px; color: rgba(255,255,255,.9); font-weight: 700; }
+        .option-group input, .option-group select { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.25); color: #fff; }
+        .preset-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+        .progress-info, .error-message, .rejected-files { padding: 14px; border-radius: 14px; background: rgba(0,0,0,.25); color: rgba(255,255,255,.78); }
+        .progress-bar { width: 100%; height: 8px; border-radius: 999px; background: rgba(255,255,255,.1); overflow: hidden; margin-top: 10px; }
+        .progress-bar-fill { height: 100%; background: linear-gradient(90deg,#4A9EFF,#9bc3ff); width: 0%; }
+        .task-list { margin-top: 12px; max-height: 180px; overflow: auto; }
+        .task-item { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.08); color: rgba(255,255,255,.75); }
+        .download-list { display: grid; gap: 10px; margin-top: 12px; }
+        .pdf-attention-list { margin: 0; padding-left: 1.2rem; color: rgba(255,255,255,.76); line-height: 1.8; }
+        .amazon-lite-section { margin-top: 54px; }
+        @media (max-width: 860px) { .pdf-mode-grid, .pdf-work-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    {% include 'includes/header.html' %}
+    {% include 'includes/breadcrumb.html' %}
+    <main class="pdf-shell">
+        <section class="pdf-hero">
+            <p class="landing-hero__eyebrow">PDF Tools</p>
+            <h1>PDFで何をしたいですか？</h1>
+            <p>操作を選び、ファイルを追加し、必要なオプションだけ入力して実行します。パスワード付与は20MBまでを目安にサーバー側で一時処理します。</p>
+        </section>
+
+        <section class="pdf-step-card" aria-labelledby="pdf-mode-heading">
+            <h2 id="pdf-mode-heading">Step 1. 何をしたいかを選ぶ</h2>
+            <div class="pdf-mode-grid" id="mode-cards">
+                <button type="button" class="pdf-mode-card is-active" data-mode="lock-pdf"><strong>パスワード付与</strong><span>保護されていないPDFに設定</span></button>
+                <button type="button" class="pdf-mode-card" data-mode="split"><strong>分割</strong><span>指定範囲ごとに分ける</span></button>
+                <button type="button" class="pdf-mode-card" data-mode="merge"><strong>結合</strong><span>複数PDFを1つにまとめる</span></button>
+                <button type="button" class="pdf-mode-card" data-mode="extract"><strong>ページ抽出</strong><span>必要なページだけ取り出す</span></button>
+                <button type="button" class="pdf-mode-card" data-mode="compress"><strong>圧縮</strong><span>提出しやすいサイズにする</span></button>
+                <button type="button" class="pdf-mode-card" data-mode="to-images"><strong>PDFを画像へ</strong><span>ページをPNG/JPEGに変換</span></button>
+                <button type="button" class="pdf-mode-card" data-mode="images-to-pdf"><strong>画像をPDFへ</strong><span>画像を1つのPDFにする</span></button>
+                <button type="button" class="pdf-mode-card" data-mode="extract-images"><strong>画像抽出</strong><span>PDF内の画像を保存する</span></button>
+            </div>
+            <select id="mode" onchange="updateModeOptions()" style="display:none;">
+                <option value="lock-pdf" selected>PDFにパスワードを付与</option>
+                <option value="split">分割</option>
+                <option value="merge">結合</option>
+                <option value="extract">ページ抽出</option>
+                <option value="compress">圧縮</option>
+                <option value="to-images">PDFを画像に変換</option>
+                <option value="images-to-pdf">画像をPDFに変換</option>
+                <option value="extract-images">埋め込み画像を抽出</option>
+            </select>
+        </section>
+
+        <section class="pdf-work-grid" aria-label="PDF処理フォーム">
+            <div class="pdf-panel">
+                <h2>Step 2. ファイルを選択</h2>
+                <div id="dropzone" class="file-dropzone">
+                    <div style="font-size:2.4rem;margin-bottom:14px;">PDF</div>
+                    <p style="margin:0 0 8px;color:#fff;font-weight:700;">ファイルをドラッグ＆ドロップ</p>
+                    <p id="dropzone-hint" style="margin:0;color:rgba(255,255,255,.68);">またはクリックしてPDFファイルを選択</p>
+                </div>
+                <input id="file-input" type="file" accept="application/pdf,.pdf" multiple hidden>
+                <div id="file-list" class="file-list"></div>
+                <div id="rejected-files" class="rejected-files" hidden></div>
+            </div>
+
+            <div class="pdf-panel">
+                <h2>Step 3. 操作別オプションを入力</h2>
+                <p class="info-text" id="mode-help">パスワードを付与したいPDFを1件追加し、パスワードを入力してください。</p>
+
+                <div class="option-group" id="output-pdf-password-group">
+                    <label for="output-pdf-password">PDFに設定するパスワード</label>
+                    <input type="password" id="output-pdf-password" autocomplete="new-password" placeholder="8文字以上を推奨">
+                    <p class="info-text">この機能は保護されていないPDFにパスワードを付与します。保護済みPDFを開く機能ではありません。</p>
+                </div>
+
+                <div id="extract-options" hidden>
+                    <div class="option-group">
+                        <label for="extract-range">抽出するページ</label>
+                        <input id="extract-range" type="text" placeholder="例: 1-3,5,8">
+                    </div>
+                </div>
+
+                <div id="split-options" hidden>
+                    <div class="option-group">
+                        <label for="split-range">分割する範囲</label>
+                        <input id="split-range" type="text" placeholder="例: 1-3;4-6;7-10">
+                    </div>
+                </div>
+
+                <div id="to-images-options" hidden>
+                    <div class="option-group">
+                        <label for="image-format">画像形式</label>
+                        <select id="image-format"><option value="png">PNG</option><option value="jpeg">JPEG</option></select>
+                    </div>
+                    <div class="option-group">
+                        <label for="to-images-scale">解像度</label>
+                        <select id="to-images-scale"><option value="1">標準</option><option value="1.5" selected>高め</option><option value="2">高解像度</option></select>
+                        <input type="hidden" id="image-scale" value="1.5">
+                    </div>
+                    <div class="option-group">
+                        <label for="to-images-quality">JPEG品質</label>
+                        <input id="to-images-quality" type="range" min="0.5" max="1" step="0.05" value="0.9">
+                        <input type="hidden" id="image-quality" value="0.9">
+                        <p class="info-text">現在値: <span id="quality-value">0.90</span></p>
+                    </div>
+                </div>
+
+                <div id="compress-options" hidden>
+                    <div class="preset-buttons">
+                        <button type="button" class="preset-button" data-preset="light">軽め</button>
+                        <button type="button" class="preset-button" data-preset="balanced">標準</button>
+                        <button type="button" class="preset-button" data-preset="strong">強め</button>
+                    </div>
+                    <div class="option-group">
+                        <label for="compress-quality">圧縮品質</label>
+                        <input id="compress-quality" type="range" min="0.35" max="0.9" step="0.05" value="0.7">
+                        <p class="info-text">現在値: <span id="compress-quality-value">0.70</span></p>
+                    </div>
+                    <div class="option-group">
+                        <label for="compress-scale">レンダリング倍率</label>
+                        <select id="compress-scale"><option value="1.0">低め</option><option value="1.3" selected>標準</option><option value="1.6">高め</option></select>
+                    </div>
+                    <div class="option-group">
+                        <label for="compress-max-long-edge">長辺上限</label>
+                        <input id="compress-max-long-edge" type="number" value="1800" min="800" max="3000" step="100">
+                    </div>
+                </div>
+
+                <div id="images-to-pdf-options" hidden>
+                    <div class="option-group">
+                        <label for="images-page-size">ページサイズ</label>
+                        <select id="images-page-size"><option value="auto">画像に合わせる</option><option value="a4">A4</option><option value="letter">Letter</option></select>
+                    </div>
+                    <div class="option-group">
+                        <label for="images-margin">余白 pt</label>
+                        <input id="images-margin" type="number" value="24" min="0" max="120">
+                    </div>
+                </div>
+
+                <div id="extract-images-options" hidden>
+                    <div class="option-group">
+                        <label for="extract-images-format">画像形式</label>
+                        <select id="extract-images-format"><option value="png">PNG</option><option value="jpeg">JPEG</option></select>
+                    </div>
+                    <div class="option-group" id="extract-images-quality-group">
+                        <label for="extract-images-quality">JPEG品質</label>
+                        <input id="extract-images-quality" type="range" min="0.5" max="1" step="0.05" value="0.9">
+                        <p class="info-text">現在値: <span id="extract-images-quality-value">0.90</span></p>
+                    </div>
+                    <div class="option-group">
+                        <label for="extract-images-max">最大抽出数</label>
+                        <input id="extract-images-max" type="number" value="80" min="1" max="200">
+                    </div>
+                </div>
+
+                <button id="run-button" class="action-button" type="button" disabled>Step 4. 実行する</button>
+                <button id="cancel-button" class="action-button" type="button" hidden>キャンセル</button>
+            </div>
+        </section>
+
+        <section id="progress-section" class="pdf-panel" hidden>
+            <h2>Step 5. 処理状況</h2>
+            <div class="progress-info" id="progress-text">待機中です。</div>
+            <div class="progress-bar"><div class="progress-bar-fill" id="progress-bar-fill"></div></div>
+            <p class="info-text"><span id="progress-percent">0</span>%</p>
+            <div id="task-list" class="task-list"></div>
+        </section>
+
+        <section id="output-section" class="pdf-panel" hidden>
+            <h2>Step 5. ダウンロード</h2>
+            <p class="info-text">生成されたファイルを保存してください。ページを閉じるとダウンロードリンクは消えます。</p>
+            <div id="download-panel" class="download-list"></div>
+        </section>
+
+        <section id="error-section" class="pdf-panel" hidden>
+            <h2>処理できませんでした</h2>
+            <div id="error-message" class="error-message"></div>
+        </section>
+
+        <section class="pdf-panel">
+            <h2>Step 6. 注意事項</h2>
+            <ul class="pdf-attention-list">
+                <li>パスワード付与は20MBまでを目安にサーバー側で一時処理します。</li>
+                <li>結合、分割、抽出、圧縮、画像変換はブラウザ内処理を基本にしています。</li>
+                <li>保護済みPDFを開く機能は提供していません。</li>
+                <li>大きなPDFやページ数の多いPDFは、処理に時間がかかる場合があります。</li>
+            </ul>
+        </section>
+
+        {% with amazon_section_key='pdf', amazon_section_show_disclosure=true %}
+            {% include 'includes/amazon_lightweight_section.html' %}
+        {% endwith %}
+        {% set affiliate_disclosure_rendered = true %}
+        {% set affiliate_upper_amazon_rendered = true %}
+    </main>
+    {% include 'includes/related_tools.html' %}
+    {% include 'includes/footer.html' %}
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="{{ url_for('static', filename='js/file-validation.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/file-utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pdf-range.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pdf-ops.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pdf-render.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pdf-compress.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pdf-images-to-pdf.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/pdf-extract-images.js') }}"></script>
+    <script>
+        let selectedFiles = [];
+        let currentMode = 'lock-pdf';
+        let cancelled = false;
+        const maxPdfSize = 20 * 1024 * 1024;
+        const maxTotalSize = 80 * 1024 * 1024;
+
+        const modeHelp = {
+            'lock-pdf': 'パスワードを付与したいPDFを1件追加し、パスワードを入力してください。',
+            split: '分割したいPDFを1件追加し、範囲をセミコロン区切りで指定してください。',
+            merge: '結合するPDFを2件以上追加してください。',
+            extract: '抽出したいPDFを1件追加し、ページ範囲を指定してください。',
+            compress: '圧縮したいPDFを1件追加してください。',
+            'to-images': '画像に変換したいPDFを1件追加してください。',
+            'images-to-pdf': 'PDFにまとめたい画像を追加してください。',
+            'extract-images': '画像を抽出したいPDFを1件追加してください。'
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupModeCards();
+            setupDropzone();
+            setupOptionSync();
+            document.getElementById('run-button').addEventListener('click', runOperation);
+            document.getElementById('cancel-button').addEventListener('click', cancelOperation);
+            updateModeOptions();
+        });
+
+        function setupModeCards() {
+            document.querySelectorAll('.pdf-mode-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.pdf-mode-card').forEach(c => c.classList.remove('is-active'));
+                    card.classList.add('is-active');
+                    currentMode = card.dataset.mode;
+                    document.getElementById('mode').value = currentMode;
+                    selectedFiles = [];
+                    updateModeOptions();
+                    updateFileList();
+                });
+            });
+        }
+
+        function setupDropzone() {
+            const dropzone = document.getElementById('dropzone');
+            const fileInput = document.getElementById('file-input');
+            dropzone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (event) => handleFiles(Array.from(event.target.files || [])));
+            ['dragenter', 'dragover'].forEach(name => dropzone.addEventListener(name, event => {
+                event.preventDefault();
+                dropzone.classList.add('is-dragover');
+            }));
+            ['dragleave', 'drop'].forEach(name => dropzone.addEventListener(name, event => {
+                event.preventDefault();
+                dropzone.classList.remove('is-dragover');
+            }));
+            dropzone.addEventListener('drop', event => handleFiles(Array.from(event.dataTransfer.files || [])));
+        }
+
+        function setupOptionSync() {
+            document.getElementById('to-images-quality').addEventListener('input', (event) => {
+                document.getElementById('image-quality').value = event.target.value;
+                document.getElementById('quality-value').textContent = Number(event.target.value).toFixed(2);
+            });
+            document.getElementById('to-images-scale').addEventListener('change', (event) => {
+                document.getElementById('image-scale').value = event.target.value;
+            });
+            document.getElementById('compress-quality').addEventListener('input', (event) => {
+                document.getElementById('compress-quality-value').textContent = Number(event.target.value).toFixed(2);
+            });
+            document.getElementById('extract-images-quality').addEventListener('input', (event) => {
+                document.getElementById('extract-images-quality-value').textContent = Number(event.target.value).toFixed(2);
+            });
+            document.querySelectorAll('.preset-button').forEach(button => {
+                button.addEventListener('click', () => applyCompressPreset(button.dataset.preset));
+            });
+            document.getElementById('output-pdf-password').addEventListener('input', updateRunButton);
+        }
+
+        function updateModeOptions() {
+            currentMode = document.getElementById('mode').value;
+            const groups = ['output-pdf-password-group', 'extract-options', 'split-options', 'to-images-options', 'compress-options', 'images-to-pdf-options', 'extract-images-options'];
+            groups.forEach(id => document.getElementById(id).hidden = true);
+            if (currentMode === 'lock-pdf') document.getElementById('output-pdf-password-group').hidden = false;
+            if (currentMode === 'extract') document.getElementById('extract-options').hidden = false;
+            if (currentMode === 'split') document.getElementById('split-options').hidden = false;
+            if (currentMode === 'to-images') document.getElementById('to-images-options').hidden = false;
+            if (currentMode === 'compress') document.getElementById('compress-options').hidden = false;
+            if (currentMode === 'images-to-pdf') document.getElementById('images-to-pdf-options').hidden = false;
+            if (currentMode === 'extract-images') document.getElementById('extract-images-options').hidden = false;
+
+            const imageMode = currentMode === 'images-to-pdf';
+            const fileInput = document.getElementById('file-input');
+            fileInput.accept = imageMode ? 'image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp' : 'application/pdf,.pdf';
+            document.getElementById('dropzone-hint').textContent = imageMode ? 'またはクリックして画像ファイルを選択' : 'またはクリックしてPDFファイルを選択';
+            document.getElementById('mode-help').textContent = modeHelp[currentMode] || '';
+            updateRunButton();
+        }
+
+        function handleFiles(files) {
+            const rejected = [];
+            for (const file of files) {
+                const isImageMode = currentMode === 'images-to-pdf';
+                const okType = isImageMode ? /\.(png|jpe?g|webp)$/i.test(file.name) : /\.pdf$/i.test(file.name);
+                if (!okType) {
+                    rejected.push(`${file.name}: 対応していないファイル形式です`);
+                    continue;
+                }
+                if (!isImageMode && file.size > maxPdfSize) {
+                    rejected.push(`${file.name}: 20MBを超えるPDFは処理できません`);
+                    continue;
+                }
+                selectedFiles.push(file);
+            }
+            const total = selectedFiles.reduce((sum, file) => sum + file.size, 0);
+            if (total > maxTotalSize) {
+                rejected.push('合計サイズが大きすぎます。ファイル数を減らしてください。');
+                selectedFiles = [];
+            }
+            showRejectedFiles(rejected);
+            updateFileList();
+            updateRunButton();
+        }
+
+        function updateFileList() {
+            const list = document.getElementById('file-list');
+            list.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                const row = document.createElement('div');
+                row.className = 'file-item';
+                row.innerHTML = `<div><div class="file-item-name"></div><div class="file-item-size">${formatBytes(file.size)}</div></div><button type="button" class="file-item-remove">削除</button>`;
+                row.querySelector('.file-item-name').textContent = file.name;
+                row.querySelector('button').addEventListener('click', () => {
+                    selectedFiles.splice(index, 1);
+                    updateFileList();
+                    updateRunButton();
+                });
+                list.appendChild(row);
+            });
+        }
+
+        function showRejectedFiles(messages) {
+            const box = document.getElementById('rejected-files');
+            if (!messages.length) {
+                box.hidden = true;
+                box.textContent = '';
+                return;
+            }
+            box.hidden = false;
+            box.textContent = messages.join('\n');
+        }
+
+        function updateRunButton() {
+            const button = document.getElementById('run-button');
+            let ok = selectedFiles.length > 0;
+            if (currentMode === 'merge') ok = selectedFiles.length >= 2;
+            if (['split', 'extract', 'compress', 'to-images', 'extract-images', 'lock-pdf'].includes(currentMode)) ok = selectedFiles.length === 1;
+            if (currentMode === 'lock-pdf') ok = ok && document.getElementById('output-pdf-password').value.length > 0;
+            button.disabled = !ok;
+        }
+
+        function createCtx() {
+            return {
+                signal: { get cancelled() { return cancelled; } },
+                setProgress: updateProgress,
+                setTaskState: (index, state) => updateTask(index, state)
+            };
+        }
+
+        async function runOperation() {
+            hideResults();
+            cancelled = false;
+            document.getElementById('run-button').disabled = true;
+            document.getElementById('cancel-button').hidden = false;
+            document.getElementById('progress-section').hidden = false;
+            updateProgress(0);
+            updateProgressText('処理を開始しています。');
+            try {
+                let outputs;
+                const ctx = createCtx();
+                if (currentMode === 'lock-pdf') {
+                    outputs = await runLockPdf();
+                } else if (currentMode === 'merge') {
+                    outputs = await PdfOps.mergePdfs(selectedFiles, ctx);
+                } else if (currentMode === 'extract') {
+                    const pages = PdfRange.parseExtractRange(document.getElementById('extract-range').value);
+                    if (!pages.length) throw new Error('抽出するページを入力してください。');
+                    outputs = await PdfOps.extractPdf(selectedFiles[0], pages, ctx);
+                } else if (currentMode === 'split') {
+                    const groups = PdfRange.parseSplitRange(document.getElementById('split-range').value);
+                    if (!groups.length) throw new Error('分割する範囲を入力してください。');
+                    outputs = await PdfOps.splitPdf(selectedFiles[0], groups, ctx);
+                } else if (currentMode === 'to-images') {
+                    outputs = await PdfRender.pdfToImages(selectedFiles[0], {
+                        format: document.getElementById('image-format').value,
+                        scale: Number(document.getElementById('image-scale').value),
+                        quality: Number(document.getElementById('image-quality').value)
+                    }, ctx);
+                } else if (currentMode === 'compress') {
+                    outputs = await PdfCompress.compressPdfByRasterize(selectedFiles[0], {
+                        quality: Number(document.getElementById('compress-quality').value),
+                        scale: Number(document.getElementById('compress-scale').value),
+                        maxLongEdge: Number(document.getElementById('compress-max-long-edge').value)
+                    }, ctx);
+                } else if (currentMode === 'images-to-pdf') {
+                    outputs = await PdfImagesToPdf.imagesToPdf(selectedFiles, {
+                        pageSize: document.getElementById('images-page-size').value,
+                        margin: Number(document.getElementById('images-margin').value)
+                    }, ctx);
+                } else if (currentMode === 'extract-images') {
+                    outputs = await PdfExtractImages.extractEmbeddedImages(selectedFiles[0], {
+                        format: document.getElementById('extract-images-format').value,
+                        quality: Number(document.getElementById('extract-images-quality').value),
+                        maxPerPdf: Number(document.getElementById('extract-images-max').value)
+                    }, ctx);
+                }
+                updateProgress(100);
+                updateProgressText('処理が完了しました。');
+                showDownloadPanel(outputs || []);
+            } catch (error) {
+                if (!cancelled) showError(error.message || '処理中にエラーが発生しました。');
+            } finally {
+                document.getElementById('cancel-button').hidden = true;
+                updateRunButton();
+            }
+        }
+
+        async function runLockPdf() {
+            const formData = new FormData();
+            formData.append('file', selectedFiles[0]);
+            formData.append('password', document.getElementById('output-pdf-password').value);
+            updateProgressText('PDFにパスワードを設定しています。');
+            const response = await fetch('/api/pdf/lock', { method: 'POST', body: formData });
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.error || 'パスワード付与に失敗しました。');
+            }
+            const blob = await response.blob();
+            const name = selectedFiles[0].name.replace(/\.pdf$/i, '') + '_locked.pdf';
+            return [{ blob, filename: name, mime: 'application/pdf' }];
+        }
+
+        function cancelOperation() {
+            cancelled = true;
+            updateProgressText('キャンセルしました。');
+        }
+
+        function updateProgress(value) {
+            const percent = Math.max(0, Math.min(100, Math.round(value || 0)));
+            document.getElementById('progress-percent').textContent = String(percent);
+            document.getElementById('progress-bar-fill').style.width = percent + '%';
+        }
+
+        function updateProgressText(text) {
+            document.getElementById('progress-text').textContent = text;
+        }
+
+        function updateTask(index, state) {
+            updateProgressText(state.message || '処理中です。');
+            const list = document.getElementById('task-list');
+            let item = list.querySelector(`[data-task-index="${index}"]`);
+            if (!item) {
+                item = document.createElement('div');
+                item.className = 'task-item';
+                item.dataset.taskIndex = index;
+                list.appendChild(item);
+            }
+            item.textContent = `${selectedFiles[index]?.name || 'ファイル'}: ${state.message || state.status}`;
+        }
+
+        function showDownloadPanel(outputs) {
+            const section = document.getElementById('output-section');
+            const panel = document.getElementById('download-panel');
+            panel.innerHTML = '';
+            if (!outputs.length) {
+                panel.textContent = '出力ファイルはありませんでした。';
+            }
+            outputs.forEach((output, index) => {
+                const url = URL.createObjectURL(output.blob);
+                const link = document.createElement('a');
+                link.className = 'action-button';
+                link.href = url;
+                link.download = output.filename || `output-${index + 1}`;
+                link.textContent = `${link.download} をダウンロード`;
+                panel.appendChild(link);
+            });
+            section.hidden = false;
+        }
+
+        function showError(message) {
+            document.getElementById('error-section').hidden = false;
+            document.getElementById('error-message').textContent = message;
+            updateProgressText('処理を完了できませんでした。');
+        }
+
+        function hideResults() {
+            document.getElementById('output-section').hidden = true;
+            document.getElementById('download-panel').innerHTML = '';
+            document.getElementById('error-section').hidden = true;
+            document.getElementById('error-message').textContent = '';
+            document.getElementById('task-list').innerHTML = '';
+        }
+
+        function applyCompressPreset(preset) {
+            const quality = document.getElementById('compress-quality');
+            const scale = document.getElementById('compress-scale');
+            const edge = document.getElementById('compress-max-long-edge');
+            if (preset === 'light') { quality.value = '0.82'; scale.value = '1.6'; edge.value = '2200'; }
+            if (preset === 'balanced') { quality.value = '0.70'; scale.value = '1.3'; edge.value = '1800'; }
+            if (preset === 'strong') { quality.value = '0.55'; scale.value = '1.0'; edge.value = '1400'; }
+            document.getElementById('compress-quality-value').textContent = Number(quality.value).toFixed(2);
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes) return '0 Bytes';
+            const units = ['Bytes', 'KB', 'MB', 'GB'];
+            const index = Math.floor(Math.log(bytes) / Math.log(1024));
+            return `${(bytes / Math.pow(1024, index)).toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
+        }
+    </script>
+</body>
+</html>

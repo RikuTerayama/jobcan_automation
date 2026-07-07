@@ -18,9 +18,9 @@ def url_path_to_template_rel(url_path):
     path = (url_path or '').strip('/') or ''
     special = {
         '': 'landing.html',
-        'autofill': 'autofill_lite.html',
+        'autofill': 'autofill_flow.html',
         'tools': 'tools/index.html',
-        'tools/pdf': 'tools/pdf_lite.html',
+        'tools/pdf': 'tools/pdf_flow.html',
         'faq': 'faq_lite.html',
         'recommend': 'recommend.html',
     }
