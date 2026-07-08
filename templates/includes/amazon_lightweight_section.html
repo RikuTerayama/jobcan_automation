@@ -22,7 +22,16 @@
                 {% if item.description %}
                 <p>{{ item.description }}</p>
                 {% endif %}
-                <a href="{{ item.url }}" target="_blank" rel="nofollow sponsored noopener" class="amazon-lite-card__cta">
+                <a
+                    href="{{ item.url }}"
+                    target="_blank"
+                    rel="nofollow sponsored noopener"
+                    class="amazon-lite-card__cta"
+                    data-affiliate-network="amazon"
+                    data-affiliate-category="{{ item.category_label }}"
+                    data-affiliate-placement="{{ amazon_section_key }}"
+                    data-affiliate-cta="{{ item.cta|default('Amazonで探す') }}"
+                >
                     {{ item.cta|default('Amazonで探す') }}
                 </a>
             </article>

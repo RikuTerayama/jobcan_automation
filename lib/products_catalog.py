@@ -44,7 +44,7 @@ PRODUCTS = [
     {
         'id': 'pdf',
         'name': 'PDFユーティリティ',
-        'description': 'PDFの結合・分割・ページ抽出・圧縮・画像変換・パスワード付与を扱う無料ツールです。ロック解除は提供しません。',
+        'description': 'PDFの結合・分割・ページ抽出・圧縮・画像変換・パスワード付与を扱う無料ツールです。保護済みPDFの編集には対応していません。',
         'path': '/tools/pdf',
         'guide_path': '',
         'status': 'available',
