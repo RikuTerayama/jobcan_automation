@@ -163,7 +163,12 @@ def run():
     for path in ['/', '/autofill', '/tools', '/tools/pdf', '/recommend', '/faq']:
         html = pages[path][1]
         expect(AMAZON_DISCLOSURE in html, f'{path} missing Amazon disclosure', failures)
-        expect('amazon-lite-section' in html or path == '/recommend', f'{path} missing lightweight Amazon section', failures)
+        has_lightweight_amazon = (
+            'amazon-lite-section' in html
+            or 'affiliate-context-panel' in html
+            or path == '/recommend'
+        )
+        expect(has_lightweight_amazon, f'{path} missing lightweight Amazon section', failures)
         parser = pages[path][2]
         for href in parser.links:
             if 'amazon.' in href:

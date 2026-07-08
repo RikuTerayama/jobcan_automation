@@ -127,11 +127,12 @@
             <p><a href="/faq" style="color:#9bc3ff;">FAQで確認する</a></p>
         </section>
 
-        {% with amazon_section_key='autofill', amazon_section_show_disclosure=true %}
-            {% include 'includes/amazon_lightweight_section.html' %}
+        {% with affiliate_panel_key='autofill', affiliate_panel_placement='autofill-inline', affiliate_panel_title='入力後の作業に戻りやすくする本・道具', affiliate_panel_lead='Jobcan入力を終えたあと、集中環境・リモート作業・思考整理に戻りたい方向けの補助導線です。' %}
+            {% include 'includes/affiliate_context_panel.html' %}
         {% endwith %}
         {% set affiliate_disclosure_rendered = true %}
         {% set affiliate_upper_amazon_rendered = true %}
+        {% set affiliate_mid_amazon_rendered = true %}
     </main>
     {% include 'includes/related_tools.html' %}
     {% include 'includes/footer.html' %}
