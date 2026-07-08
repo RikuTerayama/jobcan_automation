@@ -1,6 +1,7 @@
 {% set a8_section_key = a8_section_key|default('') %}
 {% set a8_section = a8_lightweight_sections.get(a8_section_key) if a8_lightweight_sections is defined and a8_lightweight_sections else none %}
 {% set a8_section_items = a8_section['items'] if a8_section and 'items' in a8_section else [] %}
+{% set a8_tracking_placement = a8_section.tracking_placement|default('top' if a8_section_key == 'home' else a8_section_key) if a8_section else a8_section_key %}
 {% if a8_section and a8_section_items %}
 <section class="a8-lite-section" id="{{ a8_section.anchor_id|default('a8-work-services') }}" data-a8-lite-section="{{ a8_section_key }}">
     <div class="a8-lite-section__inner">
@@ -26,7 +27,7 @@
                     class="a8-lite-card__cta"
                     data-affiliate-network="a8"
                     data-affiliate-category="{{ item.category_label }}"
-                    data-affiliate-placement="{{ a8_section_key }}"
+                    data-affiliate-placement="{{ a8_tracking_placement }}"
                     data-affiliate-cta="{{ item.cta|default('詳しく見る') }}"
                 >
                     {{ item.cta|default('詳しく見る') }}

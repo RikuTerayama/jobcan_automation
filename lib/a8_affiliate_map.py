@@ -81,6 +81,7 @@ def build_a8_lightweight_sections(path: str = "/") -> Dict[str, Dict[str, object
     return {
         "home": {
             "anchor_id": "a8-work-services",
+            "tracking_placement": "top",
             "title": "仕事環境を整えるサービス",
             "lead": "承認済みのA8.net提携サービスがある場合だけ表示します。",
             "items": items[:3],
