@@ -1,11 +1,9 @@
 ﻿# RT Tools - 讌ｭ蜍吝柑邇・喧繝・・繝ｫ髮・
 
-## Amazon Creators API Affiliate Stack
+## Lightweight Affiliate Stack
 
-Affiliate layout order across public pages is:
-1. Amazon (upper)
-2. Rakuten (mid)
-3. A8.net (lower)
+The lightweight site keeps Jobcan AutoFill and PDF tools as the primary actions.
+Affiliate blocks are secondary: Amazon links point users to consultant-focused books and work tools, while A8.net blocks render only when manually approved link data is configured.
 
 ### Render environment variables
 
@@ -18,6 +16,8 @@ Affiliate layout order across public pages is:
 - `AMAZON_THEME_ROTATION_CADENCE` (`daily` / `weekly` / `biweekly`, default: `daily`)
 - `AMAZON_THEME_ROTATION_TZ` (default: `Asia/Tokyo`)
 - `AFFILIATE_STACK_ONLY` (default: `true`)
+- `ENABLE_A8_AFFILIATE` (default: `false`)
+- `A8_AFFILIATE_LINKS_JSON` (optional JSON array of manually approved A8 links)
 
 ### Lightweight Render free-plan settings
 
@@ -28,6 +28,8 @@ Required/important production environment variables:
 
 - `AMAZON_ASSOCIATE_TAG`: required for Amazon Associates revenue attribution.
   If this is unset, Amazon search links still render but are not monetized.
+- `ENABLE_A8_AFFILIATE=false`: recommended until approved A8.net program links are configured.
+- `A8_AFFILIATE_LINKS_JSON`: optional JSON array. Each production item must be `enabled: true`, `approved: true`, have an HTTPS `url`, and include display copy such as `title`, `description`, and `cta_label`.
 - `MAX_ACTIVE_SESSIONS=1`: recommended for Render Free memory limits.
 - `MAX_QUEUE_SIZE=3`: recommended upper bound for the in-memory waiting queue.
 - `WEB_CONCURRENCY=1` and `WEB_THREADS=1`: recommended to avoid Chrome memory
@@ -70,8 +72,8 @@ Operational notes for Render Free:
 - Rotation is stable per cadence bucket (`daily` / `weekly` / `biweekly`) and does not flicker per request.
 - Theme display copy (`title`, `category_label`) and destination query (`query`, `query_variants`) are managed separately.
 - If Amazon API auth is incomplete, API returns an error, or no items are returned, the page still renders and theme-based Amazon links remain available.
-- Affiliate placement is intentionally distributed: Amazon (upper area), Rakuten (mid section), A8.net (bottom area). Do not collapse all three into one footer-only block.
-- The A8.net bottom text link (`A8.net 縺ｮ縺翫☆縺吶ａ繧定ｦ九ｋ`) is intentionally removed; only the A8 rotation banner remains.
+- Affiliate placement is intentionally lightweight. Amazon appears as a supporting consultant-focused block after the main Jobcan/PDF choices. A8.net is opt-in and hidden unless approved link data is configured.
+- Do not add placeholder A8.net advertisers or raw text-only A8 links to production.
 - After deploy, verify `/`, `/autofill`, `/tools`, `/tools/pdf`, `/recommend`, `/faq`, `/privacy`, `/terms`, and `/contact`.
 
 ### Theme refresh workflow (recommended)
@@ -167,10 +169,10 @@ AutoFill remains active.
 
 ### Suggested next phases
 
-- Phase 10: Amazon CTR copy/layout experiments for the consultant-focused recommendation flow.
-- Phase 11: Controlled real Jobcan run with Render log review.
-- Phase 12: Clean up unrelated untracked audit/docs files outside the production branch scope.
-- Phase 13: Decide whether AutoFill should remain in this web service or move to a separate worker/service.
+- Phase 12: Controlled real Jobcan run with Render log review.
+- Phase 13: A8.net approved-program link review and optional activation.
+- Phase 14: Clean up unrelated untracked audit/docs files outside the production branch scope.
+- Phase 15: Decide whether AutoFill should remain in this web service or move to a separate worker/service.
 
 Jobcan閾ｪ蜍募・蜉帙→蜷・ｨｮ讌ｭ蜍吝柑邇・喧繝・・繝ｫ繧呈署萓帙☆繧妓eb繧｢繝励Μ繧ｱ繝ｼ繧ｷ繝ｧ繝ｳ縺ｧ縺吶・
 

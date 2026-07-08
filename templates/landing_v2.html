@@ -1,26 +1,15 @@
 ﻿<!doctype html>
 <html lang="ja" class="no-js">
 <head>
-    {% set page_title = 'Jobcan AutoFill | 勤怠入力とPDF作業を軽くする無料ツール' %}
-    {% set page_description = 'Jobcan AutoFill は、Jobcan勤怠入力の自動化とPDFの結合・分割・パスワード付与を扱う軽量な無料ツールサイトです。' %}
+    {% set page_title = 'Jobcan AutoFill | Jobcan入力とPDF作業を軽くする無料ツール' %}
+    {% set page_description = 'Jobcan入力とPDF作業を、必要なときだけ軽く使える無料ツールです。' %}
     {% include 'includes/head_meta.html' %}
 </head>
 <body>
     {% include 'includes/header.html' %}
     {% set starter_pages = [
-        {'eyebrow': 'Jobcan', 'title': 'Jobcan AutoFill', 'path': '/autofill', 'description': 'Excelテンプレートに入力した勤怠情報を使い、Jobcanへの入力作業を補助します。', 'cta': '勤怠入力を始める', 'icon': 'Time'},
-        {'eyebrow': 'PDF', 'title': 'PDFツール', 'path': '/tools/pdf', 'description': 'PDFの結合、分割、ページ抽出、圧縮、画像変換、パスワード付与を扱えます。', 'cta': 'PDF作業を始める', 'icon': 'PDF'}
-    ] %}
-    {% set support_pages = [
-        {'title': 'FAQ', 'path': '/faq', 'description': '使い方、データの扱い、混雑時の挙動を確認できます。'},
-        {'title': '関連アイテム', 'path': '/recommend', 'description': 'コンサルワーク、資料作成、PDF作業に役立つ周辺アイテムを探せます。'},
-        {'title': 'お問い合わせ', 'path': '/contact', 'description': '不具合報告や改善要望はこちらから送れます。'}
-    ] %}
-    {% set use_cases = [
-        {'eyebrow': 'Jobcan', 'title': '月次の勤怠入力をまとめて進めたい', 'description': 'Excelテンプレートに整理した勤怠データを使い、Jobcanへの入力作業を効率化できます。'},
-        {'eyebrow': 'PDF', 'title': '提案書や請求書PDFを整理したい', 'description': '結合、分割、ページ抽出、圧縮など、提出前のPDF整理をブラウザ内で進められます。'},
-        {'eyebrow': 'Password', 'title': 'PDFに閲覧用パスワードを付けたい', 'description': '保護されていないPDFにパスワードを付与できます。保護済みPDFを開く処理は提供しません。'},
-        {'eyebrow': 'Consulting', 'title': '資料作成や思考整理の環境を整えたい', 'description': 'コンサルワークに寄せたAmazon導線から、思考法・資料作成・PDF作業の周辺アイテムを探せます。'}
+        {'eyebrow': 'Jobcan', 'title': 'Jobcan AutoFill', 'path': '/autofill', 'description': 'Excelテンプレートを使って、Jobcan入力をまとめて進めます。', 'cta': 'Jobcan入力を始める', 'icon': 'Time'},
+        {'eyebrow': 'PDF', 'title': 'PDFツール', 'path': '/tools/pdf', 'description': 'パスワード付与、分割、結合、抽出、圧縮に対応します。', 'cta': 'PDF作業を始める', 'icon': 'PDF'}
     ] %}
     <main class="landing-shell">
         <section class="landing-hero hero">
@@ -29,11 +18,11 @@
                 <span class="landing-hero__headline-line">何をしたいですか？</span>
             </h1>
             <p class="landing-hero__lead copy-lines copy-lines--hero" data-reveal data-reveal-delay="80">
-                <span class="copy-lines__line">Jobcanの勤怠入力をまとめて進めるか、</span>
-                <span class="copy-lines__line">提出前のPDFを整理するかを選んでください。</span>
+                <span class="copy-lines__line">Jobcan入力とPDF作業を、</span>
+                <span class="copy-lines__line">必要なときだけ軽く使えるツールです。</span>
             </p>
             <div class="landing-hero__actions" data-reveal data-reveal-delay="120">
-                <a href="/autofill" class="btn btn-primary">勤怠入力を始める</a>
+                <a href="/autofill" class="btn btn-primary">Jobcan入力を始める</a>
                 <a href="/tools/pdf" class="btn btn-secondary">PDF作業を始める</a>
             </div>
         </section>
@@ -58,61 +47,6 @@
             </div>
         </section>
 
-        <section class="landing-section landing-section--compact" aria-labelledby="support-pages-heading">
-            <div class="landing-section__header">
-                <p class="landing-section__eyebrow">Support</p>
-                <h2 id="support-pages-heading">迷ったときに見るページ</h2>
-            </div>
-            <div class="landing-secondary-grid" data-reveal-stagger>
-                {% for item in support_pages %}
-                <a href="{{ item.path }}" class="landing-page-card landing-page-card--quiet">
-                    <h3>{{ item.title }}</h3>
-                    <p>{{ item.description }}</p>
-                    <span class="landing-page-card__cta">見る</span>
-                </a>
-                {% endfor %}
-            </div>
-        </section>
-
-        <section class="landing-section" aria-labelledby="use-cases-heading">
-            <div class="landing-section__header">
-                <p class="landing-section__eyebrow">Use Cases</p>
-                <h2 id="use-cases-heading">こんな場面で活用できます</h2>
-            </div>
-            <div class="landing-use-grid" data-reveal-stagger>
-                {% for item in use_cases %}
-                <article class="landing-use-card">
-                    <span class="landing-use-card__eyebrow">{{ item.eyebrow }}</span>
-                    <h3>{{ item.title }}</h3>
-                    <p>{{ item.description }}</p>
-                </article>
-                {% endfor %}
-            </div>
-        </section>
-
-        <section class="landing-section">
-            <div class="landing-trust-card" data-reveal>
-                <div class="landing-section__header landing-section__header--compact">
-                    <p class="landing-section__eyebrow">Safety</p>
-                    <h2>利用前に確認したいポイント</h2>
-                </div>
-                <div class="landing-trust-grid">
-                    <div class="landing-trust-item">
-                        <strong>Jobcan処理</strong>
-                        <span>ログイン情報と勤怠データは処理中のみ扱い、完了後に一時ファイルを削除します。</span>
-                    </div>
-                    <div class="landing-trust-item">
-                        <strong>PDF処理</strong>
-                        <span>多くのPDF操作はブラウザ内で完結します。パスワード付与APIにはサイズ上限を設けています。</span>
-                    </div>
-                    <div class="landing-trust-item">
-                        <strong>提供しない機能</strong>
-                        <span>閲覧制限を外す目的の処理は公開しません。PDFへのパスワード付与と整理機能に絞っています。</span>
-                    </div>
-                </div>
-            </div>
-        </section>
-
         {% with amazon_section_key='home', amazon_section_show_disclosure=true %}
             {% include 'includes/amazon_lightweight_section.html' %}
         {% endwith %}
@@ -120,12 +54,17 @@
         {% set affiliate_upper_amazon_rendered = true %}
         {% set affiliate_mid_amazon_rendered = true %}
 
-        {% if affiliate_can_render_textlinks() %}
-        {% with affiliate_networks=['rakuten'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--mid-rakuten', affiliate_section_tier='mid-rakuten', affiliate_rakuten_variant='two-col' %}
-            {% include 'includes/affiliate_cards_section.html' %}
+        {% with a8_section_key='home' %}
+            {% include 'includes/a8_lightweight_section.html' %}
         {% endwith %}
         {% set affiliate_rakuten_rendered = true %}
-        {% endif %}
+        {% set affiliate_a8_rendered = true %}
+
+        <nav class="landing-utility-links" aria-label="補助リンク">
+            <a href="/faq">FAQ</a>
+            <a href="/recommend">おすすめをまとめて見る</a>
+            <a href="/contact">お問い合わせ</a>
+        </nav>
     </main>
     {% include 'includes/footer.html' %}
 </body>

@@ -9,7 +9,8 @@
         {% set footer_needs_upper_amazon = can_render_affiliate and has_amazon_upper_items and not affiliate_upper_amazon_rendered|default(false) %}
         {% set footer_needs_mid_amazon = can_render_affiliate and has_amazon_mid_items and not affiliate_mid_amazon_rendered|default(false) %}
         {% set footer_needs_rakuten = can_render_affiliate and not affiliate_rakuten_rendered|default(false) %}
-        {% set footer_needs_a8 = can_render_affiliate and not affiliate_a8_rendered|default(false) %}
+        {% set footer_a8_section = a8_lightweight_sections.get('footer') if a8_lightweight_sections is defined and a8_lightweight_sections else none %}
+        {% set footer_needs_a8 = can_render_affiliate and footer_a8_section and not affiliate_a8_rendered|default(false) %}
         {% if related_content_section %}
             {% include 'includes/related_content.html' %}
         {% endif %}
@@ -82,8 +83,8 @@
         </div>
 
         {% if footer_needs_a8 %}
-            {% with affiliate_networks=['a8'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--bottom-a8 affiliate-cards-section--footer-fallback', affiliate_section_tier='lower-a8' %}
-                {% include 'includes/affiliate_cards_section.html' %}
+            {% with a8_section_key='footer' %}
+                {% include 'includes/a8_lightweight_section.html' %}
             {% endwith %}
             {% set affiliate_a8_rendered = true %}
         {% endif %}
@@ -93,6 +94,9 @@
                 <strong class="site-footer__copy-title">ご利用にあたって</strong>
                 <span class="site-footer__copy-line">Jobcan AutoFill では、勤怠入力の自動化と周辺業務に役立つツール・ガイドを掲載しています。</span>
                 <span class="site-footer__copy-line">Amazonのアソシエイトとして、当サイトは適格販売により収入を得ています。<a href="/recommend" class="site-footer__copy-link">関連アイテムを見る</a></span>
+                {% if a8_lightweight_sections is defined and a8_lightweight_sections %}
+                <span class="site-footer__copy-line">一部に広告・アフィリエイトリンクを含みます。</span>
+                {% endif %}
                 <span class="site-footer__copy-line">データの取り扱い方針は <a href="/privacy" class="site-footer__copy-link">プライバシーポリシー</a> をご確認ください。</span>
             </p>
             <p class="site-footer__meta">
