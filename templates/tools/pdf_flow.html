@@ -214,11 +214,12 @@
             </ul>
         </section>
 
-        {% with amazon_section_key='pdf', amazon_section_show_disclosure=true %}
-            {% include 'includes/amazon_lightweight_section.html' %}
+        {% with affiliate_panel_key='pdf', affiliate_panel_placement='pdf-inline', affiliate_panel_title='PDF・書類作業を整える本・道具', affiliate_panel_lead='PDF操作のあとに、契約書・提案書・資料作業まわりを整えたい方向けの補助導線です。' %}
+            {% include 'includes/affiliate_context_panel.html' %}
         {% endwith %}
         {% set affiliate_disclosure_rendered = true %}
         {% set affiliate_upper_amazon_rendered = true %}
+        {% set affiliate_mid_amazon_rendered = true %}
     </main>
     {% include 'includes/related_tools.html' %}
     {% include 'includes/footer.html' %}
