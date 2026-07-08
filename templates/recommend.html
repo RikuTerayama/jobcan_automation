@@ -1,8 +1,8 @@
 ﻿<!doctype html>
 <html lang="ja" class="no-js">
 <head>
-    {% set page_title = 'コンサルワーク向けアイテムおすすめ | Jobcan AutoFill' %}
-    {% set page_description = 'Jobcan入力、PDF・書類作業、資料作成、集中環境を整えたい方向けに、Amazon Associatesの検索導線をカテゴリ別にまとめています。' %}
+    {% set page_title = 'コンサルワークに役立つカテゴリ | Jobcan AutoFill' %}
+    {% set page_description = '資料作成、PDF・契約書作業、思考整理、集中環境を整えたい方向けに、Amazon Associatesの検索導線を作業別にまとめています。' %}
     {% include 'includes/head_meta.html' %}
 </head>
 <body>
@@ -13,10 +13,10 @@
     <main class="recommend-shell">
         <section class="recommend-hero">
             <p class="recommend-hero__eyebrow">Amazon Associates</p>
-            <h1>コンサルワーク向けアイテムおすすめ</h1>
+            <h1>コンサルワークに役立つカテゴリ</h1>
             <p class="recommend-hero__lead">
-                Jobcan入力、PDF・書類作業、資料作成、集中環境を整えたい方向けに、カテゴリ別の検索導線をまとめています。
-                日々変わる販売条件や評価情報は表示せず、必要なテーマだけを控えめに見比べられる入口として提供します。
+                コンサルワークを支える本・作業環境・PDF周辺アイテムを、作業別に探せるようにまとめています。
+                日々変わる販売条件や評価情報は表示せず、資料作成・PDF作業・集中環境に必要なテーマだけを控えめに見比べられる入口です。
             </p>
             <p class="recommend-disclosure">Amazonのアソシエイトとして、当サイトは適格販売により収入を得ています。</p>
         </section>
@@ -28,7 +28,16 @@
                 <span class="recommend-category-card__label">{{ item.category_label }}</span>
                 <h2>{{ item.title }}</h2>
                 <p>{{ item.description }}</p>
-                <a href="{{ item.url }}" target="_blank" rel="nofollow sponsored noopener" class="recommend-category-card__cta">
+                <a
+                    href="{{ item.url }}"
+                    target="_blank"
+                    rel="nofollow sponsored noopener"
+                    class="recommend-category-card__cta"
+                    data-affiliate-network="amazon"
+                    data-affiliate-category="{{ item.category_label }}"
+                    data-affiliate-placement="recommend"
+                    data-affiliate-cta="{{ item.cta|default('Amazonで探す') }}"
+                >
                     {{ item.cta|default('Amazonで探す') }}
                 </a>
             </article>
