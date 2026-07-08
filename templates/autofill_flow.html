@@ -133,6 +133,10 @@
         {% set affiliate_disclosure_rendered = true %}
         {% set affiliate_upper_amazon_rendered = true %}
         {% set affiliate_mid_amazon_rendered = true %}
+
+        {% with affiliate_rail_key='autofill', affiliate_rail_placement='autofill-sidebar', affiliate_rail_title='入力後に見る', affiliate_rail_lead='集中環境と仕事復帰の道具' %}
+            {% include 'includes/affiliate_sticky_rail.html' %}
+        {% endwith %}
     </main>
     {% include 'includes/related_tools.html' %}
     {% include 'includes/footer.html' %}
