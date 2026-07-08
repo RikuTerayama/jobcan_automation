@@ -1,6 +1,7 @@
 {% set amazon_section_key = amazon_section_key|default('') %}
 {% set amazon_section = amazon_lightweight_sections.get(amazon_section_key) if amazon_lightweight_sections is defined and amazon_lightweight_sections else none %}
 {% set amazon_section_items = amazon_section['items'] if amazon_section and 'items' in amazon_section else [] %}
+{% set amazon_tracking_placement = amazon_section.tracking_placement|default('top' if amazon_section_key == 'home' else amazon_section_key) if amazon_section else amazon_section_key %}
 {% if amazon_section and amazon_section_items %}
 <section class="amazon-lite-section" id="{{ amazon_section.anchor_id|default('amazon-work-items') }}" data-amazon-lite-section="{{ amazon_section_key }}">
     {% if amazon_section_show_disclosure|default(true) %}
@@ -29,7 +30,7 @@
                     class="amazon-lite-card__cta"
                     data-affiliate-network="amazon"
                     data-affiliate-category="{{ item.category_label }}"
-                    data-affiliate-placement="{{ amazon_section_key }}"
+                    data-affiliate-placement="{{ amazon_tracking_placement }}"
                     data-affiliate-cta="{{ item.cta|default('Amazonで探す') }}"
                 >
                     {{ item.cta|default('Amazonで探す') }}

@@ -86,6 +86,34 @@ def run_deploy_verification():
     if resp.status_code == 404:
         failed.append('path=/api/pdf/lock expected enabled API got 404')
 
+    saved_enable_a8 = os.environ.get('ENABLE_A8_AFFILIATE')
+    saved_a8_links = os.environ.get('A8_AFFILIATE_LINKS_JSON')
+    try:
+        os.environ['ENABLE_A8_AFFILIATE'] = 'false'
+        os.environ.pop('A8_AFFILIATE_LINKS_JSON', None)
+        home_html = client.get('/').data.decode('utf-8', errors='replace')
+        if 'data-affiliate-network="amazon"' not in home_html:
+            failed.append('home page missing Amazon affiliate tracking attributes')
+        if 'data-affiliate-placement="top"' not in home_html:
+            failed.append('home page missing top affiliate placement attribute')
+        if 'a8-lite-section' in home_html:
+            failed.append('A8 block rendered while ENABLE_A8_AFFILIATE=false')
+
+        os.environ['ENABLE_A8_AFFILIATE'] = 'true'
+        os.environ['A8_AFFILIATE_LINKS_JSON'] = '[]'
+        a8_empty_html = client.get('/').data.decode('utf-8', errors='replace')
+        if 'a8-lite-section' in a8_empty_html:
+            failed.append('A8 block rendered with empty approved link data')
+    finally:
+        if saved_enable_a8 is None:
+            os.environ.pop('ENABLE_A8_AFFILIATE', None)
+        else:
+            os.environ['ENABLE_A8_AFFILIATE'] = saved_enable_a8
+        if saved_a8_links is None:
+            os.environ.pop('A8_AFFILIATE_LINKS_JSON', None)
+        else:
+            os.environ['A8_AFFILIATE_LINKS_JSON'] = saved_a8_links
+
     if failed:
         for item in failed:
             print(f"FAIL: {item}")
