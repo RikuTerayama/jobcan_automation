@@ -33,6 +33,7 @@ from lib.amazon_creators import (
     build_rotating_theme_cards as build_amazon_rotating_theme_cards,
     get_recommendations as get_amazon_recommendations,
 )
+from lib.a8_affiliate_map import build_a8_lightweight_sections
 
 # P1-1: 計測ログユーティリティ（循環import回避）
 try:
@@ -1038,6 +1039,7 @@ def inject_env_vars():
             path=current_path,
             page_type=affiliate_page_type,
         )
+        a8_lightweight_sections = build_a8_lightweight_sections(path=current_path)
         _prepare_recent_affiliate_history_cookie(
             path=current_path,
             page_type=affiliate_page_type,
@@ -1092,6 +1094,7 @@ def inject_env_vars():
             'amazon_affiliate_upper_items': amazon_affiliate_upper_items,
             'amazon_affiliate_mid_items': amazon_affiliate_mid_items,
             'amazon_lightweight_sections': amazon_lightweight_sections,
+            'a8_lightweight_sections': a8_lightweight_sections,
             'affiliate_page_type': affiliate_page_type,
             'affiliate_path_excluded': affiliate_is_path_excluded(current_path),
             'affiliate_top_slot_id': affiliate_top_slot_id(current_path),
@@ -1154,6 +1157,7 @@ def inject_env_vars():
             'amazon_affiliate_upper_items': [],
             'amazon_affiliate_mid_items': [],
             'amazon_lightweight_sections': {},
+            'a8_lightweight_sections': {},
             'affiliate_page_type': get_affiliate_page_type(current_path),
             'affiliate_path_excluded': affiliate_is_path_excluded(current_path),
             'affiliate_top_slot_id': affiliate_top_slot_id(current_path),

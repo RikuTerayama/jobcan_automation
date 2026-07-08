@@ -108,7 +108,7 @@ LIGHTWEIGHT_AMAZON_SECTIONS: Dict[str, Dict[str, object]] = {
         "anchor_id": "amazon-consulting-items",
         "title": "コンサルワークを支える道具・本",
         "lead": "Jobcan入力やPDF整理の主作業を終えたあとに、思考整理・資料作成・作業環境を整えたい方向けの補助導線です。",
-        "more_label": "コンサル向けアイテムをまとめて見る",
+        "more_label": "おすすめをまとめて見る",
         "more_path": "/recommend",
         "items": [
             {
@@ -120,12 +120,12 @@ LIGHTWEIGHT_AMAZON_SECTIONS: Dict[str, Dict[str, object]] = {
                 "cta": "思考法の本を探す",
             },
             {
-                "category_label": "資料作成",
-                "title": "スライド作成を速くする",
-                "description": "資料作成やプレゼン準備を効率化したい方向けです。",
-                "query": "PowerPoint 資料作成 本",
-                "query_variants": ["プレゼン 本", "図解 本", "ビジネスライティング 本"],
-                "cta": "資料作成に役立つ本を見る",
+                "category_label": "PDF・契約書",
+                "title": "PDF・書類作業を整える",
+                "description": "契約書・提案書・PDF資料を扱うことが多い方向けです。",
+                "query": "ドキュメントスキャナー",
+                "query_variants": ["PDF 編集", "書類整理 グッズ", "USB-Cハブ"],
+                "cta": "PDF・書類作業アイテムを見る",
             },
             {
                 "category_label": "集中環境",
