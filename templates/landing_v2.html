@@ -56,6 +56,10 @@
         {% set affiliate_rakuten_rendered = true %}
         {% set affiliate_a8_rendered = true %}
 
+        {% with affiliate_rail_key='home', affiliate_rail_placement='top-sidebar', affiliate_rail_title='作業前に見る', affiliate_rail_lead='コンサルワークを整える本・道具' %}
+            {% include 'includes/affiliate_sticky_rail.html' %}
+        {% endwith %}
+
         <nav class="landing-utility-links" aria-label="補助リンク">
             <a href="/faq">FAQ</a>
             <a href="/recommend">おすすめをまとめて見る</a>

@@ -220,6 +220,10 @@
         {% set affiliate_disclosure_rendered = true %}
         {% set affiliate_upper_amazon_rendered = true %}
         {% set affiliate_mid_amazon_rendered = true %}
+
+        {% with affiliate_rail_key='pdf', affiliate_rail_placement='pdf-sidebar', affiliate_rail_title='PDF作業と一緒に', affiliate_rail_lead='書類作業を整える本・道具' %}
+            {% include 'includes/affiliate_sticky_rail.html' %}
+        {% endwith %}
     </main>
     {% include 'includes/related_tools.html' %}
     {% include 'includes/footer.html' %}

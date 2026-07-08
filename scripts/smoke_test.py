@@ -96,16 +96,22 @@ def run_deploy_verification():
             failed.append('home page missing Amazon affiliate tracking attributes')
         if 'data-affiliate-placement="top-inline"' not in home_html:
             failed.append('home page missing top-inline affiliate placement attribute')
+        if 'data-affiliate-placement="top-sidebar"' not in home_html:
+            failed.append('home page missing top-sidebar affiliate placement attribute')
         if 'a8-lite-section' in home_html:
             failed.append('A8 block rendered while ENABLE_A8_AFFILIATE=false')
 
         autofill_html = client.get('/autofill').data.decode('utf-8', errors='replace')
         if 'data-affiliate-placement="autofill-inline"' not in autofill_html:
             failed.append('autofill page missing autofill-inline affiliate placement attribute')
+        if 'data-affiliate-placement="autofill-sidebar"' not in autofill_html:
+            failed.append('autofill page missing autofill-sidebar affiliate placement attribute')
 
         pdf_html = client.get('/tools/pdf').data.decode('utf-8', errors='replace')
         if 'data-affiliate-placement="pdf-inline"' not in pdf_html:
             failed.append('pdf page missing pdf-inline affiliate placement attribute')
+        if 'data-affiliate-placement="pdf-sidebar"' not in pdf_html:
+            failed.append('pdf page missing pdf-sidebar affiliate placement attribute')
 
         os.environ['ENABLE_A8_AFFILIATE'] = 'true'
         os.environ['A8_AFFILIATE_LINKS_JSON'] = '[]'

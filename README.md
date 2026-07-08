@@ -74,7 +74,7 @@ Operational notes for Render Free:
 - If Amazon API auth is incomplete, API returns an error, or no items are returned, the page still renders and theme-based Amazon links remain available.
 - Affiliate placement is intentionally lightweight. Amazon appears as a supporting consultant-focused block after the main Jobcan/PDF choices. A8.net is opt-in and hidden unless approved link data is configured.
 - Do not add placeholder A8.net advertisers or raw text-only A8 links to production.
-- Affiliate links include `data-affiliate-network`, `data-affiliate-category`, `data-affiliate-placement`, and `data-affiliate-cta` attributes. Current placements include `top-inline`, `autofill-inline`, `pdf-inline`, `recommend`, and `footer`. If click tracking is added later, use an `affiliate_click` event with `provider`, `placement`, `category`, and `cta` fields; do not send secrets or user-entered Jobcan/PDF data.
+- Affiliate links include `data-affiliate-network`, `data-affiliate-category`, `data-affiliate-placement`, and `data-affiliate-cta` attributes. Current placements include `top-inline`, `top-sidebar`, `autofill-inline`, `autofill-sidebar`, `pdf-inline`, `pdf-sidebar`, `recommend`, and `footer`. If click tracking is added later, use an `affiliate_click` event with `provider`, `placement`, `category`, and `cta` fields; do not send secrets or user-entered Jobcan/PDF data.
 - After deploy, verify `/`, `/autofill`, `/tools`, `/tools/pdf`, `/recommend`, `/faq`, `/privacy`, `/terms`, and `/contact`.
 
 ### Theme refresh workflow (recommended)
