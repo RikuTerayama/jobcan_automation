@@ -1,6 +1,7 @@
 ﻿<footer style="background: var(--color-bg-primary, #121212); padding: var(--spacing-xl, 48px) var(--spacing-md, 16px); margin-top: var(--spacing-xl, 48px); border-top: 1px solid rgba(255, 255, 255, 0.1);">
     <div style="max-width: 1200px; margin: 0 auto;">
-        {% set can_render_affiliate = affiliate_can_render_textlinks() %}
+        {% set footer_affiliate_excluded = affiliate_path_excluded|default(false) %}
+        {% set can_render_affiliate = affiliate_can_render_textlinks() and not footer_affiliate_excluded %}
         {% set footer_amazon_upper_items = amazon_affiliate_upper_items|default([]) %}
         {% set footer_amazon_mid_items = amazon_affiliate_mid_items|default([]) %}
         {% set has_amazon_upper_items = AMAZON_AFFILIATE_ENABLED|default(false) and (footer_amazon_upper_items|length > 0) %}
@@ -94,7 +95,7 @@
                 <strong class="site-footer__copy-title">ご利用にあたって</strong>
                 <span class="site-footer__copy-line">Jobcan AutoFill では、勤怠入力の自動化と周辺業務に役立つツール・ガイドを掲載しています。</span>
                 <span class="site-footer__copy-line">Amazonのアソシエイトとして、当サイトは適格販売により収入を得ています。<a href="/recommend" class="site-footer__copy-link">関連アイテムを見る</a></span>
-                {% if a8_lightweight_sections is defined and a8_lightweight_sections %}
+                {% if (not footer_affiliate_excluded) and a8_lightweight_sections is defined and a8_lightweight_sections %}
                 <span class="site-footer__copy-line">一部に広告・アフィリエイトリンクを含みます。</span>
                 {% endif %}
                 <span class="site-footer__copy-line">データの取り扱い方針は <a href="/privacy" class="site-footer__copy-link">プライバシーポリシー</a> をご確認ください。</span>

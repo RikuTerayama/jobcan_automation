@@ -1,18 +1,20 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Amazon Associates theme definitions for the Jobcan + PDF lightweight site."""
+"""Amazon Associates theme definitions for the lightweight site.
+
+Display titles and search queries are kept separate. Only approved themes with
+``enabled=True`` can be rendered.
+"""
 
 from typing import Dict, List, Tuple
 
-# Approved theme pool. Display copy and Amazon search queries are intentionally
-# separated so card titles never leak into the destination query string.
 AMAZON_THEME_POOL: List[Dict[str, object]] = [
     {
         "id": "proposal-thinking",
         "enabled": True,
         "category_label": "思考整理",
         "title": "提案書前の思考整理",
-        "description": "提案前に論点や仮説を整理したい方向け",
+        "description": "提案前に論点や仮説を整理したい方向け。",
         "query": "仮説思考",
         "query_variants": ["ロジカルシンキング 本", "問題解決 本", "戦略思考 本"],
         "cta": "思考法の本を探す",
@@ -24,7 +26,7 @@ AMAZON_THEME_POOL: List[Dict[str, object]] = [
         "enabled": True,
         "category_label": "資料作成",
         "title": "スライド作成を速くする",
-        "description": "資料作成やプレゼン準備を効率化したい方向け",
+        "description": "資料作成やプレゼン準備を効率化したい方向け。",
         "query": "PowerPoint 資料作成 本",
         "query_variants": ["プレゼン 本", "図解 本", "ビジネスライティング 本"],
         "cta": "資料作成に役立つ本を見る",
@@ -34,11 +36,11 @@ AMAZON_THEME_POOL: List[Dict[str, object]] = [
     {
         "id": "pdf-contract-work",
         "enabled": True,
-        "category_label": "PDF・契約書",
+        "category_label": "PDF・書類作業",
         "title": "PDF・契約書作業を整える",
-        "description": "契約書・提案書・PDF資料を扱うことが多い方向け",
+        "description": "契約書・提案書・PDF資料を扱うことが多い方向け。",
         "query": "ドキュメントスキャナー",
-        "query_variants": ["PDF 編集", "書類整理 グッズ", "USB-Cハブ"],
+        "query_variants": ["PDF 編集", "書類整理 グッズ", "USB-C ハブ"],
         "cta": "PDF・書類作業アイテムを見る",
         "priority_page_types": ["tool", "tool_index", "landing"],
         "priority_path_prefixes": ["/tools/pdf", "/tools", "/recommend"],
@@ -48,11 +50,11 @@ AMAZON_THEME_POOL: List[Dict[str, object]] = [
         "enabled": True,
         "category_label": "出張・リモート",
         "title": "出張・リモートワーク環境",
-        "description": "出張先や自宅でも作業環境を整えたい方向け",
+        "description": "出張先や自宅でも作業環境を整えたい方向け。",
         "query": "リモートワーク 便利グッズ",
-        "query_variants": ["出張 便利グッズ", "モバイルモニター", "USB-Cハブ"],
+        "query_variants": ["出張 便利グッズ", "モバイルモニター", "USB-C ハブ"],
         "cta": "出張・リモートワーク用品を見る",
-        "priority_page_types": ["landing", "tool", "trust_sensitive", "contact"],
+        "priority_page_types": ["landing", "tool", "info"],
         "priority_path_prefixes": ["/", "/autofill", "/recommend"],
     },
     {
@@ -60,11 +62,11 @@ AMAZON_THEME_POOL: List[Dict[str, object]] = [
         "enabled": True,
         "category_label": "集中環境",
         "title": "集中力を保つデスク環境",
-        "description": "長時間の集中作業を支える環境づくりに",
+        "description": "長時間の集中作業を支える環境づくりに。",
         "query": "ノイズキャンセリング",
         "query_variants": ["デスク タイマー", "モニター 仕事", "キーボード マウス セット"],
         "cta": "集中環境を整える",
-        "priority_page_types": ["landing", "tool", "trust_sensitive", "info"],
+        "priority_page_types": ["landing", "tool", "info"],
         "priority_path_prefixes": ["/", "/autofill", "/recommend"],
     },
     {
@@ -72,7 +74,7 @@ AMAZON_THEME_POOL: List[Dict[str, object]] = [
         "enabled": True,
         "category_label": "ビジネス書",
         "title": "コンサルワークに役立つビジネス書",
-        "description": "コンサルワークの基礎体力を高める本を探す",
+        "description": "コンサルワークの基礎体力を高める本を探す。",
         "query": "ビジネス書 おすすめ",
         "query_variants": ["仕事術 本", "生成AI 本", "コンサル 本"],
         "cta": "ビジネス書を探す",
@@ -98,231 +100,57 @@ PAGE_TYPE_KEYWORDS: Dict[str, List[str]] = {
     "tool_index": ["ドキュメントスキャナー", "仮説思考", "PowerPoint 資料作成 本"],
     "trust_sensitive": ["デスク タイマー", "ノイズキャンセリング", "ビジネス書 おすすめ"],
     "info": ["ビジネス書 おすすめ", "仕事術 本", "PDF 編集"],
-    "legal": ["ビジネス書 おすすめ", "リモートワーク 便利グッズ"],
-    "contact": ["リモートワーク 便利グッズ", "デスク タイマー"],
     "generic": ["仮説思考", "ビジネス書 おすすめ", "PDF 編集"],
 }
 
+
+def _section(title: str, lead: str, item_ids: List[str], anchor_id: str, more_label: str = "おすすめをまとめて見る") -> Dict[str, object]:
+    items = [theme for theme in AMAZON_THEME_POOL if theme["id"] in item_ids]
+    return {
+        "anchor_id": anchor_id,
+        "title": title,
+        "lead": lead,
+        "more_label": more_label,
+        "more_path": "/recommend",
+        "items": items,
+    }
+
 LIGHTWEIGHT_AMAZON_SECTIONS: Dict[str, Dict[str, object]] = {
-    "home": {
-        "anchor_id": "amazon-consulting-items",
-        "title": "コンサルワークを支える道具・本",
-        "lead": "Jobcan入力やPDF整理の主作業を終えたあとに、思考整理・資料作成・作業環境を整えたい方向けの補助導線です。",
-        "more_label": "おすすめをまとめて見る",
-        "more_path": "/recommend",
-        "items": [
-            {
-                "category_label": "思考整理",
-                "title": "提案書前の思考整理",
-                "description": "提案前に論点や仮説を整理したい方向けです。",
-                "query": "仮説思考",
-                "query_variants": ["ロジカルシンキング 本", "問題解決 本", "戦略思考 本"],
-                "cta": "思考法の本を探す",
-            },
-            {
-                "category_label": "PDF・契約書",
-                "title": "PDF・書類作業を整える",
-                "description": "契約書・提案書・PDF資料を扱うことが多い方向けです。",
-                "query": "ドキュメントスキャナー",
-                "query_variants": ["PDF 編集", "書類整理 グッズ", "USB-Cハブ"],
-                "cta": "PDF・書類作業アイテムを見る",
-            },
-            {
-                "category_label": "集中環境",
-                "title": "集中力を保つデスク環境",
-                "description": "長時間の集中作業を支える環境づくりに。",
-                "query": "ノイズキャンセリング",
-                "query_variants": ["デスク タイマー", "モニター 仕事", "キーボード マウス セット"],
-                "cta": "集中環境を整える",
-            },
-        ],
-    },
-    "autofill": {
-        "anchor_id": "amazon-autofill-items",
-        "title": "作業後の集中環境を整える",
-        "lead": "勤怠入力を片づけたあと、資料作成や確認作業に戻りやすい環境づくりを控えめに紹介します。",
-        "more_label": "関連アイテムをまとめて見る",
-        "more_path": "/recommend",
-        "items": [
-            {
-                "category_label": "集中環境",
-                "title": "集中力を保つデスク環境",
-                "description": "締め作業後の確認や資料作成に戻りやすい環境づくりに。",
-                "query": "ノイズキャンセリング",
-                "query_variants": ["デスク タイマー", "モニター 仕事", "キーボード マウス セット"],
-                "cta": "集中環境を整える",
-            },
-            {
-                "category_label": "出張・リモート",
-                "title": "出張・リモートワーク環境",
-                "description": "移動先や自宅でも作業環境を整えたい方向けです。",
-                "query": "リモートワーク 便利グッズ",
-                "query_variants": ["出張 便利グッズ", "モバイルモニター", "USB-Cハブ"],
-                "cta": "出張・リモートワーク用品を見る",
-            },
-            {
-                "category_label": "思考整理",
-                "title": "提案書前の思考整理",
-                "description": "勤怠処理後に、論点や仮説を整理して仕事へ戻りたい方向けです。",
-                "query": "仮説思考",
-                "query_variants": ["ロジカルシンキング 本", "問題解決 本"],
-                "cta": "思考法の本を探す",
-            },
-        ],
-    },
-    "tools": {
-        "anchor_id": "amazon-tools-items",
-        "title": "PDF・資料作業の周辺アイテム",
-        "lead": "PDF整理や資料作成を主役にしながら、作業を進めやすくする本・周辺アイテムを紹介します。",
-        "more_label": "カテゴリ別にまとめて見る",
-        "more_path": "/recommend",
-        "items": [
-            {
-                "category_label": "PDF・契約書",
-                "title": "PDF・契約書作業を整える",
-                "description": "契約書・提案書・PDF資料を扱うことが多い方向けです。",
-                "query": "ドキュメントスキャナー",
-                "query_variants": ["PDF 編集", "書類整理 グッズ", "USB-Cハブ"],
-                "cta": "PDF・書類作業アイテムを見る",
-            },
-            {
-                "category_label": "資料作成",
-                "title": "スライド作成を速くする",
-                "description": "資料作成やプレゼン準備を効率化したい方向けです。",
-                "query": "PowerPoint 資料作成 本",
-                "query_variants": ["プレゼン 本", "図解 本", "ビジネスライティング 本"],
-                "cta": "資料作成に役立つ本を見る",
-            },
-            {
-                "category_label": "思考整理",
-                "title": "提案書前の思考整理",
-                "description": "提案前に論点や仮説を整理したい方向けです。",
-                "query": "仮説思考",
-                "query_variants": ["仮説思考", "問題解決 本"],
-                "cta": "思考法の本を探す",
-            },
-        ],
-    },
-    "pdf": {
-        "anchor_id": "amazon-pdf-items",
-        "title": "PDF・契約書作業を整えるアイテム",
-        "lead": "提案書、契約書、請求書などPDF資料を扱うことが多い方向けの補助導線です。",
-        "more_label": "PDF作業向けアイテムをまとめて見る",
-        "more_path": "/recommend",
-        "items": [
-            {
-                "category_label": "PDF・契約書",
-                "title": "PDF・契約書作業を整える",
-                "description": "契約書・提案書・PDF資料を扱うことが多い方向けです。",
-                "query": "ドキュメントスキャナー",
-                "query_variants": ["PDF 編集", "書類整理 グッズ", "USB-Cハブ"],
-                "cta": "PDF・書類作業アイテムを見る",
-            },
-            {
-                "category_label": "資料作成",
-                "title": "スライド作成を速くする",
-                "description": "PDF化する前の資料作成やプレゼン準備を効率化したい方向けです。",
-                "query": "PowerPoint 資料作成 本",
-                "query_variants": ["プレゼン 本", "図解 本"],
-                "cta": "資料作成に役立つ本を見る",
-            },
-            {
-                "category_label": "出張・リモート",
-                "title": "出張・リモートワーク環境",
-                "description": "外出先でもPDF確認や資料作業を進めたい方向けです。",
-                "query": "リモートワーク 便利グッズ",
-                "query_variants": ["出張 便利グッズ", "モバイルモニター", "USB-Cハブ"],
-                "cta": "出張・リモートワーク用品を見る",
-            },
-        ],
-    },
-    "faq": {
-        "anchor_id": "amazon-faq-items",
-        "title": "作業環境を整えたい方へ",
-        "lead": "FAQを確認したあとに、資料作成・PDF作業・集中環境のカテゴリも見比べられます。",
-        "more_label": "カテゴリ別のおすすめを見る",
-        "more_path": "/recommend",
-        "items": [
-            {
-                "category_label": "思考整理",
-                "title": "提案書前の思考整理",
-                "description": "提案前に論点や仮説を整理したい方向けです。",
-                "query": "仮説思考",
-                "query_variants": ["ロジカルシンキング 本", "問題解決 本"],
-                "cta": "思考法の本を探す",
-            },
-            {
-                "category_label": "PDF・契約書",
-                "title": "PDF・契約書作業を整える",
-                "description": "PDF資料、契約書、提案書を扱うことが多い方向けです。",
-                "query": "ドキュメントスキャナー",
-                "query_variants": ["PDF 編集", "書類整理 グッズ"],
-                "cta": "PDF・書類作業アイテムを見る",
-            },
-            {
-                "category_label": "ビジネス書",
-                "title": "コンサルワークに役立つビジネス書",
-                "description": "コンサルワークの基礎体力を高める本を探したい方向けです。",
-                "query": "ビジネス書 おすすめ",
-                "query_variants": ["仕事術 本", "生成AI 本", "コンサル 本"],
-                "cta": "ビジネス書を探す",
-            },
-        ],
-    },
+    "home": _section(
+        "コンサルワークを支える本・作業環境",
+        "Jobcan入力やPDF作業の前後に、思考整理・書類作業・集中環境を短く見比べられます。",
+        ["proposal-thinking", "pdf-contract-work", "focus-desk-environment"],
+        "amazon-consulting-items",
+    ),
+    "autofill": _section(
+        "作業後の集中環境を整える",
+        "勤怠入力を終えたあと、資料作成や確認作業に戻りやすい環境づくりの入口です。",
+        ["focus-desk-environment", "remote-work-travel", "proposal-thinking"],
+        "amazon-autofill-items",
+    ),
+    "tools": _section(
+        "PDF・資料作業の周辺アイテム",
+        "PDF整理や資料作成を進めやすくする本・道具をカテゴリ別に確認できます。",
+        ["pdf-contract-work", "slide-production", "proposal-thinking"],
+        "amazon-tools-items",
+    ),
+    "pdf": _section(
+        "PDF・契約書作業を整えるアイテム",
+        "提案書、契約書、請求書などPDF資料を扱うことが多い方向けの補助導線です。",
+        ["pdf-contract-work", "slide-production", "remote-work-travel"],
+        "amazon-pdf-items",
+    ),
+    "faq": _section(
+        "作業環境を整えたい方へ",
+        "FAQを確認したあとに、資料作成・PDF作業・集中環境のカテゴリも見比べられます。",
+        ["proposal-thinking", "pdf-contract-work", "consulting-business-books"],
+        "amazon-faq-items",
+    ),
     "recommend": {
         "anchor_id": "recommend-categories",
         "title": "コンサルワークに役立つカテゴリ",
         "lead": "資料作成、PDF・契約書作業、思考整理、集中環境を整えたい方向けに、作業別で探せる入口をまとめています。",
         "max_items": 6,
-        "items": [
-            {
-                "category_label": "思考整理",
-                "title": "提案書前の思考整理",
-                "description": "提案前に論点や仮説を整理したい方向けです。",
-                "query": "仮説思考",
-                "query_variants": ["ロジカルシンキング 本", "問題解決 本", "戦略思考 本"],
-                "cta": "思考法の本を探す",
-            },
-            {
-                "category_label": "資料作成",
-                "title": "スライド作成を速くする",
-                "description": "資料作成やプレゼン準備を効率化したい方向けです。",
-                "query": "PowerPoint 資料作成 本",
-                "query_variants": ["プレゼン 本", "図解 本", "ビジネスライティング 本"],
-                "cta": "資料作成に役立つ本を見る",
-            },
-            {
-                "category_label": "PDF・契約書",
-                "title": "PDF・契約書作業を整える",
-                "description": "契約書・提案書・PDF資料を扱うことが多い方向けです。",
-                "query": "ドキュメントスキャナー",
-                "query_variants": ["PDF 編集", "書類整理 グッズ", "USB-Cハブ"],
-                "cta": "PDF・書類作業アイテムを見る",
-            },
-            {
-                "category_label": "出張・リモート",
-                "title": "出張・リモートワーク環境",
-                "description": "出張先や自宅でも作業環境を整えたい方向けです。",
-                "query": "リモートワーク 便利グッズ",
-                "query_variants": ["出張 便利グッズ", "モバイルモニター", "USB-Cハブ"],
-                "cta": "出張・リモートワーク用品を見る",
-            },
-            {
-                "category_label": "集中環境",
-                "title": "集中力を保つデスク環境",
-                "description": "長時間の集中作業を支える環境づくりに。",
-                "query": "ノイズキャンセリング",
-                "query_variants": ["デスク タイマー", "モニター 仕事", "キーボード マウス セット"],
-                "cta": "集中環境を整える",
-            },
-            {
-                "category_label": "ビジネス書",
-                "title": "コンサルワークに役立つビジネス書",
-                "description": "コンサルワークの基礎体力を高める本を探す入口です。",
-                "query": "ビジネス書 おすすめ",
-                "query_variants": ["生成AI 本", "仕事術 本", "コンサル 本"],
-                "cta": "ビジネス書を探す",
-            },
-        ],
+        "items": AMAZON_THEME_POOL,
     },
 }

@@ -11,7 +11,7 @@ from io import BytesIO
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 KEPT_PATHS = [
-    '/', '/autofill', '/tools', '/tools/pdf', '/recommend', '/faq',
+    '/', '/autofill', '/tools', '/tools/pdf', '/recommend', '/faq', '/about',
     '/privacy', '/terms', '/contact', '/healthz', '/readyz', '/ping',
 ]
 ERROR_PAGE_MARKER = '<title>エラーが発生しました | Jobcan AutoFill</title>'
@@ -92,26 +92,18 @@ def run_deploy_verification():
         os.environ['ENABLE_A8_AFFILIATE'] = 'false'
         os.environ.pop('A8_AFFILIATE_LINKS_JSON', None)
         home_html = client.get('/').data.decode('utf-8', errors='replace')
-        if 'data-affiliate-network="amazon"' not in home_html:
-            failed.append('home page missing Amazon affiliate tracking attributes')
-        if 'data-affiliate-placement="top-inline"' not in home_html:
-            failed.append('home page missing top-inline affiliate placement attribute')
-        if 'data-affiliate-placement="top-sidebar"' not in home_html:
-            failed.append('home page missing top-sidebar affiliate placement attribute')
+        if 'data-affiliate-network="amazon"' in home_html:
+            failed.append('home page should not render external Amazon affiliate cards during AdSense review')
         if 'a8-lite-section' in home_html:
             failed.append('A8 block rendered while ENABLE_A8_AFFILIATE=false')
 
         autofill_html = client.get('/autofill').data.decode('utf-8', errors='replace')
-        if 'data-affiliate-placement="autofill-inline"' not in autofill_html:
-            failed.append('autofill page missing autofill-inline affiliate placement attribute')
-        if 'data-affiliate-placement="autofill-sidebar"' not in autofill_html:
-            failed.append('autofill page missing autofill-sidebar affiliate placement attribute')
+        if 'data-affiliate-network="amazon"' in autofill_html:
+            failed.append('autofill page should not render external Amazon affiliate cards during AdSense review')
 
         pdf_html = client.get('/tools/pdf').data.decode('utf-8', errors='replace')
-        if 'data-affiliate-placement="pdf-inline"' not in pdf_html:
-            failed.append('pdf page missing pdf-inline affiliate placement attribute')
-        if 'data-affiliate-placement="pdf-sidebar"' not in pdf_html:
-            failed.append('pdf page missing pdf-sidebar affiliate placement attribute')
+        if 'data-affiliate-network="amazon"' in pdf_html:
+            failed.append('pdf page should not render external Amazon affiliate cards during AdSense review')
 
         os.environ['ENABLE_A8_AFFILIATE'] = 'true'
         os.environ['A8_AFFILIATE_LINKS_JSON'] = '[]'

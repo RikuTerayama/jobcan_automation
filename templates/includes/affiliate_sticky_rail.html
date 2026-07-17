@@ -1,4 +1,4 @@
-{% set rail_key = affiliate_rail_key|default('home') %}
+﻿{% set rail_key = affiliate_rail_key|default('home') %}
 {% set rail_section = amazon_lightweight_sections.get(rail_key) if amazon_lightweight_sections is defined and amazon_lightweight_sections else none %}
 {% set rail_items = rail_section['items'] if rail_section and 'items' in rail_section else [] %}
 {% set rail_a8_section = a8_lightweight_sections.get(rail_key) if a8_lightweight_sections is defined and a8_lightweight_sections else none %}
@@ -7,81 +7,21 @@
 {% set rail_title = affiliate_rail_title|default('作業前に見る') %}
 {% set rail_lead = affiliate_rail_lead|default('コンサルワークを整える本・道具') %}
 {% set rail_storage_key = 'affiliateRailClosed:' ~ rail_placement %}
-{% if rail_items or rail_a8_items %}
-<aside
-    class="affiliate-sticky-rail affiliate-sticky-rail--{{ rail_key }}"
-    data-affiliate-rail
-    data-affiliate-rail-key="{{ rail_storage_key }}"
-    aria-label="{{ rail_lead }}"
->
-    <button class="affiliate-sticky-rail__close" type="button" data-affiliate-rail-close aria-label="広告枠を閉じる">×</button>
+{% if affiliate_side_rail_enabled|default(false) and (rail_items or rail_a8_items) %}
+<aside class="affiliate-sticky-rail affiliate-sticky-rail--{{ rail_key }}" data-affiliate-rail data-affiliate-rail-key="{{ rail_storage_key }}" aria-label="{{ rail_lead }}">
+    <button class="affiliate-sticky-rail__close" type="button" data-affiliate-rail-close aria-label="おすすめ枠を閉じる">×</button>
     <p class="affiliate-sticky-rail__eyebrow">{{ rail_title }}</p>
     <h2>{{ rail_lead }}</h2>
-    <p class="affiliate-sticky-rail__disclosure">広告/アフィリエイトリンクを含みます。</p>
-
+    <p class="affiliate-sticky-rail__disclosure">広告・アフィリエイトリンクを含みます。</p>
     <div class="affiliate-sticky-rail__list" role="list">
         {% for item in rail_items[:3] %}
-        <a
-            href="{{ item.url }}"
-            target="_blank"
-            rel="nofollow sponsored noopener"
-            class="affiliate-sticky-rail__item"
-            role="listitem"
-            data-affiliate-network="amazon"
-            data-affiliate-category="{{ item.category_label }}"
-            data-affiliate-placement="{{ rail_placement }}"
-            data-affiliate-cta="{{ item.cta|default('Amazonで探す') }}"
-        >
-            <span>{{ item.category_label }}</span>
-            <strong>{{ item.cta|default('Amazonで探す') }}</strong>
-        </a>
+        <a href="{{ item.url }}" target="_blank" rel="nofollow sponsored noopener" class="affiliate-sticky-rail__item" role="listitem" data-affiliate-network="amazon" data-affiliate-category="{{ item.category_label }}" data-affiliate-placement="{{ rail_placement }}" data-affiliate-cta="{{ item.cta|default('Amazonで探す') }}"><span>{{ item.category_label }}</span><strong>{{ item.cta|default('Amazonで探す') }}</strong></a>
         {% endfor %}
-
         {% for item in rail_a8_items[:1] %}
-        <a
-            href="{{ item.url }}"
-            target="_blank"
-            rel="nofollow sponsored noopener"
-            class="affiliate-sticky-rail__item affiliate-sticky-rail__item--a8"
-            role="listitem"
-            data-affiliate-network="a8"
-            data-affiliate-category="{{ item.category_label }}"
-            data-affiliate-placement="{{ rail_placement }}"
-            data-affiliate-cta="{{ item.cta|default('詳しく見る') }}"
-        >
-            <span>{{ item.category_label }}</span>
-            <strong>{{ item.cta|default('詳しく見る') }}</strong>
-        </a>
+        <a href="{{ item.url }}" target="_blank" rel="nofollow sponsored noopener" class="affiliate-sticky-rail__item affiliate-sticky-rail__item--a8" role="listitem" data-affiliate-network="a8" data-affiliate-category="{{ item.category_label }}" data-affiliate-placement="{{ rail_placement }}" data-affiliate-cta="{{ item.cta|default('詳しく見る') }}"><span>{{ item.category_label }}</span><strong>{{ item.cta|default('詳しく見る') }}</strong></a>
         {% endfor %}
     </div>
-
-    {% if rail_section and rail_section.more_path %}
-    <a class="affiliate-sticky-rail__more" href="{{ rail_section.more_path }}">まとめて見る</a>
-    {% endif %}
+    {% if rail_section and rail_section.more_path %}<a class="affiliate-sticky-rail__more" href="{{ rail_section.more_path }}">まとめて見る</a>{% endif %}
 </aside>
-<script>
-(function () {
-    var rails = document.querySelectorAll('[data-affiliate-rail]');
-    rails.forEach(function (rail) {
-        var key = rail.getAttribute('data-affiliate-rail-key');
-        try {
-            if (key && window.sessionStorage.getItem(key) === '1') {
-                rail.hidden = true;
-                return;
-            }
-        } catch (error) {
-            // Storage may be unavailable; the rail can still be closed for this page view.
-        }
-
-        var closeButton = rail.querySelector('[data-affiliate-rail-close]');
-        if (!closeButton) return;
-        closeButton.addEventListener('click', function () {
-            rail.hidden = true;
-            try {
-                if (key) window.sessionStorage.setItem(key, '1');
-            } catch (error) {}
-        });
-    });
-})();
-</script>
+<script>(function(){document.querySelectorAll('[data-affiliate-rail]').forEach(function(rail){var key=rail.getAttribute('data-affiliate-rail-key');try{if(key&&window.sessionStorage.getItem(key)==='1'){rail.hidden=true;return;}}catch(e){}var button=rail.querySelector('[data-affiliate-rail-close]');if(!button)return;button.addEventListener('click',function(){rail.hidden=true;try{if(key)window.sessionStorage.setItem(key,'1');}catch(e){}});});})();</script>
 {% endif %}

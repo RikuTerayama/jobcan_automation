@@ -80,15 +80,14 @@ SIMPLIFIED_SITEMAP_URLS = (
     ('/autofill', 'daily', '1.0'),
     ('/tools', 'weekly', '0.8'),
     ('/tools/pdf', 'weekly', '0.8'),
-    ('/recommend', 'weekly', '0.7'),
     ('/faq', 'weekly', '0.7'),
+    ('/about', 'monthly', '0.6'),
 )
 SIMPLIFIED_REDIRECTS = {
     '/guide/autofill': '/autofill',
     '/guide/excel-format': '/tools',
     '/guide/csv': '/tools',
     '/guide/getting-started': '/',
-    '/about': '/',
     '/glossary': '/faq',
     '/best-practices': '/faq',
     '/sitemap.html': '/sitemap.xml',
@@ -560,16 +559,15 @@ AFFILIATE_SLOT_RULES = {
 
 PUBLIC_AFFILIATE_PAGE_TYPES = frozenset((
     'landing',
-    'article',
-    'guide',
     'info',
     'tool',
     'tool_index',
     'trust_sensitive',
-    'legal',
-    'contact',
     'generic',
 ))
+
+ADSENSE_ALLOWED_PATHS = frozenset(('/', '/autofill', '/tools', '/tools/pdf', '/faq', '/about'))
+AFFILIATE_BLOCKED_PATHS = frozenset(('/about', '/privacy', '/terms', '/contact'))
 
 NON_UI_AFFILIATE_PATH_PREFIXES = ('/api/', '/status/', '/admin/', '/static/')
 NON_UI_AFFILIATE_PATHS = frozenset((
@@ -622,8 +620,6 @@ def get_affiliate_settings():
                 'tool',
                 'tool_index',
                 'trust_sensitive',
-                'legal',
-                'contact',
                 'generic',
             )
         )),
@@ -639,16 +635,19 @@ def affiliate_is_path_excluded(path=None):
     normalized_path = path or (request.path if has_request_context() else '/')
     if normalized_path.startswith(NON_UI_AFFILIATE_PATH_PREFIXES):
         return True
-    if normalized_path in NON_UI_AFFILIATE_PATHS:
+    if normalized_path in NON_UI_AFFILIATE_PATHS or normalized_path in AFFILIATE_BLOCKED_PATHS:
         return True
-    if get_affiliate_page_type(normalized_path) in PUBLIC_AFFILIATE_PAGE_TYPES:
-        return False
-    return any(_path_matches_rule(normalized_path, rule) for rule in settings['exclude_paths'])
+    if is_noindex_path(normalized_path) and normalized_path != '/recommend':
+        return True
+    if any(_path_matches_rule(normalized_path, rule) for rule in settings['exclude_paths']):
+        return True
+    return get_affiliate_page_type(normalized_path) not in PUBLIC_AFFILIATE_PAGE_TYPES
 
 
 def affiliate_can_render_textlinks(path=None):
     settings = get_affiliate_settings()
-    return settings['enabled'] and settings['textlinks_enabled']
+    normalized_path = path or (request.path if has_request_context() else '/')
+    return settings['enabled'] and settings['textlinks_enabled'] and not affiliate_is_path_excluded(normalized_path)
 
 
 def affiliate_get_slot_config(slot_id, path=None):
@@ -715,7 +714,7 @@ def affiliate_footer_slot_id(path=None):
         slot_id = 'article_end_1'
     elif page_type in ('guide', 'info'):
         slot_id = 'guide_end_1'
-    elif page_type in ('trust_sensitive', 'legal', 'contact', 'tool', 'tool_index', 'generic'):
+    elif page_type in ('trust_sensitive', 'tool', 'tool_index', 'generic'):
         slot_id = 'global_footer_banner'
 
     if slot_id and affiliate_can_render_slot(slot_id, normalized_path):
@@ -727,7 +726,7 @@ def affiliate_top_slot_id(path=None):
     normalized_path = path or (request.path if has_request_context() else '/')
     page_type = get_affiliate_page_type(normalized_path)
     slot_id = None
-    if page_type in ('article', 'guide', 'info', 'tool', 'tool_index', 'trust_sensitive', 'legal', 'contact', 'generic'):
+    if page_type in ('info', 'tool', 'tool_index', 'trust_sensitive', 'generic'):
         slot_id = 'public_top_inline'
 
     if slot_id and affiliate_can_render_slot(slot_id, normalized_path):
@@ -758,6 +757,8 @@ def _is_public_affiliate_html_path(path):
     if normalized_path in NON_UI_AFFILIATE_PATHS:
         return False
     if normalized_path in ('/robots.txt', '/sitemap.xml', '/ads.txt'):
+        return False
+    if normalized_path in AFFILIATE_BLOCKED_PATHS:
         return False
     if normalized_path.startswith(('/health', '/ready', '/live', '/ping')):
         return False
@@ -1053,6 +1054,7 @@ def inject_env_vars():
 
         return {
             'ADSENSE_ENABLED': os.getenv('ADSENSE_ENABLED', 'false').lower() == 'true',
+            'ADSENSE_ALLOWED': (os.getenv('ADSENSE_ENABLED', 'false').lower() == 'true') and current_path in ADSENSE_ALLOWED_PATHS and not is_noindex_path(current_path),
             'app_version': app_version,
             'products': products_list,
             'products_catalog': products_catalog,
@@ -1116,6 +1118,7 @@ def inject_env_vars():
         from lib.nav import get_nav_sections_fallback, get_footer_columns
         return {
             'ADSENSE_ENABLED': False,
+            'ADSENSE_ALLOWED': False,
             'app_version': '1.0.0',
             'products': [],
             'products_catalog': [],
@@ -2029,6 +2032,11 @@ def privacy():
 def terms():
     """利用規約ページ"""
     return render_template('terms.html')
+
+
+@app.route('/about')
+def about_page():
+    return render_template('about.html')
 
 @app.route('/contact')
 def contact():
