@@ -1,8 +1,8 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ja" class="no-js">
 <head>
-    {% set page_title = 'Jobcan AutoFill | 勤怠入力をExcelから補助する無料ツール' %}
-    {% set page_description = 'Excelテンプレートに入力した勤怠情報を使い、Jobcanへの入力作業を補助する無料ツールです。' %}
+    {% set page_title = 'Jobcan AutoFill | 勤怠入力をExcelからまとめて進める無料ツール' %}
+    {% set page_description = 'Excelテンプレートに入力した勤怠情報をもとに、Jobcanへの入力作業を補助する無料ツールです。' %}
     {% include 'includes/head_meta.html' %}
     <style>
         .autofill-shell { max-width: 980px; margin: 0 auto; padding: 42px 20px 72px; }
@@ -19,7 +19,7 @@
         .autofill-form-grid { display: grid; gap: 16px; }
         .autofill-form-split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .form-group label { display: block; margin-bottom: 8px; color: rgba(255,255,255,.9); font-weight: 700; }
-        .form-group input, .form-group select { width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.16); background: rgba(0,0,0,.25); color: #fff; }
+        .form-group input { width: 100%; padding: 13px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,.16); background: rgba(0,0,0,.25); color: #fff; }
         .submit-btn, .download-btn, .progress-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 13px 18px; border-radius: 12px; border: 1px solid rgba(74,158,255,.36); background: rgba(74,158,255,.17); color: #fff; font-weight: 700; cursor: pointer; text-decoration: none; }
         .submit-btn { width: 100%; margin-top: 8px; }
         .submit-btn:disabled, .download-btn:disabled, .progress-btn:disabled { opacity: .55; cursor: not-allowed; }
@@ -29,7 +29,7 @@
         .status-panel h2 { margin: 0 0 10px; font-size: 1.25rem; }
         .status-log { margin-top: 14px; padding: 14px; border-radius: 12px; background: rgba(0,0,0,.28); color: rgba(255,255,255,.82); white-space: pre-wrap; max-height: 220px; overflow: auto; font-size: .92rem; }
         .inline-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
-        .amazon-lite-section { margin-top: 54px; }
+        .recommend-teaser { margin-top: 46px; padding: 20px; border-radius: 18px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.08); }
         @media (max-width: 700px) { .operation-step, .autofill-form-split { grid-template-columns: 1fr; } .template-actions { flex-direction: column; } .download-btn { width: 100%; } }
     </style>
 </head>
@@ -43,245 +43,47 @@
         </section>
 
         <section class="operation-steps" aria-label="Jobcan AutoFill の操作手順">
-            <article class="operation-step">
-                <span class="operation-step__num">1</span>
-                <div>
-                    <h2>テンプレートをダウンロード</h2>
-                    <p>今月または先月のテンプレートを取得し、Excelで勤怠情報を入力する準備をします。</p>
-                    <div class="template-actions">
-                        <button type="button" class="download-btn" onclick="downloadTemplate('current')">今月のテンプレートをダウンロード</button>
-                        <button type="button" class="download-btn" onclick="downloadTemplate('previous')">先月のテンプレートをダウンロード</button>
-                    </div>
-                </div>
-            </article>
-            <article class="operation-step">
-                <span class="operation-step__num">2</span>
-                <div>
-                    <h2>Excelに勤怠情報を記入</h2>
-                    <p>開始時刻と終了時刻を入力します。26:00や29:00のような深夜勤務の表記にも対応しています。</p>
-                </div>
-            </article>
-            <article class="operation-step">
-                <span class="operation-step__num">3</span>
-                <div>
-                    <h2>Excelファイルをアップロード</h2>
-                    <p>記入済みのExcelファイルを選択します。ファイルを選んだあと、Jobcanのログイン情報を入力してください。</p>
-                </div>
-            </article>
-            <article class="operation-step">
-                <span class="operation-step__num">4</span>
-                <div>
-                    <h2>Jobcan情報と必要なオプションを入力</h2>
-                    <p>メールアドレス、会社ID、パスワードを入力します。対象月などの追加指定が必要な場合は、テンプレート側の内容を優先します。</p>
-                </div>
-            </article>
-            <article class="operation-step">
-                <span class="operation-step__num">5</span>
-                <div>
-                    <h2>実行して処理状況を確認</h2>
-                    <p>混雑時は順番待ちになります。自分の順番になると自動で開始するため、連続送信は不要です。</p>
-                </div>
-            </article>
+            <article class="operation-step"><span class="operation-step__num">1</span><div><h2>テンプレートをダウンロード</h2><p>今月または前月のテンプレートを取得し、Excelで勤怠情報を入力する準備をします。</p><div class="template-actions"><button type="button" class="download-btn" onclick="downloadTemplate('current')">今月のテンプレート</button><button type="button" class="download-btn" onclick="downloadTemplate('previous')">前月のテンプレート</button></div></div></article>
+            <article class="operation-step"><span class="operation-step__num">2</span><div><h2>Excelに勤怠情報を記入</h2><p>開始時刻と終了時刻を入力します。26:00 や 29:00 のような深夜帯の表記にも対応しています。</p></div></article>
+            <article class="operation-step"><span class="operation-step__num">3</span><div><h2>Excelファイルをアップロード</h2><p>記入済みのExcelファイルを選びます。ファイルを選んだあと、Jobcanのログイン情報を入力してください。</p></div></article>
+            <article class="operation-step"><span class="operation-step__num">4</span><div><h2>Jobcan情報と必要な項目を入力</h2><p>メールアドレス、会社ID、パスワードを入力します。ログイン情報は保存せず、処理に必要な範囲で一時的に使います。</p></div></article>
+            <article class="operation-step"><span class="operation-step__num">5</span><div><h2>実行して処理状況を確認</h2><p>混雑時は順番待ちになります。自分の順番になると自動で開始するため、連続送信は不要です。</p></div></article>
         </section>
 
         <section class="autofill-card" aria-labelledby="autofill-form-heading">
             <h2 id="autofill-form-heading">Step 3-6. アップロードして実行する</h2>
             <form id="uploadForm" enctype="multipart/form-data" class="autofill-form-grid">
-                <div class="form-group">
-                    <label for="file">Step 3. Excelファイル</label>
-                    <input type="file" id="file" name="file" accept=".xlsx,.xls" required>
-                </div>
+                <div class="form-group"><label for="file">Excelファイル</label><input type="file" id="file" name="file" accept=".xlsx,.xls" required></div>
                 <div class="autofill-form-split">
-                    <div class="form-group">
-                        <label for="email">Step 4. Jobcanのメールアドレス</label>
-                        <input type="email" id="email" name="email" required placeholder="name@example.com">
-                    </div>
-                    <div class="form-group">
-                        <label for="company_id">会社ID（任意）</label>
-                        <input type="text" id="company_id" name="company_id" placeholder="必要な場合のみ入力">
-                    </div>
+                    <div class="form-group"><label for="email">Jobcanのメールアドレス</label><input type="email" id="email" name="email" required placeholder="name@example.com"></div>
+                    <div class="form-group"><label for="company_id">会社ID（任意）</label><input type="text" id="company_id" name="company_id" placeholder="必要な場合のみ入力"></div>
                 </div>
-                <div class="form-group">
-                    <label for="password">Jobcanのパスワード</label>
-                    <input type="password" id="password" name="password" required placeholder="パスワードを入力" autocomplete="current-password">
-                </div>
-                <button type="submit" class="submit-btn" id="submitBtn">Step 6. Jobcan入力を開始する</button>
+                <div class="form-group"><label for="password">Jobcanのパスワード</label><input type="password" id="password" name="password" required placeholder="パスワードを入力" autocomplete="current-password"></div>
+                <button type="submit" class="submit-btn" id="submitBtn">Jobcan入力を開始する</button>
             </form>
-            <div class="notice-card">
-                <strong>混雑時の動き:</strong> Render Freeで安定させるため同時実行は1件です。ほかの処理中は順番待ちに入り、キューが満杯の場合は「混雑中」と表示します。連続クリックや再送信は不要です。
-            </div>
+            <div class="notice-card"><strong>混雑時の動き:</strong> Render Freeで安定させるため、同時実行は1件に制限しています。ほかの処理中は順番待ちに入り、キューが満杯のときは混雑中として受付を止めます。</div>
             <div class="status-panel" id="statusPanel" aria-live="polite">
-                <h2 id="statusTitle">Step 7. 処理状況を確認</h2>
-                <p id="statusMessage">待機中です。</p>
-                <div class="status-log" id="progressLog"></div>
-                <div class="inline-actions">
-                    <button type="button" class="progress-btn" id="cancelQueuedBtn" onclick="cancelQueuedJob()" style="display:none;">待機をキャンセル</button>
-                    <button type="button" class="progress-btn" id="retryBtn" onclick="retryProcess()" style="display:none;">再試行</button>
-                </div>
+                <h2 id="statusTitle">処理状況</h2><p id="statusMessage">待機中です。</p><div class="status-log" id="progressLog"></div>
+                <div class="inline-actions"><button type="button" class="progress-btn" id="cancelQueuedBtn" onclick="cancelQueuedJob()" style="display:none;">待機をキャンセル</button><button type="button" class="progress-btn" id="retryBtn" onclick="retryProcess()" style="display:none;">再試行</button></div>
             </div>
         </section>
 
-        <section class="notice-card">
-            <h2>Step 8. エラー時はFAQを見る</h2>
-            <p>実行後はJobcan側の登録内容を必ず確認してください。ファイル形式、混雑時の挙動、入力できない場合の確認ポイントはFAQにまとめています。</p>
-            <p><a href="/faq" style="color:#9bc3ff;">FAQで確認する</a></p>
-        </section>
-
-        {% with affiliate_panel_key='autofill', affiliate_panel_placement='autofill-inline', affiliate_panel_title='入力後の作業に戻りやすくする本・道具', affiliate_panel_lead='Jobcan入力を終えたあと、集中環境・リモート作業・思考整理に戻りたい方向けの補助導線です。' %}
-            {% include 'includes/affiliate_context_panel.html' %}
-        {% endwith %}
-        {% set affiliate_disclosure_rendered = true %}
-        {% set affiliate_upper_amazon_rendered = true %}
-        {% set affiliate_mid_amazon_rendered = true %}
-
-        {% with affiliate_rail_key='autofill', affiliate_rail_placement='autofill-sidebar', affiliate_rail_title='入力後に見る', affiliate_rail_lead='集中環境と仕事復帰の道具' %}
-            {% include 'includes/affiliate_sticky_rail.html' %}
-        {% endwith %}
+        <section class="notice-card"><h2>エラー時はFAQを確認</h2><p>実行後はJobcan側の登録内容を確認してください。ファイル形式、混雑時の挙動、入力できない場合の確認ポイントはFAQにまとめています。</p><p><a href="/faq" style="color:#9bc3ff;">FAQで確認する</a></p></section>
+        <section class="recommend-teaser"><h2>作業環境も整えたい方へ</h2><p>コンサルワーク向けの本・PDF周辺アイテム・集中環境は、専用ページにまとめています。</p><a href="/recommend" class="download-btn">関連アイテムを見る</a></section>
+        {% set affiliate_disclosure_rendered = true %}{% set affiliate_upper_amazon_rendered = true %}{% set affiliate_mid_amazon_rendered = true %}{% set affiliate_rakuten_rendered = true %}{% set affiliate_a8_rendered = true %}
     </main>
     {% include 'includes/related_tools.html' %}
     {% include 'includes/footer.html' %}
 
     <script>
-        let currentJobId = null;
-        let pollTimer = null;
-        let jobActive = false;
-
-        function setStatus(title, message, logs) {
-            document.getElementById('statusPanel').classList.add('is-visible');
-            document.getElementById('statusTitle').textContent = title;
-            document.getElementById('statusMessage').textContent = message || '';
-            if (Array.isArray(logs)) {
-                document.getElementById('progressLog').textContent = logs.join('\n');
-            }
-        }
-
-        function buildQueuedMessage(result) {
-            const pos = result.queue_position ? `あなたの順番: ${result.queue_position}番目です。` : '順番待ちです。';
-            const limit = result.queue_limit ? `待機枠は最大${result.queue_limit}件です。` : '';
-            return `${pos} このタブを開いたままにすると、自分の順番になったとき自動で開始します。${limit} タブを閉じたり通信が長時間止まると、待機が自動的に失効することがあります。`;
-        }
-
-        document.getElementById('uploadForm').addEventListener('submit', async (event) => {
-            event.preventDefault();
-            if (jobActive) {
-                setStatus('処理中です', '現在の処理または順番待ちが終わってから、再度実行してください。');
-                return;
-            }
-            const formData = new FormData(event.currentTarget);
-            const submitBtn = document.getElementById('submitBtn');
-            submitBtn.disabled = true;
-            document.getElementById('retryBtn').style.display = 'none';
-            document.getElementById('cancelQueuedBtn').style.display = 'none';
-            setStatus('送信中', 'ファイルと入力内容を確認しています。');
-            try {
-                const response = await fetch('/upload', { method: 'POST', body: formData });
-                const result = await response.json().catch(() => ({}));
-                if (!response.ok && result.error_code === 'QUEUE_FULL') {
-                    const retry = result.retry_after_sec ? `目安として${result.retry_after_sec}秒ほど空けてから再試行してください。` : '少し時間をおいてからお試しください。';
-                    setStatus('混雑しています', result.error || `現在、無料枠の処理上限に達しています。${retry}`);
-                    document.getElementById('retryBtn').style.display = 'inline-flex';
-                    submitBtn.disabled = false;
-                    return;
-                }
-                if (!response.ok) {
-                    setStatus('送信できませんでした', result.error || '入力内容を確認してください。');
-                    document.getElementById('retryBtn').style.display = 'inline-flex';
-                    submitBtn.disabled = false;
-                    return;
-                }
-                currentJobId = result.job_id;
-                jobActive = true;
-                if (result.status === 'queued') {
-                    setStatus('順番待ちです', buildQueuedMessage(result));
-                    document.getElementById('cancelQueuedBtn').style.display = 'inline-flex';
-                } else {
-                    setStatus('処理を開始しました', result.message || 'Jobcanへの入力処理を開始しています。');
-                }
-                startPolling();
-            } catch (error) {
-                setStatus('通信に失敗しました', 'ネットワーク状態を確認してから再試行してください。');
-                document.getElementById('retryBtn').style.display = 'inline-flex';
-                submitBtn.disabled = false;
-            }
-        });
-
-        function startPolling() {
-            if (!currentJobId) return;
-            if (pollTimer) clearInterval(pollTimer);
-            pollTimer = setInterval(async () => {
-                try {
-                    const response = await fetch(`/status/${currentJobId}?last_n=120`);
-                    const status = await response.json();
-                    const logs = status.progress_log || status.logs || [];
-                    if (status.status === 'queued') {
-                        setStatus('順番待ちです', buildQueuedMessage(status), logs);
-                        document.getElementById('cancelQueuedBtn').style.display = 'inline-flex';
-                        return;
-                    }
-                    document.getElementById('cancelQueuedBtn').style.display = 'none';
-                    if (status.status === 'completed') {
-                        clearInterval(pollTimer);
-                        jobActive = false;
-                        document.getElementById('submitBtn').disabled = false;
-                        setStatus('完了しました', status.message || '処理が完了しました。Jobcan側の内容を確認してください。', logs);
-                    } else if (['failed', 'error', 'cancelled', 'expired'].includes(status.status)) {
-                        clearInterval(pollTimer);
-                        jobActive = false;
-                        document.getElementById('submitBtn').disabled = false;
-                        setStatus('処理を完了できませんでした', status.error || status.message || '内容を確認して再試行してください。', logs);
-                        document.getElementById('retryBtn').style.display = 'inline-flex';
-                    } else {
-                        setStatus('処理中です', status.message || 'Jobcanへ入力しています。', logs);
-                    }
-                } catch (error) {
-                    clearInterval(pollTimer);
-                    jobActive = false;
-                    document.getElementById('submitBtn').disabled = false;
-                    setStatus('状態を確認できませんでした', '通信が中断されました。少し時間をおいて再試行してください。');
-                    document.getElementById('retryBtn').style.display = 'inline-flex';
-                }
-            }, 5000);
-        }
-
-        async function cancelQueuedJob() {
-            if (!currentJobId) return;
-            try {
-                await fetch(`/cancel/${currentJobId}`, { method: 'POST' });
-                if (pollTimer) clearInterval(pollTimer);
-                jobActive = false;
-                document.getElementById('submitBtn').disabled = false;
-                setStatus('待機をキャンセルしました', '必要な場合は内容を確認して再度実行してください。');
-                document.getElementById('cancelQueuedBtn').style.display = 'none';
-                document.getElementById('retryBtn').style.display = 'inline-flex';
-            } catch (error) {
-                setStatus('キャンセルできませんでした', '通信状態を確認してください。');
-            }
-        }
-
-        function retryProcess() {
-            jobActive = false;
-            currentJobId = null;
-            document.getElementById('submitBtn').disabled = false;
-            document.getElementById('statusPanel').classList.remove('is-visible');
-            document.getElementById('retryBtn').style.display = 'none';
-        }
-
-        function detachCurrentJob() {
-            if (!currentJobId || !jobActive) return;
-            const endpoint = `/api/queue/detach/${currentJobId}`;
-            if (navigator.sendBeacon) {
-                navigator.sendBeacon(endpoint, new Blob([], { type: 'application/json' }));
-            } else {
-                fetch(endpoint, { method: 'POST', keepalive: true }).catch(() => {});
-            }
-        }
-
-        window.addEventListener('pagehide', detachCurrentJob);
-
-        function downloadTemplate(type) {
-            const endpoint = type === 'previous' ? '/download-previous-template' : '/download-template';
-            window.location.href = endpoint;
-        }
+        let currentJobId = null, pollTimer = null, jobActive = false;
+        function setStatus(title, message, logs) { document.getElementById('statusPanel').classList.add('is-visible'); document.getElementById('statusTitle').textContent = title; document.getElementById('statusMessage').textContent = message || ''; if (Array.isArray(logs)) document.getElementById('progressLog').textContent = logs.join('\n'); }
+        function buildQueuedMessage(result) { const pos = result.queue_position ? `あなたの順番: ${result.queue_position}番目です。` : '順番待ちです。'; const limit = result.queue_limit ? ` 待機枠は最大${result.queue_limit}件です。` : ''; return `${pos} タブを開いたままにすると、自分の順番になったとき自動で開始します。${limit}`; }
+        document.getElementById('uploadForm').addEventListener('submit', async (event) => { event.preventDefault(); if (jobActive) { setStatus('処理中です', '現在の処理または順番待ちが終わってから再度実行してください。'); return; } const formData = new FormData(event.currentTarget); const submitBtn = document.getElementById('submitBtn'); submitBtn.disabled = true; document.getElementById('retryBtn').style.display = 'none'; document.getElementById('cancelQueuedBtn').style.display = 'none'; setStatus('送信中', 'ファイルと入力内容を確認しています。'); try { const response = await fetch('/upload', { method: 'POST', body: formData }); const result = await response.json().catch(() => ({})); if (!response.ok && result.error_code === 'QUEUE_FULL') { const retry = result.retry_after_sec ? `目安として${result.retry_after_sec}秒ほど空けてから再試行してください。` : '少し時間をおいてから再試行してください。'; setStatus('混雑しています', result.error || `現在、無料枠の処理上限に達しています。${retry}`); document.getElementById('retryBtn').style.display = 'inline-flex'; submitBtn.disabled = false; return; } if (!response.ok) { setStatus('送信できませんでした', result.error || '入力内容を確認してください。'); document.getElementById('retryBtn').style.display = 'inline-flex'; submitBtn.disabled = false; return; } currentJobId = result.job_id; jobActive = true; if (result.status === 'queued') { setStatus('順番待ちです', buildQueuedMessage(result)); document.getElementById('cancelQueuedBtn').style.display = 'inline-flex'; } else { setStatus('処理を開始しました', result.message || 'Jobcanへの入力処理を開始しています。'); } startPolling(); } catch (error) { setStatus('通信に失敗しました', 'ネットワーク状態を確認してから再試行してください。'); document.getElementById('retryBtn').style.display = 'inline-flex'; submitBtn.disabled = false; } });
+        function startPolling() { if (!currentJobId) return; if (pollTimer) clearInterval(pollTimer); pollTimer = setInterval(async () => { try { const response = await fetch(`/status/${currentJobId}?last_n=120`); const status = await response.json(); const logs = status.progress_log || status.logs || []; if (status.status === 'queued') { setStatus('順番待ちです', buildQueuedMessage(status), logs); document.getElementById('cancelQueuedBtn').style.display = 'inline-flex'; return; } document.getElementById('cancelQueuedBtn').style.display = 'none'; if (status.status === 'completed') { clearInterval(pollTimer); jobActive = false; document.getElementById('submitBtn').disabled = false; setStatus('完了しました', status.message || '処理が完了しました。Jobcan側の内容を確認してください。', logs); } else if (['failed','error','cancelled','expired','timeout'].includes(status.status)) { clearInterval(pollTimer); jobActive = false; document.getElementById('submitBtn').disabled = false; setStatus('処理を完了できませんでした', status.error || status.message || '内容を確認して再試行してください。', logs); document.getElementById('retryBtn').style.display = 'inline-flex'; } else { setStatus('処理中です', status.message || 'Jobcanへ入力しています。', logs); } } catch (error) { clearInterval(pollTimer); jobActive = false; document.getElementById('submitBtn').disabled = false; setStatus('状態を確認できませんでした', '通信が中断されました。少し時間をおいて再試行してください。'); document.getElementById('retryBtn').style.display = 'inline-flex'; } }, 5000); }
+        async function cancelQueuedJob() { if (!currentJobId) return; try { await fetch(`/cancel/${currentJobId}`, { method: 'POST' }); if (pollTimer) clearInterval(pollTimer); jobActive = false; document.getElementById('submitBtn').disabled = false; setStatus('待機をキャンセルしました', '必要な場合は内容を確認して再度実行してください。'); document.getElementById('cancelQueuedBtn').style.display = 'none'; document.getElementById('retryBtn').style.display = 'inline-flex'; } catch (error) { setStatus('キャンセルできませんでした', '通信状態を確認してください。'); } }
+        function retryProcess() { document.getElementById('retryBtn').style.display = 'none'; document.getElementById('statusPanel').classList.remove('is-visible'); }
+        function downloadTemplate(type) { window.location.href = type === 'previous' ? '/download-previous-template' : '/download-template'; }
     </script>
 </body>
 </html>

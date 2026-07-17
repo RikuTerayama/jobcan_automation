@@ -22,7 +22,7 @@ def url_path_to_template_rel(url_path):
         'tools': 'tools/index.html',
         'tools/pdf': 'tools/pdf_flow.html',
         'faq': 'faq_lite.html',
-        'recommend': 'recommend.html',
+        'about': 'about.html',
     }
     if path in special:
         return special[path]
@@ -32,7 +32,7 @@ def url_path_to_template_rel(url_path):
 
 
 def get_sitemap_url_paths():
-    return ['/', '/autofill', '/tools', '/tools/pdf', '/recommend', '/faq']
+    return ['/', '/autofill', '/tools', '/tools/pdf', '/faq', '/about']
 
 
 def get_git_date(filepath):

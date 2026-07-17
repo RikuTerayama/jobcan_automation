@@ -61,12 +61,11 @@
             <a href="/privacy">プライバシーポリシー</a>
             <a href="/contact">お問い合わせ</a>
         </nav>
-        {% with amazon_section_key='faq', amazon_section_show_disclosure=true %}
-            {% include 'includes/amazon_lightweight_section.html' %}
-        {% endwith %}
         {% set affiliate_disclosure_rendered = true %}
         {% set affiliate_upper_amazon_rendered = true %}
         {% set affiliate_mid_amazon_rendered = true %}
+        {% set affiliate_rakuten_rendered = true %}
+        {% set affiliate_a8_rendered = true %}
     </main>
     {% include 'includes/footer.html' %}
 </body>

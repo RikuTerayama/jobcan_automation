@@ -47,18 +47,19 @@
             </div>
         </section>
 
-        {% with affiliate_panel_key='home', affiliate_panel_placement='top-inline', affiliate_panel_title='コンサルワークを整える本・道具', affiliate_panel_lead='作業を始める前後に、思考整理・PDF書類作業・集中環境を短く見比べられます。' %}
-            {% include 'includes/affiliate_context_panel.html' %}
-        {% endwith %}
+        <section class="landing-section landing-section--compact" aria-labelledby="recommend-teaser-heading">
+            <div class="landing-section__header">
+                <p class="landing-section__eyebrow">Optional</p>
+                <h2 id="recommend-teaser-heading">コンサルワークを支える本・作業環境</h2>
+                <p>資料作成、PDF作業、集中環境に役立つテーマを控えめにまとめています。</p>
+            </div>
+            <a href="/recommend" class="btn btn-secondary">関連アイテムを見る</a>
+        </section>
         {% set affiliate_disclosure_rendered = true %}
         {% set affiliate_upper_amazon_rendered = true %}
         {% set affiliate_mid_amazon_rendered = true %}
         {% set affiliate_rakuten_rendered = true %}
         {% set affiliate_a8_rendered = true %}
-
-        {% with affiliate_rail_key='home', affiliate_rail_placement='top-sidebar', affiliate_rail_title='作業前に見る', affiliate_rail_lead='コンサルワークを整える本・道具' %}
-            {% include 'includes/affiliate_sticky_rail.html' %}
-        {% endwith %}
 
         <nav class="landing-utility-links" aria-label="補助リンク">
             <a href="/faq">FAQ</a>

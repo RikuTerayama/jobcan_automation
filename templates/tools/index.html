@@ -59,19 +59,16 @@
             {% endfor %}
         </div>
 
-        {% with amazon_section_key='tools', amazon_section_show_disclosure=true %}
-            {% include 'includes/amazon_lightweight_section.html' %}
-        {% endwith %}
+        <section class="notice-card" style="margin-top:36px;padding:20px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:rgba(255,255,255,.04);">
+            <h2 style="margin-top:0;">作業環境も整えたい方へ</h2>
+            <p style="color:rgba(255,255,255,.76);">PDF作業や資料作成に役立つ本・周辺アイテムは、専用ページにまとめています。</p>
+            <a href="/recommend" class="link-button">関連アイテムを見る</a>
+        </section>
         {% set affiliate_disclosure_rendered = true %}
         {% set affiliate_upper_amazon_rendered = true %}
         {% set affiliate_mid_amazon_rendered = true %}
-
-        {% if affiliate_can_render_textlinks() %}
-        {% with affiliate_networks=['rakuten'], affiliate_section_show_disclosure=false, affiliate_section_class='affiliate-cards-section--mid-rakuten', affiliate_section_tier='mid-rakuten', affiliate_rakuten_variant='two-col' %}
-            {% include 'includes/affiliate_cards_section.html' %}
-        {% endwith %}
         {% set affiliate_rakuten_rendered = true %}
-        {% endif %}
+        {% set affiliate_a8_rendered = true %}
     </div>
     {% include 'includes/seo_link_hub.html' %}
     {% include 'includes/footer.html' %}

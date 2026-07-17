@@ -1,4 +1,4 @@
-{% set panel_key = affiliate_panel_key|default('home') %}
+﻿{% set panel_key = affiliate_panel_key|default('home') %}
 {% set panel_section = amazon_lightweight_sections.get(panel_key) if amazon_lightweight_sections is defined and amazon_lightweight_sections else none %}
 {% set panel_items = panel_section['items'] if panel_section and 'items' in panel_section else [] %}
 {% set panel_a8_section = a8_lightweight_sections.get(panel_key) if a8_lightweight_sections is defined and a8_lightweight_sections else none %}
@@ -11,68 +11,23 @@
     <div class="affiliate-context-panel__header">
         <p class="affiliate-context-panel__eyebrow">Related picks</p>
         <h2>{{ panel_title }}</h2>
-        {% if panel_lead %}
-        <p>{{ panel_lead }}</p>
-        {% endif %}
+        {% if panel_lead %}<p>{{ panel_lead }}</p>{% endif %}
         <p class="affiliate-context-panel__disclosure">広告・アフィリエイトリンクを含みます。</p>
     </div>
-
     {% if panel_items %}
     <div class="affiliate-context-panel__grid" role="list" aria-label="Amazon Associates">
         {% for item in panel_items[:3] %}
-        <article class="affiliate-context-card" role="listitem">
-            <span class="affiliate-context-card__label">{{ item.category_label }}</span>
-            <h3>{{ item.title }}</h3>
-            {% if item.description %}
-            <p>{{ item.description }}</p>
-            {% endif %}
-            <a
-                href="{{ item.url }}"
-                target="_blank"
-                rel="nofollow sponsored noopener"
-                class="affiliate-context-card__cta"
-                data-affiliate-network="amazon"
-                data-affiliate-category="{{ item.category_label }}"
-                data-affiliate-placement="{{ panel_placement }}"
-                data-affiliate-cta="{{ item.cta|default('Amazonで探す') }}"
-            >
-                {{ item.cta|default('Amazonで探す') }}
-            </a>
-        </article>
+        <article class="affiliate-context-card" role="listitem"><span class="affiliate-context-card__label">{{ item.category_label }}</span><h3>{{ item.title }}</h3><p>{{ item.description }}</p><a href="{{ item.url }}" target="_blank" rel="nofollow sponsored noopener" class="affiliate-context-card__cta" data-affiliate-network="amazon" data-affiliate-category="{{ item.category_label }}" data-affiliate-placement="{{ panel_placement }}" data-affiliate-cta="{{ item.cta|default('Amazonで探す') }}">{{ item.cta|default('Amazonで探す') }}</a></article>
         {% endfor %}
     </div>
     {% endif %}
-
     {% if panel_a8_items %}
     <div class="affiliate-context-panel__grid affiliate-context-panel__grid--a8" role="list" aria-label="A8.net提携サービス">
-        {% for item in panel_a8_items[:3] %}
-        <article class="affiliate-context-card affiliate-context-card--a8" role="listitem">
-            <span class="affiliate-context-card__label">{{ item.category_label }}</span>
-            <h3>{{ item.title }}</h3>
-            {% if item.description %}
-            <p>{{ item.description }}</p>
-            {% endif %}
-            <a
-                href="{{ item.url }}"
-                target="_blank"
-                rel="nofollow sponsored noopener"
-                class="affiliate-context-card__cta"
-                data-affiliate-network="a8"
-                data-affiliate-category="{{ item.category_label }}"
-                data-affiliate-placement="{{ panel_placement }}"
-                data-affiliate-cta="{{ item.cta|default('詳しく見る') }}"
-            >
-                {{ item.cta|default('詳しく見る') }}
-            </a>
-        </article>
+        {% for item in panel_a8_items[:2] %}
+        <article class="affiliate-context-card affiliate-context-card--a8" role="listitem"><span class="affiliate-context-card__label">{{ item.category_label }}</span><h3>{{ item.title }}</h3><p>{{ item.description }}</p><a href="{{ item.url }}" target="_blank" rel="nofollow sponsored noopener" class="affiliate-context-card__cta" data-affiliate-network="a8" data-affiliate-category="{{ item.category_label }}" data-affiliate-placement="{{ panel_placement }}" data-affiliate-cta="{{ item.cta|default('詳しく見る') }}">{{ item.cta|default('詳しく見る') }}</a></article>
         {% endfor %}
     </div>
     {% endif %}
-
-    {% if panel_section and panel_section.more_path and panel_section.more_label %}
-    <p class="affiliate-context-panel__more">
-        <a href="{{ panel_section.more_path }}">{{ panel_section.more_label }}</a>
-    </p>
-    {% endif %}
+    {% if panel_section and panel_section.more_path %}<p class="affiliate-context-panel__more"><a href="{{ panel_section.more_path }}">おすすめをまとめて見る</a></p>{% endif %}
 </section>
 {% endif %}

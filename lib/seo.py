@@ -5,42 +5,51 @@ from copy import deepcopy
 
 SIMPLIFIED_SEO_PATHS = frozenset((
     '/', '/autofill', '/tools', '/tools/pdf', '/faq', '/recommend',
-    '/privacy', '/terms', '/contact',
+    '/about', '/privacy', '/terms', '/contact',
 ))
 
 SEO_DEFAULTS = {
     '/': {
-        'title': 'Jobcan AutoFill | 勤怠入力とPDF作業を軽くする無料ツール',
-        'description': 'Jobcan勤怠入力の自動化とPDFの結合・分割・パスワード付与を扱う軽量な無料ツールサイトです。',
+        'title': 'Jobcan AutoFill | Jobcan入力とPDF作業を軽くする無料ツール',
+        'description': 'Jobcan入力とPDF作業を、必要なときだけ軽く使える無料ツールです。',
         'og_type': 'website',
     },
     '/autofill': {
-        'title': 'Jobcan勤怠自動入力ツール | Jobcan AutoFill',
-        'description': 'Excelにまとめた勤怠データをもとに、Jobcanへの入力作業を補助する無料ツールです。',
+        'title': 'Jobcan AutoFill | 勤怠入力をExcelからまとめて進める無料ツール',
+        'description': 'Excelテンプレートに入力した勤怠情報をもとに、Jobcanへの入力作業を補助する無料ツールです。',
         'og_type': 'website',
+        'breadcrumb_title': 'Jobcan AutoFill',
     },
     '/tools': {
         'title': 'ツール一覧 | Jobcan AutoFill',
-        'description': 'Jobcan AutoFill と PDFユーティリティをまとめた軽量な無料ツール一覧です。',
+        'description': 'Jobcan AutoFill と PDFツールをまとめた、軽量な無料ツール一覧です。',
         'og_type': 'website',
+        'breadcrumb_title': 'ツール一覧',
     },
     '/tools/pdf': {
-        'title': 'PDFユーティリティ | Jobcan AutoFill',
-        'description': 'PDFの結合、分割、ページ抽出、圧縮、画像変換、保護されていないPDFへのパスワード付与を扱う無料ツールです。',
+        'title': 'PDFツール | パスワード付与・分割・結合・抽出・圧縮',
+        'description': 'PDFのパスワード付与、分割、結合、ページ抽出、圧縮、画像変換を扱う無料ツールです。ロック解除や復号は提供していません。',
         'og_type': 'website',
-        'breadcrumb_title': 'PDFユーティリティ',
+        'breadcrumb_title': 'PDFツール',
     },
     '/faq': {
         'title': 'FAQ | Jobcan AutoFill',
-        'description': 'Jobcan AutoFill と PDFツールの使い方、データの扱い、Render無料版での制約をまとめています。',
+        'description': 'Jobcan AutoFill と PDFツールの使い方、データの扱い、Render無料版での待機や制限についてまとめています。',
         'og_type': 'website',
         'breadcrumb_title': 'FAQ',
     },
-    '/recommend': {
-        'title': 'コンサルワーク向けアイテムおすすめ | Jobcan AutoFill',
-        'description': 'Jobcan入力、PDF・書類作業、資料作成、集中環境を整えたい方向けのAmazon Associates導線です。',
+    '/about': {
+        'title': 'このサイトについて | Jobcan AutoFill',
+        'description': 'Jobcan AutoFill の運営方針、提供している機能、広告・アフィリエイトの扱い、データ保護の考え方を説明します。',
         'og_type': 'website',
-        'breadcrumb_title': '関連アイテム',
+        'breadcrumb_title': 'このサイトについて',
+    },
+    '/recommend': {
+        'title': 'コンサルワーク向けおすすめアイテム | Jobcan AutoFill',
+        'description': 'Jobcan入力、PDF・書類作業、資料作成、集中環境を整えたい方向けのAmazon Associates導線です。価格やレビュー順位は掲載しません。',
+        'og_type': 'website',
+        'robots': 'noindex,follow',
+        'breadcrumb_title': 'おすすめアイテム',
     },
     '/privacy': {
         'title': 'プライバシーポリシー | Jobcan AutoFill',
@@ -58,25 +67,36 @@ SEO_DEFAULTS = {
     },
     '/contact': {
         'title': 'お問い合わせ | Jobcan AutoFill',
-        'description': 'Jobcan AutoFill と PDFツールに関するお問い合わせ、不具合報告、改善要望はこちらからご連絡ください。',
+        'description': 'Jobcan AutoFill と PDFツールに関するお問い合わせ、不具合報告、改善要望の連絡先です。',
         'og_type': 'website',
         'robots': 'noindex,follow',
         'breadcrumb_title': 'お問い合わせ',
     },
 }
 
-NOINDEX_PATHS = frozenset(path for path, defaults in SEO_DEFAULTS.items() if 'noindex' in (defaults.get('robots') or '').lower())
+NOINDEX_PATHS = frozenset(
+    path for path, defaults in SEO_DEFAULTS.items()
+    if 'noindex' in (defaults.get('robots') or '').lower()
+)
 
 TOOL_APPLICATIONS = {
     '/autofill': {
         'name': 'Jobcan AutoFill',
         'category': 'BusinessApplication',
-        'feature_list': ['Excelテンプレートから勤怠データを読み込み', 'Jobcanへの入力作業を補助', '順番待ちと進捗表示'],
+        'feature_list': [
+            'Excelテンプレートから勤怠情報を読み込み',
+            'Jobcanへの入力作業を補助',
+            '順番待ちと処理状況を表示',
+        ],
     },
     '/tools/pdf': {
-        'name': 'PDFユーティリティ',
+        'name': 'PDFツール',
         'category': 'UtilitiesApplication',
-        'feature_list': ['PDFの結合・分割・ページ抽出', 'PDFの圧縮と画像変換', '保護されていないPDFへのパスワード付与'],
+        'feature_list': [
+            'PDFのパスワード付与',
+            'PDFの分割・結合・ページ抽出',
+            'PDFの圧縮と画像変換',
+        ],
     },
 }
 
@@ -88,35 +108,35 @@ RELATED_CONTENT = {
         'title': '次に確認するページ',
         'intro': 'Jobcan入力とPDF作業に絞って確認できます。',
         'links': [
-            {'path': '/autofill', 'label': 'Jobcan AutoFill', 'description': '勤怠データの入力補助に使えます。'},
-            {'path': '/tools/pdf', 'label': 'PDFユーティリティ', 'description': 'PDFの分割・結合・パスワード付与に使えます。'},
-            {'path': '/recommend', 'label': '関連アイテム', 'description': 'コンサルワーク向けの周辺アイテムを探せます。'},
+            {'path': '/autofill', 'label': 'Jobcan AutoFill', 'description': '勤怠入力をまとめて進めたいときに使います。'},
+            {'path': '/tools/pdf', 'label': 'PDFツール', 'description': 'PDFの整理やパスワード付与に使います。'},
+            {'path': '/about', 'label': 'このサイトについて', 'description': '運営方針とデータの扱いを確認できます。'},
         ],
     },
     '/tools': {
         'title': '使えるツール',
         'intro': '現在公開している軽量ツールです。',
         'links': [
-            {'path': '/autofill', 'label': 'Jobcan AutoFill', 'description': 'Jobcan勤怠入力の補助に使えます。'},
-            {'path': '/tools/pdf', 'label': 'PDFユーティリティ', 'description': '提案書や帳票PDFの整理に使えます。'},
+            {'path': '/autofill', 'label': 'Jobcan AutoFill', 'description': 'Jobcan勤怠入力の補助に使います。'},
+            {'path': '/tools/pdf', 'label': 'PDFツール', 'description': '提案書や請求書PDFの整理に使います。'},
         ],
     },
     '/autofill': {
         'title': '入力前後に見るページ',
-        'intro': '勤怠入力の前後に確認できます。',
+        'intro': '勤怠入力の前後に必要なページだけをまとめています。',
         'links': [
-            {'path': '/tools/pdf', 'label': 'PDFユーティリティ', 'description': '関連資料のPDF整理に使えます。'},
+            {'path': '/tools/pdf', 'label': 'PDFツール', 'description': '関連資料のPDF整理に使います。'},
             {'path': '/faq', 'label': 'FAQ', 'description': '利用前の注意点を確認できます。'},
-            {'path': '/recommend', 'label': '関連アイテム', 'description': '作業環境づくりのヒントを確認できます。'},
+            {'path': '/about', 'label': 'このサイトについて', 'description': 'データの扱いと運営方針を確認できます。'},
         ],
     },
     '/tools/pdf': {
         'title': 'PDF作業とあわせて見るページ',
-        'intro': 'PDF整理のあとに確認できます。',
+        'intro': 'PDF作業の前後に確認しやすいページです。',
         'links': [
-            {'path': '/autofill', 'label': 'Jobcan AutoFill', 'description': '勤怠入力の一括処理に使えます。'},
-            {'path': '/faq', 'label': 'FAQ', 'description': 'PDFツールの制約を確認できます。'},
-            {'path': '/recommend', 'label': '関連アイテム', 'description': 'PDF・資料作成まわりの導線です。'},
+            {'path': '/autofill', 'label': 'Jobcan AutoFill', 'description': '勤怠入力の補助に使います。'},
+            {'path': '/faq', 'label': 'FAQ', 'description': 'PDFツールの制限を確認できます。'},
+            {'path': '/about', 'label': 'このサイトについて', 'description': '提供範囲と安全方針を確認できます。'},
         ],
     },
 }
@@ -143,6 +163,8 @@ def get_page_kind(path):
         return 'hub'
     if path in ('/autofill', '/tools/pdf'):
         return 'tool'
+    if path in ('/recommend', '/about'):
+        return 'resource'
     if path in ('/privacy', '/terms', '/contact'):
         return 'support'
     return 'resource'
@@ -190,5 +212,8 @@ def get_related_content(path):
     if not section:
         return None
     copied = deepcopy(section)
-    copied['links'] = [link for link in copied.get('links', []) if isinstance(link, dict) and link.get('path') in SIMPLIFIED_SEO_PATHS]
+    copied['links'] = [
+        link for link in copied.get('links', [])
+        if isinstance(link, dict) and link.get('path') in SIMPLIFIED_SEO_PATHS
+    ]
     return copied if copied['links'] else None
