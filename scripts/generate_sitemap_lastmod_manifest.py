@@ -54,7 +54,8 @@ def get_mtime_date(filepath):
 
 
 def has_git():
-    if not os.path.isdir(os.path.join(REPO_ROOT, '.git')):
+    # Linked worktrees use a .git pointer file rather than a directory.
+    if not os.path.exists(os.path.join(REPO_ROOT, '.git')):
         return False
     try:
         result = subprocess.run(['git', 'rev-parse', '--is-inside-work-tree'], cwd=REPO_ROOT, capture_output=True, text=True, timeout=3)

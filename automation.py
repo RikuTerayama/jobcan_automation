@@ -418,7 +418,7 @@ def perform_login(page, email, password, job_id, jobs, company_id=None):
         
         # 会社IDが入力されている場合の処理
         if company_id and company_id.strip():
-            add_job_log(job_id, f"🏢 会社IDが指定されています: {company_id}", jobs)
+            add_job_log(job_id, "🏢 会社IDが指定されています", jobs)
             
             # 「複数の会社に登録されていますか？」ボタンをクリック
             try:
@@ -467,7 +467,7 @@ def perform_login(page, email, password, job_id, jobs, company_id=None):
                         
                         # 会社IDを入力
                         if reliable_fill(page, selector, company_id, job_id, jobs):
-                            add_job_log(job_id, f"✅ 会社IDを入力しました: {company_id}", jobs)
+                            add_job_log(job_id, "✅ 会社IDを入力しました", jobs)
                             company_id_entered = True
                             human_like_wait(1.0, 2.0)
                             break
@@ -1470,6 +1470,60 @@ def _check_job_timeout(job_id: str, jobs: dict, job_timeout_sec: int) -> bool:
     return False
 
 
+def launch_jobcan_browser(playwright, browser_args, timeout=60000):
+    """Launch Edge first for the Windows local app, then Playwright Chromium."""
+    local_mode = os.getenv("JOBCAN_APP_MODE", "web").strip().lower() == "local"
+    if not local_mode:
+        return playwright.chromium.launch(headless=True, args=browser_args, timeout=timeout)
+
+    unsafe_server_flags = {
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--no-zygote",
+        "--disable-web-security",
+    }
+    local_args = [arg for arg in browser_args if arg not in unsafe_server_flags]
+    preferred_channel = os.getenv("JOBCAN_BROWSER_CHANNEL", "msedge").strip()
+    if preferred_channel:
+        try:
+            logger.info("event=browser_launch strategy=edge channel=%s", preferred_channel)
+            return playwright.chromium.launch(
+                channel=preferred_channel,
+                headless=True,
+                args=local_args,
+                timeout=timeout,
+            )
+        except Exception as exc:
+            logger.warning(
+                "event=browser_launch_fallback strategy=playwright_chromium reason_type=%s",
+                type(exc).__name__,
+            )
+
+    try:
+        return playwright.chromium.launch(headless=True, args=local_args, timeout=timeout)
+    except Exception as exc:
+        raise RuntimeError(
+            "Microsoft Edgeを起動できず、予備のChromiumも利用できませんでした。"
+            "Edgeを更新するか、Playwright Chromiumをセットアップしてください。"
+        ) from exc
+
+
+def close_playwright_resources(page, context, browser, job_id, jobs):
+    """Close Playwright resources in dependency order and report cleanup errors."""
+    cleanup_errors = []
+    for label, resource in (("page", page), ("context", context), ("browser", browser)):
+        if resource is None:
+            continue
+        try:
+            resource.close()
+            add_job_log(job_id, f"cleanup_result {label}_close=success", jobs)
+        except Exception as exc:
+            cleanup_errors.append(f"{label}_close_error: {str(exc)}")
+            add_job_log(job_id, f"cleanup_result {label}_close=failed error={str(exc)}", jobs)
+    return cleanup_errors
+
+
 def process_jobcan_automation(job_id: str, email: str, password: str, file_path: str, jobs: dict, session_dir: str = None, session_id: str = None, company_id: str = None, job_timeout_sec: int = 0):
     """Jobcan自動化処理のメイン関数（セッション固有のブラウザ環境）。job_timeout_sec>0のときハードタイムアウトを適用。"""
     try:
@@ -1618,12 +1672,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     # 最新のChrome User-Agent（CAPTCHA対策）
                     user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
                     
-                    # サーバー環境対応のため、通常のlaunchを使用（タイムアウト設定付き）
-                    browser = p.chromium.launch(
-                        headless=True,  # ヘッドレスモード（メモリ節約）
-                        args=browser_args,
-                        timeout=60000  # ブラウザ起動タイムアウトを60秒に設定
-                    )
+                    browser = launch_jobcan_browser(p, browser_args, timeout=60000)
                     
                     # P0-P1: ブラウザ起動後のメモリ計測（重要イベント）
                     if metrics_available:
@@ -1735,34 +1784,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         finally:
             # P0-1: 確実にクリーンアップ（page -> context -> browser -> playwright_instance の順）
             # このfinallyブロックは必ず実行される（エラーが発生しても）
-            cleanup_errors = []
-            
-            # page を閉じる（最優先）
-            if page is not None:
-                try:
-                    page.close()
-                    add_job_log(job_id, "cleanup_result page_close=success", jobs)
-                except Exception as e:
-                    cleanup_errors.append(f"page_close_error: {str(e)}")
-                    add_job_log(job_id, f"cleanup_result page_close=failed error={str(e)}", jobs)
-            
-            # context を閉じる
-            if context is not None:
-                try:
-                    context.close()
-                    add_job_log(job_id, "cleanup_result context_close=success", jobs)
-                except Exception as e:
-                    cleanup_errors.append(f"context_close_error: {str(e)}")
-                    add_job_log(job_id, f"cleanup_result context_close=failed error={str(e)}", jobs)
-            
-            # browser を閉じる
-            if browser is not None:
-                try:
-                    browser.close()
-                    add_job_log(job_id, "cleanup_result browser_close=success", jobs)
-                except Exception as e:
-                    cleanup_errors.append(f"browser_close_error: {str(e)}")
-                    add_job_log(job_id, f"cleanup_result browser_close=failed error={str(e)}", jobs)
+            cleanup_errors = close_playwright_resources(page, context, browser, job_id, jobs)
             
             # ガベージコレクションを実行（メモリ解放を促進）
             try:
