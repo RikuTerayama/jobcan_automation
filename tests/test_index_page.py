@@ -29,7 +29,8 @@ def test_index_returns_200(client):
     assert 'よくあるエラーと対処法' not in body, "Error page content should not be displayed"
     
     # 正常なランディングページのコンテンツが含まれることを確認
-    assert '業務効率化ツール集' in body or '製品一覧' in body, "Landing page content should be present"
+    assert 'Jobcan AutoFill' in body, "Landing page title should be present"
+    assert 'class="landing-hero hero"' in body, "Current landing hero should be present"
 
 def test_index_returns_html(client):
     """トップページがHTMLを返すことを確認"""

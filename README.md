@@ -1,9 +1,5 @@
 ﻿# RT Tools - 讌ｭ蜍吝柑邇・喧繝・・繝ｫ髮・
 
-## Windowsローカル版 Jobcan Tool
-
-Windows版のインストール、データの扱い、ビルド、実アカウント確認は [Windowsローカル版ガイド](docs/windows-local-jobcan.md) を参照してください。実機確認と正式Release artifactの検証が完了するまでは、RenderのJobcan Web Serviceを停止・削除しないでください。
-
 ## Lightweight Affiliate Stack
 
 The lightweight site keeps Jobcan AutoFill and PDF tools as the primary actions.

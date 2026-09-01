@@ -13,11 +13,8 @@ import hashlib
 import re
 import json
 import io
-import secrets
-import sys
-import atexit
 from datetime import datetime
-from flask import Flask, request, jsonify, render_template, send_file, Response, redirect, g, has_request_context, session
+from flask import Flask, request, jsonify, render_template, send_file, Response, redirect, g, has_request_context
 from werkzeug.exceptions import NotFound, MethodNotAllowed
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -31,15 +28,12 @@ from lib.seo import (
     get_web_application_schema,
     is_noindex_path,
 )
-LOCAL_APP_MODE = os.getenv("JOBCAN_APP_MODE", "web").strip().lower() == "local"
-
-if not LOCAL_APP_MODE:
-    from lib.amazon_creators import (
-        build_lightweight_amazon_sections,
-        build_rotating_theme_cards as build_amazon_rotating_theme_cards,
-        get_recommendations as get_amazon_recommendations,
-    )
-    from lib.a8_affiliate_map import build_a8_lightweight_sections
+from lib.amazon_creators import (
+    build_lightweight_amazon_sections,
+    build_rotating_theme_cards as build_amazon_rotating_theme_cards,
+    get_recommendations as get_amazon_recommendations,
+)
+from lib.a8_affiliate_map import build_a8_lightweight_sections
 
 # P1-1: 計測ログユーティリティ（循環import回避）
 try:
@@ -77,25 +71,7 @@ MAX_ACTIVE_SESSIONS = int(os.getenv("MAX_ACTIVE_SESSIONS", "1"))
 # ジョブ全体のハードタイムアウト（秒）。超過でstatus=timeoutに遷移
 JOB_TIMEOUT_SEC = int(os.getenv("JOB_TIMEOUT_SEC", "300"))  # 5分
 
-def resource_path(relative_path):
-    """Resolve templates/static files in source and PyInstaller builds."""
-    base_path = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
-    return os.path.join(base_path, relative_path)
-
-
-app = Flask(
-    __name__,
-    template_folder=resource_path("templates"),
-    static_folder=resource_path("static"),
-)
-if LOCAL_APP_MODE:
-    app.secret_key = secrets.token_bytes(32)
-    app.config.update(
-        SESSION_COOKIE_HTTPONLY=True,
-        SESSION_COOKIE_SAMESITE="Strict",
-        SESSION_COOKIE_SECURE=False,
-        MAX_CONTENT_LENGTH=(MAX_FILE_SIZE_MB + 1) * 1024 * 1024,
-    )
+app = Flask(__name__)
 
 # Phase 1 simplified site: keep only the core free tool routes.
 SIMPLIFIED_PRODUCT_PATHS = frozenset(('/autofill', '/tools/pdf'))
@@ -159,55 +135,7 @@ def _simplified_redirect_target(path):
         return '/'
     return None
 # Phase 5: Render 等プロキシ配下で実クライアント IP を request.remote_addr に反映（単段プロキシ前提）
-if not LOCAL_APP_MODE:
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
-
-
-LOCAL_ALLOWED_EXACT_PATHS = frozenset((
-    "/", "/autofill", "/download-template", "/download-previous-template",
-    "/upload", "/local/shutdown",
-))
-LOCAL_ALLOWED_PREFIXES = ("/static/", "/status/", "/cancel/", "/api/queue/detach/")
-
-
-def _local_expected_origin():
-    port = int(os.getenv("JOBCAN_LOCAL_PORT", "8765"))
-    return f"http://127.0.0.1:{port}"
-
-
-def _local_csrf_token():
-    token = session.get("local_csrf_token")
-    if not token:
-        token = secrets.token_urlsafe(32)
-        session["local_csrf_token"] = token
-    return token
-
-
-@app.before_request
-def enforce_local_boundary():
-    """Keep the desktop API private to its own loopback browser session."""
-    if not LOCAL_APP_MODE:
-        return None
-
-    expected_origin = _local_expected_origin()
-    expected_host = expected_origin.removeprefix("http://")
-    if request.host != expected_host or request.remote_addr not in ("127.0.0.1", "::1"):
-        return Response("Local access only", status=403, mimetype="text/plain")
-
-    path_allowed = request.path in LOCAL_ALLOWED_EXACT_PATHS or request.path.startswith(LOCAL_ALLOWED_PREFIXES)
-    if not path_allowed:
-        return Response("Not Found", status=404, mimetype="text/plain")
-    if request.path == "/":
-        return redirect("/autofill", code=302)
-
-    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
-        if request.headers.get("Origin") != expected_origin:
-            return jsonify(error="不正な送信元です。アプリを開き直してください。", error_code="LOCAL_ORIGIN_REJECTED"), 403
-        supplied_token = request.headers.get("X-CSRF-Token", "")
-        expected_token = session.get("local_csrf_token", "")
-        if not supplied_token or not expected_token or not secrets.compare_digest(supplied_token, expected_token):
-            return jsonify(error="画面の有効期限が切れました。再読み込みしてください。", error_code="LOCAL_CSRF_REJECTED"), 403
-    return None
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
 # 起動時の検証（恒久対策：テンプレートとモジュールの存在確認）
 def validate_startup():
@@ -252,13 +180,9 @@ def validate_startup():
 validate_startup()
 
 # アップロードフォルダの設定
-if LOCAL_APP_MODE:
-    UPLOAD_FOLDER = tempfile.mkdtemp(prefix="jobcan_tool_uploads_")
-    atexit.register(lambda: shutil.rmtree(UPLOAD_FOLDER, ignore_errors=True))
-else:
-    UPLOAD_FOLDER = 'uploads'
-    if not os.path.exists(UPLOAD_FOLDER):
-        os.makedirs(UPLOAD_FOLDER)
+UPLOAD_FOLDER = 'uploads'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
@@ -1032,65 +956,6 @@ def persist_affiliate_history_cookie(response):
 @app.context_processor
 def inject_env_vars():
     """環境変数をテンプレートで使えるようにする。製品一覧は products_catalog から取得（外部依存なし）。"""
-    if LOCAL_APP_MODE:
-        current_path = request.path if has_request_context() else "/autofill"
-        return {
-            "LOCAL_APP_MODE": True,
-            "local_csrf_token": _local_csrf_token() if has_request_context() else "",
-            "ADSENSE_ENABLED": False,
-            "ADSENSE_ALLOWED": False,
-            "GA_MEASUREMENT_ID": "",
-            "GSC_VERIFICATION_CONTENT": "",
-            "AFFILIATE_ENABLED": False,
-            "AFFILIATE_TEXTLINKS_ENABLED": False,
-            "AFFILIATE_BANNERS_ENABLED": False,
-            "AFFILIATE_STACK_ONLY": True,
-            "AFFILIATE_NETWORK": "none",
-            "AFFILIATE_EXCLUDE_PATHS": ("*",),
-            "AFFILIATE_ALLOWED_PAGE_TYPES": (),
-            "AFFILIATE_WIDGET_DESKTOP_ENABLED": False,
-            "AFFILIATE_WIDGET_TABLET_ENABLED": False,
-            "AFFILIATE_WIDGET_MOBILE_ENABLED": False,
-            "AFFILIATE_ROTATION_BANNER_ENABLED": False,
-            "AMAZON_AFFILIATE_ENABLED": False,
-            "amazon_affiliate": {"enabled": False, "items": [], "keywords": [], "source": "local_disabled"},
-            "amazon_affiliate_items": [],
-            "amazon_affiliate_purpose_items": [],
-            "amazon_affiliate_upper_items": [],
-            "amazon_affiliate_mid_items": [],
-            "amazon_lightweight_sections": {},
-            "a8_lightweight_sections": {},
-            "affiliate_page_type": "local",
-            "affiliate_path_excluded": True,
-            "affiliate_top_slot_id": None,
-            "affiliate_top_slot_mode": "none",
-            "affiliate_footer_slot_id": None,
-            "affiliate_side_rail_enabled": False,
-            "affiliate_can_render_textlinks": lambda *args, **kwargs: False,
-            "affiliate_can_render_slot": lambda *args, **kwargs: False,
-            "affiliate_get_slot_config": lambda *args, **kwargs: None,
-            "app_version": "1.0.0",
-            "products": [],
-            "products_catalog": [],
-            "nav_sections": [],
-            "footer_columns": [],
-            "BASE_URL": _local_expected_origin(),
-            "OPERATOR_NAME": "",
-            "OPERATOR_EMAIL": "",
-            "OPERATOR_LOCATION": "",
-            "OPERATOR_NOTE": "",
-            "seo_page_defaults": {"title": "Jobcan Tool", "description": "Windowsローカル版Jobcan入力ツール"},
-            "seo_page_description": "Windowsローカル版Jobcan入力ツール",
-            "seo_page_robots": "noindex,nofollow",
-            "seo_page_kind": "local",
-            "seo_breadcrumb_items": [],
-            "seo_web_application_schema": None,
-            "seo_article_schema": None,
-            "build_breadcrumb_items": build_breadcrumb_items,
-            "split_visible_sentences": split_visible_sentences,
-            "related_content_section": None,
-            "blog_articles": [],
-        }
     try:
         import json
         from lib.products_catalog import PRODUCTS
@@ -1356,7 +1221,7 @@ job_queue = deque()
 queued_job_params = {}
 # queued の最大待機時間（超過でtimeout扱い・ファイル削除）
 QUEUED_MAX_WAIT_SEC = int(os.getenv("QUEUED_MAX_WAIT_SEC", "1800"))  # 30分
-MAX_QUEUE_SIZE = int(os.getenv("MAX_QUEUE_SIZE", "0" if LOCAL_APP_MODE else "3"))  # localは待機キューなし
+MAX_QUEUE_SIZE = int(os.getenv("MAX_QUEUE_SIZE", "3"))  # キュー上限（メモリ保護）
 QUEUE_HEARTBEAT_TIMEOUT_SEC = int(os.getenv("QUEUE_HEARTBEAT_TIMEOUT_SEC", "90"))
 QUEUE_DISCONNECT_GRACE_SEC = int(os.getenv("QUEUE_DISCONNECT_GRACE_SEC", "15"))
 ACTIVE_CLIENT_STALE_WARNING_SEC = int(os.getenv("ACTIVE_CLIENT_STALE_WARNING_SEC", "180"))
@@ -2171,17 +2036,6 @@ def autofill():
         raise
 
 
-@app.route('/local/shutdown', methods=['POST'])
-def local_shutdown():
-    """Stop only the desktop launcher-owned local server."""
-    if not LOCAL_APP_MODE:
-        return Response('Not Found', status=404, mimetype='text/plain')
-    shutdown_callback = app.config.get('LOCAL_SHUTDOWN_CALLBACK')
-    if not callable(shutdown_callback):
-        return jsonify(error='終了処理を開始できませんでした。', error_code='LOCAL_SHUTDOWN_UNAVAILABLE'), 503
-    shutdown_callback()
-    return jsonify(status='shutting_down')
-
 @app.route('/privacy')
 def privacy():
     """プライバシーポリシーページ"""
@@ -2546,7 +2400,7 @@ def upload_file():
         
         if not allowed_file(file.filename):
             return jsonify({'error': 'Excelファイル（.xlsx, .xls）のみアップロード可能です'})
-        if LOCAL_APP_MODE and not looks_like_excel_upload(file):
+        if not looks_like_excel_upload(file):
             return jsonify({
                 'error': 'Excelファイルとして確認できませんでした。正しい.xlsxまたは.xlsファイルを選択してください。',
                 'error_code': 'INVALID_EXCEL_SIGNATURE',
@@ -2659,8 +2513,7 @@ def upload_file():
                         except Exception:
                             pass
                     return jsonify({
-                        'error': 'このPCでは別のJobcan処理を実行中です。完了後にもう一度お試しください。'
-                        if LOCAL_APP_MODE else '現在、無料枠の処理上限に達しています。しばらくしてからお試しください。',
+                        'error': '現在、無料枠の処理上限に達しています。しばらくしてからお試しください。',
                         'error_code': 'QUEUE_FULL',
                         'status_code': 503,
                         'retry_after_sec': 60,

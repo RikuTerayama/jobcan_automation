@@ -48,7 +48,7 @@ def clean_queue_state():
     _reset_queue_state()
 
 
-def _upload(client, *, email='queue@example.com', company_id='acme', password='secret', filename='sample.xlsx', content=b'xlsx'):
+def _upload(client, *, email='queue@example.com', company_id='acme', password='secret', filename='sample.xlsx', content=b'PK\x03\x04test'):
     return client.post(
         '/upload',
         data={

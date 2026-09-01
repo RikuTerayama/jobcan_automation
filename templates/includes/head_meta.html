@@ -1,5 +1,5 @@
 ﻿{# Google Analytics 4. Loaded only when GA_MEASUREMENT_ID is configured. #}
-{% if GA_MEASUREMENT_ID and not LOCAL_APP_MODE|default(false) %}
+{% if GA_MEASUREMENT_ID %}
 <script async src="https://www.googletagmanager.com/gtag/js?id={{ GA_MEASUREMENT_ID }}"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -23,7 +23,7 @@
 <title>{{ effective_page_title }}</title>
 <meta name="description" content="{{ effective_page_description }}">
 <meta name="robots" content="{{ effective_page_robots }}">
-{% if not LOCAL_APP_MODE|default(false) %}<link rel="canonical" href="{{ canonical_url|default(effective_page_url) }}">{% endif %}
+<link rel="canonical" href="{{ canonical_url|default(effective_page_url) }}">
 {% if GSC_VERIFICATION_CONTENT %}<meta name="google-site-verification" content="{{ GSC_VERIFICATION_CONTENT }}">{% endif %}
 <meta property="og:type" content="{{ effective_page_og_type }}">
 <meta property="og:site_name" content="Jobcan AutoFill">
@@ -38,15 +38,13 @@
 {% if ADSENSE_ALLOWED|default(false) %}
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4232725615106709" crossorigin="anonymous"></script>
 {% endif %}
-{% if not LOCAL_APP_MODE|default(false) %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-{% endif %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/common.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/scroll-reveal.css') }}">
 <script src="{{ url_for('static', filename='js/scroll-reveal.js') }}" defer></script>
 {% set affiliate_should_load_widgets = AFFILIATE_ENABLED and AFFILIATE_BANNERS_ENABLED and (affiliate_footer_slot_id or affiliate_page_type in ('landing',)) %}
 {% if affiliate_should_load_widgets %}<script src="{{ url_for('static', filename='js/affiliate-widgets.js') }}" defer></script>{% endif %}
-{% if not LOCAL_APP_MODE|default(false) %}{% include 'includes/structured_data.html' %}{% endif %}
+{% include 'includes/structured_data.html' %}
 {% block extra_head %}{% endblock %}

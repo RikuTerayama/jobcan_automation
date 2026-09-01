@@ -1471,42 +1471,8 @@ def _check_job_timeout(job_id: str, jobs: dict, job_timeout_sec: int) -> bool:
 
 
 def launch_jobcan_browser(playwright, browser_args, timeout=60000):
-    """Launch Edge first for the Windows local app, then Playwright Chromium."""
-    local_mode = os.getenv("JOBCAN_APP_MODE", "web").strip().lower() == "local"
-    if not local_mode:
-        return playwright.chromium.launch(headless=True, args=browser_args, timeout=timeout)
-
-    unsafe_server_flags = {
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--no-zygote",
-        "--disable-web-security",
-    }
-    local_args = [arg for arg in browser_args if arg not in unsafe_server_flags]
-    preferred_channel = os.getenv("JOBCAN_BROWSER_CHANNEL", "msedge").strip()
-    if preferred_channel:
-        try:
-            logger.info("event=browser_launch strategy=edge channel=%s", preferred_channel)
-            return playwright.chromium.launch(
-                channel=preferred_channel,
-                headless=True,
-                args=local_args,
-                timeout=timeout,
-            )
-        except Exception as exc:
-            logger.warning(
-                "event=browser_launch_fallback strategy=playwright_chromium reason_type=%s",
-                type(exc).__name__,
-            )
-
-    try:
-        return playwright.chromium.launch(headless=True, args=local_args, timeout=timeout)
-    except Exception as exc:
-        raise RuntimeError(
-            "Microsoft Edgeを起動できず、予備のChromiumも利用できませんでした。"
-            "Edgeを更新するか、Playwright Chromiumをセットアップしてください。"
-        ) from exc
+    """Launch the Playwright-managed Chromium used by the Render service."""
+    return playwright.chromium.launch(headless=True, args=browser_args, timeout=timeout)
 
 
 def close_playwright_resources(page, context, browser, job_id, jobs):
