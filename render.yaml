@@ -21,7 +21,7 @@
       - key: WEB_CONCURRENCY
         value: "1"  # workers謨ｰ・・ree plan 512MB縺ｧ螳牙ｮ壼喧・・
       - key: WEB_THREADS
-        value: "1"  # 繧ｹ繝ｬ繝・ラ謨ｰ・医Γ繝｢繝ｪ遽邏・ｼ・
+        value: "2"
       - key: WEB_TIMEOUT
         value: "180"  # 繧ｿ繧､繝繧｢繧ｦ繝・蛻・ｼ・obcan蜃ｦ逅・畑・・
       - key: WEB_GRACEFUL_TIMEOUT
@@ -29,9 +29,9 @@
       - key: WEB_KEEPALIVE
         value: "5"
       - key: WEB_MAX_REQUESTS
-        value: "500"  # 繝｡繝｢繝ｪ繝ｪ繝ｼ繧ｯ蟇ｾ遲厄ｼ・00-500縺ｮ遽・峇縺ｧ隱ｿ謨ｴ蜿ｯ閭ｽ縲＾OM鬆ｻ蠎ｦ谺｡隨ｬ縺ｧ300-400縺ｫ荳九￡繧具ｼ・
+        value: "0"
       - key: WEB_MAX_REQUESTS_JITTER
-        value: "50"  # max-requests縺ｮ10%遞句ｺｦ縺檎岼螳会ｼ・0-50縺ｮ遽・峇縺ｧ隱ｿ謨ｴ蜿ｯ閭ｽ・・ # max-requests縺ｮ10%遞句ｺｦ縺檎岼螳・
+        value: "0"
       - key: WEB_LOG_LEVEL
         value: "warning"  # P0-P1: 繝｡繝｢繝ｪ譛驕ｩ蛹悶・縺溘ａwarning縺ｫ螟画峩・・nfo縺ｯ繝弱う繧ｺ縺悟､壹＞・・
       # === 繝｡繝｢繝ｪ蛻ｶ髯撰ｼ・OM髦ｲ豁｢・・==

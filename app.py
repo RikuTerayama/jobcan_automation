@@ -69,7 +69,7 @@ PDF_LOCK_MAX_FILE_SIZE_MB = int(os.getenv("PDF_LOCK_MAX_FILE_SIZE_MB", "20"))
 # Local/dev can still override this with MAX_ACTIVE_SESSIONS when needed.
 MAX_ACTIVE_SESSIONS = int(os.getenv("MAX_ACTIVE_SESSIONS", "1"))
 # ジョブ全体のハードタイムアウト（秒）。超過でstatus=timeoutに遷移
-JOB_TIMEOUT_SEC = int(os.getenv("JOB_TIMEOUT_SEC", "300"))  # 5分
+JOB_TIMEOUT_SEC = int(os.getenv("JOB_TIMEOUT_SEC", "1800"))  # 月次入力を含む上限30分
 
 app = Flask(__name__)
 
@@ -2779,6 +2779,8 @@ def get_status(job_id):
                 'step_name': job.get('step_name', ''),
                 'current_data': job.get('current_data', 0),
                 'total_data': job.get('total_data', 0),
+                'confirmed_rows': job.get('confirmed_rows', 0),
+                'row_results': job.get('row_results', []),
                 'logs': job_logs,  # P1: ページング対応済みログ
                 'start_time': start_ts,
                 'elapsed_sec': elapsed_sec,
@@ -2978,8 +2980,9 @@ def _sitemap_lastmod_for_path(url_path):
     """url_path に対応する lastmod を YYYY-MM-DD で返す。manifest 優先、取得できない場合は None。"""
     path = (url_path or '').strip('/') or ''
     special = {
-        '': 'landing.html',
+        '': 'landing_v2.html',
         'autofill': 'autofill_flow.html',
+        'faq': 'faq_lite.html',
         'tools': 'tools/index.html',
         'tools/pdf': 'tools/pdf_flow.html',
         'recommend': 'recommend.html',

@@ -1,71 +1,54 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="ja" class="no-js">
 <head>
     {% set page_title = 'Jobcan AutoFill | Jobcan入力とPDF作業を軽くする無料ツール' %}
-    {% set page_description = 'Jobcan入力とPDF作業を、必要なときだけ軽く使える無料ツールです。' %}
+    {% set page_description = 'ExcelからJobcanへの勤怠入力とPDF作業を、シンプルな操作で。日々の事務作業に、余白をつくる無料ツール。' %}
     {% include 'includes/head_meta.html' %}
 </head>
-<body>
+<body class="editorial-home">
     {% include 'includes/header.html' %}
-    {% set starter_pages = [
-        {'eyebrow': 'Jobcan', 'title': 'Jobcan AutoFill', 'path': '/autofill', 'description': 'Excelテンプレートを使って、Jobcan入力をまとめて進めます。', 'cta': 'Jobcan入力を始める', 'icon': 'Time'},
-        {'eyebrow': 'PDF', 'title': 'PDFツール', 'path': '/tools/pdf', 'description': 'パスワード付与、分割、結合、抽出、圧縮に対応します。', 'cta': 'PDF作業を始める', 'icon': 'PDF'}
-    ] %}
-    <main class="landing-shell">
+    <main class="atelier-main">
         <section class="landing-hero hero">
-            <div class="landing-hero__eyebrow" data-reveal>Jobcan AutoFill</div>
-            <h1 data-reveal data-reveal-delay="40">
-                <span class="landing-hero__headline-line">何をしたいですか？</span>
-            </h1>
-            <p class="landing-hero__lead copy-lines copy-lines--hero" data-reveal data-reveal-delay="80">
-                <span class="copy-lines__line">Jobcan入力とPDF作業を、</span>
-                <span class="copy-lines__line">必要なときだけ軽く使えるツールです。</span>
-            </p>
-            <div class="landing-hero__actions" data-reveal data-reveal-delay="120">
-                <a href="/autofill" class="btn btn-primary">Jobcan入力を始める</a>
-                <a href="/tools/pdf" class="btn btn-secondary">PDF作業を始める</a>
+            <div class="atelier-hero-copy">
+                <p class="atelier-kicker">ESSENTIAL TOOLS FOR EVERYDAY WORK</p>
+                <h1>仕事に、<br><span>余白を。</span></h1>
+                <p class="atelier-intro">繰り返す作業を、軽やかに。<br>Jobcanの勤怠入力と、日々のPDF作業を<br>シンプルな道具で整える。</p>
+                <a href="/autofill" class="atelier-button">Jobcan入力を始める <span aria-hidden="true">↗</span></a>
+                <p class="atelier-fine">無料で利用できます · Excelテンプレート対応</p>
+            </div>
+            <div class="atelier-still-life" aria-hidden="true">
+                <div class="atelier-orbit"></div><div class="atelier-sheet atelier-sheet--back"></div>
+                <div class="atelier-sheet">
+                    <span class="atelier-sheet-label">THE WORK EDIT / 01</span>
+                    <span class="atelier-sheet-title">Less routine.<br><em>More room.</em></span>
+                    <div class="atelier-sheet-rule"></div>
+                    <div class="atelier-sheet-row"><span>MONDAY</span><span>09:00 — 18:00</span></div>
+                    <div class="atelier-sheet-row"><span>TUESDAY</span><span>09:00 — 18:00</span></div>
+                    <div class="atelier-sheet-row"><span>WEDNESDAY</span><span>09:00 — 18:00</span></div>
+                    <span class="atelier-sheet-mark">J / A</span>
+                </div>
+                <span class="atelier-image-caption">A QUIETER WAY TO WORK.</span>
             </div>
         </section>
-
-        <section class="landing-section landing-section--first" aria-labelledby="starter-pages-heading">
-            <div class="landing-section__header">
-                <p class="landing-section__eyebrow">Start Here</p>
-                <h2 id="starter-pages-heading">使う機能を選ぶ</h2>
-            </div>
-            <div class="landing-primary-grid" data-reveal-stagger>
-                {% for item in starter_pages %}
-                <a href="{{ item.path }}" class="landing-tool-card landing-tool-card--primary">
-                    <span class="landing-tool-card__meta">
-                        <span class="landing-tool-card__eyebrow">{{ item.eyebrow }}</span>
-                        <span class="landing-tool-card__icon" aria-hidden="true">{{ item.icon }}</span>
-                    </span>
-                    <h3>{{ item.title }}</h3>
-                    <p>{{ item.description }}</p>
-                    <span class="landing-tool-card__cta">{{ item.cta }}</span>
+        <section class="atelier-collection" aria-labelledby="collection-title">
+            <div class="atelier-section-heading"><p class="atelier-kicker">THE COLLECTION</p><h2 id="collection-title">日々の仕事に、必要なものだけ。</h2><span>01 — 02</span></div>
+            <div class="atelier-collection-grid">
+                <a href="/autofill" class="atelier-product">
+                    <div class="atelier-product-top"><span>01 / ATTENDANCE</span><span aria-hidden="true">↗</span></div>
+                    <h3>Jobcan <em>AutoFill</em></h3>
+                    <p>Excelに記入した勤怠データをJobcanへ。<br>一日ずつの入力を、まとめて進める。</p>
+                    <span class="atelier-text-link">勤怠入力を始める</span>
                 </a>
-                {% endfor %}
+                <a href="/tools/pdf" class="atelier-product">
+                    <div class="atelier-product-top"><span>02 / DOCUMENTS</span><span aria-hidden="true">↗</span></div>
+                    <h3>PDF <em>Studio</em></h3>
+                    <p>分割、結合、抽出、圧縮、パスワード付与。<br>書類を、使いやすいかたちに。</p>
+                    <span class="atelier-text-link">PDFツールを開く</span>
+                </a>
             </div>
         </section>
-
-        <section class="landing-section landing-section--compact" aria-labelledby="recommend-teaser-heading">
-            <div class="landing-section__header">
-                <p class="landing-section__eyebrow">Optional</p>
-                <h2 id="recommend-teaser-heading">コンサルワークを支える本・作業環境</h2>
-                <p>資料作成、PDF作業、集中環境に役立つテーマを控えめにまとめています。</p>
-            </div>
-            <a href="/recommend" class="btn btn-secondary">関連アイテムを見る</a>
-        </section>
-        {% set affiliate_disclosure_rendered = true %}
-        {% set affiliate_upper_amazon_rendered = true %}
-        {% set affiliate_mid_amazon_rendered = true %}
-        {% set affiliate_rakuten_rendered = true %}
-        {% set affiliate_a8_rendered = true %}
-
-        <nav class="landing-utility-links" aria-label="補助リンク">
-            <a href="/faq">FAQ</a>
-            <a href="/recommend">おすすめをまとめて見る</a>
-            <a href="/contact">お問い合わせ</a>
-        </nav>
+        <aside class="atelier-note"><p class="atelier-kicker">A LITTLE SUPPORT</p><p>使い方に迷ったら、<a href="/faq">FAQ</a>へ。<br>仕事を支える本や道具は、<a href="/recommend">おすすめページ</a>に。</p><a href="/about" class="atelier-text-link">このサイトについて ↗</a></aside>
+        {% set affiliate_disclosure_rendered = true %}{% set affiliate_upper_amazon_rendered = true %}{% set affiliate_mid_amazon_rendered = true %}{% set affiliate_rakuten_rendered = true %}{% set affiliate_a8_rendered = true %}
     </main>
     {% include 'includes/footer.html' %}
 </body>
