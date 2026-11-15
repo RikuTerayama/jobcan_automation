@@ -51,8 +51,13 @@ Home/FAQ sitemap mapping now points to the templates actually displayed.
 - Desktop 1440px and mobile 390px screenshots for ten retained public pages;
   horizontal overflow and one-H1 checks, JavaScript page-error capture.
 - scripts/smoke_test.py --deploy: passed.
+- scripts/smoke_test.py --jobcan-guardrails and scripts/predeploy.py: passed.
 - Queue guardrail smoke fixture updated to an actual workbook: the former fake
   file was rejected by the existing Excel signature check before reaching the queue.
+- Historical scripts/verify_phase1.py: two existing copy assertions still fail
+  (the About operator section and Contact fallback text). Those templates and the
+  script are identical to origin/main. Contact also still contains the pre-existing
+  example form URL; this work does not invent a replacement contact destination.
 - Local browser environment: Windows Python 3.14, Playwright 1.65.2, installed
   Chrome 157. Production remains Python 3.11 / pinned Playwright 1.40; no production
   dependency changes. The browser harness also supports JOBCAN_TEST_CHANNEL.
