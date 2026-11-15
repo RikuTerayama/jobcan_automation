@@ -73,4 +73,3 @@ def test_status_returns_actual_partial_results():
     finally:
         with jobs_lock:
             jobs.pop(job_id, None)
-

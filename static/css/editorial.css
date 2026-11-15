@@ -178,4 +178,3 @@ body .seo-link-hub, body .seo-link-hub__card, body .related-tools-card { backgro
   .atelier-template-links { flex-wrap:wrap; }
 }
 @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } *, *::before, *::after { animation:none!important; transition:none!important; } }
-

@@ -94,4 +94,3 @@ Home/FAQ sitemap mapping now points to the templates actually displayed.
   https://render.com/docs/free
 - Jobcan official attendance manuals:
   https://id.jobcan.jp/manuals?key=manual_am
-

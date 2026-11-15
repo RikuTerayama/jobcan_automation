@@ -88,4 +88,3 @@ def punch_once(page, value, check_active, confirmation_timeout=15000):
             '再送信の前にJobcanの打刻一覧を確認してください。'
         ) from exc
     return 'registered'
-
