@@ -192,10 +192,14 @@ def run_jobcan_guardrail_verification():
         if detach_resp.status_code != 200 or detach_json.get('status') != 'queued':
             failed.append(f"/api/queue/detach queued expected queued got status={detach_resp.status_code} body={detach_json}")
 
+        from openpyxl import Workbook
+        upload_file = BytesIO()
+        Workbook().save(upload_file)
+        upload_file.seek(0)
         upload_resp = client.post(
             '/upload',
             data={
-                'file': (BytesIO(b'not-a-real-xlsx-but-extension-is-allowed'), 'guardrail.xlsx'),
+                'file': (upload_file, 'guardrail.xlsx'),
                 'email': 'phase6-guard@example.com',
                 'company_id': 'phase6-company',
                 'password': 'secret',

@@ -17,7 +17,7 @@ OUTPUT_PATH = os.path.join(REPO_ROOT, 'data', 'sitemap_lastmod.json')
 def url_path_to_template_rel(url_path):
     path = (url_path or '').strip('/') or ''
     special = {
-        '': 'landing.html',
+        '': 'landing_v2.html',
         'autofill': 'autofill_flow.html',
         'tools': 'tools/index.html',
         'tools/pdf': 'tools/pdf_flow.html',

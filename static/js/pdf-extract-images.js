@@ -3,7 +3,7 @@
  * 注意: PDFによっては抽出できない場合があります
  */
 
-const ENCRYPTED_PDF_USER_MESSAGE = 'このPDFはパスワード保護されています。正しいパスワードを入力してください。';
+const EXTRACT_ENCRYPTED_PDF_MESSAGE = 'このPDFはパスワード保護されています。正しいパスワードを入力してください。';
 
 function isEncryptedPdfJsError(e) {
     const msg = String(e?.message || '').toLowerCase();
@@ -58,7 +58,7 @@ class PdfExtractImages {
             pdf = await loadingTask.promise;
         } catch (e) {
             if (isEncryptedPdfJsError(e)) {
-                throw new Error(ENCRYPTED_PDF_USER_MESSAGE);
+                throw new Error(EXTRACT_ENCRYPTED_PDF_MESSAGE);
             }
             console.error('[PdfExtractImages] load_failed', { fileName: file.name });
             throw e;

@@ -695,497 +695,66 @@ def return_to_attendance_safely(page, job_id, jobs):
         else:
             add_job_log(job_id, f"⚠️ 出勤簿への戻り遷移でエラー（継続します）: {error_text}", jobs)
 
-def perform_actual_data_input(page, data_source, total_data, pandas_available, job_id, jobs):
-    """実際のデータ入力を実行"""
-    try:
-        add_job_log(job_id, "🎯 実際のデータ入力処理を開始します", jobs)
-        
-        # 出勤簿ページに移動
-        add_job_log(job_id, "📋 出勤簿ページに移動中...", jobs)
-        page.goto("https://ssl.jobcan.jp/employee/attendance")
-        page.wait_for_load_state('networkidle', timeout=30000)
-        add_job_log(job_id, "✅ 出勤簿ページアクセス完了", jobs)
-        
-        if pandas_available:
-            # pandasを使用した処理（空白行スキップ対応）
-            # 空白行をスキップするためのフィルタ処理
-            filtered_data = data_source.dropna(subset=['日付'], how='all')
-            key_columns = ['日付', '開始時刻', '終了時刻']
-            filtered_data = filtered_data.dropna(subset=key_columns, how='all')
-            skipped_rows = len(data_source) - len(filtered_data)
-            if skipped_rows > 0:
-                add_job_log(job_id, f"✅ データ処理で空白行 {skipped_rows} 行をスキップしました", jobs)
-            
-            # フィルタ後のデータで処理
-            processed_count = 0
-            for index, row in filtered_data.iterrows():
-                try:
-                    date = row.iloc[0]
-                    start_time = row.iloc[1]
-                    end_time = row.iloc[2]
-                    
-                    date_str, year, month, day = extract_date_info(date)
-                    processed_count += 1
-                    add_job_log(job_id, f"📝 データ {processed_count}/{total_data}: {date_str} {start_time}-{end_time}", jobs)
-                    
-                    # リソース監視（4番目以降で強化）
-                    try:
-                        from app import monitor_processing_resources
-                        monitor_processing_resources(processed_count, total_data)
-                    except Exception as monitor_error:
-                        add_job_log(job_id, f"⚠️ リソース監視エラー: {monitor_error}", jobs)
-                    
-                    # 時刻を4桁形式に変換
-                    start_time_4digit = convert_time_to_4digit(start_time)
-                    end_time_4digit = convert_time_to_4digit(end_time)
-                    end_time_4digit = adjust_overnight_end_time(start_time_4digit, end_time_4digit)
-                    
-                    # 打刻修正ページに移動
-                    modify_url = f"https://ssl.jobcan.jp/employee/adit/modify?year={year}&month={month}&day={day}"
-                    add_job_log(job_id, f"🔗 打刻修正ページに移動: {modify_url}", jobs)
-                    
-                    try:
-                        page.goto(modify_url, timeout=30000)
-                        page.wait_for_load_state('networkidle', timeout=30000)
-                        
-                        # 人間らしい待機
-                        human_like_wait()
-                        add_job_log(job_id, "✅ 打刻修正ページアクセス完了", jobs)
-                    except Exception as e:
-                        add_job_log(job_id, f"❌ 打刻修正ページアクセスエラー: {e}", jobs)
-                        continue
-                    
-                    # 時刻入力フィールドが読み込まれるまで待機
-                    add_job_log(job_id, "⏳ 時刻入力フィールドの読み込みを待機中...", jobs)
-                    try:
-                        page.wait_for_selector('input[type="text"]', timeout=10000)
-                        add_job_log(job_id, "✅ 時刻入力フィールドの読み込み完了", jobs)
-                    except Exception as e:
-                        add_job_log(job_id, f"⚠️ 時刻入力フィールドの読み込みタイムアウト: {e}", jobs)
-                    
-                    # 1つの入力フィールドを取得
-                    time_input = page.locator('input[type="text"]').first
-                    
-                    # 1回目: 始業時刻を人間らしく入力して打刻
-                    add_job_log(job_id, f"⏰ 1回目: 始業時刻を入力: {start_time_4digit}", jobs)
-                    try:
-                        # 人間らしいタイピングで入力
-                        if not human_like_typing(page, 'input[type="text"]', start_time_4digit, job_id, jobs):
-                            add_job_log(job_id, "❌ 始業時刻入力に失敗しました", jobs)
-                            continue
-                        
-                        # 人間らしい待機
-                        human_like_wait()
-                        add_job_log(job_id, "✅ 始業時刻入力完了", jobs)
-                    except Exception as e:
-                        add_job_log(job_id, f"❌ 始業時刻入力エラー: {e}", jobs)
-                        continue  # 始業時刻入力に失敗した場合は次のデータへ
-                    
-                    # 1回目の打刻ボタンを人間らしくクリック
-                    add_job_log(job_id, "🔘 1回目: 打刻ボタンをクリック中...", jobs)
-                    first_punch_success = False
-                    
-                    # 人間らしい待機
-                    human_like_wait()
-                    
-                    # 打刻ボタンを探してクリック (prioritized methods)
-                    try:
-                        page.get_by_role("button", name="打刻").click()
-                        page.wait_for_load_state('networkidle', timeout=10000)
-                        add_job_log(job_id, "✅ 1回目: 打刻ボタンクリック完了（get_by_role）", jobs)
-                        first_punch_success = True
-                    except Exception as e:
-                        add_job_log(job_id, f"⚠️ 1回目: get_by_roleでのボタンクリックでエラー: {e}", jobs)
-                    
-                    if not first_punch_success:
-                        try:
-                            page.locator('input[value="打刻"]').click()
-                            page.wait_for_load_state('networkidle', timeout=10000)
-                            add_job_log(job_id, "✅ 1回目: 打刻ボタンクリック完了（input[value]）", jobs)
-                            first_punch_success = True
-                        except Exception as e:
-                            add_job_log(job_id, f"⚠️ 1回目: input[value]でのボタンクリックでエラー: {e}", jobs)
-                    
-                    if not first_punch_success:
-                        try:
-                            page.get_by_text("打刻").click()
-                            page.wait_for_load_state('networkidle', timeout=10000)
-                            add_job_log(job_id, "✅ 1回目: 打刻ボタンクリック完了（get_by_text）", jobs)
-                            first_punch_success = True
-                        except Exception as e:
-                            add_job_log(job_id, f"⚠️ 1回目: get_by_textでのボタンクリックでエラー: {e}", jobs)
-                    
-                    if not first_punch_success:
-                        try:
-                            page.locator('button:has-text("打刻")').click()
-                            page.wait_for_load_state('networkidle', timeout=10000)
-                            add_job_log(job_id, "✅ 1回目: 打刻ボタンクリック完了（button:has-text）", jobs)
-                            first_punch_success = True
-                        except Exception as e:
-                            add_job_log(job_id, f"⚠️ 1回目: button:has-textでのボタンクリックでエラー: {e}", jobs)
-                    
-                    if not first_punch_success:
-                        try:
-                            page.locator('button[type="submit"]').click()
-                            page.wait_for_load_state('networkidle', timeout=10000)
-                            add_job_log(job_id, "✅ 1回目: 打刻ボタンクリック完了（button[type=submit]）", jobs)
-                            first_punch_success = True
-                        except Exception as e:
-                            add_job_log(job_id, f"⚠️ 1回目: button[type=submit]でのボタンクリックでエラー: {e}", jobs)
-                    
-                    if not first_punch_success:
-                        add_job_log(job_id, "❌ 1回目: 打刻ボタンが見つかりません", jobs)
-                        continue # 1回目の打刻に失敗した場合は次のデータへ
-                    
-                    # 人間らしい待機
-                    human_like_wait()
-                    
-                    # 2回目: 終業時刻を人間らしく入力して打刻
-                    add_job_log(job_id, f"⏰ 2回目: 終業時刻を入力: {end_time_4digit}", jobs)
-                    try:
-                        # 人間らしいタイピングで入力
-                        if not human_like_typing(page, 'input[type="text"]', end_time_4digit, job_id, jobs):
-                            add_job_log(job_id, "⚠️ 終業時刻のタイピング入力に失敗。fill入力で再試行します", jobs)
-                            if not reliable_fill(page, 'input[type="text"]:visible', end_time_4digit, job_id, jobs):
-                                add_job_log(job_id, "❌ 終業時刻入力に失敗しました", jobs)
-                                continue
-                        
-                        # 人間らしい待機
-                        human_like_wait()
-                        add_job_log(job_id, "✅ 終業時刻入力完了", jobs)
-                    except Exception as e:
-                        add_job_log(job_id, f"⚠️ 終業時刻入力エラー（想定通りの処理構造です）: {e}", jobs)
-                        # 終業時刻入力に失敗しても処理は継続
-                    
-                    # 2回目の打刻ボタンをクリック
-                    add_job_log(job_id, "🔘 2回目: 打刻ボタンをクリック中...", jobs)
-                    second_punch_success = False
-                    
-                    # 打刻ボタンを探してクリック (prioritized methods)
-                    try:
-                        page.get_by_role("button", name="打刻").click()
-                        page.wait_for_load_state('networkidle', timeout=10000)
-                        add_job_log(job_id, "✅ 2回目: 打刻ボタンクリック完了（get_by_role）", jobs)
-                        second_punch_success = True
-                    except Exception as e:
-                        add_job_log(job_id, f"⚠️ 2回目: get_by_roleでのボタンクリックでエラー: {e}", jobs)
-                    
-                    if not second_punch_success:
-                        try:
-                            page.locator('input[value="打刻"]').click()
-                            page.wait_for_load_state('networkidle', timeout=10000)
-                            add_job_log(job_id, "✅ 2回目: 打刻ボタンクリック完了（input[value]）", jobs)
-                            second_punch_success = True
-                        except Exception as e:
-                            add_job_log(job_id, f"⚠️ 2回目: input[value]でのボタンクリックでエラー: {e}", jobs)
-                    
-                    if not second_punch_success:
-                        try:
-                            page.get_by_text("打刻").click()
-                            page.wait_for_load_state('networkidle', timeout=10000)
-                            add_job_log(job_id, "✅ 2回目: 打刻ボタンクリック完了（get_by_text）", jobs)
-                            second_punch_success = True
-                        except Exception as e:
-                            add_job_log(job_id, f"⚠️ 2回目: get_by_textでのボタンクリックでエラー: {e}", jobs)
-                    
-                    if not second_punch_success:
-                        try:
-                            page.locator('button:has-text("打刻")').click()
-                            page.wait_for_load_state('networkidle', timeout=10000)
-                            add_job_log(job_id, "✅ 2回目: 打刻ボタンクリック完了（button:has-text）", jobs)
-                            second_punch_success = True
-                        except Exception as e:
-                            add_job_log(job_id, f"⚠️ 2回目: button:has-textでのボタンクリックでエラー: {e}", jobs)
-                    
-                    if not second_punch_success:
-                        try:
-                            page.locator('button[type="submit"]').click()
-                            page.wait_for_load_state('networkidle', timeout=10000)
-                            add_job_log(job_id, "✅ 2回目: 打刻ボタンクリック完了（button[type=submit]）", jobs)
-                            second_punch_success = True
-                        except Exception as e:
-                            add_job_log(job_id, f"⚠️ 2回目: button[type=submit]でのボタンクリックでエラー: {e}", jobs)
-                    
-                    if not second_punch_success:
-                        add_job_log(job_id, "⚠️ 2回目: 打刻ボタンが見つかりません（想定通りの処理構造です）", jobs)
-                        # 2回目の打刻に失敗しても処理は継続
-                    
-                    # データ処理完了ログを出力
-                    add_job_log(job_id, f"✅ データ {processed_count}/{total_data} の処理が完了しました: {date_str}", jobs)
-                    
-                    # 出勤簿ページに戻る（失敗しても次データ処理を継続）
-                    return_to_attendance_safely(page, job_id, jobs)
-                    
-                    update_progress(job_id, 6, f"勤怠データ入力中 ({processed_count}/{total_data})", jobs, processed_count, total_data)
-                    # 処理間隔（4番目以降は長めに待機）
-                    if processed_count >= 4:
-                        add_job_log(job_id, "⏳ メモリ最適化のため5秒待機中...", jobs)
-                        time.sleep(5)  # 4番目以降は5秒待機
-                    else:
-                        time.sleep(2)  # 通常の処理間隔
-                    
-                except Exception as data_error:
-                    add_job_log(job_id, f"❌ データ {processed_count} の処理でエラー: {data_error}", jobs)
-                    
-                    # 4番目以降のエラーは詳細ログを出力
-                    if processed_count >= 4:
-                        add_job_log(job_id, f"🔍 エラー詳細: {type(data_error).__name__}: {str(data_error)}", jobs)
-                        
-                        # メモリ不足の可能性がある場合は警告
-                        if "memory" in str(data_error).lower() or "oom" in str(data_error).lower():
-                            add_job_log(job_id, "⚠️ メモリ不足の可能性があります。処理を継続しますが、注意が必要です。", jobs)
-                    
-                    add_job_log(job_id, f"🔄 次のデータの処理を続行します", jobs)
-                    continue
-            
-            # pandas使用時の処理完了サマリー
-            add_job_log(job_id, f"📊 全データ処理完了: {processed_count}件のデータを処理しました", jobs)
-        else:
-            # openpyxlを使用した処理（空白行スキップ対応）
-            ws = data_source.active
-            
-            # 空白行をスキップするためのフィルタ処理
-            valid_rows = []
-            skipped_count = 0
-            
-            for row in range(2, ws.max_row + 1):
-                # 主要カラムの値を取得
-                date_value = ws[f'A{row}'].value
-                start_time_value = ws[f'B{row}'].value
-                end_time_value = ws[f'C{row}'].value
-                
-                # すべての主要カラムが空の場合はスキップ
-                if (date_value is None or str(date_value).strip() == '') and \
-                   (start_time_value is None or str(start_time_value).strip() == '') and \
-                   (end_time_value is None or str(end_time_value).strip() == ''):
-                    skipped_count += 1
-                    continue
-                
-                valid_rows.append(row)
-            
-            if skipped_count > 0:
-                add_job_log(job_id, f"✅ データ処理で空白行 {skipped_count} 行をスキップしました", jobs)
-            
-            # 有効な行のみを処理
-            processed_count = 0
-            for row in valid_rows:
-                try:
-                    date = ws[f'A{row}'].value
-                    start_time = ws[f'B{row}'].value
-                    end_time = ws[f'C{row}'].value
-                    
-                    date_str, year, month, day = extract_date_info(date)
-                    processed_count += 1
-                    add_job_log(job_id, f"📝 データ {processed_count}/{total_data}: {date_str} {start_time}-{end_time}", jobs)
-                    
-                    # 時刻を4桁形式に変換
-                    start_time_4digit = convert_time_to_4digit(start_time)
-                    end_time_4digit = convert_time_to_4digit(end_time)
-                    end_time_4digit = adjust_overnight_end_time(start_time_4digit, end_time_4digit)
-                    
-                    # 打刻修正ページに移動
-                    modify_url = f"https://ssl.jobcan.jp/employee/adit/modify?year={year}&month={month}&day={day}"
-                    add_job_log(job_id, f"🔗 打刻修正ページに移動: {modify_url}", jobs)
-                    
-                    try:
-                        page.goto(modify_url, timeout=30000)
-                        page.wait_for_load_state('networkidle', timeout=30000)
-                        
-                        # 人間らしい待機
-                        human_like_wait()
-                        add_job_log(job_id, "✅ 打刻修正ページアクセス完了", jobs)
-                    except Exception as e:
-                        add_job_log(job_id, f"❌ 打刻修正ページアクセスエラー: {e}", jobs)
-                        continue
-                    
-                    # 時刻入力フィールドが読み込まれるまで待機
-                    add_job_log(job_id, "⏳ 時刻入力フィールドの読み込みを待機中...", jobs)
-                    try:
-                        page.wait_for_selector('input[type="text"]', timeout=10000)
-                        add_job_log(job_id, "✅ 時刻入力フィールドの読み込み完了", jobs)
-                    except Exception as e:
-                        add_job_log(job_id, f"⚠️ 時刻入力フィールドの読み込みタイムアウト: {e}", jobs)
-                    
-                    # 1つの入力フィールドを取得
-                    time_input = page.locator('input[type="text"]').first
-                    
-                    # 1回目: 始業時刻を人間らしく入力して打刻
-                    add_job_log(job_id, f"⏰ 1回目: 始業時刻を入力: {start_time_4digit}", jobs)
-                    try:
-                        # 人間らしいタイピングで入力
-                        if not human_like_typing(page, 'input[type="text"]', start_time_4digit, job_id, jobs):
-                            add_job_log(job_id, "❌ 始業時刻入力に失敗しました", jobs)
-                            continue
-                        
-                        # 人間らしい待機
-                        human_like_wait()
-                        add_job_log(job_id, "✅ 始業時刻入力完了", jobs)
-                    except Exception as e:
-                        add_job_log(job_id, f"❌ 始業時刻入力エラー: {e}", jobs)
-                        continue  # 始業時刻入力に失敗した場合は次のデータへ
-                    
-                    # 1回目の打刻ボタンをクリック
-                    add_job_log(job_id, "🔘 1回目: 打刻ボタンをクリック中...", jobs)
-                    first_punch_success = False
-                    
-                    # 打刻ボタンを探してクリック (prioritized methods)
-                    try:
-                        page.get_by_role("button", name="打刻").click()
-                        page.wait_for_load_state('networkidle', timeout=10000)
-                        add_job_log(job_id, "✅ 1回目: 打刻ボタンクリック完了（get_by_role）", jobs)
-                        first_punch_success = True
-                    except Exception as e:
-                        add_job_log(job_id, f"⚠️ 1回目: get_by_roleでのボタンクリックでエラー: {e}", jobs)
-                    
-                    if not first_punch_success:
-                        try:
-                            page.locator('input[value="打刻"]').click()
-                            page.wait_for_load_state('networkidle', timeout=10000)
-                            add_job_log(job_id, "✅ 1回目: 打刻ボタンクリック完了（input[value]）", jobs)
-                            first_punch_success = True
-                        except Exception as e:
-                            add_job_log(job_id, f"⚠️ 1回目: input[value]でのボタンクリックでエラー: {e}", jobs)
-                    
-                    if not first_punch_success:
-                        try:
-                            page.get_by_text("打刻").click()
-                            page.wait_for_load_state('networkidle', timeout=10000)
-                            add_job_log(job_id, "✅ 1回目: 打刻ボタンクリック完了（get_by_text）", jobs)
-                            first_punch_success = True
-                        except Exception as e:
-                            add_job_log(job_id, f"⚠️ 1回目: get_by_textでのボタンクリックでエラー: {e}", jobs)
-                    
-                    if not first_punch_success:
-                        try:
-                            page.locator('button:has-text("打刻")').click()
-                            page.wait_for_load_state('networkidle', timeout=10000)
-                            add_job_log(job_id, "✅ 1回目: 打刻ボタンクリック完了（button:has-text）", jobs)
-                            first_punch_success = True
-                        except Exception as e:
-                            add_job_log(job_id, f"⚠️ 1回目: button:has-textでのボタンクリックでエラー: {e}", jobs)
-                    
-                    if not first_punch_success:
-                        try:
-                            page.locator('button[type="submit"]').click()
-                            page.wait_for_load_state('networkidle', timeout=10000)
-                            add_job_log(job_id, "✅ 1回目: 打刻ボタンクリック完了（button[type=submit]）", jobs)
-                            first_punch_success = True
-                        except Exception as e:
-                            add_job_log(job_id, f"⚠️ 1回目: button[type=submit]でのボタンクリックでエラー: {e}", jobs)
-                    
-                    if not first_punch_success:
-                        add_job_log(job_id, "❌ 1回目: 打刻ボタンが見つかりません", jobs)
-                        continue # 1回目の打刻に失敗した場合は次のデータへ
-                    
-                    # 人間らしい待機
-                    human_like_wait()
-                    
-                    # 2回目: 終業時刻を人間らしく入力して打刻
-                    add_job_log(job_id, f"⏰ 2回目: 終業時刻を入力: {end_time_4digit}", jobs)
-                    try:
-                        # 人間らしいタイピングで入力
-                        if not human_like_typing(page, 'input[type="text"]', end_time_4digit, job_id, jobs):
-                            add_job_log(job_id, "⚠️ 終業時刻のタイピング入力に失敗。fill入力で再試行します", jobs)
-                            if not reliable_fill(page, 'input[type="text"]:visible', end_time_4digit, job_id, jobs):
-                                add_job_log(job_id, "❌ 終業時刻入力に失敗しました", jobs)
-                                continue
-                        
-                        # 人間らしい待機
-                        human_like_wait()
-                        add_job_log(job_id, "✅ 終業時刻入力完了", jobs)
-                    except Exception as e:
-                        add_job_log(job_id, f"⚠️ 終業時刻入力エラー（想定通りの処理構造です）: {e}", jobs)
-                        # 終業時刻入力に失敗しても処理は継続
-                    
-                    # 2回目の打刻ボタンをクリック
-                    add_job_log(job_id, "🔘 2回目: 打刻ボタンをクリック中...", jobs)
-                    second_punch_success = False
-                    
-                    # 打刻ボタンを探してクリック (prioritized methods)
-                    try:
-                        page.get_by_role("button", name="打刻").click()
-                        page.wait_for_load_state('networkidle', timeout=10000)
-                        add_job_log(job_id, "✅ 2回目: 打刻ボタンクリック完了（get_by_role）", jobs)
-                        second_punch_success = True
-                    except Exception as e:
-                        add_job_log(job_id, f"⚠️ 2回目: get_by_roleでのボタンクリックでエラー: {e}", jobs)
-                    
-                    if not second_punch_success:
-                        try:
-                            page.locator('input[value="打刻"]').click()
-                            page.wait_for_load_state('networkidle', timeout=10000)
-                            add_job_log(job_id, "✅ 2回目: 打刻ボタンクリック完了（input[value]）", jobs)
-                            second_punch_success = True
-                        except Exception as e:
-                            add_job_log(job_id, f"⚠️ 2回目: input[value]でのボタンクリックでエラー: {e}", jobs)
-                    
-                    if not second_punch_success:
-                        try:
-                            page.get_by_text("打刻").click()
-                            page.wait_for_load_state('networkidle', timeout=10000)
-                            add_job_log(job_id, "✅ 2回目: 打刻ボタンクリック完了（get_by_text）", jobs)
-                            second_punch_success = True
-                        except Exception as e:
-                            add_job_log(job_id, f"⚠️ 2回目: get_by_textでのボタンクリックでエラー: {e}", jobs)
-                    
-                    if not second_punch_success:
-                        try:
-                            page.locator('button:has-text("打刻")').click()
-                            page.wait_for_load_state('networkidle', timeout=10000)
-                            add_job_log(job_id, "✅ 2回目: 打刻ボタンクリック完了（button:has-text）", jobs)
-                            second_punch_success = True
-                        except Exception as e:
-                            add_job_log(job_id, f"⚠️ 2回目: button:has-textでのボタンクリックでエラー: {e}", jobs)
-                    
-                    if not second_punch_success:
-                        try:
-                            page.locator('button[type="submit"]').click()
-                            page.wait_for_load_state('networkidle', timeout=10000)
-                            add_job_log(job_id, "✅ 2回目: 打刻ボタンクリック完了（button[type=submit]）", jobs)
-                            second_punch_success = True
-                        except Exception as e:
-                            add_job_log(job_id, f"⚠️ 2回目: button[type=submit]でのボタンクリックでエラー: {e}", jobs)
-                    
-                    if not second_punch_success:
-                        add_job_log(job_id, "⚠️ 2回目: 打刻ボタンが見つかりません（想定通りの処理構造です）", jobs)
-                        # 2回目の打刻に失敗しても処理は継続
-                    
-                    # データ処理完了ログを出力
-                    add_job_log(job_id, f"✅ データ {processed_count}/{total_data} の処理が完了しました: {date_str}", jobs)
-                    
-                    # 出勤簿ページに戻る（失敗しても次データ処理を継続）
-                    return_to_attendance_safely(page, job_id, jobs)
-                    
-                    update_progress(job_id, 6, f"勤怠データ入力中 ({processed_count}/{total_data})", jobs, processed_count, total_data)
-                    # 処理間隔（4番目以降は長めに待機）
-                    if processed_count >= 4:
-                        add_job_log(job_id, "⏳ メモリ最適化のため5秒待機中...", jobs)
-                        time.sleep(5)  # 4番目以降は5秒待機
-                    else:
-                        time.sleep(2)  # 通常の処理間隔
-                    
-                except Exception as data_error:
-                    add_job_log(job_id, f"❌ データ {processed_count} の処理でエラー: {data_error}", jobs)
-                    
-                    # 4番目以降のエラーは詳細ログを出力
-                    if processed_count >= 4:
-                        add_job_log(job_id, f"🔍 エラー詳細: {type(data_error).__name__}: {str(data_error)}", jobs)
-                        
-                        # メモリ不足の可能性がある場合は警告
-                        if "memory" in str(data_error).lower() or "oom" in str(data_error).lower():
-                            add_job_log(job_id, "⚠️ メモリ不足の可能性があります。処理を継続しますが、注意が必要です。", jobs)
-                    
-                    add_job_log(job_id, f"🔄 次のデータの処理を続行します", jobs)
-                    continue
-            
-            # openpyxl使用時の処理完了サマリー
-            add_job_log(job_id, f"📊 全データ処理完了: {processed_count}件のデータを処理しました", jobs)
-        
-        add_job_log(job_id, "🎉 実際のデータ入力処理が完了しました", jobs)
-        
-    except Exception as e:
-        add_job_log(job_id, f"❌ 実際のデータ入力処理でエラー: {e}", jobs)
-        raise e
+def perform_actual_data_input(page, data_source, total_data, pandas_available, job_id, jobs, job_timeout_sec=0):
+    """Process each day once and count only confirmed, complete rows."""
+    from lib.jobcan_attendance import AttendanceInputError, punch_once
+
+    job = jobs[job_id]
+    job['row_results'] = []
+    job['confirmed_rows'] = 0
+
+    def check_active():
+        if _check_job_timeout(job_id, jobs, job_timeout_sec):
+            raise AttendanceInputError('制限時間に達しました。登録済みの内容を確認してください。')
+        if job.get('status') in ('cancelled', 'expired', 'error', 'timeout'):
+            raise AttendanceInputError('処理は停止されています。')
+
+    if pandas_available:
+        rows = (
+            (row['日付'], row['開始時刻'], row['終了時刻'])
+            for _, row in data_source.dropna(subset=['日付']).iterrows()
+        )
+    else:
+        rows = (
+            row[:3] for row in data_source.active.iter_rows(min_row=2, values_only=True)
+            if row and row[0] is not None and str(row[0]).strip()
+        )
+
+    for index, (date_value, start_value, end_value) in enumerate(rows, 1):
+        check_active()
+        date_str, year, month, day = extract_date_info(date_value)
+        result = {'date': date_str, 'start': 'pending', 'end': 'pending', 'status': 'running'}
+        job['row_results'].append(result)
+        update_progress(job_id, 6, f'勤怠入力 {index}/{total_data}：{date_str}', jobs, index - 1, total_data)
+        add_job_log(job_id, f'入力開始 {index}/{total_data}: {date_str}', jobs)
+        try:
+            start = convert_time_to_4digit(start_value)
+            end = adjust_overnight_end_time(start, convert_time_to_4digit(end_value))
+            url = f'https://ssl.jobcan.jp/employee/adit/modify?year={year}&month={month}&day={day}'
+            response = page.goto(url, wait_until='domcontentloaded', timeout=30000)
+            if response is not None and response.status >= 400:
+                raise AttendanceInputError(f'打刻修正画面がHTTP {response.status}を返しました。')
+            page.get_by_role('button', name='打刻', exact=True).wait_for(state='visible', timeout=10000)
+            for label, value in (('start', start), ('end', end)):
+                check_active()
+                job['step_name'] = f'{date_str}：{"開始" if label == "start" else "終了"}時刻を確認中'
+                result[label] = punch_once(page, value, check_active)
+                add_job_log(job_id, f'{date_str} {value[:2]}:{value[2:]}：{"登録済み" if result[label] == "existing" else "登録確認済み"}', jobs)
+            result['status'] = 'confirmed'
+            job['confirmed_rows'] += 1
+            update_progress(job_id, 6, f'登録確認済み {job["confirmed_rows"]}/{total_data}件', jobs, job['confirmed_rows'], total_data)
+        except Exception as exc:
+            result['status'] = 'needs_review'
+            reason = str(exc) if isinstance(exc, AttendanceInputError) else '画面の読み込みまたは入力確認に失敗しました。'
+            message = f'{date_str}で停止。確認済み {job["confirmed_rows"]}/{total_data}件。{reason} 登録内容をJobcanで確認してください。'
+            job['login_message'] = message
+            add_job_log(job_id, message, jobs)
+            raise AttendanceInputError(message) from exc
+
+    if job['confirmed_rows'] != total_data:
+        raise AttendanceInputError('読込件数と登録確認件数が一致しません。登録内容を確認してください。')
+    return job['confirmed_rows']
+
 
 def human_like_typing(page, selector, text, job_id, jobs):
     """人間らしいタイピングを実行（強化版・タイムアウト対策付き）"""
@@ -1580,6 +1149,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         browser = None
         context = None
         page = None
+        cleanup_errors = []
         
         try:
             from playwright.sync_api import sync_playwright
@@ -1705,7 +1275,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     logger.info(f"event=login_done job_id={job_id} elapsed_sec={round(time.time() - (jobs.get(job_id, {}).get('start_time') or 0), 1)} success={login_success}")
                     if not login_success:
                         add_job_log(job_id, "❌ ログインに失敗したため、処理を停止します", jobs)
-                        jobs[job_id]['status'] = 'completed'
+                        jobs[job_id]['status'] = 'error'
                         jobs[job_id]['end_time'] = time.time()  # P0-3: 完了時刻を記録
                         return
                     
@@ -1713,7 +1283,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     add_job_log(job_id, "🔧 ログイン成功のため、実際のデータ入力を試行します", jobs)
                     update_progress(job_id, 6, "勤怠データ入力中...", jobs)
                     logger.info(f"event=fill_start job_id={job_id} elapsed_sec={round(time.time() - (jobs.get(job_id, {}).get('start_time') or 0), 1)}")
-                    perform_actual_data_input(page, data_source, total_data, pandas_available, job_id, jobs)
+                    perform_actual_data_input(page, data_source, total_data, pandas_available, job_id, jobs, job_timeout_sec)
                     logger.info(f"event=fill_done job_id={job_id} elapsed_sec={round(time.time() - (jobs.get(job_id, {}).get('start_time') or 0), 1)}")
                     
                     # ステップ7: 最終確認
@@ -1736,13 +1306,18 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
                     add_job_log(job_id, f"❌ ブラウザ処理中にエラーが発生: {inner_e}", jobs)
                     # エラーを外側に伝播（finallyブロックでクリーンアップされる）
                     raise
+                finally:
+                    # Close resources while the Playwright transport is still alive.
+                    cleanup_errors.extend(close_playwright_resources(page, context, browser, job_id, jobs))
+                    page = context = browser = None
                 # withブロックの終了時に自動的にplaywright_instanceが閉じられる
                 # ただし、browser/context/pageは明示的にcloseする必要がある
                 
         except Exception as e:
             # 外側のtryブロックでエラーが発生した場合
             add_job_log(job_id, f"❌ 予期しないエラーが発生しました: {e}", jobs)
-            jobs[job_id]['status'] = 'error'
+            if jobs[job_id].get('status') != 'timeout':
+                jobs[job_id]['status'] = 'error'
             jobs[job_id]['end_time'] = time.time()  # P0-3: エラー時刻を記録
             jobs[job_id]['login_message'] = f'予期しないエラーが発生しました: {str(e)}'
             # エラーを記録した後、finallyブロックでクリーンアップされる
@@ -1750,7 +1325,7 @@ def process_jobcan_automation(job_id: str, email: str, password: str, file_path:
         finally:
             # P0-1: 確実にクリーンアップ（page -> context -> browser -> playwright_instance の順）
             # このfinallyブロックは必ず実行される（エラーが発生しても）
-            cleanup_errors = close_playwright_resources(page, context, browser, job_id, jobs)
+            cleanup_errors.extend(close_playwright_resources(page, context, browser, job_id, jobs))
             
             # ガベージコレクションを実行（メモリ解放を促進）
             try:
